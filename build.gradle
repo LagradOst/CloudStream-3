@@ -1,4 +1,13 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+signingConfigs {
+    release {
+        storeFile file(System.getenv("KEYSTORE"))
+        storePassword System.getenv("SIGNING_STORE_PASSWORD")
+        keyAlias System.getenv("SIGNING_KEY_ALIAS")
+        keyPassword System.getenv("SIGNING_KEY_PASSWORD")
+    }
+}
+
 buildscript {
     ext.kotlin_version = "1.4.32"
     repositories {
