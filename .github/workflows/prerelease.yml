@@ -48,4 +48,4 @@ jobs:
         prerelease: true
         title: "Pre-release Build"
         files: |
-          app/release/*.apk
+          app/build/outputs/apk/release/*.apk
