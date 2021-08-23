@@ -34,7 +34,7 @@ jobs:
         mkdir -p "${TMP_KEYSTORE_FILE_PATH}"
         echo $ENCODED_STRING | base64 -di > "${TMP_KEYSTORE_FILE_PATH}"/prerelease_keystore.keystore
     - name: Run Gradle
-      run: ./gradlew app:assemblePrerelease
+      run: ./gradlew app:assembleRelease
       env:
         SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
         SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
