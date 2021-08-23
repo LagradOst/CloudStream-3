@@ -1,7 +1,7 @@
-# CloudStream-3
+# CloudStream-3 18+
 
 **DOWNLOAD:**
-https://github.com/LagradOst/CloudStream-3/releases
+https://github.com/ArjixWasTaken/CloudStream-3/releases
 
 **Discord:**
 https://discord.gg/5Hus6fM
@@ -10,7 +10,7 @@ https://discord.gg/5Hus6fM
 + **AdFree**, No ads whatsoever
 + No tracking/analytics
 + Bookmarks
-+ Download and stream movies, tv-shows and anime
++ Download and stream hentai
 + Chromecast
 
 **SCREENSHOTS:**
@@ -19,20 +19,5 @@ https://discord.gg/5Hus6fM
 <img src="./.github/player.jpg" height="200"/>
 
 ***Sites used:***
-+ https://trailers.to
++ https://hanime.tv
 
-+ https://tenshi.moe
-
-+ https://wcostream.cc
-
-+ https://bestdubbedanime.com
-
-+ https://hdm.to
-
-+ https://www.vmovee.watch
-
-+ https://www.wcostream.com
-
-+ https://animepahe.com
-
-+ https://gogoanime.vc
