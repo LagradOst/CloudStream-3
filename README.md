@@ -1,4 +1,4 @@
-# CloudStream-3 18+
+# CloudStream 18+
 
 **DOWNLOAD:**
 https://github.com/ArjixWasTaken/CloudStream-3/releases
