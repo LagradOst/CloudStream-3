@@ -47,7 +47,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:visibility="gone"
-                    class="com.lagradost.cloudstream3.ui.MyMiniControllerFragment"
+                    class="com.ArjixWasTaken.cloudstream3.ui.MyMiniControllerFragment"
                     tools:ignore="FragmentTagUsage">
             </fragment>
         </LinearLayout>

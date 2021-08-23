@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          xmlns:tools="http://schemas.android.com/tools" package="com.lagradost.cloudstream3">
+          xmlns:tools="http://schemas.android.com/tools" package="com.ArjixWasTaken.cloudstream3">
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -21,7 +21,7 @@
             android:theme="@style/AppTheme" android:fullBackupContent="@xml/backup_descriptor" tools:targetApi="m">
         <meta-data
                 android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
-                android:value="com.lagradost.cloudstream3.utils.CastOptionsProvider"/>
+                android:value="com.ArjixWasTaken.cloudstream3.utils.CastOptionsProvider"/>
         <activity
                 android:name=".MainActivity"
                 android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation"
@@ -38,14 +38,7 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
 
-                <data android:scheme="https" android:host="bestdubbedanime.com" android:pathPrefix="/"/>
-                <data android:scheme="https" android:host="tenshi.moe" android:pathPrefix="/"/>
-                <data android:scheme="https" android:host="www.wcostream.com" android:pathPrefix="/"/>
-                <data android:scheme="https" android:host="wcostream.cc" android:pathPrefix="/"/>
-                <data android:scheme="https" android:host="hdm.to" android:pathPrefix="/"/>
-                <data android:scheme="https" android:host="lookmovie.io" android:pathPrefix="/"/>
-                <data android:scheme="https" android:host="trailers.to" android:pathPrefix="/"/>
-                <data android:scheme="https" android:host="www.vmovee.watch" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="hanime.tv" android:pathPrefix="/"/>
             </intent-filter>
         </activity>
 

@@ -294,11 +294,11 @@
                         android:textStyle="normal"
                         android:textColor="?attr/textColor"
                 />
-                <com.lagradost.cloudstream3.widget.FlowLayout android:id="@+id/result_tag"
+                <com.ArjixWasTaken.cloudstream3.widget.FlowLayout android:id="@+id/result_tag"
                                                               android:layout_width="match_parent"
                                                               android:layout_height="wrap_content">
 
-                </com.lagradost.cloudstream3.widget.FlowLayout>
+                </com.ArjixWasTaken.cloudstream3.widget.FlowLayout>
                 <LinearLayout
                         android:layout_marginTop="5dp"
                         android:orientation="vertical"
@@ -459,7 +459,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:visibility="gone"
-                    class="com.lagradost.cloudstream3.ui.MyMiniControllerFragment"
+                    class="com.ArjixWasTaken.cloudstream3.ui.MyMiniControllerFragment"
                     tools:ignore="FragmentTagUsage">
             </fragment>
         </LinearLayout>

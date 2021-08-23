@@ -104,13 +104,23 @@
                 app:icon="@drawable/ic_baseline_system_update_24"
         />
         <Preference
-                android:title="Github"
-                android:icon="@drawable/ic_github_logo"
-                app:summary="https://github.com/LagradOst/CloudStream-3">
-            <intent android:action="android.intent.action.VIEW"
-                    android:data="https://github.com/LagradOst/CloudStream-3"/>
+            android:icon="@drawable/ic_github_logo"
+            android:title="Github"
+            app:summary="https://github.com/ArjixWasTaken/CloudStream-3">
+            <intent
+                android:action="android.intent.action.VIEW"
+                android:data="https://github.com/ArjixWasTaken/CloudStream-3" />
         </Preference>
-
+        <Preference
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:icon="@drawable/ic_github_logo"
+            android:title="Original SFW app"
+            app:summary="https://github.com/LagradOst/CloudStream-3">
+            <intent
+                android:action="android.intent.action.VIEW"
+                android:data="https://github.com/LagradOst/CloudStream-3" />
+        </Preference>
         <Preference
                 android:title="Light novel app by the same devs"
                 android:icon="@drawable/quick_novel_icon"

@@ -32,7 +32,7 @@
                 android:contentDescription="@string/home_expanded_hide">
         </ImageView>
     </FrameLayout>
-    <com.lagradost.cloudstream3.ui.AutofitRecyclerView
+    <com.ArjixWasTaken.cloudstream3.ui.AutofitRecyclerView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/home_expanded_recycler"

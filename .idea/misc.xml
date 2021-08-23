@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/CloudStream-3/app/src/main/res/drawable/circle_shape.xml" value="0.37864583333333335" />
+        <entry key="..\:/CloudStream-3/app/src/main/res/drawable/dub_bg_color.xml" value="0.37864583333333335" />
+        <entry key="..\:/CloudStream-3/app/src/main/res/drawable/go_back_30.xml" value="0.37864583333333335" />
+        <entry key="..\:/CloudStream-3/app/src/main/res/drawable/ic_baseline_favorite_border_24.xml" value="0.37864583333333335" />
+        <entry key="..\:/CloudStream-3/app/src/main/res/drawable/video_tap_button.xml" value="0.37864583333333335" />
+        <entry key="..\:/CloudStream-3/app/src/main/res/menu/bottom_nav_menu.xml" value="0.3625" />
+        <entry key="..\:/CloudStream-3/app/src/main/res/menu/cast_expanded_controller_menu.xml" value="0.3625" />
+        <entry key="..\:/CloudStream-3/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.37864583333333335" />
+        <entry key="..\:/CloudStream-3/app/src/main/res/xml/settings.xml" value="0.33" />
+      </map>
+    </option>
+  </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="11" project-jdk-type="JavaSDK" />
 </project>
