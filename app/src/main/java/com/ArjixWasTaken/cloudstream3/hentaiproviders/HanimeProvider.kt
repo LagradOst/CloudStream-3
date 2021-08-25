@@ -26,13 +26,13 @@ class HanimeProvider : MainAPI() {
 
         private fun getTitle(title: String): String {
             if (title.contains(" Ep ")) {
-                return title.split(" Ep ")[0]
+                return title.split(" Ep ")[0].trim()
             } else {
-                if (isNumber(title.split(" ").last())) {
-                    val split = title.split(" ")
-                    return split.slice(0..split.size-2).joinToString(" ")
+                if (isNumber(title.trim().split(" ").last())) {
+                    val split = title.trim().split(" ")
+                    return split.slice(0..split.size-2).joinToString(" ").trim()
                 } else {
-                    return title
+                    return title.trim()
                 }
             }
         }
