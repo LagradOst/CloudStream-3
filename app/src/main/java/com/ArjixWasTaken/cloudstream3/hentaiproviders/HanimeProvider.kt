@@ -147,8 +147,6 @@ class HanimeProvider : MainAPI() {
 
 
         response.reversed().forEach {
-            val title: String
-
             val title = getTitle(it.name)
             if (!titles.contains(title)) {
                 titles.add(title)
