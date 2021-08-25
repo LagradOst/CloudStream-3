@@ -22,6 +22,20 @@ class HanimeProvider : MainAPI() {
 
             return date.toIntOrNull()
         }
+        private fun isNumber(num: String) = if (num.toIntOrNull() == null) false else true
+
+        private fun getTitle(title: String): String {
+            if (title.contains(" Ep ")) {
+                return title.split(" Ep ")[0]
+            } else {
+                if (isNumber(title.split(" ").last())) {
+                    val split = title.split(" ")
+                    return split.slice(0..split.size-2).joinToString(" ")
+                } else {
+                    return title
+                }
+            }
+        }
     }
 
     override val mainUrl: String
@@ -86,14 +100,7 @@ class HanimeProvider : MainAPI() {
             json.state.data.landing.sections.forEach { section ->
                 items.add(HomePageList(section.title, (section.hentaiVideoIds.map {
                     val hentai = getHentaiByIdFromList(it, json.state.data.landing.hentaiVideos)!!
-                    val titleRegex = Regex("""((?:\w| )+) (\d+)""")
-
-                    val title = if (titleRegex.containsMatchIn(hentai.name)) {
-                        val groups = titleRegex.find(hentai.name)!!.destructured
-                        groups.component1().split(" Ep")[0].trim()
-                    } else {
-                        hentai.name.trim()
-                    }
+                    val title = getTitle(hentai.name)
                     if (!titles.contains(title)) {
                         titles.add(title)
                         HentaiSearchResponse(
@@ -138,17 +145,11 @@ class HanimeProvider : MainAPI() {
         val titles = ArrayList<String>()
         val searchResults = ArrayList<SearchResponse>()
 
-        val titleRegex = Regex("""((?:\w| )+) (\d+)""")
 
         response.reversed().forEach {
             val title: String
 
-            if (titleRegex.containsMatchIn(it.name)) {
-                val groups = titleRegex.find(it.name)!!.destructured
-                title = groups.component1().replace(" Ep", "").trim()
-            } else {
-                title = it.name.replace(" Ep", "").trim()
-            }
+            val title = getTitle(it.name)
             if (!titles.contains(title)) {
                 titles.add(title)
                 searchResults.add(
