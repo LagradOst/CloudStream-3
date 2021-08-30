@@ -42,7 +42,7 @@ object APIHolder {
         WatchCartoonOnlineProvider(),
         AllMoviesForYouProvider(),
         AsiaFlixProvider(),
-        //NyaaProvider(),
+        NyaaProvider(),
     )
 
     fun getApiFromName(apiName: String?): MainAPI {
