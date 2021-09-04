@@ -25,7 +25,7 @@ object APIHolder {
     private const val defProvider = 0
 
     val apis = arrayListOf(
-        CrunchyrollProvider(),
+        Crunchyroll(),
         HanimeProvider(),
     )
 
