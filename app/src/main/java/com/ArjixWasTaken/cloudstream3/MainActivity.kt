@@ -384,16 +384,5 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         thread {
             runAutoUpdate()
         }
-
-        // must give benenes to get beta providers
-        try {
-            val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
-            val count = settingsManager.getInt(getString(R.string.benene_count), 0)
-            if (count > 30)
-                apis.addAll(restrictedApis)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
     }
 }
