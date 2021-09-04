@@ -47,7 +47,7 @@ class HanimeProvider : MainAPI() {
     override val hasMainPage: Boolean
         get() = true
     override val hasDownloadSupport: Boolean
-        get() = true
+        get() = false
 
     override val supportedTypes: Set<TvType>
         get() = setOf(
