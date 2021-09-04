@@ -157,7 +157,7 @@ class HanimeProvider : MainAPI() {
                         title,
                         "https://hanime.tv/videos/hentai/${it.slug}?id=${it.id}&title=${title}",
                         this.name,
-                        TvType.Hentai,
+                        TvType.Anime,
                         it.coverUrl,
                         unixToYear(it.releasedAt),
                         it.titles?.get(0),
