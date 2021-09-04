@@ -228,7 +228,7 @@ class HanimeProvider : MainAPI() {
         val tags = data.hentaiTags.map { it.text }
 
         val episodes = data.hentaiFranchiseHentaiVideos.map {
-            HentaiEpisode(
+            AnimeEpisode(
                 "https://hw.hanime.tv/api/v8/video?id=${it.id}&",
                 it.name,
                 it.posterUrl
