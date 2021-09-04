@@ -2,8 +2,10 @@ package com.ArjixWasTaken.cloudstream3.ui.download
 
 import android.app.Activity
 import android.content.DialogInterface
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentActivity
+import com.ArjixWasTaken.cloudstream3.MainActivity
 import com.ArjixWasTaken.cloudstream3.R
 import com.ArjixWasTaken.cloudstream3.ui.player.PlayerFragment
 import com.ArjixWasTaken.cloudstream3.ui.player.UriData
@@ -32,19 +34,16 @@ object DownloadButtonSetup {
                             }
                         }
 
-                    builder.setTitle("Delete File")
-                    builder.setMessage(
-                        "This will permanently delete ${
-                            getNameFull(
+                    builder.setTitle(R.string.delete_file)
+                        .setMessage(
+                            ctx.getString(R.string.delete_message).format(ctx.getNameFull(
                                 click.data.name,
                                 click.data.episode,
                                 click.data.season
-                            )
-                        }\nAre you sure?"
-                    )
-                        .setTitle("Delete")
-                        .setPositiveButton("Delete", dialogClickListener)
-                        .setNegativeButton("Cancel", dialogClickListener)
+                            ))
+                        )
+                        .setPositiveButton(R.string.delete, dialogClickListener)
+                        .setNegativeButton(R.string.cancel, dialogClickListener)
                         .show()
                 }
             }
@@ -62,6 +61,18 @@ object DownloadButtonSetup {
                         VideoDownloadManager.downloadEvent.invoke(
                             Pair(click.data.id, VideoDownloadManager.DownloadActionType.Resume)
                         )
+                    }
+                }
+            }
+            DOWNLOAD_ACTION_LONG_CLICK -> {
+                activity?.let { act ->
+                    val length =
+                        VideoDownloadManager.getDownloadFileInfoAndUpdateSettings(act, click.data.id)?.fileLength
+                            ?: 0
+                    if(length > 0) {
+                        MainActivity.showToast(act, R.string.delete, Toast.LENGTH_LONG)
+                    } else {
+                        MainActivity.showToast(act, R.string.download, Toast.LENGTH_LONG)
                     }
                 }
             }
@@ -88,6 +99,7 @@ object DownloadButtonSetup {
                                     info.path.toString(),
                                     keyInfo.relativePath,
                                     keyInfo.displayName,
+                                    click.data.parentId,
                                     click.data.id,
                                     headerName ?: "null",
                                     if (click.data.episode <= 0) null else click.data.episode,

@@ -26,11 +26,15 @@ android {
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        applicationId 'com.ArjixWasTaken.cloudstream3'
+        applicationId "com.ArjixWasTaken.cloudstream3"
         minSdkVersion 21
         targetSdkVersion 30
-        versionCode 17
+        versionCode 19
         versionName '1.0.0'
+
+        resValue "string", "app_version",
+                "${defaultConfig.versionName}${versionNameSuffix ?: ""}"
+        buildConfigField("String", "BUILDDATE", "new java.text.SimpleDateFormat(\"yyyy-MM-dd HH:mm\").format(new java.util.Date(" + System.currentTimeMillis() + "L));")
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -96,7 +100,7 @@ dependencies {
     // Exoplayer
     implementation 'com.google.android.exoplayer:exoplayer:2.14.2'
     implementation 'com.google.android.exoplayer:extension-cast:2.14.2'
-    implementation 'com.google.android.exoplayer:extension-mediasession:2.14.2'
+    implementation "com.google.android.exoplayer:extension-mediasession:2.14.2"
     //implementation "com.google.android.exoplayer:extension-leanback:2.14.0"
 
     // Bug reports
@@ -114,4 +118,7 @@ dependencies {
 
     //run JS
     implementation 'org.mozilla:rhino:1.7R4'
+
+    // TorrentStream
+    implementation 'com.github.TorrentStream:TorrentStream-Android:2.7.0'
 }

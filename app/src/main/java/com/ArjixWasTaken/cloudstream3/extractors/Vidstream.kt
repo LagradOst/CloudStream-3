@@ -13,7 +13,7 @@ class Vidstream {
         return "$mainUrl/streaming.php?id=$id"
     }
 
-    private val normalApis = arrayListOf(MultiQuality())
+    private val normalApis = arrayListOf(Shiro(), MultiQuality())
 
     // https://gogo-stream.com/streaming.php?id=MTE3NDg5
     fun getUrl(id: String, isCasting: Boolean = false, callback: (ExtractorLink) -> Unit): Boolean {

@@ -25,4 +25,13 @@ object VideoDownloadHelper {
         val id: Int,
         val cacheTime: Long,
     )
+
+    data class ResumeWatching(
+        val parentId: Int,
+        val episodeId: Int,
+        val episode: Int?,
+        val season: Int?,
+        val updateTime : Long,
+        val isFromDownload: Boolean,
+    )
 }

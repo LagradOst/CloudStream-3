@@ -5,14 +5,14 @@ import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.ArjixWasTaken.cloudstream3.hentaiproviders.*
+import com.ArjixWasTaken.cloudstream3.animeproviders.*
 import com.ArjixWasTaken.cloudstream3.utils.ExtractorLink
 import java.util.*
 
 
 const val USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-val baseHeader = mapOf("User-Agent" to USER_AGENT)
+//val baseHeader = mapOf("User-Agent" to USER_AGENT)
 val mapper = JsonMapper.builder().addModule(KotlinModule())
     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).build()!!
 
@@ -26,6 +26,9 @@ object APIHolder {
 
     val apis = arrayListOf(
         HanimeProvider(),
+    )
+
+    val restrictedApis = arrayListOf(
     )
 
     fun getApiFromName(apiName: String?): MainAPI {
@@ -97,8 +100,14 @@ abstract class MainAPI {
     open val hasQuickSearch = false
 
     open val supportedTypes = setOf(
-        TvType.Hentai
+        TvType.Movie,
+        TvType.TvSeries,
+        TvType.Cartoon,
+        TvType.Anime,
+        TvType.ONA,
     )
+
+    open val vpnStatus = VPNStatus.None
 
     open fun getMainPage(): HomePageResponse? {
         throw NotImplementedError()
@@ -178,6 +187,12 @@ fun imdbUrlToIdNullable(url: String?): String? {
     return imdbUrlToId(url)
 }
 
+enum class VPNStatus {
+    None,
+    MightBeNeeded,
+    Torrent,
+}
+
 enum class ShowStatus {
     Completed,
     Ongoing,
@@ -189,9 +204,19 @@ enum class DubStatus {
 }
 
 enum class TvType {
-    Hentai,
+    Movie,
+    AnimeMovie,
+    TvSeries,
+    Cartoon,
+    Anime,
+    ONA,
+    Torrent,
 }
 
+// IN CASE OF FUTURE ANIME MOVIE OR SMTH
+fun TvType.isMovieType(): Boolean {
+    return this == TvType.Movie || this == TvType.AnimeMovie || this == TvType.Torrent
+}
 
 data class SubtitleFile(val lang: String, val url: String)
 
@@ -206,29 +231,61 @@ class HomePageList(
 
 interface SearchResponse {
     val name: String
-    val url: String // PUBLIC URL FOR OPEN IN APP
+    val url: String
     val apiName: String
     val type: TvType
     val posterUrl: String?
-    val year: Int?
     val id: Int?
 }
 
-data class HentaiSearchResponse(
+data class AnimeSearchResponse(
     override val name: String,
     override val url: String,
     override val apiName: String,
     override val type: TvType,
 
     override val posterUrl: String?,
-    override val year: Int?,
+    val year: Int?,
 
     val otherName: String?,
     val dubStatus: EnumSet<DubStatus>?,
-    val episodes: Int?,
+    val dubEpisodes: Int?,
+    val subEpisodes: Int?,
     override val id: Int? = null,
 ) : SearchResponse
 
+data class TorrentSearchResponse(
+    override val name: String,
+    override val url: String,
+    override val apiName: String,
+    override val type: TvType,
+
+    override val posterUrl: String?,
+    override val id: Int? = null,
+) : SearchResponse
+
+data class MovieSearchResponse(
+    override val name: String,
+    override val url: String,
+    override val apiName: String,
+    override val type: TvType,
+
+    override val posterUrl: String?,
+    val year: Int?,
+    override val id: Int? = null,
+) : SearchResponse
+
+data class TvSeriesSearchResponse(
+    override val name: String,
+    override val url: String,
+    override val apiName: String,
+    override val type: TvType,
+
+    override val posterUrl: String?,
+    val year: Int?,
+    val episodes: Int?,
+    override val id: Int? = null,
+) : SearchResponse
 
 interface LoadResponse {
     val name: String
@@ -244,8 +301,17 @@ interface LoadResponse {
     val trailerUrl: String?
 }
 
+fun LoadResponse?.isEpisodeBased(): Boolean {
+    if (this == null) return false
+    return (this is AnimeLoadResponse || this is TvSeriesLoadResponse) && (this.type == TvType.TvSeries || this.type == TvType.Anime)
+}
 
-data class HentaiEpisode(
+fun LoadResponse?.isAnimeBased(): Boolean {
+    if (this == null) return false
+    return (this.type == TvType.Anime || this.type == TvType.ONA) // && (this is AnimeLoadResponse)
+}
+
+data class AnimeEpisode(
     val url: String,
     val name: String? = null,
     val posterUrl: String? = null,
@@ -254,7 +320,23 @@ data class HentaiEpisode(
     val descript: String? = null,
 )
 
-data class HentaiLoadResponse(
+data class TorrentLoadResponse(
+    override val name: String,
+    override val url: String,
+    override val apiName: String,
+    val magnet: String?,
+    val torrent: String?,
+    override val plot: String?,
+    override val type: TvType = TvType.Torrent,
+    override val posterUrl: String? = null,
+    override val year: Int? = null,
+    override val rating: Int? = null,
+    override val tags: List<String>? = null,
+    override val duration: String? = null,
+    override val trailerUrl: String? = null
+) : LoadResponse
+
+data class AnimeLoadResponse(
     val engName: String?,
     val japName: String?,
     override val name: String,
@@ -265,8 +347,8 @@ data class HentaiLoadResponse(
     override val posterUrl: String?,
     override val year: Int?,
 
-    val dubEpisodes: List<HentaiEpisode>?,
-    val subEpisodes: List<HentaiEpisode>?,
+    val dubEpisodes: List<AnimeEpisode>?,
+    val subEpisodes: List<AnimeEpisode>?,
     val showStatus: ShowStatus?,
 
     override val plot: String?,
@@ -276,6 +358,54 @@ data class HentaiLoadResponse(
     val malId: Int? = null,
     val anilistId: Int? = null,
     override val rating: Int? = null,
+    override val duration: String? = null,
+    override val trailerUrl: String? = null,
+) : LoadResponse
+
+data class MovieLoadResponse(
+    override val name: String,
+    override val url: String,
+    override val apiName: String,
+    override val type: TvType,
+    val dataUrl: String,
+
+    override val posterUrl: String?,
+    override val year: Int?,
+    override val plot: String?,
+
+    val imdbId: String?,
+    override val rating: Int? = null,
+    override val tags: List<String>? = null,
+    override val duration: String? = null,
+    override val trailerUrl: String? = null,
+) : LoadResponse
+
+data class TvSeriesEpisode(
+    val name: String?,
+    val season: Int?,
+    val episode: Int?,
+    val data: String,
+    val posterUrl: String? = null,
+    val date: String? = null,
+    val rating: Int? = null,
+    val descript: String? = null,
+)
+
+data class TvSeriesLoadResponse(
+    override val name: String,
+    override val url: String,
+    override val apiName: String,
+    override val type: TvType,
+    val episodes: List<TvSeriesEpisode>,
+
+    override val posterUrl: String?,
+    override val year: Int?,
+    override val plot: String?,
+
+    val showStatus: ShowStatus?,
+    val imdbId: String?,
+    override val rating: Int? = null,
+    override val tags: List<String>? = null,
     override val duration: String? = null,
     override val trailerUrl: String? = null,
 ) : LoadResponse

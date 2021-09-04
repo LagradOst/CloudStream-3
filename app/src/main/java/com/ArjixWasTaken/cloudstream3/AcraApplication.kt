@@ -8,7 +8,6 @@ import com.ArjixWasTaken.cloudstream3.mvvm.normalSafeApiCall
 import com.ArjixWasTaken.cloudstream3.utils.Coroutines.runOnMainThread
 import org.acra.ReportField
 import org.acra.config.CoreConfiguration
-import org.acra.config.toast
 import org.acra.data.CrashReportData
 import org.acra.data.StringFormat
 import org.acra.ktx.initAcra
@@ -21,9 +20,9 @@ class CustomReportSender : ReportSender {
     override fun send(context: Context, errorContent: CrashReportData) {
         println("Sending report")
         val url =
-            "https://docs.google.com/forms/u/0/d/e/1FAIpQLScbfrl9YJSAxoj6076lbj-pKgHMGeku-BdL0y93SMeNIg6GVQ/formResponse"
+            "https://docs.google.com/forms/u/0/d/e/1FAIpQLSeFmyBChi6HF3IkhTVWPiDXJtxt8W0Hf4Agljm_0-0_QuEYFg/formResponse"
         val data = mapOf(
-            "entry.1181560086" to errorContent.toJSON()
+            "entry.134906550" to errorContent.toJSON()
         )
 
         thread { // to not run it on main thread

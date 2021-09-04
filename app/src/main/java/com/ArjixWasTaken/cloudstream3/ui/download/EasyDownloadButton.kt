@@ -1,7 +1,6 @@
 package com.ArjixWasTaken.cloudstream3.ui.download
 
 import android.animation.ObjectAnimator
-import android.annotation.SuppressLint
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.widget.ImageView
@@ -9,15 +8,14 @@ import android.widget.TextView
 import androidx.core.widget.ContentLoadingProgressBar
 import com.google.android.material.button.MaterialButton
 import com.ArjixWasTaken.cloudstream3.R
-import com.ArjixWasTaken.cloudstream3.utils.UIHelper.popupMenuNoIcons
 import com.ArjixWasTaken.cloudstream3.utils.Coroutines
 import com.ArjixWasTaken.cloudstream3.utils.IDisposable
-import com.ArjixWasTaken.cloudstream3.utils.VideoDownloadHelper
+import com.ArjixWasTaken.cloudstream3.utils.UIHelper.popupMenuNoIcons
 import com.ArjixWasTaken.cloudstream3.utils.VideoDownloadManager
 
 class EasyDownloadButton : IDisposable {
     interface IMinimumData {
-        val id : Int
+        val id: Int
     }
 
     override fun dispose() {
@@ -83,18 +81,20 @@ class EasyDownloadButton : IDisposable {
                 when (state) {
                     VideoDownloadManager.DownloadType.IsPaused -> Pair(
                         R.drawable.ic_baseline_play_arrow_24,
-                        "Download Paused"
+                        R.string.download_paused
                     )
-                    VideoDownloadManager.DownloadType.IsDownloading -> Pair(R.drawable.netflix_pause, "Downloading")
-                    else -> Pair(R.drawable.ic_baseline_delete_outline_24, "Downloaded")
+                    VideoDownloadManager.DownloadType.IsDownloading -> Pair(
+                        R.drawable.netflix_pause,
+                        R.string.downloading
+                    )
+                    else -> Pair(R.drawable.ic_baseline_delete_outline_24, R.string.downloaded)
                 }
             } else {
-                Pair(R.drawable.netflix_download, "Download")
+                Pair(R.drawable.netflix_download, R.string.download)
             }
-            downloadImageChangeCallback.invoke(img)
+            downloadImageChangeCallback.invoke(Pair(img.first, downloadView.context.getString(img.second)))
         }
 
-        @SuppressLint("SetTextI18n")
         fun fixDownloadedBytes(setCurrentBytes: Long, setTotalBytes: Long, animate: Boolean) {
             currentBytes = setCurrentBytes
             totalBytes = setTotalBytes
@@ -113,7 +113,7 @@ class EasyDownloadButton : IDisposable {
                 val totalMbString = "%.1f".format(setTotalBytes / 1000000f)
 
                 textView?.text =
-                    "${currentMbString}MB / ${totalMbString}MB"
+                    textView?.context?.getString(R.string.download_size_format)?.format(currentMbString, totalMbString)
 
                 progressBar.let { bar ->
                     bar.max = (setTotalBytes / 1000).toInt()
@@ -187,6 +187,11 @@ class EasyDownloadButton : IDisposable {
                     clickCallback.invoke(DownloadClickEvent(itemId, data))
                 }
             }
+        }
+
+        downloadView.setOnLongClickListener {
+            clickCallback.invoke(DownloadClickEvent(DOWNLOAD_ACTION_LONG_CLICK, data))
+            return@setOnLongClickListener true
         }
     }
 }

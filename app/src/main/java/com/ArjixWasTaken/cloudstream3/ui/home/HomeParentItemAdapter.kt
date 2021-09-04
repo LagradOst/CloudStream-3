@@ -8,7 +8,6 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.ArjixWasTaken.cloudstream3.HomePageList
 import com.ArjixWasTaken.cloudstream3.R
-import com.ArjixWasTaken.cloudstream3.SearchResponse
 import com.ArjixWasTaken.cloudstream3.ui.search.SearchClickCallback
 import kotlinx.android.synthetic.main.homepage_parent.view.*
 

@@ -18,6 +18,7 @@
             android:layout_width="50dp" android:layout_height="50dp">
     </ProgressBar>
     <LinearLayout
+            android:visibility="gone"
             tools:visibility="gone"
             android:id="@+id/result_loading_error"
             android:orientation="vertical"
@@ -121,14 +122,12 @@
                     tools:src="@drawable/example_poster"
                     android:background="@color/darkBackground"
                     android:id="@+id/result_poster_blur"
-                    android:contentDescription="@string/background_blur"/>
+                    tools:ignore="ContentDescription"/>
             <ImageView
                     android:src="@drawable/background_shadow"
                     android:layout_gravity="bottom"
                     android:layout_width="match_parent"
-                    android:layout_height="30dp"
-                    android:contentDescription="@string/background_shadow">
-            </ImageView>
+                    android:layout_height="30dp" tools:ignore="ContentDescription"/>
         </FrameLayout>
         <androidx.core.widget.NestedScrollView
                 android:id="@+id/result_scroll" android:layout_width="match_parent"
@@ -153,6 +152,7 @@
                         android:layout_height="wrap_content">
 
                     <androidx.cardview.widget.CardView
+                            android:id="@+id/result_poster_holder"
                             app:cardCornerRadius="@dimen/roundedImageRadius"
                             android:layout_width="100dp"
                             android:layout_height="140dp">
@@ -162,7 +162,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 tools:src="@drawable/example_poster"
-                                android:contentDescription="@string/result_poster"/>
+                                android:contentDescription="@string/result_poster_img_des"/>
                     </androidx.cardview.widget.CardView>
 
 
@@ -265,10 +265,16 @@
                         </ImageView>
                     </LinearLayout>
                 </GridLayout>
-
+                <TextView
+                        android:id="@+id/result_vpn"
+                        android:textSize="15sp"
+                        tools:text="@string/vpn_torrent"
+                        android:layout_width="match_parent" android:layout_height="wrap_content">
+                </TextView>
                 <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:id="@+id/result_plot_header"
                         android:text="@string/result_plot"
                         android:textSize="17sp"
                         android:layout_marginTop="10dp"
@@ -307,6 +313,8 @@
                         android:layout_height="wrap_content">
                     <com.google.android.material.button.MaterialButton
                             style="@style/WhiteButton"
+                            android:layout_marginStart="0dp"
+                            android:layout_marginEnd="0dp"
                             android:visibility="visible"
                             android:layout_gravity="center_vertical"
                             android:id="@+id/result_play_movie"
@@ -317,6 +325,8 @@
                     </com.google.android.material.button.MaterialButton>
                     <com.google.android.material.button.MaterialButton
                             style="@style/BlackButton"
+                            android:layout_marginStart="0dp"
+                            android:layout_marginEnd="0dp"
                             android:visibility="visible"
                             android:layout_gravity="center_vertical"
                             tools:text="Downloading"
@@ -389,10 +399,13 @@
                     </TextView>
                 </LinearLayout>
 
-                <LinearLayout android:orientation="horizontal" android:gravity="center_vertical"
-                              android:layout_width="match_parent" android:layout_height="wrap_content">
+                <LinearLayout
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
                     <com.google.android.material.button.MaterialButton
-                            android:visibility="visible"
+                            android:visibility="gone"
                             android:layout_gravity="center_vertical"
                             android:id="@+id/result_season_button"
                             tools:text="Season 1"
@@ -409,7 +422,7 @@
                             android:layout_height="50dp">
                     </com.google.android.material.button.MaterialButton>
                     <com.google.android.material.button.MaterialButton
-                            android:visibility="visible"
+                            android:visibility="gone"
                             android:layout_gravity="center_vertical"
                             android:id="@+id/result_episode_select"
                             tools:text="50-100"

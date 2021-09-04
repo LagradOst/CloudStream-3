@@ -5,12 +5,14 @@ import android.content.Context
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
-import androidx.core.util.forEach
+import androidx.core.view.isVisible
 import androidx.core.view.marginLeft
 import androidx.core.view.marginRight
 import androidx.core.view.marginTop
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.ArjixWasTaken.cloudstream3.MainActivity.Companion.updateLocale
 import com.ArjixWasTaken.cloudstream3.R
+import com.ArjixWasTaken.cloudstream3.utils.SingleSelectionHelper.showDialog
 
 object SingleSelectionHelper {
     fun Context.showDialog(
@@ -30,7 +32,7 @@ object SingleSelectionHelper {
         val cancelButton = dialog.findViewById<TextView>(R.id.cancel_btt)!!
         val applyHolder = dialog.findViewById<LinearLayout>(R.id.apply_btt_holder)!!
 
-        applyHolder.visibility = if (realShowApply) View.VISIBLE else View.GONE
+        applyHolder.isVisible = realShowApply
         if (!realShowApply) {
             val params = listView.layoutParams as LinearLayout.LayoutParams
             params.setMargins(listView.marginLeft, listView.marginTop, listView.marginRight, 0)

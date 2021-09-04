@@ -37,7 +37,6 @@ import com.ArjixWasTaken.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.ArjixWasTaken.cloudstream3.utils.UIHelper.getGridIsCompact
 import com.ArjixWasTaken.cloudstream3.utils.UIHelper.hideKeyboard
 import kotlinx.android.synthetic.main.fragment_search.*
-import java.util.HashSet
 
 class SearchFragment : Fragment() {
     private lateinit var searchViewModel: SearchViewModel
@@ -103,12 +102,12 @@ class SearchFragment : Fragment() {
         val searchMagIcon = main_search.findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon)
         searchMagIcon.scaleX = 0.65f
         searchMagIcon.scaleY = 0.65f
-        search_filter.setOnClickListener { view ->
+        search_filter.setOnClickListener { searchView ->
             val apiNamesSetting = activity?.getApiSettings()
             if (apiNamesSetting != null) {
                 val apiNames = apis.map { it.name }
                 val builder =
-                    AlertDialog.Builder(view.context, R.style.AlertDialogCustom).setView(R.layout.provider_list)
+                    AlertDialog.Builder(searchView.context, R.style.AlertDialogCustom).setView(R.layout.provider_list)
 
                 val dialog = builder.create()
                 dialog.show()
@@ -120,18 +119,22 @@ class SearchFragment : Fragment() {
                 val cancelButton = dialog.findViewById<TextView>(R.id.cancel_btt)!!
                 // val applyHolder = dialog.findViewById<LinearLayout>(R.id.apply_btt_holder)!!
 
-                val arrayAdapter = ArrayAdapter<String>(view.context, R.layout.sort_bottom_single_choice)
+                val arrayAdapter = ArrayAdapter<String>(searchView.context, R.layout.sort_bottom_single_choice)
                 arrayAdapter.addAll(apiNames)
 
                 listView.adapter = arrayAdapter
                 listView.choiceMode = AbsListView.CHOICE_MODE_MULTIPLE
 
                 val typeChoices = listOf(
-                    Pair("Hentai", listOf(TvType.Hentai)),
-                )
+                    Pair(R.string.movies, listOf(TvType.Movie)),
+                    Pair(R.string.tv_series, listOf(TvType.TvSeries)),
+                    Pair(R.string.cartoons, listOf(TvType.Cartoon)),
+                    Pair(R.string.anime, listOf(TvType.Anime, TvType.ONA, TvType.AnimeMovie)),
+                    Pair(R.string.torrent, listOf(TvType.Torrent)),
+                ).filter { item -> apis.any { api -> api.supportedTypes.any { type -> item.second.contains(type) } } }
 
-                val arrayAdapter2 = ArrayAdapter<String>(view.context, R.layout.sort_bottom_single_choice)
-                arrayAdapter2.addAll(typeChoices.map { it.first })
+                val arrayAdapter2 = ArrayAdapter<String>(searchView.context, R.layout.sort_bottom_single_choice)
+                arrayAdapter2.addAll(typeChoices.map { getString(it.first) })
 
                 listView2.adapter = arrayAdapter2
                 listView2.choiceMode = AbsListView.CHOICE_MODE_MULTIPLE
@@ -225,7 +228,7 @@ class SearchFragment : Fragment() {
                     val settingsManagerLocal = PreferenceManager.getDefaultSharedPreferences(activity)
 
                     val activeTypes = HashSet<TvType>()
-                    for ((index, name) in typeChoices.withIndex()) {
+                    for ((index, _) in typeChoices.withIndex()) {
                         if (listView2.checkedItemPositions[index]) {
                             activeTypes.addAll(typeChoices[index].second)
                         }
@@ -302,7 +305,7 @@ class SearchFragment : Fragment() {
 
         main_search.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
-                searchViewModel.search(query)
+                searchViewModel.searchAndCancel(query)
                 return true
             }
 

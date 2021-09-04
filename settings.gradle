@@ -1,2 +1,2 @@
 include ':app'
-rootProject.name = "CloudStream-18+"
+rootProject.name = "CloudStream"

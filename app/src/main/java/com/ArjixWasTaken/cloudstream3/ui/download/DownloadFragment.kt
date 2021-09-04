@@ -1,6 +1,5 @@
 package com.ArjixWasTaken.cloudstream3.ui.download
 
-import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -12,12 +11,12 @@ import androidx.navigation.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ArjixWasTaken.cloudstream3.R
-import com.ArjixWasTaken.cloudstream3.TvType
-import com.ArjixWasTaken.cloudstream3.utils.UIHelper.fixPaddingStatusbar
+import com.ArjixWasTaken.cloudstream3.isMovieType
 import com.ArjixWasTaken.cloudstream3.mvvm.observe
 import com.ArjixWasTaken.cloudstream3.ui.download.DownloadButtonSetup.handleDownloadClick
 import com.ArjixWasTaken.cloudstream3.utils.DOWNLOAD_EPISODE_CACHE
 import com.ArjixWasTaken.cloudstream3.utils.DataStore.getFolderName
+import com.ArjixWasTaken.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.ArjixWasTaken.cloudstream3.utils.UIHelper.hideKeyboard
 import com.ArjixWasTaken.cloudstream3.utils.VideoDownloadHelper
 import com.ArjixWasTaken.cloudstream3.utils.VideoDownloadManager
@@ -56,7 +55,6 @@ class DownloadFragment : Fragment() {
         super.onDestroy()
     }
 
-    @SuppressLint("SetTextI18n")
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -71,15 +69,18 @@ class DownloadFragment : Fragment() {
             setList(it)
         }
         observe(downloadsViewModel.availableBytes) {
-            download_free_txt?.text = "Free • ${getBytesAsText(it)}GB"
+            download_free_txt?.text =
+                getString(R.string.storage_size_format).format(getString(R.string.free_storage), getBytesAsText(it))
             download_free?.setLayoutWidth(it)
         }
         observe(downloadsViewModel.usedBytes) {
-            download_used_txt?.text = "Used • ${getBytesAsText(it)}GB"
+            download_used_txt?.text =
+                getString(R.string.storage_size_format).format(getString(R.string.used_storage), getBytesAsText(it))
             download_used?.setLayoutWidth(it)
         }
         observe(downloadsViewModel.downloadBytes) {
-            download_app_txt?.text = "App • ${getBytesAsText(it)}GB"
+            download_app_txt?.text =
+                getString(R.string.storage_size_format).format(getString(R.string.app_storage), getBytesAsText(it))
             download_app?.setLayoutWidth(it)
             download_storage_appbar?.visibility = View.VISIBLE
         }
@@ -96,7 +97,7 @@ class DownloadFragment : Fragment() {
             DownloadHeaderAdapter(
                 ArrayList(),
                 { click ->
-                    if (click.data.type != TvType.Hentai) {
+                    if (click.data.type.isMovieType()) {
                         //wont be called
                     } else {
                         val folder = getFolderName(DOWNLOAD_EPISODE_CACHE, click.data.id.toString())

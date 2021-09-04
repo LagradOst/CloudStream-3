@@ -29,15 +29,15 @@ class XStreamCdn : ExtractorApi() {
 
     private fun getQuality(string: String): Int {
         return when (string) {
-            "360p" -> Qualities.SD.value
-            "480p" -> Qualities.SD.value
-            "720p" -> Qualities.HD.value
-            "1080p" -> Qualities.FullHd.value
+            "360p" -> Qualities.P480.value
+            "480p" -> Qualities.P480.value
+            "720p" -> Qualities.P720.value
+            "1080p" -> Qualities.P1080.value
             else -> Qualities.Unknown.value
         }
     }
 
-    override fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+    override fun getUrl(url: String, referer: String?): List<ExtractorLink> {
         val headers = mapOf(
             "Referer" to url,
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0",

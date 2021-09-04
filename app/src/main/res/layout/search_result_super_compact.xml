@@ -9,7 +9,6 @@
 >
     <androidx.cardview.widget.CardView
             android:foreground="?android:attr/selectableItemBackgroundBorderless"
-            xmlns:card_view="http://schemas.android.com/apk/res-auto"
             android:id="@+id/backgroundCard"
             android:layout_margin="2dp"
             android:layout_width="match_parent"
@@ -34,7 +33,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:foreground="?android:attr/selectableItemBackgroundBorderless"
-                    tools:ignore="RtlHardcoded" android:contentDescription="@string/search_poster_descript"/>
+                    tools:ignore="RtlHardcoded"
+                    android:contentDescription="@string/search_poster_img_des"/>
         </androidx.cardview.widget.CardView>
 
         <LinearLayout

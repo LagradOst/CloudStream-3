@@ -1,6 +1,5 @@
 package com.ArjixWasTaken.cloudstream3.ui.download
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,6 +21,7 @@ const val DOWNLOAD_ACTION_DELETE_FILE = 1
 const val DOWNLOAD_ACTION_RESUME_DOWNLOAD = 2
 const val DOWNLOAD_ACTION_PAUSE_DOWNLOAD = 3
 const val DOWNLOAD_ACTION_DOWNLOAD = 4
+const val DOWNLOAD_ACTION_LONG_CLICK = 5
 
 data class VisualDownloadChildCached(
     val currentBytes: Long,
@@ -102,7 +102,6 @@ class DownloadChildAdapter(
 
         var localCard: VisualDownloadChildCached? = null
 
-        @SuppressLint("SetTextI18n")
         fun bind(card: VisualDownloadChildCached) {
             localCard = card
             val d = card.data
@@ -117,7 +116,7 @@ class DownloadChildAdapter(
                 progressBar.visibility = View.GONE
             }
 
-            title.text = getNameFull(d.name, d.episode, d.season)
+            title.text = title.context.getNameFull(d.name, d.episode, d.season)
             title.isSelected = true // is needed for text repeating
 
             downloadButton.setUpButton(

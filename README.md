@@ -1,6 +1,6 @@
 # CloudStream 18+
 
-This is an NSFW fork of [lagradost/CloudStream-3](https://github.com/lagradost/CloudStream-3)
+This is an NSFW fork of [ArjixWasTaken/CloudStream-3](https://github.com/ArjixWasTaken/CloudStream-3)
 
 **DOWNLOAD:**
 https://github.com/ArjixWasTaken/CloudStream-3/releases

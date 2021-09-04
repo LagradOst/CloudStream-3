@@ -8,11 +8,11 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ArjixWasTaken.cloudstream3.R
-import com.ArjixWasTaken.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.ArjixWasTaken.cloudstream3.ui.download.DownloadButtonSetup.handleDownloadClick
 import com.ArjixWasTaken.cloudstream3.utils.Coroutines.main
 import com.ArjixWasTaken.cloudstream3.utils.DataStore.getKey
 import com.ArjixWasTaken.cloudstream3.utils.DataStore.getKeys
+import com.ArjixWasTaken.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.ArjixWasTaken.cloudstream3.utils.VideoDownloadHelper
 import com.ArjixWasTaken.cloudstream3.utils.VideoDownloadManager
 import kotlinx.android.synthetic.main.fragment_child_downloads.*

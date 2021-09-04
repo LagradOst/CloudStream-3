@@ -1,25 +1,29 @@
 package com.ArjixWasTaken.cloudstream3
 
+import android.app.Activity
 import android.app.PictureInPictureParams
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Build
 import android.os.Bundle
-import android.view.WindowManager
+import android.view.*
+import android.widget.TextView
+import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
+import androidx.preference.PreferenceManager
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import com.ArjixWasTaken.cloudstream3.APIHolder.apis
-import com.ArjixWasTaken.cloudstream3.utils.UIHelper.checkWrite
-import com.ArjixWasTaken.cloudstream3.utils.UIHelper.getResourceColor
-import com.ArjixWasTaken.cloudstream3.utils.UIHelper.hasPIPPermission
-import com.ArjixWasTaken.cloudstream3.utils.UIHelper.requestRW
-import com.ArjixWasTaken.cloudstream3.utils.UIHelper.shouldShowPIPMode
+import com.ArjixWasTaken.cloudstream3.APIHolder.restrictedApis
 import com.ArjixWasTaken.cloudstream3.receivers.VideoDownloadRestartReceiver
 import com.ArjixWasTaken.cloudstream3.ui.download.DOWNLOAD_NAVIGATE_TO
 import com.ArjixWasTaken.cloudstream3.ui.download.DownloadChildFragment
@@ -33,9 +37,17 @@ import com.ArjixWasTaken.cloudstream3.utils.DataStore.removeKey
 import com.ArjixWasTaken.cloudstream3.utils.DataStoreHelper.setViewPos
 import com.ArjixWasTaken.cloudstream3.utils.Event
 import com.ArjixWasTaken.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
+import com.ArjixWasTaken.cloudstream3.utils.UIHelper.checkWrite
+import com.ArjixWasTaken.cloudstream3.utils.UIHelper.getResourceColor
+import com.ArjixWasTaken.cloudstream3.utils.UIHelper.hasPIPPermission
+import com.ArjixWasTaken.cloudstream3.utils.UIHelper.requestRW
+import com.ArjixWasTaken.cloudstream3.utils.UIHelper.shouldShowPIPMode
+import com.ArjixWasTaken.cloudstream3.utils.UIHelper.toPx
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_result.*
+import java.util.*
 import kotlin.concurrent.thread
+
 
 const val VLC_PACKAGE = "org.videolan.vlc"
 const val VLC_INTENT_ACTION_RESULT = "org.videolan.vlc.player.result"
@@ -58,6 +70,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         onDialogDismissedEvent.invoke(dialogId)
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        updateLocale() // android fucks me by chaining lang when rotating the phone
+    }
+
     companion object {
         var canEnterPipMode: Boolean = false
         var canShowPipMode: Boolean = false
@@ -67,6 +84,62 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         val onColorSelectedEvent = Event<Pair<Int, Int>>()
         val onDialogDismissedEvent = Event<Int>()
         lateinit var navOptions: NavOptions
+
+        var currentToast: Toast? = null
+
+        fun showToast(act: Activity?, @StringRes message: Int, duration: Int) {
+            if (act == null) return
+            showToast(act, act.getString(message), duration)
+        }
+
+        fun showToast(act: Activity?, message: String, duration: Int) {
+            if (act == null) return
+            try {
+                currentToast?.cancel()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            try {
+                val inflater = act.getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
+
+                val layout: View = inflater.inflate(
+                    R.layout.toast,
+                    act.findViewById<View>(R.id.toast_layout_root) as ViewGroup?
+                )
+
+                val text = layout.findViewById(R.id.text) as TextView
+                text.text = message.trim()
+
+                val toast = Toast(act)
+                toast.setGravity(Gravity.CENTER_HORIZONTAL or Gravity.BOTTOM, 0, 5.toPx)
+                toast.duration = duration
+                toast.view = layout
+                toast.show()
+                currentToast = toast
+            } catch (e: Exception) {
+
+            }
+        }
+
+        fun setLocale(context: Context?, languageCode: String?) {
+            if (context == null || languageCode == null) return
+            val locale = Locale(languageCode)
+            val resources: Resources = context.resources
+            val config = resources.configuration
+            Locale.setDefault(locale)
+            config.setLocale(locale)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                context.createConfigurationContext(config)
+            resources.updateConfiguration(config, resources.displayMetrics)
+        }
+
+        fun Context.updateLocale() {
+            val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
+            val localeCode = settingsManager.getString(getString(R.string.locale_key), null)
+            println("LOCALE: " + localeCode)
+            setLocale(this, localeCode)
+        }
     }
 
     private fun enterPIPMode() {
@@ -121,12 +194,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             return true
         }
         backEvent.invoke(false)
+
         return false
     }
 
     override fun onBackPressed() {
+        this.updateLocale()
         if (backPressed()) return
         super.onBackPressed()
+        this.updateLocale()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -182,7 +258,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             R.style.LoadedStyle,
             true
         ) // THEME IS SET BEFORE VIEW IS CREATED TO APPLY THE THEME TO THE MAIN VIEW
-
+        updateLocale()
         super.onCreate(savedInstanceState)
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
@@ -308,6 +384,16 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         thread {
             runAutoUpdate()
         }
-    }
 
+        // must give benenes to get beta providers
+        try {
+            val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
+            val count = settingsManager.getInt(getString(R.string.benene_count), 0)
+            if (count > 30)
+                apis.addAll(restrictedApis)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+    }
 }

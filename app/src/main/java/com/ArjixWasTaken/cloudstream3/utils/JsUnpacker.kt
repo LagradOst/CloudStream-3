@@ -1,5 +1,6 @@
 package com.ArjixWasTaken.cloudstream3.utils
 
+import com.ArjixWasTaken.cloudstream3.mvvm.logError
 import java.lang.Exception
 import java.lang.StringBuilder
 import java.util.HashMap
@@ -31,7 +32,7 @@ class JsUnpacker(packedJS: String?) {
         val js = packedJS
         try {
             var p =
-                Pattern.compile("""\}\s*\('(.*)',\s*(.*?),\s*(\d+),\s*'(.*?)'\.split\('\|'\)""", Pattern.DOTALL)
+                Pattern.compile("""}\s*\('(.*)',\s*(.*?),\s*(\d+),\s*'(.*?)'\.split\('\|'\)""", Pattern.DOTALL)
             var m = p.matcher(js)
             if (m.find() && m.groupCount() == 4) {
                 val payload = m.group(1).replace("\\'", "'")
@@ -71,7 +72,7 @@ class JsUnpacker(packedJS: String?) {
                 return decoded.toString()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            logError(e)
         }
         return null
     }

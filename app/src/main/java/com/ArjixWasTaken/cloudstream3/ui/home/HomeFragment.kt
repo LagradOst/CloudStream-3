@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
@@ -24,13 +25,13 @@ import com.ArjixWasTaken.cloudstream3.mvvm.observe
 import com.ArjixWasTaken.cloudstream3.ui.AutofitRecyclerView
 import com.ArjixWasTaken.cloudstream3.ui.WatchType
 import com.ArjixWasTaken.cloudstream3.ui.result.START_ACTION_RESUME_LATEST
-import com.ArjixWasTaken.cloudstream3.ui.search.SEARCH_ACTION_LOAD
-import com.ArjixWasTaken.cloudstream3.ui.search.SEARCH_ACTION_SHOW_METADATA
-import com.ArjixWasTaken.cloudstream3.ui.search.SearchAdapter
+import com.ArjixWasTaken.cloudstream3.ui.search.*
 import com.ArjixWasTaken.cloudstream3.ui.search.SearchHelper.handleSearchClickCallback
 import com.ArjixWasTaken.cloudstream3.utils.AppUtils.loadSearchResult
 import com.ArjixWasTaken.cloudstream3.utils.DataStore.getKey
 import com.ArjixWasTaken.cloudstream3.utils.DataStore.setKey
+import com.ArjixWasTaken.cloudstream3.utils.DataStoreHelper
+import com.ArjixWasTaken.cloudstream3.utils.DataStoreHelper.removeLastWatched
 import com.ArjixWasTaken.cloudstream3.utils.DataStoreHelper.setResultWatchState
 import com.ArjixWasTaken.cloudstream3.utils.Event
 import com.ArjixWasTaken.cloudstream3.utils.HOMEPAGE_API
@@ -66,7 +67,7 @@ class HomeFragment : Fragment() {
 
             recycle.adapter = SearchAdapter(item.list, recycle) { callback ->
                 handleSearchClickCallback(this, callback)
-                if (callback.action == SEARCH_ACTION_LOAD) {
+                if (callback.action == SEARCH_ACTION_LOAD || callback.action == SEARCH_ACTION_PLAY_FILE) {
                     bottomSheetDialogBuilder.dismiss()
                 }
             }
@@ -106,7 +107,7 @@ class HomeFragment : Fragment() {
     var currentMainList: ArrayList<SearchResponse> = ArrayList()
 
     private fun toggleMainVisibility(visible: Boolean) {
-        home_main_holder.visibility = if (visible) View.VISIBLE else View.GONE
+        home_main_holder.isVisible = visible
     }
 
     @SuppressLint("SetTextI18n")
@@ -121,7 +122,7 @@ class HomeFragment : Fragment() {
             while (random?.posterUrl == null) {
                 try {
                     random = home.items.random().list.random()
-                } catch (e : Exception) {
+                } catch (e: Exception) {
                     // probs Collection is empty.
                 }
 
@@ -142,7 +143,7 @@ class HomeFragment : Fragment() {
                     activity.loadSearchResult(random)
                 }
 
-                home_main_text.text = random.name + if (random is HentaiSearchResponse) {
+                home_main_text.text = random.name + if (random is AnimeSearchResponse) {
                     random.dubStatus?.joinToString(prefix = " • ", separator = " | ") { it.name }
                 } else ""
                 home_main_poster?.setImage(random.posterUrl)
@@ -175,7 +176,7 @@ class HomeFragment : Fragment() {
         val validAPIs = apis.filter { api -> api.hasMainPage }
 
         view.popupMenuNoIconsAndNoStringRes(validAPIs.mapIndexed { index, api -> Pair(index, api.name) }) {
-            homeViewModel.load(validAPIs[itemId])
+            homeViewModel.loadAndCancel(validAPIs[itemId])
         }
     }
 
@@ -196,6 +197,7 @@ class HomeFragment : Fragment() {
 
     private fun reloadStored() {
         context?.let { ctx ->
+            homeViewModel.loadResumeWatching(ctx)
             homeViewModel.loadStoredData(ctx, WatchType.fromInternalId(ctx.getKey(HOME_BOOKMARK_VALUE)))
         }
     }
@@ -235,6 +237,7 @@ class HomeFragment : Fragment() {
         }
 
         home_change_api.setOnClickListener(apiChangeClickListener)
+        home_change_api_loading.setOnClickListener(apiChangeClickListener)
 
         observe(homeViewModel.apiName) {
             context?.setKey(HOMEPAGE_API, it)
@@ -312,7 +315,7 @@ class HomeFragment : Fragment() {
         }
 
         observe(homeViewModel.bookmarks) { bookmarks ->
-            home_bookmarked_holder.visibility = if (bookmarks.isNotEmpty()) View.VISIBLE else View.GONE
+            home_bookmarked_holder.isVisible = bookmarks.isNotEmpty()
             (home_bookmarked_child_recyclerview?.adapter as HomeChildItemAdapter?)?.cardList = bookmarks
             home_bookmarked_child_recyclerview?.adapter?.notifyDataSetChanged()
 
@@ -321,6 +324,21 @@ class HomeFragment : Fragment() {
                     HomePageList(
                         home_bookmarked_parent_item_title?.text?.toString() ?: getString(R.string.error_bookmarks_text),
                         bookmarks
+                    )
+                )
+            }
+        }
+
+        observe(homeViewModel.resumeWatching) { resumeWatching ->
+            home_watch_holder?.isVisible = resumeWatching.isNotEmpty()
+            (home_watch_child_recyclerview?.adapter as HomeChildItemAdapter?)?.cardList = resumeWatching
+            home_watch_child_recyclerview?.adapter?.notifyDataSetChanged()
+
+            home_watch_child_more_info?.setOnClickListener {
+                activity?.loadHomepageList(
+                    HomePageList(
+                        home_watch_parent_item_title?.text?.toString() ?: getString(R.string.continue_watching),
+                        resumeWatching
                     )
                 )
             }
@@ -342,12 +360,43 @@ class HomeFragment : Fragment() {
             }
         }
 
+        home_watch_child_recyclerview.adapter = HomeChildItemAdapter(ArrayList()) { callback ->
+            if (callback.action == SEARCH_ACTION_SHOW_METADATA) {
+                val id = callback.card.id
+                if (id != null) {
+                    callback.view.popupMenuNoIcons(
+                        listOf(
+                            Pair(1, R.string.action_open_watching),
+                            Pair(0, R.string.action_remove_watching)
+                        )
+                    ) {
+                        if (itemId == 1) {
+                            handleSearchClickCallback(
+                                activity,
+                                SearchClickCallback(SEARCH_ACTION_LOAD, callback.view, callback.card)
+                            )
+                            reloadStored()
+                        }
+                        if (itemId == 0) {
+                           val card = callback.card
+                            if(card is DataStoreHelper.ResumeWatchingResult) {
+                                context?.removeLastWatched(card.parentId)
+                                reloadStored()
+                            }
+                        }
+                    }
+                }
+            } else {
+                handleSearchClickCallback(activity, callback)
+            }
+        }
+
         context?.fixPaddingStatusbar(home_root)
 
         home_master_recycler.adapter = adapter
         home_master_recycler.layoutManager = GridLayoutManager(context, 1)
 
         reloadStored()
-        homeViewModel.load(context?.getKey<String>(HOMEPAGE_API))
+        homeViewModel.loadAndCancel(context?.getKey<String>(HOMEPAGE_API))
     }
 }

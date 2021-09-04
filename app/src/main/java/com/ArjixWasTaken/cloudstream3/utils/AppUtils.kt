@@ -12,9 +12,7 @@ import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.preference.PreferenceManager
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastState
 import com.google.android.gms.common.ConnectionResult
@@ -49,40 +47,45 @@ object AppUtils {
      * | Season 1 - Episode 2
      * | Episode 2
      * **/
-    fun getNameFull(name: String?, episode: Int?, season: Int?): String {
-        val rEpisode = if(episode == 0) null else episode
-        val rSeason = if(season == 0) null else season
+    fun Context.getNameFull(name: String?, episode: Int?, season: Int?): String {
+        val rEpisode = if (episode == 0) null else episode
+        val rSeason = if (season == 0) null else season
+
+        val seasonName = getString(R.string.season)
+        val episodeName = getString(R.string.episode)
+        val seasonNameShort = getString(R.string.season_short)
+        val episodeNameShort = getString(R.string.episode_short)
 
         if (name != null) {
-            return if(rEpisode != null && rSeason != null) {
-                "S${rSeason}:E${rEpisode} $name"
-            } else if(rEpisode != null) {
-                "Episode $rEpisode. $name"
+            return if (rEpisode != null && rSeason != null) {
+                "$seasonNameShort${rSeason}:$episodeNameShort${rEpisode} $name"
+            } else if (rEpisode != null) {
+                "$episodeName $rEpisode. $name"
             } else {
                 name
             }
         } else {
-            if(rEpisode != null && rSeason != null) {
-                return "Season $rSeason - Episode $rEpisode"
-            } else if(rSeason == null) {
-                return "Episode $rEpisode"
+            if (rEpisode != null && rSeason != null) {
+                return "$seasonName $rSeason - $episodeName $rEpisode"
+            } else if (rSeason == null) {
+                return "$episodeName $rEpisode"
             }
         }
         return ""
     }
 
-    fun AppCompatActivity.loadResult(url: String, apiName: String, startAction: Int = 0) {
+    fun AppCompatActivity.loadResult(url: String, apiName: String, startAction: Int = 0, startValue: Int = 0) {
         this.runOnUiThread {
             viewModelStore.clear()
             this.supportFragmentManager.beginTransaction()
                 .setCustomAnimations(R.anim.enter_anim, R.anim.exit_anim, R.anim.pop_enter, R.anim.pop_exit)
-                .add(R.id.homeRoot, ResultFragment.newInstance(url, apiName, startAction))
+                .add(R.id.homeRoot, ResultFragment.newInstance(url, apiName, startAction, startValue))
                 .commit()
         }
     }
 
-    fun Activity?.loadSearchResult(card: SearchResponse, startAction: Int = 0) {
-        (this as AppCompatActivity?)?.loadResult(card.url, card.apiName, startAction)
+    fun Activity?.loadSearchResult(card: SearchResponse, startAction: Int = 0, startValue: Int = 0) {
+        (this as AppCompatActivity?)?.loadResult(card.url, card.apiName, startAction, startValue)
     }
 
     fun Activity.requestLocalAudioFocus(focusRequest: AudioFocusRequest?) {

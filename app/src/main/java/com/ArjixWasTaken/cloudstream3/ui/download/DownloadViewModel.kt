@@ -7,7 +7,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ArjixWasTaken.cloudstream3.TvType
+import com.ArjixWasTaken.cloudstream3.isMovieType
 import com.ArjixWasTaken.cloudstream3.utils.DOWNLOAD_EPISODE_CACHE
 import com.ArjixWasTaken.cloudstream3.utils.DOWNLOAD_HEADER_CACHE
 import com.ArjixWasTaken.cloudstream3.utils.DataStore.getFolderName
@@ -51,6 +51,7 @@ class DownloadViewModel : ViewModel() {
         // parentId : downloadsCount
         val totalDownloads = HashMap<Int, Int>()
 
+
         // Gets all children downloads
         withContext(Dispatchers.IO) {
             for (c in children) {
@@ -66,9 +67,13 @@ class DownloadViewModel : ViewModel() {
             }
         }
 
-        val cached = withContext(Dispatchers.IO) {
-            val headers = context.getKeys(DOWNLOAD_HEADER_CACHE)
-            headers.mapNotNull { context.getKey<VideoDownloadHelper.DownloadHeaderCached>(it) }
+        val cached = withContext(Dispatchers.IO) { // wont fetch useless keys
+            totalDownloads.entries.filter { it.value > 0 }.mapNotNull {
+                context.getKey<VideoDownloadHelper.DownloadHeaderCached>(
+                    DOWNLOAD_HEADER_CACHE,
+                    it.key.toString()
+                )
+            }
         }
 
         val visual = withContext(Dispatchers.IO) {
@@ -77,10 +82,12 @@ class DownloadViewModel : ViewModel() {
                 val bytes = totalBytesUsedByChild[it.id] ?: 0
                 val currentBytes = currentBytesUsedByChild[it.id] ?: 0
                 if (bytes <= 0 || downloads <= 0) return@mapNotNull null
-                val movieEpisode = if (it.type == TvType.Hentai) null else context.getKey<VideoDownloadHelper.DownloadEpisodeCached>(
-                    DOWNLOAD_EPISODE_CACHE,
-                    getFolderName(it.id.toString(), it.id.toString())
-                )
+                val movieEpisode =
+                    if (!it.type.isMovieType()) null
+                    else context.getKey<VideoDownloadHelper.DownloadEpisodeCached>(
+                        DOWNLOAD_EPISODE_CACHE,
+                        getFolderName(it.id.toString(), it.id.toString())
+                    )
                 VisualDownloadHeaderCached(
                     0,
                     downloads,
@@ -89,7 +96,9 @@ class DownloadViewModel : ViewModel() {
                     it,
                     movieEpisode
                 )
-            }
+            }.sortedBy {
+                (it.child?.episode ?: 0) + (it.child?.season?.times(10000) ?: 0)
+            } // episode sorting by episode, lowest to highest
         }
 
         val stat = StatFs(Environment.getExternalStorageDirectory().path)

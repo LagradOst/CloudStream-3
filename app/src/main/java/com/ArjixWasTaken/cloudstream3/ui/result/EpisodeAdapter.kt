@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.annotation.LayoutRes
 import androidx.core.widget.ContentLoadingProgressBar
 import androidx.recyclerview.widget.RecyclerView
@@ -39,6 +38,7 @@ const val ACTION_COPY_LINK = 9
 const val ACTION_SHOW_OPTIONS = 10
 
 const val ACTION_CLICK_DEFAULT = 11
+const val ACTION_SHOW_TOAST = 12
 
 data class EpisodeClickEvent(val action: Int, val data: ResultEpisode)
 
@@ -139,7 +139,7 @@ class EpisodeAdapter(
         @SuppressLint("SetTextI18n")
         fun bind(card: ResultEpisode) {
             localCard = card
-            val name = if (card.name == null) "Episode ${card.episode}" else "${card.episode}. ${card.name}"
+            val name = if (card.name == null) "${episodeText.context.getString(R.string.episode)} ${card.episode}" else "${card.episode}. ${card.name}"
             episodeText.text = name
 
             val displayPos = card.getDisplayPosition()
@@ -156,7 +156,7 @@ class EpisodeAdapter(
             }
 
             if (card.rating != null) {
-                episodeRating?.text = "Rated: %.1f".format(card.rating.toFloat() / 10f).replace(",", ".")
+                episodeRating?.text = episodeRating?.context?.getString(R.string.rated_format)?.format(card.rating.toFloat() / 10f)
             } else {
                 episodeRating?.text = ""
             }
@@ -173,7 +173,7 @@ class EpisodeAdapter(
             }
 
             episodePoster?.setOnLongClickListener {
-                Toast.makeText(it.context, R.string.play_episode_toast, Toast.LENGTH_SHORT).show()
+                clickCallback.invoke(EpisodeClickEvent(ACTION_SHOW_TOAST, card))
                 return@setOnLongClickListener true
             }
 
