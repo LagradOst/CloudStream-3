@@ -1,4 +1,4 @@
-package com.ArjixWasTaken.cloudstream3.hentaiproviders
+package com.ArjixWasTaken.cloudstream3.animeproviders
 
 import android.annotation.SuppressLint
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -46,10 +46,12 @@ class HanimeProvider : MainAPI() {
         get() = false
     override val hasMainPage: Boolean
         get() = true
+    override val hasDownloadSupport: Boolean
+        get() = true
 
     override val supportedTypes: Set<TvType>
         get() = setOf(
-            TvType.Hentai
+            TvType.Anime
         )
 
     private data class HpHentaiVideos (
@@ -103,7 +105,7 @@ class HanimeProvider : MainAPI() {
                     val title = getTitle(hentai.name)
                     if (!titles.contains(title)) {
                         titles.add(title)
-                        HentaiSearchResponse(
+                        AnimeSearchResponse(
                             title,
                             "https://hanime.tv/videos/hentai/${hentai.slug}?id=${hentai.id}&title=${title}",
                             this.name,
@@ -151,7 +153,7 @@ class HanimeProvider : MainAPI() {
             if (!titles.contains(title)) {
                 titles.add(title)
                 searchResults.add(
-                    HentaiSearchResponse(
+                    AnimeSearchResponse(
                         title,
                         "https://hanime.tv/videos/hentai/${it.slug}?id=${it.id}&title=${title}",
                         this.name,
@@ -233,13 +235,13 @@ class HanimeProvider : MainAPI() {
             )
         }
 
-        return HentaiLoadResponse(
+        return AnimeLoadResponse(
             title,
             null,
             title,
             url,
             this.name,
-            TvType.Hentai,
+            TvType.Anime,
             data.hentaiVideo.coverUrl,
             unixToYear(data.hentaiVideo.releasedAtUnix),
             null,
