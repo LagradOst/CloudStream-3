@@ -28,7 +28,7 @@ object APIHolder {
         HanimeProvider(),
     )
 
-    val restrictedApis = arrayListOf(
+    val restrictedApis = arrayListOf<MainAPI>(
     )
 
     fun getApiFromName(apiName: String?): MainAPI {
