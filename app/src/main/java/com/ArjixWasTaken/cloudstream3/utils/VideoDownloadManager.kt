@@ -1082,8 +1082,12 @@ object VideoDownloadManager {
         val relativePath = getRelativePath(folder)
         val displayName = getDisplayName(name, extension)
 
+        
+        if (!tsIterator.hasNext()) {
+            return ERROR_UNKNOWN
+        }
+        
         val fileStream = stream.fileStream!!
-
         val firstTs = tsIterator.next()
 
         var isDone = false
