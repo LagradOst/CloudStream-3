@@ -82,7 +82,7 @@ class Crunchyroll : MainAPI() {
 
         val items = ArrayList<HomePageList>()
 
-        items.add(HomePageList("Featured", Jsoup.parse(crUnblock.geoBypassRequest(mainUrl)).text).select(
+        items.add(HomePageList("Featured", Jsoup.parse(crUnblock.geoBypassRequest(mainUrl).text).select(
                   ".js-featured-show-list > li"
             ).map { anime ->
             AnimeSearchResponse(
