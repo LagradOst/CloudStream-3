@@ -90,7 +90,7 @@ class Crunchyroll : MainAPI() {
                 "$mainUrl${anime.selectFirst("a").attr("href")}",
                 this.name,
                 TvType.Anime,
-                anime.selectFirst("img").attr("src").replace("thumb", "full"),
+                anime.selectFirst("img").attr("src").replace("small", "full"),
                 null,
                 null,
                 EnumSet.of(DubStatus.Subbed),
@@ -226,7 +226,7 @@ class Crunchyroll : MainAPI() {
                     episode.selectFirst("img")?.attr("data-thumbnailurl")?.replace("wide", "full"),
                     null,
                     null,
-                    epNum + it.selectFirst("a.season-dropdown")?.text()?.trim() ?: "",
+                    epNum + (it.selectFirst("a.season-dropdown")?.text()?.trim() ?: ""),
                 )
             }
         }.flatten().reversed()
