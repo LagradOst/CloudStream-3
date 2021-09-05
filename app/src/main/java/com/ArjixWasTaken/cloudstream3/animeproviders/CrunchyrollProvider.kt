@@ -97,7 +97,7 @@ class Crunchyroll : MainAPI() {
                 null,
                 null
             )
-        })
+        }))
 
         for (i in urls) {
             try {
