@@ -90,7 +90,7 @@ class Crunchyroll : MainAPI() {
 
                     AnimeSearchResponse(
                         it.selectFirst("a").attr("title"),
-                        "mainUrl/${it.selectFirst("a").attr("href")}",
+                        "$mainUrl/${it.selectFirst("a").attr("href")}",
                         this.name,
                         TvType.Anime,
                         it.selectFirst("img").attr("src"),
