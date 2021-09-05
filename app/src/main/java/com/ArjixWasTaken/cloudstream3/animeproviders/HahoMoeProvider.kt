@@ -1,9 +1,9 @@
 package com.ArjixWasTaken.cloudstream3.animeproviders
 
 import android.annotation.SuppressLint
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.ArjixWasTaken.cloudstream3.*
+import com.ArjixWasTaken.cloudstream3.utils.ExtractorLink
+import com.ArjixWasTaken.cloudstream3.utils.getQualityFromName
 import khttp.structures.cookie.CookieJar
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
