@@ -82,13 +82,15 @@ class Crunchyroll : MainAPI() {
 
         val items = ArrayList<HomePageList>()
 
-        items.add(HomePageList("Featured", Jsoup.parse(crUnblock.geoBypassRequest(mainUrl)).text).select(".js-featured-show-list > li").map {
+        items.add(HomePageList("Featured", Jsoup.parse(crUnblock.geoBypassRequest(mainUrl)).text).select(
+                  ".js-featured-show-list > li"
+            ).map { anime ->
             AnimeSearchResponse(
-                it.selectFirst("img").attr("alt"),
-                "$mainUrl${it.selectFirst("a").attr("href")}",
+                anime.selectFirst("img").attr("alt"),
+                "$mainUrl${anime.selectFirst("a").attr("href")}",
                 this.name,
                 TvType.Anime,
-                it.selectFirst("img").attr("src"),
+                anime.selectFirst("img").attr("src"),
                 null,
                 null,
                 EnumSet.of(DubStatus.Subbed),
