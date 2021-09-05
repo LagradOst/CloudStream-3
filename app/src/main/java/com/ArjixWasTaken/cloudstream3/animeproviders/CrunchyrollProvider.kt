@@ -64,7 +64,7 @@ class Crunchyroll : MainAPI() {
     override val hasQuickSearch: Boolean
         get() = false
     override val hasMainPage: Boolean
-        get() = false
+        get() = true
 
     override val supportedTypes: Set<TvType>
         get() = setOf(
@@ -72,6 +72,44 @@ class Crunchyroll : MainAPI() {
             TvType.Anime,
             TvType.ONA
         )
+
+    override fun getMainPage(): HomePageResponse {
+        val urls = listOf(
+            Pair("$mainUrl/videos/anime/popular/ajax_page?pg=1", "Popular 1"),
+            Pair("$mainUrl/videos/anime/popular/ajax_page?pg=2", "Popular 2"),
+            Pair("$mainUrl/videos/anime/popular/ajax_page?pg=3", "Popular 3"),
+        )
+
+        val items = ArrayList<HomePageList>()
+        for (i in urls) {
+            try {
+                val response = crUnblock.geoBypassRequest(i.first)
+                val soup = Jsoup.parse(response.text)
+
+                val episodes = soup.select("li").map {
+
+                    AnimeSearchResponse(
+                        it.selectFirst("a").attr("title"),
+                        "mainUrl/${it.selectFirst("a").attr("href")}",
+                        this.name,
+                        TvType.Anime,
+                        it.selectFirst("img").attr("src"),
+                        null,
+                        null,
+                        EnumSet.of(DubStatus.Subbed),
+                        null,
+                        null
+                    )
+                }
+
+                items.add(HomePageList(i.second, episodes))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        if (items.size <= 0) throw ErrorLoadingException()
+        return HomePageResponse(items)
+    }
 
     private fun getCloseMatches(sequence: String, items: Collection<String>): ArrayList<String> {
         val closeMatches = ArrayList<String>()
