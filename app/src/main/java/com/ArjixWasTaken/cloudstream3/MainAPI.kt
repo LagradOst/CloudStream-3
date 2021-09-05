@@ -27,6 +27,7 @@ object APIHolder {
     val apis = arrayListOf(
         Crunchyroll(),
         HanimeProvider(),
+        HahoMoeProvider(),
     )
 
     val restrictedApis = arrayListOf<MainAPI>(
