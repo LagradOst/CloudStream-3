@@ -111,8 +111,6 @@
 
     <string name="benene_count_text">%d Saging na ang naibigay sa mga tagalikha</string>
     <string name="benene_count_text_none">Walang saging na binigay</string>
-
-    <string name="prerelease_commit_hash">Hindi kilala</string>
     <string name="subs_auto_select_language">Pakusang piliin ang wika</string>
     <string name="subs_download_languages">i-Download ang mga lenggwahe</string>
     <string name="subs_hold_to_reset_to_default">Pindutin para maibalik sa dati ang mga settings</string>
