@@ -90,7 +90,7 @@ class Crunchyroll : MainAPI() {
                 "$mainUrl${anime.selectFirst("a").attr("href")}",
                 this.name,
                 TvType.Anime,
-                anime.selectFirst("img").attr("src"),
+                anime.selectFirst("img").attr("src").replace("thumb", "full"),
                 null,
                 null,
                 EnumSet.of(DubStatus.Subbed),
@@ -223,7 +223,7 @@ class Crunchyroll : MainAPI() {
                 AnimeEpisode(
                     mainUrl + episode.attr("href"),
                     "$epTitle",
-                    it.selectFirst("img")?.attr("data-thumbnailurl")?.replace("wide", "full"),
+                    episode.selectFirst("img")?.attr("data-thumbnailurl")?.replace("wide", "full"),
                     null,
                     null,
                     epNum + it.selectFirst("a.season-dropdown")?.text()?.trim() ?: "",
