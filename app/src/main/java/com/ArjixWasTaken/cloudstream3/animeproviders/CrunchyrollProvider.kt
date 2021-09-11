@@ -223,7 +223,7 @@ class Crunchyroll : MainAPI() {
                 AnimeEpisode(
                     mainUrl + episode.attr("href"),
                     "$epTitle",
-                    episode.selectFirst("img")?.attr("data-thumbnailurl")?.replace("wide", "full"),
+                    episode.selectFirst("img")?.attr("src")?.replace("wide", "full"),
                     null,
                     null,
                     epNum + (it.selectFirst("a.season-dropdown")?.text()?.trim() ?: ""),
