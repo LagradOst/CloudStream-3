@@ -12,6 +12,7 @@ import java.util.*
 
 private fun String.toAscii() = this.map { it.toInt() }.joinToString()
 
+
 class CrunchyrollGeoBypasser {
     companion object {
         const val BYPASS_SERVER = "https://cr-unblocker.us.to/start_session"
