@@ -1,1 +1,16 @@
 name: Update readme
+
+on:
+  push:
+    branches: [ master ]
+    paths: "animeproviders/*"
+
+jobs:
+  updateReadme:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: "Get file list"
+      run: |
+        PROVIDERS="$(ls -w1 | python -c \"for i in __import__('sys').argv[1:]: print(i)\")"
