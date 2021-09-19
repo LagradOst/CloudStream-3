@@ -13,4 +13,6 @@ jobs:
     
     - name: "Get file list"
       run: |
-        PROVIDERS="$(ls -w1 | python -c \"for i in __import__('sys').argv[1:]: print(i)\")"
+        PROVIDERS="$(ls -w1)"
+        MARKDOWN="$(python3 ./.github/workflows/scripts/filesToMarkDownList.py $PROVIDERS)"
+        echo $MARKDOWN
