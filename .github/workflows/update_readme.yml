@@ -3,7 +3,7 @@ name: Update readme
 on:
   push:
     branches: [ master ]
-    paths: "animeproviders/*"
+    paths: "*/animeproviders/*"
 
 jobs:
   updateReadme:
