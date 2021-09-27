@@ -3,6 +3,9 @@ package com.lagradost.cloudstream3.animeproviders
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.network.get
+import com.lagradost.cloudstream3.network.post
+import com.lagradost.cloudstream3.network.text
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import org.jsoup.Jsoup
@@ -27,12 +30,12 @@ class WatchCartoonOnlineProvider : MainAPI() {
         val url = "https://www.wcostream.com/search"
 
         val response =
-            khttp.post(
+            post(
                 url,
                 headers = mapOf("Referer" to url),
                 data = mapOf("catara" to query, "konuara" to "series")
-            )
-        val document = Jsoup.parse(response.text)
+            ).text
+        val document = Jsoup.parse(response)
         val items = document.select("div#blog > div.cerceve")
         if (items.isNullOrEmpty()) return ArrayList()
         val returnValue = ArrayList<SearchResponse>()
@@ -70,8 +73,8 @@ class WatchCartoonOnlineProvider : MainAPI() {
     }
 
     override fun load(url: String): LoadResponse {
-        val response = khttp.get(url)
-        val document = Jsoup.parse(response.text)
+        val response = get(url).text
+        val document = Jsoup.parse(response)
 
         val title = document.selectFirst("td.vsbaslik > h2").text()
         val poster = fixUrl(document.selectFirst("div#cat-img-desc > div > img").attr("src"))
@@ -140,13 +143,12 @@ class WatchCartoonOnlineProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val response = khttp.get(data)
+        val response = get(data).text
         /*val embedUrl = fixUrl(
             Regex("itemprop=\"embedURL\" content=\"(.*?)\"").find(response.text)?.groupValues?.get(1) ?: return false
         )*/
-        val text = response.text
-        val start = text.indexOf("itemprop=\"embedURL")
-        val foundJS = Regex("<script>(.*?)</script>").find(text, start)?.groupValues?.get(1)
+        val start = response.indexOf("itemprop=\"embedURL")
+        val foundJS = Regex("<script>(.*?)</script>").find(response, start)?.groupValues?.get(1)
             ?.replace("document.write", "var returnValue = ")
 
         val rhino = Context.enter()
@@ -169,7 +171,7 @@ class WatchCartoonOnlineProvider : MainAPI() {
         val jsEval = scope.get("returnValue", scope) ?: return false
         val src = fixUrl(Regex("src=\"(.*?)\"").find(jsEval as String)?.groupValues?.get(1) ?: return false)
 
-        val embedResponse = khttp.get(
+        val embedResponse = get(
             (src),
             headers = mapOf("Referer" to data)
         )
@@ -177,7 +179,7 @@ class WatchCartoonOnlineProvider : MainAPI() {
         val getVidLink = fixUrl(
             Regex("get\\(\"(.*?)\"").find(embedResponse.text)?.groupValues?.get(1) ?: return false
         )
-        val linkResponse = khttp.get(
+        val linkResponse = get(
             getVidLink, headers = mapOf(
                 "sec-ch-ua" to "\"Chromium\";v=\"91\", \" Not;A Brand\";v=\"99\"",
                 "sec-ch-ua-mobile" to "?0",

@@ -3,6 +3,8 @@ package com.lagradost.cloudstream3.movieproviders
 import org.jsoup.Jsoup
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.Vidstream
+import com.lagradost.cloudstream3.network.get
+import com.lagradost.cloudstream3.network.text
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import java.util.*
@@ -34,7 +36,7 @@ class VidEmbedProvider : MainAPI() {
 
     override fun search(query: String): ArrayList<SearchResponse> {
         val link = "$mainUrl/search.html?keyword=$query"
-        val html = khttp.get(link).text
+        val html = get(link).text
         val soup = Jsoup.parse(html)
 
         return ArrayList(soup.select(".listing.items > .video-block").map { li ->
@@ -55,7 +57,7 @@ class VidEmbedProvider : MainAPI() {
     }
 
     override fun load(url: String): LoadResponse? {
-        val html = khttp.get(url).text
+        val html = get(url).text
         val soup = Jsoup.parse(html)
 
         var title = soup.selectFirst("h1,h2,h3").text()
@@ -137,8 +139,8 @@ class VidEmbedProvider : MainAPI() {
         )
         val homePageList = ArrayList<HomePageList>()
         urls.pmap { url ->
-            val response = khttp.get(url, timeout = 20.0)
-            val document = Jsoup.parse(response.text)
+            val response = get(url, timeout = 20).text
+            val document = Jsoup.parse(response)
             document.select("div.main-inner")?.forEach {
                 val title = it.select(".widget-title").text().trim()
                 val elements = it.select(".video-block").map {
@@ -188,7 +190,7 @@ class VidEmbedProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val iframeLink = Jsoup.parse(khttp.get(data).text).selectFirst("iframe")?.attr("src") ?: return false
+        val iframeLink = Jsoup.parse(get(data).text).selectFirst("iframe")?.attr("src") ?: return false
         val vidstreamObject = Vidstream("https://vidembed.cc")
         // https://vidembed.cc/streaming.php?id=MzUwNTY2&... -> MzUwNTY2
         val id = Regex("""id=([^&]*)""").find(iframeLink)?.groupValues?.get(1)
@@ -197,7 +199,7 @@ class VidEmbedProvider : MainAPI() {
             vidstreamObject.getUrl(id, isCasting, callback)
         }
 
-        val html = khttp.get(fixUrl(iframeLink)).text
+        val html = get(fixUrl(iframeLink)).text
         val soup = Jsoup.parse(html)
 
         val servers = soup.select(".list-server-items > .linkserver").mapNotNull { li ->
@@ -213,7 +215,7 @@ class VidEmbedProvider : MainAPI() {
                 val sourceRegex = Regex("""sources:[\W\w]*?file:\s*["'](.*?)["'][\W\w]*?label:\s*["'](.*?)["']""")
                 val trackRegex = Regex("""tracks:[\W\w]*?file:\s*["'](.*?)["'][\W\w]*?label:\s*["'](.*?)["']""")
 
-                val html = khttp.get(it.second, headers = mapOf("referer" to iframeLink)).text
+                val html = get(it.second, headers = mapOf("referer" to iframeLink)).text
                 sourceRegex.findAll(html).forEach { match ->
                     callback.invoke(
                         ExtractorLink(
