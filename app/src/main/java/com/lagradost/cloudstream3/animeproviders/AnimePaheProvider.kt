@@ -1,7 +1,6 @@
 package com.lagradost.cloudstream3.animeproviders
 
 import com.lagradost.cloudstream3.*
-import khttp.structures.cookie.CookieJar
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -461,7 +460,7 @@ class AnimePaheProvider : MainAPI() {
 
         while (responseCode != 200 && tries < 20) {
             adflyContent = get(
-                get(adflyUri, cookies = cookies, allowRedirects = false).headers.values("location")[0],
+                get(adflyUri, cookies = cookies, allowRedirects = false).url,
                 cookies = cookies,
                 allowRedirects = false
             )
