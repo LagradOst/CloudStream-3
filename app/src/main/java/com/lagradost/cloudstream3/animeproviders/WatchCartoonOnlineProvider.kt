@@ -72,12 +72,12 @@ class WatchCartoonOnlineProvider : MainAPI() {
 
         // "episodes-search", is used for finding movies, anime episodes should be filtered out
         response =
-            khttp.post(
+            post(
                 url,
                 headers = mapOf("Referer" to url),
                 data = mapOf("catara" to query, "konuara" to "episodes")
-            )
-        document = Jsoup.parse(response.text)
+            ).text
+        document = Jsoup.parse(response)
         items = document.select("#catlist-listview2 > ul > li").filter { it?.text() != null && !it?.text().toString().contains("Episode") }
 
 
