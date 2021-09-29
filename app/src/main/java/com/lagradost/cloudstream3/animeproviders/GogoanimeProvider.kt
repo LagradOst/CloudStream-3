@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.network.get
 import com.lagradost.cloudstream3.network.text
 import com.lagradost.cloudstream3.network.url
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.jsoup.Jsoup
 import java.util.*
@@ -206,19 +207,30 @@ class GogoanimeProvider : MainAPI() {
         val page = get(link, headers = mapOf("Referer" to iframe))
         val pageDoc = Jsoup.parse(page.text)
 
-        return pageDoc.select(".dowload > a[download]").map {
-            val qual = if (it.text()
-                    .contains("HDP")
-            ) "1080" else qualityRegex.find(it.text())?.destructured?.component1().toString()
-            ExtractorLink(
-                "Gogoanime",
-                if(qual == "null") "Gogoanime" else "Gogoanime - " + qual + "p",
-                it.attr("href"),
-                page.url,
-                getQualityFromName(qual),
-                it.attr("href").contains(".m3u8")
-            )
-        }
+        return pageDoc.select(".dowload > a").map {
+            if (it.hasAttr("download")) {
+                val qual = if (it.text()
+                        .contains("HDP")
+                ) "1080" else qualityRegex.find(it.text())?.destructured?.component1().toString()
+                listOf(ExtractorLink(
+                    "Gogoanime",
+                    if(qual == "null") "Gogoanime" else "Gogoanime - " + qual + "p",
+                    it.attr("href"),
+                    page.url,
+                    getQualityFromName(qual),
+                    it.attr("href").contains(".m3u8")
+                ))
+            } else {
+                val extractorLinks = ArrayList<ExtractorLink>()
+                for (api in extractorApis) {
+                    if (api.name.equals(it.text().replace("Download", "").trim(), ignoreCase = true)) {
+                        extractorLinks.addAll(api.getSafeUrl(it.attr("href")) ?: listOf())
+                        break
+                    }
+                }
+                extractorLinks
+            }
+        }.flatten()
     }
 
     override fun loadLinks(
