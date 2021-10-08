@@ -265,45 +265,6 @@ class SflixProvider : MainAPI() {
         @JsonProperty("tracks") val tracks: List<Tracks?>?
     )
 
-    private fun Sources1.toExtractorLink(name: String): List<ExtractorLink>? {
-        return this.file?.let {
-            val isM3u8 = URI(this.file).path.endsWith(".m3u8") || this.type.equals("hls", ignoreCase = true)
-            if (isM3u8) {
-                M3u8Helper().m3u8Generation(M3u8Helper.M3u8Stream(this.file, null), true).map { stream ->
-                    val qualityString = if ((stream.quality ?: 0) == 0) label ?: "" else "${stream.quality}p"
-                    ExtractorLink(
-                        this@SflixProvider.name,
-                        "${this@SflixProvider.name} $qualityString $name",
-                        stream.streamUrl,
-                        mainUrl,
-                        getQualityFromName(stream.quality.toString()),
-                        true
-                    )
-                }
-            } else {
-                listOf(ExtractorLink(
-                    this@SflixProvider.name,
-                    this.label?.let { "${this@SflixProvider.name} - $it" } ?: this@SflixProvider.name,
-                    it,
-                    this@SflixProvider.mainUrl,
-                    getQualityFromName(this.type ?: ""),
-                    false,
-                ))
-            }
-
-        }
-    }
-
-    private fun Tracks.toSubtitleFile(): SubtitleFile? {
-        return this.file?.let {
-            SubtitleFile(
-                this.label ?: "Unknown",
-                it
-            )
-        }
-
-    }
-
     override fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -339,14 +300,14 @@ class SflixProvider : MainAPI() {
         val mapped = mapper.readValue<SourceObject>(sources)
 
         val list = listOf(
-            mapped.sources1 to "source 1",
-            mapped.sources2 to "source 2",
-            mapped.sources to "source 0",
-            mapped.sourcesBackup to "source 3"
+            mapped.sources to "source 1",
+            mapped.sources1 to "source 2",
+            mapped.sources2 to "source 3",
+            mapped.sourcesBackup to "source backup"
         )
         list.forEach { subList ->
             subList.first?.forEach {
-                it?.toExtractorLink(subList.second)?.forEach(callback)
+                it?.toExtractorLink(this, subList.second)?.forEach(callback)
             }
         }
         mapped.tracks?.forEach {
@@ -357,4 +318,47 @@ class SflixProvider : MainAPI() {
         return true
     }
 
+    companion object {
+        // For re-use in Zoro
+
+        fun Sources1.toExtractorLink(caller: MainAPI, name: String): List<ExtractorLink>? {
+            return this.file?.let {
+                val isM3u8 = URI(this.file).path.endsWith(".m3u8") || this.type.equals("hls", ignoreCase = true)
+                if (isM3u8) {
+                    M3u8Helper().m3u8Generation(M3u8Helper.M3u8Stream(this.file, null), true).map { stream ->
+                        val qualityString = if ((stream.quality ?: 0) == 0) label ?: "" else "${stream.quality}p"
+                        ExtractorLink(
+                            caller.name,
+                            "${caller.name} $qualityString $name",
+                            stream.streamUrl,
+                            caller.mainUrl,
+                            getQualityFromName(stream.quality.toString()),
+                            true
+                        )
+                    }
+                } else {
+                    listOf(ExtractorLink(
+                        caller.name,
+                        this.label?.let { "${caller.name} - $it" } ?: caller.name,
+                        it,
+                        caller.mainUrl,
+                        getQualityFromName(this.type ?: ""),
+                        false,
+                    ))
+                }
+
+            }
+        }
+
+        fun Tracks.toSubtitleFile(): SubtitleFile? {
+            return this.file?.let {
+                SubtitleFile(
+                    this.label ?: "Unknown",
+                    it
+                )
+            }
+        }
+
+    }
 }
+

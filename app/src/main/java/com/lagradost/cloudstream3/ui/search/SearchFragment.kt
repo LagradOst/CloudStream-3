@@ -35,6 +35,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.lagradost.cloudstream3.utils.UIHelper.getGridIsCompact
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import kotlinx.android.synthetic.main.fragment_search.*
+import java.util.concurrent.locks.ReentrantLock
 
 class SearchFragment : Fragment() {
     companion object {
@@ -331,7 +332,10 @@ class SearchFragment : Fragment() {
             }
         }
 
+        val listLock = ReentrantLock()
         observe(searchViewModel.currentSearch) { list ->
+            // https://stackoverflow.com/questions/6866238/concurrent-modification-exception-adding-to-an-arraylist
+            listLock.lock()
             (search_master_recycler?.adapter as ParentItemAdapter?)?.apply {
                 items = list.map { ongoing ->
                     val ongoingList = HomePageList(
@@ -342,6 +346,7 @@ class SearchFragment : Fragment() {
                 }
                 notifyDataSetChanged()
             }
+            listLock.unlock()
         }
 
         activity?.let {
