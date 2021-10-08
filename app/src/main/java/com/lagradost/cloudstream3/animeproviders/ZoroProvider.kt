@@ -28,7 +28,7 @@ class ZoroProvider : MainAPI() {
         get() = true
 
     override val hasChromecastSupport: Boolean
-        get() = false
+        get() = true
 
     override val hasDownloadSupport: Boolean
         get() = true
