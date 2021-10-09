@@ -176,16 +176,16 @@ class ZoroProvider : MainAPI() {
 
 
         for (info in document.select(".anisc-info > .item.item-title")) {
+            val text = info?.text().toString()
             when {
                 (year != null && japaneseTitle != null && status != null) -> break
-
-                info?.text().toString().contains("Premiered") && year == null ->
+                text.contains("Premiered") && year == null ->
                     year = info.selectFirst(".name")?.text().toString().split(" ").last().toIntOrNull()
 
-                info?.text().toString().contains("Japanese") && japaneseTitle == null ->
+                text.contains("Japanese") && japaneseTitle == null ->
                     japaneseTitle = info.selectFirst(".name")?.text().toString()
 
-                info?.text().toString().contains("Status") && status == null ->
+                text.contains("Status") && status == null ->
                     status = getStatus(info.selectFirst(".name")?.text().toString())
             }
         }
@@ -252,11 +252,13 @@ class ZoroProvider : MainAPI() {
             mapped.sources2 to "source 3",
             mapped.sourcesBackup to "source backup"
         )
+
         list.forEach { subList ->
             subList.first?.forEach {
                 it?.toExtractorLink(this, subList.second)?.forEach(callback)
             }
         }
+
         mapped.tracks?.forEach {
             it?.toSubtitleFile()?.let { subtitleFile ->
                 subtitleCallback.invoke(subtitleFile)
