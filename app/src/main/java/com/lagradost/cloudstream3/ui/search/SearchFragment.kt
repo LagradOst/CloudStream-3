@@ -349,9 +349,10 @@ class SearchFragment : Fragment() {
                     }
                     notifyDataSetChanged()
                 }
-                listLock.unlock()
             } catch (e: Exception) {
                 logError(e)
+            } finally {
+                listLock.unlock()
             }
         }
 

@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import android.net.Uri
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
@@ -251,17 +250,17 @@ class SflixProvider : MainAPI() {
         @JsonProperty("kind") val kind: String?
     )
 
-    data class Sources1(
+    data class Sources(
         @JsonProperty("file") val file: String?,
         @JsonProperty("type") val type: String?,
         @JsonProperty("label") val label: String?
     )
 
     data class SourceObject(
-        @JsonProperty("sources") val sources: List<Sources1?>?,
-        @JsonProperty("sources_1") val sources1: List<Sources1?>?,
-        @JsonProperty("sources_2") val sources2: List<Sources1?>?,
-        @JsonProperty("sourcesBackup") val sourcesBackup: List<Sources1?>?,
+        @JsonProperty("sources") val sources: List<Sources?>?,
+        @JsonProperty("sources_1") val sources1: List<Sources?>?,
+        @JsonProperty("sources_2") val sources2: List<Sources?>?,
+        @JsonProperty("sourcesBackup") val sourcesBackup: List<Sources?>?,
         @JsonProperty("tracks") val tracks: List<Tracks?>?
     )
 
@@ -321,7 +320,7 @@ class SflixProvider : MainAPI() {
     companion object {
         // For re-use in Zoro
 
-        fun Sources1.toExtractorLink(caller: MainAPI, name: String): List<ExtractorLink>? {
+        fun Sources.toExtractorLink(caller: MainAPI, name: String): List<ExtractorLink>? {
             return this.file?.let {
                 val isM3u8 = URI(this.file).path.endsWith(".m3u8") || this.type.equals("hls", ignoreCase = true)
                 if (isM3u8) {

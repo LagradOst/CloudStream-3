@@ -79,7 +79,7 @@ class ZoroProvider : MainAPI() {
 
 
     override fun getMainPage(): HomePageResponse {
-        val html = get("https://zoro.to/home").text
+        val html = get("$mainUrl/home").text
         val document = Jsoup.parse(html)
 
         val homePageList = ArrayList<HomePageList>()
@@ -163,9 +163,7 @@ class ZoroProvider : MainAPI() {
     }
 
     override fun load(url: String): LoadResponse? {
-        val html = get(
-            url
-        ).text
+        val html = get(url).text
         val document = Jsoup.parse(html)
 
         val title = document.selectFirst(".anisc-detail > .film-name")?.text().toString()
@@ -176,14 +174,19 @@ class ZoroProvider : MainAPI() {
         var japaneseTitle: String? = null
         var status: ShowStatus? = null
 
+
         for (info in document.select(".anisc-info > .item.item-title")) {
-            if (year != null && japaneseTitle != null && status != null) break
-            if (info?.text().toString().contains("Premiered") && year == null) {
-                year = info.selectFirst(".name")?.text().toString().split(" ").last().toIntOrNull()
-            } else if (info?.text().toString().contains("Japanese") && japaneseTitle == null) {
-                japaneseTitle = info.selectFirst(".name")?.text().toString()
-            } else if (info?.text().toString().contains("Status") && status == null) {
-                status = getStatus(info.selectFirst(".name")?.text().toString())
+            when {
+                (year != null && japaneseTitle != null && status != null) -> break
+
+                info?.text().toString().contains("Premiered") && year == null ->
+                    year = info.selectFirst(".name")?.text().toString().split(" ").last().toIntOrNull()
+
+                info?.text().toString().contains("Japanese") && japaneseTitle == null ->
+                    japaneseTitle = info.selectFirst(".name")?.text().toString()
+
+                info?.text().toString().contains("Status") && status == null ->
+                    status = getStatus(info.selectFirst(".name")?.text().toString())
             }
         }
 

@@ -1,11 +1,11 @@
 package com.lagradost.cloudstream3
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.google.common.io.BaseEncoding.base64
 import com.lagradost.cloudstream3.animeproviders.*
 import com.lagradost.cloudstream3.movieproviders.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -205,11 +205,12 @@ abstract class MainAPI {
 }
 
 /** Might need a different implementation for desktop*/
+@SuppressLint("NewApi")
 fun base64Decode(string: String): String {
     return try {
         String(android.util.Base64.decode(string, android.util.Base64.DEFAULT), Charsets.ISO_8859_1)
     } catch (e: Exception) {
-        String(base64().decode(string))
+        String(Base64.getDecoder().decode(string))
     }
 }
 
