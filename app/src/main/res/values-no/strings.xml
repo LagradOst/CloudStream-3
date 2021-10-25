@@ -107,8 +107,8 @@
     <string name="pref_disable_acra">قم بتعطيل الإبلاغ عن الأخطاء تلقائيًا</string>
     <string name="home_more_info">مزيد من المعلومات</string>
     <string name="home_expanded_hide">إخفاء</string>
-    <string name="home_play">Spille</string>
-    <string name="home_info">Informasjon</string>
+    <string name="home_play">العب=</string>
+    <string name="home_info">معلومات</string>
     <string name="filter_bookmarks">تصفية المواقع المفضلة</string>
     <string name="error_bookmarks_text">إشارات مرجعية</string>
     <string name="action_remove_from_bookmarks">حذف</string>
@@ -259,7 +259,7 @@
 	
     <string name="display_subbed_dubbed_settings">عرض أنمي مدبلج / مترجم</string>
 
-    <string name="resize_fit">Tilpass til skjermen</string>
+    <string name="resize_fit">تناسب الشاشة</string>
     <string name="resize_fill">امتداد</string>
     <string name="resize_zoom">تكبير</string>
 
