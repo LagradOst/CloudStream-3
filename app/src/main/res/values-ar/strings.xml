@@ -55,7 +55,6 @@
     <string name="download_failed">التحميل فشل</string>
     <string name="download_canceled">تم إلغاء التنزيل</string>
     <string name="download_done">تنزيل تم</string>
-    <string name="download_format" translatable="false">%s - %s</string>
 
     <string name="error_loading_links_toast">خطأ في تحميل الرابط</string>
     <string name="download_storage_text">التخزين الداخلي</string>
@@ -217,7 +216,7 @@
     <string name="dont_show_again">لا تظهر مرة أخرى</string>
     <string name="update">تحديث</string>
     <string name="watch_quality_pref">جودة المشاهدة المفضلة</string>
-	<string name="dns_pref">DNS فوق HTTPS</string>
+    <string name="dns_pref">DNS فوق HTTPS</string>
     <string name="dns_pref_summary">مفيد لتجاوز كتل مزود خدمة الإنترنت</string>
 	
     <string name="display_subbed_dubbed_settings">عرض أنمي مدبلج / مترجم</string>
@@ -226,7 +225,6 @@
     <string name="resize_fill">امتداد</string>
     <string name="resize_zoom">تكبير</string>
 
-    </string>
     <string name="general">عام</string>
     <string name="provider_lang_settings">لغات الموفر</string>
 </resources>
