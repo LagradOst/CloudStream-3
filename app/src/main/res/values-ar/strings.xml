@@ -27,7 +27,7 @@
     <string name="next_episode">الحلقة القادمة</string>
     <string name="result_tags">الأنواع</string>
     <string name="result_share">شارك</string>
-    <string name="result_open_in_browser">فتح في المتصفح</string>
+    <string name="result_open_in_browser">فتح في الويب </string>
     <string name="skip_loading">تخطي التحميل</string>
     <string name="loading_chromecast">…تحميل</string>
 
@@ -199,7 +199,7 @@
     <string name="episode_action_chomecast_mirror">Chromecast مرآة</string>
     <string name="episode_action_play_in_app">تشغيل في التطبيق</string>
     <string name="episode_action_play_in_vlc">VLC تشغيل في</string>
-    <string name="episode_action_play_in_browser">تشغيل في المتصفح</string>
+    <string name="episode_action_play_in_browser">تشغيل في الويب </string>
     <string name="episode_action_copy_link">انسخ الرابط</string>
     <string name="episode_action_auto_download">التحميل التلقائي</string>
     <string name="episode_action_download_mirror">تحميل المرآة</string>
