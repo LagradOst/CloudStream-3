@@ -140,7 +140,7 @@
     <string name="github">Github</string>
     <string name="lightnovel">تطبيق رواية خفيف من نفس المطورين</string>
     <string name="anim">تطبيق Anime من نفس المطورين</string>
-    <string name="discord">انضم إلى إل ديسكورد</string>
+    <string name="discord">انضم إلى إلديسكورد</string>
     <string name="benene">أعط موزة للمطورين</string>
     <string name="benene_des">أعط الموز</string>
 
@@ -184,7 +184,7 @@
     <string name="app_storage">تطبيق</string>
 
     <string name="movies">أفلام</string>
-    <string name="tv_series">مسلسل تلفزيونى</string>
+    <string name="tv_series">مسلسلت</string>
     <string name="cartoons">رسوم متحركة</string>
     <string name="anime">انمي</string>
     <string name="torrent">تورنت</string>
