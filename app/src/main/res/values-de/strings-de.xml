@@ -3,9 +3,9 @@
     <string name="result_poster_img_des">Poster</string>
     <string name="search_poster_img_des">@string/result_poster_img_des</string>
     <string name="episode_poster_img_des">Episode Poster</string>
-    <string name="home_main_poster_img_des">Main Poster</string>
-    <string name="home_next_random_img_des">Next Random</string>
-    <string name="go_back_img_des">Go back</string>
+    <string name="home_main_poster_img_des">Hauptposter</string>
+    <string name="home_next_random_img_des">Nächstes Poster</string>
+    <string name="go_back_img_des">Zurück</string>
     <string name="home_change_provider_img_des">Change Provider</string>
     <string name="preview_background_img_des">Preview Background</string>
     <string name="player_speed_text_format" formatted="true">Geschwindigkeit (%.2fx)</string>
@@ -190,4 +190,8 @@
     <string name="resize_fill">Strecken</string>
     <string name="resize_zoom">Zoomen</string>
     <string name="provider_lang_settings">Anbietersprache</string>
+    <string name="legal_notice" translatable="false">Die Haftungsklausel</string>
+    <string name="app_layout">App-Layout</string>
+    <string name="automatic">Automatisch</string>
+    <string name="primary_color_settings">Primärfarbe</string>
 </resources>
