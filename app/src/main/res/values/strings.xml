@@ -27,6 +27,7 @@
     <string name="app_layout_key" translatable="false">app_layout_key</string>
     <string name="primary_color_key" translatable="false">primary_color_key</string>
     <string name="prefer_media_type_key" translatable="false">prefer_media_type_key</string>
+    <string name="app_theme_key" translatable="false">app_theme_key</string>
 
     <!-- FORMAT MIGHT TRANSLATE, WILL CAUSE CRASH IF APPLIED WRONG -->
     <string name="extra_info_format" translatable="false" formatted="true">%d %s | %sMB</string>
@@ -276,7 +277,7 @@
     <string name="resize_fill">Stretch</string>
     <string name="resize_zoom">Zoom</string>
 
-    <string name="legal_notice" translatable="false">Disclaimer</string>
+    <string name="legal_notice">Disclaimer</string>
     <string name="legal_notice_key" translatable="false">legal_notice_key</string>
     <string name="legal_notice_text" translatable="false">Any legal issues regarding the content on this application
         should be taken up with the actual file hosts and providers themselves as we are not affiliated with them.
@@ -304,4 +305,5 @@
     <string name="phone_layout">Phone Layout</string>
 
     <string name="primary_color_settings">Primary Color</string>
+    <string name="app_theme_settings">App Theme</string>
 </resources>
