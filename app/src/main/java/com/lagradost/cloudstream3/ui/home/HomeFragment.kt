@@ -184,7 +184,7 @@ class HomeFragment : Fragment() {
         validAPIs.add(0, randomApi)
         validAPIs.add(0, noneApi)
         view.popupMenuNoIconsAndNoStringRes(validAPIs.mapIndexed { index, api -> Pair(index, api.name) }) {
-            homeViewModel.loadAndCancel(validAPIs[itemId].name)
+            homeViewModel.loadAndCancel(validAPIs[itemId].name, currentPrefMedia)
         }
     }
 
@@ -425,7 +425,7 @@ class HomeFragment : Fragment() {
         val apiName = context?.getKey<String>(HOMEPAGE_API)
         if (homeViewModel.apiName.value != apiName || apiName == null) {
             //println("Caught home: " + homeViewModel.apiName.value + " at " + apiName)
-            homeViewModel.loadAndCancel(apiName)
+            homeViewModel.loadAndCancel(apiName, 0)
         }
     }
 }
