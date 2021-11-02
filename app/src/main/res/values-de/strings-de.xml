@@ -6,7 +6,7 @@
     <string name="home_main_poster_img_des">Hauptposter</string>
     <string name="home_next_random_img_des">Nächstes Poster</string>
     <string name="go_back_img_des">Zurück</string>
-    <string name="home_change_provider_img_des">Provider ändern</string>
+    <string name="home_change_provider_img_des">Anbieter ändern</string>
     <string name="preview_background_img_des">Vorschau Hintergrund</string>
     <string name="player_speed_text_format" formatted="true">Geschwindigkeit (%.2fx)</string>
     <string name="rated_format" formatted="true">Bewertung: %.1f</string>
