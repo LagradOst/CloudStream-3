@@ -165,28 +165,26 @@ class SettingsFragment : PreferenceFragmentCompat() {
             return@setOnPreferenceClickListener true
         }
 
-        if (preferedMediaTypePreference != null) {
-            preferedMediaTypePreference.setOnPreferenceClickListener {
-                val prefNames = resources.getStringArray(R.array.media_type_pref)
-                val prefValues = resources.getIntArray(R.array.media_type_pref_values)
-                val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
+        preferedMediaTypePreference.setOnPreferenceClickListener {
+            val prefNames = resources.getStringArray(R.array.media_type_pref)
+            val prefValues = resources.getIntArray(R.array.media_type_pref_values)
+            val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
 
-                val currentPrefMedia =
-                    settingsManager.getInt(getString(R.string.preferred_media_settings), 0)
+            val currentPrefMedia =
+                settingsManager.getInt(getString(R.string.preferred_media_settings), 0)
 
-                context?.showBottomDialog(
-                    prefNames.toList(),
-                    prefValues.indexOf(currentPrefMedia),
-                    getString(R.string.preferred_media_settings),
-                    true,
-                    {}) {
-                    settingsManager.edit()
-                        .putInt(getString(R.string.preferred_media_settings), prefValues[it])
-                        .apply()
-                    context?.initRequestClient()
-                }
-                return@setOnPreferenceClickListener true
+            context?.showBottomDialog(
+                prefNames.toList(),
+                prefValues.indexOf(currentPrefMedia),
+                getString(R.string.preferred_media_settings),
+                true,
+                {}) {
+                settingsManager.edit()
+                    .putInt(getString(R.string.preferred_media_settings), prefValues[it])
+                    .apply()
+                context?.initRequestClient()
             }
+            return@setOnPreferenceClickListener true
         }
 
         allLayoutPreference.setOnPreferenceClickListener {

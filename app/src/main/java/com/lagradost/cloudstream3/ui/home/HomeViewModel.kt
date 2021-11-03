@@ -16,6 +16,7 @@ import com.lagradost.cloudstream3.ui.APIRepository
 import com.lagradost.cloudstream3.ui.APIRepository.Companion.noneApi
 import com.lagradost.cloudstream3.ui.APIRepository.Companion.randomApi
 import com.lagradost.cloudstream3.ui.WatchType
+import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.DOWNLOAD_HEADER_CACHE
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStoreHelper
@@ -154,15 +155,7 @@ class HomeViewModel : ViewModel() {
         if (preferredApiName == noneApi.name)
             loadAndCancel(noneApi)
         else if(preferredApiName == randomApi.name || api == null) {
-            val allApis = apis.filter { api -> api.hasMainPage }.toMutableList()
-            var validAPIs = allApis
-            if (currentPrefMedia > 0) {
-                val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.ONA)
-                val listEnumMovieTv = listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon)
-                val mediaTypeList = if (currentPrefMedia==1) listEnumMovieTv else listEnumAnime
-
-                validAPIs = allApis.filter { api -> api.supportedTypes.any { it in mediaTypeList } }.toMutableList()
-            }
+            var validAPIs = AppUtils.filterProviderByPreferredMedia(apis, currentPrefMedia)
             loadAndCancel(validAPIs.random())
         } else {
             loadAndCancel(api)
