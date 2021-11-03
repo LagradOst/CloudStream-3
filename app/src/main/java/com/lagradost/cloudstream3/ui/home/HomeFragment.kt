@@ -57,6 +57,7 @@ class HomeFragment : Fragment() {
     companion object {
         val configEvent = Event<Int>()
         var currentSpan = 1
+        var instance: HomeFragment? = null
 
         fun Activity.loadHomepageList(item: HomePageList) {
             val context = this
@@ -107,6 +108,8 @@ class HomeFragment : Fragment() {
     ): View? {
         homeViewModel =
             ViewModelProvider(this).get(HomeViewModel::class.java)
+
+        instance = this
 
         return inflater.inflate(R.layout.fragment_home, container, false)
     }
@@ -170,13 +173,19 @@ class HomeFragment : Fragment() {
     private val apiChangeClickListener = View.OnClickListener { view ->
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
         val currentPrefMedia = settingsManager.getInt(getString(R.string.preferred_media_settings), 0)
-        var validAPIs = AppUtils.filterProviderByPreferredMedia(apis, currentPrefMedia).toMutableList()
+        val validAPIs = AppUtils.filterProviderByPreferredMedia(apis, currentPrefMedia).toMutableList()
 
         validAPIs.add(0, randomApi)
         validAPIs.add(0, noneApi)
         view.popupMenuNoIconsAndNoStringRes(validAPIs.mapIndexed { index, api -> Pair(index, api.name) }) {
             homeViewModel.loadAndCancel(validAPIs[itemId].name, currentPrefMedia)
         }
+    }
+
+    fun reloadPreferredMedia() {
+        val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
+        val currentPrefMedia = settingsManager.getInt(getString(R.string.preferred_media_settings), 0)
+        homeViewModel.loadAndCancel(randomApi.name, currentPrefMedia)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

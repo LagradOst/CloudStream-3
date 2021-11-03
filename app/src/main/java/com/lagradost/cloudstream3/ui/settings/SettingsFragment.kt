@@ -21,6 +21,7 @@ import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.network.initRequestClient
 import com.lagradost.cloudstream3.ui.APIRepository
+import com.lagradost.cloudstream3.ui.home.HomeFragment
 import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment
 import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
 import com.lagradost.cloudstream3.utils.Qualities
@@ -182,6 +183,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 settingsManager.edit()
                     .putInt(getString(R.string.preferred_media_settings), prefValues[it])
                     .apply()
+                HomeFragment.instance?.reloadPreferredMedia()
                 context?.initRequestClient()
             }
             return@setOnPreferenceClickListener true
