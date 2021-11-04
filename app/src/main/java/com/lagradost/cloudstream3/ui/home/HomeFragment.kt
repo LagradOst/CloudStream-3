@@ -57,7 +57,6 @@ class HomeFragment : Fragment() {
     companion object {
         val configEvent = Event<Int>()
         var currentSpan = 1
-        var instance: HomeFragment? = null
 
         fun Activity.loadHomepageList(item: HomePageList) {
             val context = this
@@ -108,8 +107,6 @@ class HomeFragment : Fragment() {
     ): View? {
         homeViewModel =
             ViewModelProvider(this).get(HomeViewModel::class.java)
-
-        instance = this
 
         return inflater.inflate(R.layout.fragment_home, container, false)
     }
@@ -180,12 +177,6 @@ class HomeFragment : Fragment() {
         view.popupMenuNoIconsAndNoStringRes(validAPIs.mapIndexed { index, api -> Pair(index, api.name) }) {
             homeViewModel.loadAndCancel(validAPIs[itemId].name, currentPrefMedia)
         }
-    }
-
-    fun reloadPreferredMedia() {
-        val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
-        val currentPrefMedia = settingsManager.getInt(getString(R.string.preferred_media_settings), 0)
-        homeViewModel.loadAndCancel(randomApi.name, currentPrefMedia)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -423,9 +414,11 @@ class HomeFragment : Fragment() {
 
         reloadStored()
         val apiName = context?.getKey<String>(HOMEPAGE_API)
+        val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
+        val currentPrefMedia = settingsManager.getInt(getString(R.string.preferred_media_settings), 0)
         if (homeViewModel.apiName.value != apiName || apiName == null) {
             //println("Caught home: " + homeViewModel.apiName.value + " at " + apiName)
-            homeViewModel.loadAndCancel(apiName, 0)
+            homeViewModel.loadAndCancel(apiName, currentPrefMedia)
         }
     }
 }
