@@ -14,7 +14,6 @@ import com.lagradost.cloudstream3.APIHolder.getApiDubstatusSettings
 import com.lagradost.cloudstream3.APIHolder.getApiProviderLangSettings
 import com.lagradost.cloudstream3.APIHolder.getApiSettings
 import com.lagradost.cloudstream3.APIHolder.restrictedApis
-import com.lagradost.cloudstream3.AcraApplication
 import com.lagradost.cloudstream3.DubStatus
 import com.lagradost.cloudstream3.MainActivity.Companion.setLocale
 import com.lagradost.cloudstream3.MainActivity.Companion.showToast
@@ -186,8 +185,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 settingsManager.edit()
                     .putInt(getString(R.string.preferred_media_settings), prefValues[it])
                     .apply()
-                var apiRandom = AppUtils.filterProviderByPreferredMedia(apis, prefValues[it]).random()
-                AcraApplication.context?.setKey(HOMEPAGE_API, apiRandom.name)
+                val apiRandom = AppUtils.filterProviderByPreferredMedia(apis, prefValues[it]).random()
+                context?.setKey(HOMEPAGE_API, apiRandom.name)
                 context?.initRequestClient()
             }
             return@setOnPreferenceClickListener true
