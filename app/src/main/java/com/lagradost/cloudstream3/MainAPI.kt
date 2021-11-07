@@ -46,7 +46,7 @@ object APIHolder {
 
         VidEmbedProvider(),
         VfFilmProvider(),
-		VfSerieProvider(),
+        VfSerieProvider(),
         AsianLoadProvider(),
 
         SflixProvider(),
