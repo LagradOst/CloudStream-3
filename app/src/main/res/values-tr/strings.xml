@@ -39,16 +39,16 @@
     <string name="app_dub_sub_episode_text_format">%s Ep %d</string>
 
     <!-- IS NOT NEEDED TO TRANSLATE AS THEY ARE ONLY USED FOR SCREEN READERS AND WONT SHOW UP TO NORMAL USERS -->
-    <string name="result_poster_img_des">Poster</string>
+    <string name="result_poster_img_des">Afiş</string>
     <string name="search_poster_img_des">@string/result_poster_img_des</string>
-    <string name="episode_poster_img_des">Episode Poster</string>
-    <string name="home_main_poster_img_des">Main Poster</string>
-    <string name="home_next_random_img_des">Next Random</string>
+    <string name="episode_poster_img_des">Bölümün Afişi</string>
+    <string name="home_main_poster_img_des">Ana Afiş</string>
+    <string name="home_next_random_img_des">Sonraki Rastgele</string>
     <string name="episode_play_img_des" translatable="false">@string/play_episode</string>
-    <string name="go_back_img_des">Go back</string>
+    <string name="go_back_img_des">Geri git</string>
     <string name="change_providers_img_des" translatable="false">@string/home_change_provider_img_des</string>
-    <string name="home_change_provider_img_des">Change Provider</string>
-    <string name="preview_background_img_des">Preview Background</string>
+    <string name="home_change_provider_img_des">Sağlayıcıyı Değiştir</string>
+    <string name="preview_background_img_des">Arkaplanı Önizle</string>
 
     <!-- TRANSLATE, BUT DON'T FORGET FORMAT -->
     <string name="player_speed_text_format" formatted="true">Hız (%.2fx)</string>
@@ -133,8 +133,8 @@
     <string name="search_provider_text_providers">Sağlayıcıları kullanarak ara</string>
     <string name="search_provider_text_types">Türleri kullanarak ara</string>
 
-    <string name="benene_count_text">Geliştiricilere %d Benene verildi</string>
-    <string name="benene_count_text_none">Hiçbir Benene verilmedi</string>
+    <string name="benene_count_text">Geliştiricilere %d muz verildi</string>
+    <string name="benene_count_text_none">Hiç muz verilmedi</string>
 
     <string name="subs_auto_select_language">Dili Otomatik Seç</string>
     <string name="subs_download_languages">Dilleri İndir</string>
@@ -215,7 +215,7 @@
     <string name="rating">Derecelendirme</string>
     <string name="duration">Süre</string>
     <string name="site">Site</string>
-    <string name="synopsis">Özet</string>
+    <string name="synopsis">Synopsis</string>
 
     <string name="queued">sıraya eklendi</string>
     <string name="no_subtitles">Altyazı yok</string>
@@ -259,7 +259,7 @@
     <string name="update">Güncelleme</string>
     <string name="watch_quality_pref">Tercih edilen izleme kalitesi</string>
     <string name="dns_pref">HTTPS üzerinden DNS</string>
-    <string name="dns_pref_summary">ISS\'in engellemelerini geçmek için kullanışlı</string>
+    <string name="dns_pref_summary">İSS\'nin engellemelerini geçmek için kullanışlı</string>
 
 
     <string name="display_subbed_dubbed_settings">Seslendirilmiş/Altyazılı Anime\'yi göster</string>
@@ -269,7 +269,7 @@
     <string name="resize_zoom">Yakınlaştır</string>
 
     <string name="general">Genel</string>
-    <string name="provider_lang_settings">Sağlayıcı Dilleri</string>
+    <string name="provider_lang_settings">Sağlayıcı Dili</string>
     <string name="app_layout">Uygulama Düzeni</string>
 
     <string name="automatic">Otomatik</string>
