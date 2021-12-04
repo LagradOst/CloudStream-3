@@ -126,7 +126,7 @@ class PinoyMoviePedia : MainAPI() {
                     title,
                     link,
                     this.name,
-                    TvType.JAV,
+                    TvType.Movie,
                     image,
                     year
                 )
