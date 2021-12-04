@@ -214,7 +214,7 @@ class PinoyMoviePedia : MainAPI() {
     ): Boolean {
         if (data == "about:blank") return false
         if (data == "") return false
-        var sources: MutableList<ExtractorLink> = mutableListOf()
+        val sources = mutableListOf<ExtractorLink>()
         try {
             if (data.contains("playcontainer")) {
                 // parse movie servers
