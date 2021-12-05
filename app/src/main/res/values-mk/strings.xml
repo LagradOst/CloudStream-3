@@ -248,9 +248,4 @@
     <string name="subtitles_depressed">Депресиран</string>
     <string name="subtitles_shadow">Сенка</string>
     <string name="subtitles_raised">Подигнат</string>
-    <!--
-    Example text does not need to be translated and if you do translate include all the letters in the alphabet,
-    see https://en.wikipedia.org/wiki/The_quick_brown_fox_jumps_over_the_lazy_dog
-    -->
-    <string name="subtitles_example_text">The quick brown fox jumps over the lazy dog</string>
 </resources>
