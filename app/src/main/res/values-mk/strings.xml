@@ -27,7 +27,7 @@
     <string name="type_completed">Завршени</string>
     <string name="type_dropped">Отфрлени</string>
     <string name="type_plan_to_watch">Планирани за гледање</string>
-    <string name="type_none">Ништо</string>
+    <string name="type_none">Ништо одбрано</string>
     <string name="type_re_watching">Повторно гледање</string>
 
     <string name="play_movie_button">Пушти филм</string>
@@ -108,7 +108,7 @@
     <string name="player_subtitles_settings">Преводи</string>
     <string name="player_subtitles_settings_des">Поставки на плеерот за преводи</string>
     <string name="eigengraumode_settings">Режим на Eigengravy</string>
-    <string name="eigengraumode_settings_des">Ја додава опцијата за брзина во плеерот</string>
+    <string name="eigengraumode_settings_des">Додава можност за брзина на снимка во плеерот</string>
     <string name="swipe_to_seek_settings">Повлечете за да барате</string>
     <string name="swipe_to_seek_settings_des">Повлечете лево или десно за да го контролирате времето во видеоплеерот</string>
     <string name="swipe_to_change_settings">Повлечете за да ги промените поставките</string>
@@ -126,8 +126,8 @@
     <string name="bug_report_settings_on">Не испраќа податоци</string>
     <string name="show_fillers_settings">Прикажи епизода за полнење за аниме</string>
     <string name="updates_settings">Прикажи ажурирања на апликации</string>
-    <string name="updates_settings_des">Автоматски пребарувајте нови ажурирања на почетокот</string>
-    <string name="uprereleases_settings">Ажурирајте на пред официјални верзии</string>
+    <string name="updates_settings_des">Автоматски пребарувајте нови ажурирања на вклучување на апликацијата</string>
+    <string name="uprereleases_settings">Ажурирање на пред официјални верзии</string>
     <string name="uprereleases_settings_des">Пребарајте пред официјални верзии наместо ажурирања на само официјални верзии</string>
     <string name="github">Github</string>
     <string name="lightnovel">Лесна нова апликација од истите развивачи</string>
@@ -164,8 +164,8 @@
     <string name="year">Година</string>
     <string name="rating">Рејтинг</string>
     <string name="duration">Времетраење</string>
-    <string name="site">Веб сајт</string>
-    <string name="synopsis">Синопсис</string>
+    <string name="site">Извор</string>
+    <string name="synopsis">Крат</string>
 
     <string name="queued">во редица</string>
     <string name="no_subtitles">Нема преводи</string>
