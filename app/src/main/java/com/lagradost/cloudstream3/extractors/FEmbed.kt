@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.extractors
 
 import android.util.Log
+import com.lagradost.cloudstream3.network.Session
 import com.lagradost.cloudstream3.utils.*
 import org.json.JSONObject
 
@@ -22,30 +23,37 @@ class FEmbed: ExtractorApi() {
 
     override fun getUrl(url: String, referer: String?): List<ExtractorLink> {
         val extractedLinksList: MutableList<ExtractorLink> = mutableListOf()
-        val id = url.split("/").last()
-        val req = "https://femax20.com/api/source/${id}"
-        val session = HttpSession()
-        val data = session.post(req)
-        if (data.statusCode == 200) {
-            //Log.i(this.name, "Result => (data) ${data.text}")
-            val response = FEmbed.Response(data.text)
-            if (response.data != null) {
-                //Log.i(this.name, "Result => (response.data) ${response.data}")
-                for (link in response.data) {
-                    val linkUrl = link.file?.replace("\\\\", "") ?: ""
-                    val linkQual = getQualityFromName(link.label ?: "")
-                    extractedLinksList.add(
-                        ExtractorLink(
-                            source = name,
-                            name = name,
-                            url = linkUrl,
-                            referer = this.mainUrl,
-                            quality = linkQual,
-                            isM3u8 = false
+        try {
+            val id = url.split("/").last()
+            val reqLink = "https://femax20.com/api/source/${id}"
+            val session = Session()
+            val headers: Map<String, String> = mapOf(Pair("Accept", "application/json"))
+            val data = session.post(reqLink, headers = headers)
+            Log.i(this.name, "Result => status: ${data.code} / req: ${reqLink}")
+            if (data.code == 200) {
+                Log.i(this.name, "Result => (data) ${data.text}")
+                val response = FEmbed.Response(data.text)
+                if (response.data != null) {
+                    //Log.i(this.name, "Result => (response.data) ${response.data}")
+                    for (link in response.data) {
+                        val linkUrl = link.file?.replace("\\\\", "") ?: ""
+                        val linkQual = getQualityFromName(link.label ?: "")
+                        extractedLinksList.add(
+                            ExtractorLink(
+                                source = name,
+                                name = "${name} ${link.label}",
+                                url = linkUrl,
+                                referer = this.mainUrl,
+                                quality = linkQual,
+                                isM3u8 = false
+                            )
                         )
-                    )
+                    }
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Log.i(this.name, "Result => (Exception) ${e}")
         }
         return extractedLinksList
     }

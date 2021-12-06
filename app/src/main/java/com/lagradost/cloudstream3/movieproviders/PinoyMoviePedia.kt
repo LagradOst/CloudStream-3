@@ -2,11 +2,10 @@ package com.lagradost.cloudstream3.movieproviders
 
 import android.util.Log
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.extractors.MixDrop
-import com.lagradost.cloudstream3.network.get
-import com.lagradost.cloudstream3.network.text
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
 import org.json.JSONObject
@@ -47,7 +46,7 @@ class PinoyMoviePedia : MainAPI() {
     override fun getMainPage(): HomePageResponse {
         val all = ArrayList<HomePageList>()
         try {
-            val html = get(mainUrl, timeout = 15).text
+            val html = app.get(mainUrl, timeout = 15).text
             val document = Jsoup.parse(html)
             val mainbody = document.getElementsByTag("body")
             // All rows will be hardcoded bc of the nature of the site
@@ -105,7 +104,7 @@ class PinoyMoviePedia : MainAPI() {
 
     override fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=${query}"
-        val html = get(url).text
+        val html = app.get(url).text
         val document = Jsoup.parse(html).select("div.search-page")?.firstOrNull()
             ?.select("div.result-item")
         if (document != null) {
@@ -136,12 +135,12 @@ class PinoyMoviePedia : MainAPI() {
     }
 
     override fun load(url: String): LoadResponse {
-        val response = get(url).text
+        val response = app.get(url).text
         val doc = Jsoup.parse(response)
         val body = doc.getElementsByTag("body")
         val inner = body?.select("div.sheader")
         // Identify if movie or series
-        val isTvSeries = doc?.select("title")?.text()?.toLowerCase()?.contains("full episode -") ?: false
+        val isTvSeries = doc?.select("title")?.text()?.lowercase()?.contains("full episode -") ?: false
 
         // Video details
         val poster = doc.select("meta[property=og:image]").firstOrNull()?.attr("content")
@@ -168,10 +167,10 @@ class PinoyMoviePedia : MainAPI() {
                 for (ep in epList) {
                     val epTitle = ep.select("span.title")?.text() ?: ""
                     if (epTitle.isNotEmpty()) {
-                        val epNum = epTitle.toLowerCase().replace("episode", "").trim().toIntOrNull()
+                        val epNum = epTitle.lowercase().replace("episode", "").trim().toIntOrNull()
                         //Log.i(this.name, "Result => (epNum) ${epNum}")
                         val href = when (epNum != null && epLinks != null) {
-                            true -> epLinks?.select("div#source-player-${epNum}")
+                            true -> epLinks.select("div#source-player-${epNum}")
                                 ?.select("iframe")?.attr("src") ?: ""
                             false -> ""
                         }
@@ -226,17 +225,17 @@ class PinoyMoviePedia : MainAPI() {
                     for (url in urls) {
                         if (url != null) {
                             if (url.isNotEmpty()) {
-                                Log.i(this.name, "Result => (url) ${url}")
+                                //Log.i(this.name, "Result => (url) ${url}")
                                 if (url.contains("dood.watch")) {
                                     val extractor = DoodLaExtractor()
                                     val src = extractor.getUrl(url)
                                     if (src != null) {
-                                        Log.i(this.name, "Result => (url dood) ${src}")
+                                        //Log.i(this.name, "Result => (url dood) ${src}")
                                         sources.addAll(src)
                                     }
                                 }
                                 if (url.contains("voe.sx/")) {
-                                    val doc = Jsoup.parse(get(url).text)?.toString() ?: ""
+                                    val doc = Jsoup.parse(app.get(url).text)?.toString() ?: ""
                                     if (doc.isNotEmpty()) {
                                         var src = doc.substring(doc.indexOf("const sources = {"))
                                         src = src.substring(0, src.indexOf(";"))
@@ -256,6 +255,7 @@ class PinoyMoviePedia : MainAPI() {
                                 }
                                 if (url.startsWith("https://upstream.to")) {
                                     // WIP
+                                    Log.i(this.name, "Result => (no extractor) ${url}")
                                 }
                                 if (url.startsWith("https://mixdrop.co/")) {
                                     val extractor = MixDrop()
@@ -275,7 +275,7 @@ class PinoyMoviePedia : MainAPI() {
                 if (data.contains("fembed.com")) {
                     val extractor = FEmbed()
                     val src = extractor.getUrl(data)
-                    if (src != null) {
+                    if (src.isNotEmpty()) {
                         sources.addAll(src)
                     }
                 }
