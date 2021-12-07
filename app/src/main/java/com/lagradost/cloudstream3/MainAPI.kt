@@ -39,6 +39,7 @@ object APIHolder {
         // MeloMovieProvider(), // Captcha for links
         DubbedAnimeProvider(),
         HDMProvider(),
+        iHaveNoTvProvider(), // Documentaries provider
         //LookMovieProvider(), // RECAPTCHA (Please allow up to 5 seconds...)
         VMoveeProvider(),
         WatchCartoonOnlineProvider(),
