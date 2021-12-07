@@ -42,6 +42,10 @@ class PinoyMoviePedia : MainAPI() {
         val server: String? = this.optString("server")
         //val active: Int? = this.optInt("active")
     }
+    class VoeLinks(json: String) : JSONObject(json) {
+        val url: String? = this.optString("hls")
+        val label: Int? = this.optInt("video_height")
+    }
 
     override fun getMainPage(): HomePageResponse {
         val all = ArrayList<HomePageList>()
@@ -221,52 +225,96 @@ class PinoyMoviePedia : MainAPI() {
                 val urls = Jsoup.parse(data).select("div")?.map { item ->
                     item.select("iframe")?.attr("src")
                 }
-                if (urls != null) {
+                if (!urls.isNullOrEmpty()) {
                     for (url in urls) {
-                        if (url != null) {
-                            if (url.isNotEmpty()) {
-                                //Log.i(this.name, "Result => (url) ${url}")
-                                if (url.contains("dood.watch")) {
-                                    val extractor = DoodLaExtractor()
-                                    val src = extractor.getUrl(url)
-                                    if (src != null) {
-                                        //Log.i(this.name, "Result => (url dood) ${src}")
-                                        sources.addAll(src)
-                                    }
+                        if (!url.isNullOrEmpty()) {
+                            //Log.i(this.name, "Result => (url) ${url}")
+                            if (url.contains("dood.watch")) {
+                                val extractor = DoodLaExtractor()
+                                val src = extractor.getUrl(url)
+                                if (src != null) {
+                                    //Log.i(this.name, "Result => (url dood) ${src}")
+                                    sources.addAll(src)
                                 }
-                                if (url.contains("voe.sx/")) {
-                                    val doc = Jsoup.parse(app.get(url).text)?.toString() ?: ""
-                                    if (doc.isNotEmpty()) {
-                                        var src = doc.substring(doc.indexOf("const sources = {"))
-                                        src = src.substring(0, src.indexOf(";"))
-                                        src = src.substring(src.indexOf("https"))
-                                        src = src.substring(0, src.indexOf("\""))
+                            }
+                            if (url.contains("voe.sx/")) {
+                                val doc = Jsoup.parse(app.get(url).text)?.toString() ?: ""
+                                if (doc.isNotEmpty()) {
+                                    val start = "const sources ="
+                                    var src = doc.substring(doc.indexOf(start))
+                                    src = src.substring(start.length, src.indexOf(";"))
+                                        .replace("0,", "0")
+                                        .trim()
+                                    //Log.i(this.name, "Result => (src) ${src}")
+                                    val voelink = VoeLinks(src)
+                                    val linkUrl = voelink.url
+                                    //Log.i(this.name, "Result => (voelink) ${voelink}")
+                                    if (!linkUrl.isNullOrEmpty()) {
                                         sources.add(
                                             ExtractorLink(
-                                                name = "Voe m3u8",
+                                                name = "Voe m3u8 ${voelink.label}",
                                                 source = "Voe",
-                                                url = src,
-                                                quality = Qualities.Unknown.value,
+                                                url = linkUrl,
+                                                quality = getQualityFromName(voelink.label.toString()),
                                                 referer = "",
                                                 isM3u8 = true
                                             )
                                         )
                                     }
                                 }
-                                if (url.startsWith("https://upstream.to")) {
-                                    // WIP
-                                    Log.i(this.name, "Result => (no extractor) ${url}")
-                                }
-                                if (url.startsWith("https://mixdrop.co/")) {
-                                    val extractor = MixDrop()
-                                    val src = extractor.getUrl(url)
-                                    if (src != null) {
-                                        //Log.i(this.name, "Result => (url MixDrop) ${src}")
-                                        sources.addAll(src)
+                            }
+                            if (url.startsWith("https://upstream.to")) {
+                                // WIP
+                                Log.i(this.name, "Result => (no extractor) ${url}")
+                                val doc = Jsoup.parse(app.get(url, referer = "https://upstream.to").text)?.toString() ?: ""
+                                if (doc.isNotEmpty()) {
+                                    var reg = Regex("(?<=master)(.*)(?=hls)")
+                                    val result = reg.find(doc)?.groupValues?.map {
+                                        it.trim('|')
+                                    }?.toList()
+                                    reg = Regex("(?<=\\|file\\|)(.*)(?=\\|remove\\|)")
+                                    val domainList = reg.find(doc)?.groupValues?.get(1)?.split("|")
+                                    var domain = when (!domainList.isNullOrEmpty()) {
+                                        true -> {
+                                            if (domainList.isNotEmpty()) {
+                                                var domName = ""
+                                                for (part in domainList) {
+                                                    domName = "${part}.${domName}"
+                                                }
+                                                domName.trimEnd('.')
+                                            } else { "" }
+                                        }
+                                        false -> ""
+                                    }
+                                    Log.i(this.name, "Result => (domain) ${domain}")
+                                    if (domain.isNullOrEmpty()) {
+                                        domain = "s96.upstreamcdn.co"
+                                        Log.i(this.name, "Result => (default domain) ${domain}")
+                                    }
+                                    result?.forEach {
+                                        val linkUrl = "https://${domain}/hls/${it}/master.m3u8"
+                                        sources.add(
+                                            ExtractorLink(
+                                                name = "Upstream m3u8",
+                                                source = "Voe",
+                                                url = linkUrl,
+                                                quality = Qualities.Unknown.value,
+                                                referer = "https://upstream.to",
+                                                isM3u8 = true
+                                            )
+                                        )
                                     }
                                 }
-                                // end if
                             }
+                            if (url.startsWith("https://mixdrop.co/")) {
+                                val extractor = MixDrop()
+                                val src = extractor.getUrl(url)
+                                if (src != null) {
+                                    //Log.i(this.name, "Result => (url MixDrop) ${src}")
+                                    sources.addAll(src)
+                                }
+                            }
+                            // end if
                         }
                     }
                 }
@@ -274,6 +322,7 @@ class PinoyMoviePedia : MainAPI() {
                 // parse single link
                 if (data.contains("fembed.com")) {
                     val extractor = FEmbed()
+                    extractor.domainUrl = "diasfem.com"
                     val src = extractor.getUrl(data)
                     if (src.isNotEmpty()) {
                         sources.addAll(src)
