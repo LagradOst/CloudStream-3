@@ -39,7 +39,7 @@ object APIHolder {
         // MeloMovieProvider(), // Captcha for links
         DubbedAnimeProvider(),
         HDMProvider(),
-        iHaveNoTvProvider(), // Documentaries provider
+        IHaveNoTvProvider(), // Documentaries provider
         //LookMovieProvider(), // RECAPTCHA (Please allow up to 5 seconds...)
         VMoveeProvider(),
         WatchCartoonOnlineProvider(),
@@ -50,8 +50,8 @@ object APIHolder {
         VfSerieProvider(),
         AsianLoadProvider(),
 
-        SflixProvider("https://sflix.to","Sflix"),
-        SflixProvider("https://dopebox.to","Dopebox"),
+        SflixProvider("https://sflix.to", "Sflix"),
+        SflixProvider("https://dopebox.to", "Dopebox"),
 
 //        TmdbProvider(),
 
@@ -265,6 +265,20 @@ fun sortSubs(urls: List<SubtitleFile>): List<SubtitleFile> {
     }
 }
 
+fun capitalizeString(str: String): String {
+    return capitalizeStringNullable(str) ?: str
+}
+
+fun capitalizeStringNullable(str: String?): String? {
+    if (str == null)
+        return null
+    return try {
+        str.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+    } catch (e: Exception) {
+        str
+    }
+}
+
 /** https://www.imdb.com/title/tt2861424/ -> tt2861424 */
 fun imdbUrlToId(url: String): String? {
     return Regex("/title/(tt[0-9]*)").find(url)?.groupValues?.get(1)
@@ -279,6 +293,7 @@ fun imdbUrlToIdNullable(url: String?): String? {
 enum class ProviderType {
     // When data is fetched from a 3rd party site like imdb
     MetaProvider,
+
     // When all data is from the site
     DirectProvider,
 }
@@ -307,6 +322,7 @@ enum class TvType {
     Anime,
     ONA,
     Torrent,
+    Documentary,
 }
 
 // IN CASE OF FUTURE ANIME MOVIE OR SMTH
@@ -461,8 +477,8 @@ data class AnimeLoadResponse(
     override var recommendations: List<SearchResponse>? = null,
 ) : LoadResponse
 
-fun AnimeLoadResponse.addEpisodes(status : DubStatus, episodes : List<AnimeEpisode>?) {
-    if(episodes == null) return
+fun AnimeLoadResponse.addEpisodes(status: DubStatus, episodes: List<AnimeEpisode>?) {
+    if (episodes == null) return
     this.episodes[status] = episodes
 }
 

@@ -1,26 +1,18 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.extractors.StreamTape
+import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.Jsoup
 import java.net.URLEncoder
-import java.util.*
 
-class iHaveNoTvProvider : MainAPI() {
-    override val mainUrl: String
-        get() = "https://ihavenotv.com"
-    override val name: String
-        get() = "I Have No TV"
-    override val hasQuickSearch: Boolean
-        get() = false
-    override val hasMainPage: Boolean
-        get() = true
+class IHaveNoTvProvider : MainAPI() {
+    override val mainUrl = "https://ihavenotv.com"
+    override val name = "I Have No TV"
+    override val hasQuickSearch = false
+    override val hasMainPage = true
 
-
-    override val supportedTypes: Set<TvType>
-        get() = setOf(TvType.TvSeries, TvType.Movie)
-
+    override val supportedTypes = setOf(TvType.Documentary)
 
     override fun getMainPage(): HomePageResponse {
         // Uhh, I am too lazy to scrape the "latest documentaries" and "recommended documentaries",
@@ -30,12 +22,13 @@ class iHaveNoTvProvider : MainAPI() {
             "lifehack", "math", "music", "nature", "people", "physics", "science", "technology", "travel"
         )
 
-        val categories = allCategories.asSequence().shuffled().take(3).toList()  // randomly get 3 categories, because there are too many
+        val categories = allCategories.asSequence().shuffled().take(3)
+            .toList()  // randomly get 3 categories, because there are too many
 
         val items = ArrayList<HomePageList>()
 
         categories.forEach { cat ->
-            val link = "https://ihavenotv.com/category/$cat"
+            val link = "$mainUrl/category/$cat"
             val html = app.get(link).text
             val soup = Jsoup.parse(html)
 
@@ -47,7 +40,9 @@ class iHaveNoTvProvider : MainAPI() {
                 } else {
                     res.selectFirst("a[href][title]")
                 }
-                val year = Regex("""•?\s+(\d{4})\s+•""").find(res.selectFirst(".episodeMeta").text())?.destructured?.component1()?.toIntOrNull()
+                val year = Regex("""•?\s+(\d{4})\s+•""").find(
+                    res.selectFirst(".episodeMeta").text()
+                )?.destructured?.component1()?.toIntOrNull()
 
                 val title = aTag.attr("title")
                 val href = fixUrl(aTag.attr("href"))
@@ -55,18 +50,22 @@ class iHaveNoTvProvider : MainAPI() {
                     title,
                     href,
                     this.name,
-                    if (href.contains("/series/")) TvType.TvSeries else TvType.Movie,
+                    TvType.Documentary,//if (href.contains("/series/")) TvType.TvSeries else TvType.Movie,
                     poster,
                     year,
                     null
                 )
             }
-            items.add(HomePageList(cat, ArrayList(searchResults.values).subList(0, 5))) // just 5 results per category, app crashes when they are too many
+            items.add(
+                HomePageList(
+                    capitalizeString(cat),
+                    ArrayList(searchResults.values).subList(0, 5)
+                )
+            ) // just 5 results per category, app crashes when they are too many
         }
 
         return HomePageResponse(items)
     }
-
 
     override fun search(query: String): ArrayList<SearchResponse> {
         val url = """$mainUrl/search/${URLEncoder.encode(query, "UTF-8")}"""
@@ -82,7 +81,9 @@ class iHaveNoTvProvider : MainAPI() {
             } else {
                 res.selectFirst("a[href][title]")
             }
-            val year = Regex("""•?\s+(\d{4})\s+•""").find(res.selectFirst(".episodeMeta").text())?.destructured?.component1()?.toIntOrNull()
+            val year =
+                Regex("""•?\s+(\d{4})\s+•""").find(res.selectFirst(".episodeMeta").text())?.destructured?.component1()
+                    ?.toIntOrNull()
 
             val title = aTag.attr("title")
             val href = fixUrl(aTag.attr("href"))
@@ -90,7 +91,7 @@ class iHaveNoTvProvider : MainAPI() {
                 title,
                 href,
                 this.name,
-                if (href.contains("/series/")) TvType.TvSeries else TvType.Movie,
+                TvType.Documentary, //if (href.contains("/series/")) TvType.TvSeries else TvType.Movie,
                 poster,
                 year,
                 null
@@ -100,7 +101,7 @@ class iHaveNoTvProvider : MainAPI() {
         return ArrayList(searchResults.values)
     }
 
-    override fun load(url: String): LoadResponse? {
+    override fun load(url: String): LoadResponse {
         val isSeries = url.contains("/series/")
         val html = app.get(url).text
         val soup = Jsoup.parse(html)
@@ -124,7 +125,8 @@ class iHaveNoTvProvider : MainAPI() {
                 val epTitle = ep.selectFirst("a[title]").attr("title")
                 val epLink = fixUrl(ep.selectFirst("a[title]").attr("href"))
                 val (season, epNum) = if (ep.selectFirst(".episodeMeta > strong") != null &&
-                        ep.selectFirst(".episodeMeta > strong").html().contains("S")) {
+                    ep.selectFirst(".episodeMeta > strong").html().contains("S")
+                ) {
                     val split = ep.selectFirst(".episodeMeta > strong")?.text()?.split("E")
                     Pair(
                         split?.firstOrNull()?.replace("S", "")?.toIntOrNull(),
@@ -132,7 +134,9 @@ class iHaveNoTvProvider : MainAPI() {
                     )
                 } else Pair<Int?, Int?>(null, null)
                 val epDescription = ep.selectFirst(".episodeSynopsis")?.text()
-                year = Regex("""•?\s+(\d{4})\s+•""").find(ep.selectFirst(".episodeMeta").text())?.destructured?.component1()?.toIntOrNull()
+                year = Regex("""•?\s+(\d{4})\s+•""").find(
+                    ep.selectFirst(".episodeMeta").text()
+                )?.destructured?.component1()?.toIntOrNull()
 
                 categories.addAll(ep.select(".episodeMeta > a[href*=\"/category/\"]").map { it.text().trim() })
 
@@ -155,7 +159,9 @@ class iHaveNoTvProvider : MainAPI() {
                 TvType.Movie,
                 url,
                 soup.selectFirst("[rel=\"image_src\"]").attr("href"),
-                Regex("""•?\s+(\d{4})\s+•""").find(soup.selectFirst(".videoDetails").text())?.destructured?.component1()?.toIntOrNull(),
+                Regex("""•?\s+(\d{4})\s+•""").find(
+                    soup.selectFirst(".videoDetails").text()
+                )?.destructured?.component1()?.toIntOrNull(),
                 description,
                 null,
                 null,
