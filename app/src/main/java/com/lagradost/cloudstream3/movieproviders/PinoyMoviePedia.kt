@@ -51,8 +51,8 @@ class PinoyMoviePedia : MainAPI() {
                 Pair("Action", "genre_action"),
                 Pair("Romance", "genre_romance"),
                 Pair("Comedy", "genre_comedy"),
-                Pair("Family", "genre_family"),
-                Pair("Adult +18", "genre_pinay-sexy-movies")
+                Pair("Family", "genre_family")
+                //Pair("Adult +18", "genre_pinay-sexy-movies")
             )
             for (item in rows) {
                 val title = item.first
