@@ -1,6 +1,8 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import android.util.Log
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
@@ -8,7 +10,7 @@ import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.extractors.MixDrop
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.*
-import org.json.JSONObject
+import com.lagradost.cloudstream3.mapper
 import org.jsoup.Jsoup
 
 class PinoyMoviePedia : MainAPI() {
@@ -30,22 +32,10 @@ class PinoyMoviePedia : MainAPI() {
     override val hasQuickSearch: Boolean
         get() = false
 
-    class Response(json: String) : JSONObject(json) {
-        val id: String? = this.optString("id")
-        val poster: String? = this.optString("poster")
-        val list = this.optJSONArray("list")
-            ?.let { 0.until(it.length()).map { i -> it.optJSONObject(i) } } // returns an array of JSONObject
-            ?.map { Links(it.toString()) } // transforms each JSONObject of the array into 'Links'
-    }
-    class Links(json: String) : JSONObject(json) {
-        val url: String? = this.optString("url")
-        val server: String? = this.optString("server")
-        //val active: Int? = this.optInt("active")
-    }
-    class VoeLinks(json: String) : JSONObject(json) {
-        val url: String? = this.optString("hls")
-        val label: Int? = this.optInt("video_height")
-    }
+    private data class JsonVoeLinks(
+        @JsonProperty("hls") val url: String?,
+        @JsonProperty("video_height") val label: Int?
+    )
 
     override fun getMainPage(): HomePageResponse {
         val all = ArrayList<HomePageList>()
@@ -230,10 +220,10 @@ class PinoyMoviePedia : MainAPI() {
                         if (!url.isNullOrEmpty()) {
                             //Log.i(this.name, "Result => (url) ${url}")
                             if (url.contains("dood.watch")) {
+                                // WIP: Not working for current domain. Still, adding it.
                                 val extractor = DoodLaExtractor()
                                 val src = extractor.getUrl(url)
                                 if (src != null) {
-                                    //Log.i(this.name, "Result => (url dood) ${src}")
                                     sources.addAll(src)
                                 }
                             }
@@ -246,26 +236,28 @@ class PinoyMoviePedia : MainAPI() {
                                         .replace("0,", "0")
                                         .trim()
                                     //Log.i(this.name, "Result => (src) ${src}")
-                                    val voelink = VoeLinks(src)
-                                    val linkUrl = voelink.url
-                                    //Log.i(this.name, "Result => (voelink) ${voelink}")
-                                    if (!linkUrl.isNullOrEmpty()) {
-                                        sources.add(
-                                            ExtractorLink(
-                                                name = "Voe m3u8 ${voelink.label}",
-                                                source = "Voe",
-                                                url = linkUrl,
-                                                quality = getQualityFromName(voelink.label.toString()),
-                                                referer = "",
-                                                isM3u8 = true
+                                    mapper.readValue<JsonVoeLinks?>(src)?.let { voelink ->
+                                        //Log.i(this.name, "Result => (voelink) ${voelink}")
+                                        val linkUrl = voelink.url
+                                        val linkLabel = voelink.label?.toString() ?: ""
+                                        if (!linkUrl.isNullOrEmpty()) {
+                                            sources.add(
+                                                ExtractorLink(
+                                                    name = "Voe m3u8 ${linkLabel}",
+                                                    source = "Voe",
+                                                    url = linkUrl,
+                                                    quality = getQualityFromName(linkLabel),
+                                                    referer = url,
+                                                    isM3u8 = true
+                                                )
                                             )
-                                        )
+                                        }
                                     }
                                 }
                             }
                             if (url.startsWith("https://upstream.to")) {
-                                // WIP
-                                Log.i(this.name, "Result => (no extractor) ${url}")
+                                // WIP: m3u8 link fetched but not playing
+                                //Log.i(this.name, "Result => (no extractor) ${url}")
                                 val doc = Jsoup.parse(app.get(url, referer = "https://upstream.to").text)?.toString() ?: ""
                                 if (doc.isNotEmpty()) {
                                     var reg = Regex("(?<=master)(.*)(?=hls)")
@@ -286,10 +278,10 @@ class PinoyMoviePedia : MainAPI() {
                                         }
                                         false -> ""
                                     }
-                                    Log.i(this.name, "Result => (domain) ${domain}")
-                                    if (domain.isNullOrEmpty()) {
+                                    //Log.i(this.name, "Result => (domain) ${domain}")
+                                    if (domain.isEmpty()) {
                                         domain = "s96.upstreamcdn.co"
-                                        Log.i(this.name, "Result => (default domain) ${domain}")
+                                        //Log.i(this.name, "Result => (default domain) ${domain}")
                                     }
                                     result?.forEach {
                                         val linkUrl = "https://${domain}/hls/${it}/master.m3u8"
@@ -310,7 +302,6 @@ class PinoyMoviePedia : MainAPI() {
                                 val extractor = MixDrop()
                                 val src = extractor.getUrl(url)
                                 if (src != null) {
-                                    //Log.i(this.name, "Result => (url MixDrop) ${src}")
                                     sources.addAll(src)
                                 }
                             }

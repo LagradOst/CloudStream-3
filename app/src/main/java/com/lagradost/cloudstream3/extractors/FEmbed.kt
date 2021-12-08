@@ -1,9 +1,11 @@
 package com.lagradost.cloudstream3.extractors
 
 import android.util.Log
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.network.Session
 import com.lagradost.cloudstream3.utils.*
-import org.json.JSONObject
+import com.lagradost.cloudstream3.mapper
 
 class FEmbed: ExtractorApi() {
     override val name: String = "FEmbed"
@@ -11,43 +13,42 @@ class FEmbed: ExtractorApi() {
     override val requiresReferer = false
     var domainUrl: String = "femax20.com" // Alt domain: gcloud.live
 
-    class Response(json: String) : JSONObject(json) {
-        val data = this.optJSONArray("data")
-            ?.let { 0.until(it.length()).map { i -> it.optJSONObject(i) } } // returns an array of JSONObject
-            ?.map { FEmbed.Links(it.toString()) } // transforms each JSONObject of the array into 'Links'
-    }
-    class Links(json: String) : JSONObject(json) {
-        val file: String? = this.optString("file")
-        val label: String? = this.optString("label")
-        //val type: String? = this.optString("type")
-    }
+    private data class JsonResponseData(
+        @JsonProperty("data") val data: List<JsonLinks>?,
+    )
+
+    private data class JsonLinks(
+        @JsonProperty("file") val file: String?,
+        @JsonProperty("label") val label: String?
+    )
 
     override fun getUrl(url: String, referer: String?): List<ExtractorLink> {
         val extractedLinksList: MutableList<ExtractorLink> = mutableListOf()
         try {
-            val id = url.split("/").last()
+            val id = url.trimEnd('/').split("/").last()
             val reqLink = "https://${domainUrl}/api/source/${id}"
             val session = Session()
             val headers: Map<String, String> = mapOf(Pair("Accept", "application/json"))
             val data = session.post(reqLink, headers = headers, referer = url)
             //Log.i(this.name, "Result => status: ${data.code} / req: ${reqLink}")
             if (data.code == 200) {
-                //Log.i(this.name, "Result => (data) ${data.text}")
-                val response = FEmbed.Response(data.text)
-                response.data?.forEach { link ->
-                    val linkUrl = link.file
-                    if (!linkUrl.isNullOrEmpty()) {
-                        val linkQual = getQualityFromName(link.label ?: "")
-                        extractedLinksList.add(
-                            ExtractorLink(
-                                source = name,
-                                name = "${name} ${link.label}",
-                                url = linkUrl,
-                                referer = this.mainUrl,
-                                quality = linkQual,
-                                isM3u8 = false
+                mapper.readValue<JsonResponseData?>(data.text)?.let {
+                    it.data?.forEach { link ->
+                        //Log.i(this.name, "Result => link: ${link}")
+                        val linkUrl = link.file
+                        val linkLabel = link.label ?: ""
+                        if (!linkUrl.isNullOrEmpty()) {
+                            extractedLinksList.add(
+                                ExtractorLink(
+                                    source = name,
+                                    name = "${name} ${linkLabel}",
+                                    url = linkUrl,
+                                    referer = this.domainUrl,
+                                    quality = getQualityFromName(linkLabel),
+                                    isM3u8 = false
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
