@@ -32,6 +32,7 @@ https://github.com/LagradOst/CloudStream-3/releases
 * 🇹🇷 Turkish
 * 🇲🇰 Macedonian
 * 🇧🇷 Portuguese (Brazil)
+* 🇷🇴 Romanian
 
 ***SCREENSHOTS:***
 
