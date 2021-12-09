@@ -91,7 +91,7 @@ class PinoyMoviePedia : MainAPI() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            Log.i(this.name, "Exception => ${e}")
+            Log.i(this.name, "Result => (Exception) ${e}")
         }
         return HomePageResponse(all)
     }
