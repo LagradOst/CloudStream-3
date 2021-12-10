@@ -144,7 +144,7 @@
     <string name="benene_count_text">%d Benenes given to devs</string>
     <string name="benene_count_text_none">No Benenes given</string>
 
-    <string name="subs_auto_select_language">Auto Select Language</string>
+    <string name="subs_auto_select_language">Auto-Select Language</string>
     <string name="subs_download_languages">Download Languages</string>
     <string name="subs_hold_to_reset_to_default">Hold to reset to default</string>
     <string name="continue_watching">Continue Watching</string>
@@ -319,7 +319,7 @@
     <string name="preferred_media_settings">Preferred Media</string>
 
     <string name="automatic">Auto</string>
-    <string name="tv_layout">Tv Layout</string>
+    <string name="tv_layout">TV Layout</string>
     <string name="phone_layout">Phone Layout</string>
 
     <string name="primary_color_settings">Primary Color</string>
