@@ -196,6 +196,13 @@
      <string name="anime">Anime</string>
      <string name="torrent">Torrent</string>
 	 <string name="documentaries">Filme Documentare</string>
+	 
+	 <!--singular-->
+    <string name="movies_singular">Filmul</string>
+    <string name="tv_series_singular">Serie</string>
+    <string name="cartoons_singular">Caricatur</string>
+    <string name="torrent_singular">Torrent</string>
+    <string name="documentaries_singular">Documentar</string>
      
 	 <string name="source_error">Eroare de sursă</string>
      <string name="remote_error">Eroare de telecomandă</string>
@@ -280,6 +287,11 @@
     <string name="subtitles_depressed">Deprimată</string>
     <string name="subtitles_shadow">Umbră</string>
     <string name="subtitles_raised">În relief</string>
-	
+	<!--
+    Example text (pangram) can optionally be translated; if you do, include all the letters in the alphabet,
+    see: 
+	https://en.wikipedia.org/w/index.php?title=Pangram&oldid=225849300
+	https://en.wikipedia.org/wiki/The_quick_brown_fox_jumps_over_the_lazy_dog
+    -->
 	<string name="subtitles_example_text">Gheorghe, obezul, a reuşit să obţină jucându-se un flux în Quebec de o mie kilowaţioră</string>
 </resources>
