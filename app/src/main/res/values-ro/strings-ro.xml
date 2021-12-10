@@ -1,7 +1,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 <!--Created by The Translator <https://play.google.com/store/apps/details?id=com.sunilpaulmathew.translator>-->
 
-    <string name="result_poster_img_des">Afiș</string>
+	<!-- IS NOT NEEDED TO TRANSLATE AS THEY ARE ONLY USED FOR SCREEN READERS AND WONT SHOW UP TO NORMAL USERS -->
+     <string name="result_poster_img_des">Afiș</string>
      <string name="search_poster_img_des">@string/result_poster_img_des</string>
      <string name="episode_poster_img_des">Afișul Episodului</string>
      <string name="home_main_poster_img_des">Afiș Principal</string>
@@ -10,6 +11,7 @@
      <string name="home_change_provider_img_des">Schimbați furnizorul</string>
      <string name="preview_background_img_des">Previzualizare fundal</string>
 	 
+	 <!-- TRANSLATE, BUT DON'T FORGET FORMAT -->
      <string name="player_speed_text_format" formatted="true">Viteză (%.2fx)</string>
      <string name="rated_format" formatted="true">Evaluat: %.1f</string>
      <string name="new_update_format" formatted="true">Noua actualizare găsită!\n%s -> %s</string>
