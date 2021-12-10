@@ -194,14 +194,14 @@
     <string name="cartoons">Desenhos animados</string>
     <string name="anime">Anime</string>
     <string name="torrent">Torrentes</string>
-	<string name="torrent">Documentários</string>
+	<string name="documentaries">Documentários</string>
 	
 	<!--singular-->
-	<string name="movies">Filme</string>
-	<string name="tv_series">Sériado</string>
-	<string name="cartoons">Desenho animado</string>
-	<string name="torrent">Torrent</string>
-	<string name="documentaries">Documentário</string>
+	<string name="movies_singular">Filme</string>
+	<string name="tv_series_singular">Sériado</string>
+	<string name="cartoons_singular">Desenho animado</string>
+	<string name="torrent_singular">Torrent</string>
+	<string name="documentaries_singular">Documentário</string>
 	
     <string name="source_error">Erro de origem</string>
     <string name="remote_error">Erro remoto</string>
