@@ -168,7 +168,7 @@
     <string name="player_subtitles_settings">Subtitles</string>
     <string name="player_subtitles_settings_des">Player subtitles settings</string>
     <string name="eigengraumode_settings">Eigengravy Mode</string>
-    <string name="eigengraumode_settings_des">Adds the speed option in the player</string>
+    <string name="eigengraumode_settings_des">Adds a speed option in the player</string>
     <string name="swipe_to_seek_settings">Swipe to seek</string>
     <string name="swipe_to_seek_settings_des">Swipe left or right to control time in the videoplayer</string>
     <string name="swipe_to_change_settings">Swipe to change settings</string>
@@ -177,7 +177,7 @@
     <string name="double_tap_to_seek_settings_des">Tap twice on the right or left side to seek forwards or backwards
     </string>
     <string name="use_system_brightness_settings">Use system brightness</string>
-    <string name="use_system_brightness_settings_des">Use system brightness in the app player instead of an dark
+    <string name="use_system_brightness_settings_des">Use system brightness in the app player instead of a dark
         overlay
     </string>
 
