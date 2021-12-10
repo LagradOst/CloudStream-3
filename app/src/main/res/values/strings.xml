@@ -201,7 +201,7 @@
 
     <string name="app_language">App Language</string>
 
-    <string name="no_chomecast_support_toast">This provider has no chromecast support</string>
+    <string name="no_chomecast_support_toast">This provider has no Chromecast support</string>
     <string name="no_links_found_toast">No Links Found</string>
     <string name="copy_link_toast">Link copied to clipboard</string>
     <string name="play_episode_toast">Play Episode</string>
@@ -233,7 +233,7 @@
     <string name="site">Site</string>
     <string name="synopsis">Synopsis</string>
 
-    <string name="queued">queued</string>
+    <string name="queued">Queued</string>
     <string name="no_subtitles">No Subtitles</string>
     <string name="default_subtitles">Default</string>
 
@@ -243,18 +243,18 @@
 
     <!--plural-->
     <string name="movies">Movies</string>
-    <string name="tv_series">TvSeries</string>
+    <string name="tv_series">TV Series</string>
     <string name="cartoons">Cartoons</string>
     <string name="anime">Anime</string>
-    <string name="torrent">Torrent</string>
+    <string name="torrent">Torrents</string>
     <string name="documentaries">Documentaries</string>
 
     <!--singular-->
-    <string name="movies_singular">@string/movies</string>
+    <string name="movies_singular">Movie</string>
     <string name="tv_series_singular">Series</string>
     <string name="cartoons_singular">Cartoon</string>
     <string name="anime_singular">@string/anime</string>
-    <string name="torrent_singular">@string/torrent</string>
+    <string name="torrent_singular">Torrent</string>
     <string name="documentaries_singular">Documentary</string>
 
     <string name="source_error">Source error</string>
@@ -337,7 +337,7 @@
     <string name="trakt_account_settings" translatable="false">Trakt</string>
     -->
     <string name="login_format">%s %s</string>
-    <string name="account">account</string>
+    <string name="account">Account</string>
     <string name="logout">Logout</string>
     <string name="login">Login</string>
     <string name="switch_account">Switch account</string>
@@ -354,8 +354,10 @@
     <string name="subtitles_shadow">Shadow</string>
     <string name="subtitles_raised">Raised</string>
     <!--
-    Example text does not need to be translated and if you do translate include all the letters in the alphabet,
-    see https://en.wikipedia.org/wiki/The_quick_brown_fox_jumps_over_the_lazy_dog
+    Example text (pangram) can optionally be translated; if you do, include all the letters in the alphabet,
+    see: 
+	https://en.wikipedia.org/w/index.php?title=Pangram&oldid=225849300
+	https://en.wikipedia.org/wiki/The_quick_brown_fox_jumps_over_the_lazy_dog
     -->
     <string name="subtitles_example_text">The quick brown fox jumps over the lazy dog</string>
 </resources>
