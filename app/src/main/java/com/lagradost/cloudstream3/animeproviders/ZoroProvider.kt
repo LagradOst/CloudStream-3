@@ -7,8 +7,6 @@ import com.lagradost.cloudstream3.movieproviders.SflixProvider
 import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.toExtractorLink
 import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.toSubtitleFile
 import com.lagradost.cloudstream3.network.WebViewResolver
-import com.lagradost.cloudstream3.network.get
-import com.lagradost.cloudstream3.network.text
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -16,29 +14,19 @@ import java.net.URI
 import java.util.*
 
 class ZoroProvider : MainAPI() {
-    override val mainUrl: String
-        get() = "https://zoro.to"
-    override val name: String
-        get() = "Zoro"
+    override val mainUrl = "https://zoro.to"
+    override val name = "Zoro"
+    override val hasQuickSearch = false
+    override val hasMainPage = true
+    override val hasChromecastSupport = true
+    override val hasDownloadSupport = true
+    override val usesWebView = true
 
-    override val hasQuickSearch: Boolean
-        get() = false
-
-    override val hasMainPage: Boolean
-        get() = true
-
-    override val hasChromecastSupport: Boolean
-        get() = true
-
-    override val hasDownloadSupport: Boolean
-        get() = true
-
-    override val supportedTypes: Set<TvType>
-        get() = setOf(
-            TvType.Anime,
-            TvType.AnimeMovie,
-            TvType.ONA
-        )
+    override val supportedTypes = setOf(
+        TvType.Anime,
+        TvType.AnimeMovie,
+        TvType.ONA
+    )
 
     companion object {
         fun getType(t: String): TvType {
@@ -81,7 +69,7 @@ class ZoroProvider : MainAPI() {
 
 
     override fun getMainPage(): HomePageResponse {
-        val html = get("$mainUrl/home").text
+        val html = app.get("$mainUrl/home").text
         val document = Jsoup.parse(html)
 
         val homePageList = ArrayList<HomePageList>()
@@ -139,7 +127,7 @@ class ZoroProvider : MainAPI() {
 
     override fun search(query: String): List<SearchResponse> {
         val link = "$mainUrl/search?keyword=$query"
-        val html = get(link).text
+        val html = app.get(link).text
         val document = Jsoup.parse(html)
 
         return document.select(".flw-item").map {
@@ -183,7 +171,7 @@ class ZoroProvider : MainAPI() {
     }
 
     override fun load(url: String): LoadResponse {
-        val html = get(url).text
+        val html = app.get(url).text
         val document = Jsoup.parse(html)
 
         val title = document.selectFirst(".anisc-detail > .film-name")?.text().toString()
@@ -214,7 +202,7 @@ class ZoroProvider : MainAPI() {
 
         val episodes = Jsoup.parse(
             mapper.readValue<Response>(
-                get(
+                app.get(
                     "$mainUrl/ajax/v2/episode/list/$animeId"
                 ).text
             ).html
@@ -230,25 +218,21 @@ class ZoroProvider : MainAPI() {
                 it.selectFirst(".ssli-order")?.text()?.toIntOrNull()
             )
         }
-        return AnimeLoadResponse(
-            title,
-            japaneseTitle,
-            title,
-            url,
-            this.name,
-            TvType.Anime,
-            poster,
-            year,
-            null,
-            episodes,
-            status,
-            description,
-            tags,
-        )
+
+        return newAnimeLoadResponse(title, url, TvType.Anime) {
+            japName = japaneseTitle
+            engName = title
+            posterUrl = poster
+            this.year = year
+            addEpisodes(DubStatus.Subbed, episodes)
+            showStatus = status
+            plot = description
+            this.tags = tags
+        }
     }
 
     private fun getM3u8FromRapidCloud(url: String): String {
-        return get(
+        return app.get(
             "$url&autoPlay=1&oa=0",
             headers = mapOf(
                 "Referer" to "https://zoro.to/",
@@ -275,13 +259,13 @@ class ZoroProvider : MainAPI() {
 
         val servers: List<Pair<DubStatus, String>> = Jsoup.parse(
             mapper.readValue<Response>(
-                get("$mainUrl/ajax/v2/episode/servers?episodeId=" + data.split("=")[1]).text
+                app.get("$mainUrl/ajax/v2/episode/servers?episodeId=" + data.split("=")[1]).text
             ).html
         ).select(".server-item[data-type][data-id]").map {
             Pair(if (it.attr("data-type") == "sub") DubStatus.Subbed else DubStatus.Dubbed, it.attr("data-id")!!)
         }
 
-        val res = get(
+        val res = app.get(
             data,
             interceptor = WebViewResolver(
                 Regex("""/getSources""")
@@ -289,7 +273,7 @@ class ZoroProvider : MainAPI() {
         )
 //        println("RES TEXT ${res.text}")
 
-        val recaptchaToken = res.request.url.queryParameter("_token")
+        val recaptchaToken = res.response.request.url.queryParameter("_token")
 
         val responses = servers.map {
             val link = "$mainUrl/ajax/v2/episode/sources?id=${it.second}&_token=$recaptchaToken"
@@ -297,9 +281,9 @@ class ZoroProvider : MainAPI() {
                 it.first,
                 getM3u8FromRapidCloud(
                     mapper.readValue<RapidCloudResponse>(
-                        get(
+                        app.get(
                             link,
-                            res.request.headers.toMap()
+                            res.headers.toMap()
                         ).text
                     ).link
                 )

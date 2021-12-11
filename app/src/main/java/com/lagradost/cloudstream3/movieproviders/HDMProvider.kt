@@ -1,26 +1,22 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.network.get
-import com.lagradost.cloudstream3.network.text
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import org.jsoup.Jsoup
 
 class HDMProvider : MainAPI() {
-    override val name: String
-        get() = "HD Movies"
-    override val mainUrl: String
-        get() = "https://hdm.to"
+    override val name = "HD Movies"
+    override val mainUrl = "https://hdm.to"
+    override val hasMainPage = true
 
-    override val supportedTypes: Set<TvType>
-        get() = setOf(
-            TvType.Movie,
-        )
+    override val supportedTypes = setOf(
+        TvType.Movie,
+    )
 
     override fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search/$query"
-        val response = get(url).text
+        val response = app.get(url).text
         val document = Jsoup.parse(response)
         val items = document.select("div.col-md-2 > article > a")
         if (items.isEmpty()) return ArrayList()
@@ -44,7 +40,7 @@ class HDMProvider : MainAPI() {
     ): Boolean {
         if (data == "") return false
         val slug = ".*/(.*?)\\.mp4".toRegex().find(data)?.groupValues?.get(1) ?: return false
-        val response = get(data).text
+        val response = app.get(data).text
         val key = "playlist\\.m3u8(.*?)\"".toRegex().find(response)?.groupValues?.get(1) ?: return false
         callback.invoke(
             ExtractorLink(
@@ -60,7 +56,7 @@ class HDMProvider : MainAPI() {
     }
 
     override fun load(url: String): LoadResponse? {
-        val response = get(url).text
+        val response = app.get(url).text
         val document = Jsoup.parse(response)
         val title = document.selectFirst("h2.movieTitle")?.text() ?: throw ErrorLoadingException("No Data Found")
         val poster = document.selectFirst("div.post-thumbnail > img").attr("src")
@@ -71,7 +67,52 @@ class HDMProvider : MainAPI() {
 
         return MovieLoadResponse(
             title, url, this.name, TvType.Movie,
-                "$mainUrl/src/player/?v=$data", poster, year, descript, null
+            "$mainUrl/src/player/?v=$data", poster, year, descript, null
         )
+    }
+
+    override fun getMainPage(): HomePageResponse {
+        val html = app.get("$mainUrl", timeout = 25).text
+        val document = Jsoup.parse(html)
+        val all = ArrayList<HomePageList>()
+
+        val mainbody = document.getElementsByTag("body")
+            ?.select("div.homeContentOuter > section > div.container > div")
+        // Fetch row title
+        val inner = mainbody?.select("div.col-md-2.col-sm-2.mrgb")
+        val title = mainbody?.select("div > div")?.firstOrNull()?.select("div.title.titleBar")?.text() ?: "Unnamed Row"
+        // Fetch list of items and map
+        if (inner != null) {
+            val elements: List<SearchResponse> = inner.map {
+
+                val aa = it.select("a").firstOrNull()
+                val item = aa?.select("div.item")
+                val href = aa?.attr("href")
+                val link = when (href != null) {
+                    true -> fixUrl(href)
+                    false -> ""
+                }
+                val name = item?.select("div.movie-details")?.text() ?: "<No Title>"
+                var image = item?.select("img")?.get(1)?.attr("src") ?: ""
+                val year = null
+
+                MovieSearchResponse(
+                    name,
+                    link,
+                    this.name,
+                    TvType.Movie,
+                    image,
+                    year,
+                    null,
+                )
+            }
+
+            all.add(
+                HomePageList(
+                    title, elements
+                )
+            )
+        }
+        return HomePageResponse(all)
     }
 }

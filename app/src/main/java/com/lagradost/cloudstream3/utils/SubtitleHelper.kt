@@ -1,8 +1,5 @@
 package com.lagradost.cloudstream3.utils
 
-import com.lagradost.cloudstream3.network.get
-import com.lagradost.cloudstream3.network.text
-import org.jsoup.Jsoup
 import java.util.*
 
 object SubtitleHelper {
@@ -42,32 +39,50 @@ object SubtitleHelper {
         println("ISO CREATED:\n$text")
     }*/
 
-    /** lang -> ISO_639_1*/
-    fun fromLanguageToTwoLetters(input: String): String? {
-        for (lang in languages) {
-            if (lang.languageName == input || lang.nativeName == input) {
-                return lang.ISO_639_1
-            }
+    /** lang -> ISO_639_1
+     * @param looseCheck will use .contains in addition to .equals
+     * */
+    fun fromLanguageToTwoLetters(input: String, looseCheck: Boolean): String? {
+
+        languages.forEach {
+            if (it.languageName.equals(input, ignoreCase = true)
+                || it.nativeName.equals(input, ignoreCase = true)
+            ) return it.ISO_639_1
         }
+
+        // Runs as a separate loop as to prioritize fully matching languages.
+        if (looseCheck)
+            languages.forEach {
+                if (input.contains(it.languageName, ignoreCase = true)
+                    || input.contains(it.nativeName, ignoreCase = true)
+                ) return it.ISO_639_1
+            }
+
         return null
+    }
+
+    private var ISO_639_1Map: HashMap<String, String> = hashMapOf()
+    private fun initISO6391Map() {
+        for (lang in languages) {
+            ISO_639_1Map[lang.ISO_639_1] = lang.languageName
+        }
     }
 
     /** ISO_639_1 -> lang*/
     fun fromTwoLettersToLanguage(input: String): String? {
         if (input.length != 2) return null
-        val comparison = input.toLowerCase(Locale.ROOT)
-        for (lang in languages) {
-            if (lang.ISO_639_1 == comparison) {
-                return lang.languageName
-            }
+        if (ISO_639_1Map.isEmpty()) {
+            initISO6391Map()
         }
-        return null
+        val comparison = input.lowercase(Locale.ROOT)
+
+        return ISO_639_1Map[comparison]
     }
 
     /**ISO_639_2_B or ISO_639_2_T or ISO_639_3-> lang*/
     fun fromThreeLettersToLanguage(input: String): String? {
         if (input.length != 3) return null
-        val comparison = input.toLowerCase(Locale.ROOT)
+        val comparison = input.lowercase(Locale.ROOT)
         for (lang in languages) {
             if (lang.ISO_639_2_B == comparison) {
                 return lang.languageName

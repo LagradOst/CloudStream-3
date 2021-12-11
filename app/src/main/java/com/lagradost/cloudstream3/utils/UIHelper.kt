@@ -37,6 +37,8 @@ import com.bumptech.glide.load.model.GlideUrl
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
+import com.lagradost.cloudstream3.utils.GlideOptions.bitmapTransform
+import jp.wasabeef.glide.transformations.BlurTransformation
 import kotlin.math.roundToInt
 
 
@@ -67,10 +69,15 @@ object UIHelper {
 
     fun Fragment.hideKeyboard() {
         activity?.window?.decorView?.clearFocus()
-        view.let {
-            if (it != null) {
-                hideKeyboard(it)
-            }
+        view?.let {
+            hideKeyboard(it)
+        }
+    }
+
+    fun Activity.hideKeyboard() {
+        window?.decorView?.clearFocus()
+        this.findViewById<View>(android.R.id.content)?.rootView?.let {
+            hideKeyboard(it)
         }
     }
 
@@ -101,6 +108,17 @@ object UIHelper {
         try {
             GlideApp.with(this.context)
                 .load(GlideUrl(url))
+                .into(this)
+        } catch (e: Exception) {
+            logError(e)
+        }
+    }
+
+    fun ImageView?.setImageBlur(url: String?, radius : Int, sample : Int = 3) {
+        if (this == null || url.isNullOrBlank()) return
+        try {
+            GlideApp.with(this.context)
+                .load(GlideUrl(url)).apply(bitmapTransform(BlurTransformation(radius, sample)))
                 .into(this)
         } catch (e: Exception) {
             logError(e)
@@ -295,7 +313,8 @@ object UIHelper {
         inputMethodManager?.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
-    fun showInputMethod(view: View) {
+    fun showInputMethod(view: View?) {
+        if(view == null) return
         val inputMethodManager = view.context.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager?
         inputMethodManager?.showSoftInput(view, 0)
     }

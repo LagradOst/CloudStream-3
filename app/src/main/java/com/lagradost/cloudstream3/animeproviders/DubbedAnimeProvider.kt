@@ -5,28 +5,21 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTime
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
-import com.lagradost.cloudstream3.network.get
-import com.lagradost.cloudstream3.network.text
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.jsoup.Jsoup
 import java.util.*
 
 class DubbedAnimeProvider : MainAPI() {
-    override val mainUrl: String
-        get() = "https://bestdubbedanime.com"
-    override val name: String
-        get() = "DubbedAnime"
-    override val hasQuickSearch: Boolean
-        get() = true
-    override val hasMainPage: Boolean
-        get() = true
+    override val mainUrl = "https://bestdubbedanime.com"
+    override val name = "DubbedAnime"
+    override val hasQuickSearch = true
+    override val hasMainPage = true
 
-    override val supportedTypes: Set<TvType>
-        get() = setOf(
-            TvType.AnimeMovie,
-            TvType.Anime,
-        )
+    override val supportedTypes = setOf(
+        TvType.AnimeMovie,
+        TvType.Anime,
+    )
 
     data class QueryEpisodeResultRoot(
         @JsonProperty("result")
@@ -62,7 +55,7 @@ class DubbedAnimeProvider : MainAPI() {
     )
 
     private fun parseDocumentTrending(url: String): List<SearchResponse> {
-        val response = get(url).text
+        val response = app.get(url).text
         val document = Jsoup.parse(response)
         return document.select("li > a").map {
             val href = fixUrl(it.attr("href"))
@@ -81,7 +74,7 @@ class DubbedAnimeProvider : MainAPI() {
     }
 
     private fun parseDocument(url: String, trimEpisode: Boolean = false): List<SearchResponse> {
-        val response = get(url).text
+        val response = app.get(url).text
         val document = Jsoup.parse(response)
         return document.select("a.grid__link").map {
             val href = fixUrl(it.attr("href"))
@@ -109,7 +102,7 @@ class DubbedAnimeProvider : MainAPI() {
             HomePageList("Trending", parseDocumentTrending(trendingUrl)),
             HomePageList("Recently Added", parseDocument(recentlyAddedUrl)),
             HomePageList("Recent Releases", parseDocument(lastEpisodeUrl, true)),
-           // HomePageList("All", parseDocument(allUrl))
+            // HomePageList("All", parseDocument(allUrl))
         )
 
         return HomePageResponse(listItems)
@@ -119,7 +112,7 @@ class DubbedAnimeProvider : MainAPI() {
     private fun getAnimeEpisode(slug: String, isMovie: Boolean): EpisodeInfo {
         val url =
             mainUrl + (if (isMovie) "/movies/jsonMovie" else "/xz/v3/jsonEpi") + ".php?slug=$slug&_=$unixTime"
-        val response = get(url).text
+        val response = app.get(url).text
         val mapped = mapper.readValue<QueryEpisodeResultRoot>(response)
         return mapped.result.anime.first()
     }
@@ -135,7 +128,7 @@ class DubbedAnimeProvider : MainAPI() {
 
     override fun quickSearch(query: String): List<SearchResponse> {
         val url = "$mainUrl/xz/searchgrid.php?p=1&limit=12&s=$query&_=$unixTime"
-        val response = get(url).text
+        val response = app.get(url).text
         val document = Jsoup.parse(response)
         val items = document.select("div.grid__item > a")
         if (items.isEmpty()) return ArrayList()
@@ -167,7 +160,7 @@ class DubbedAnimeProvider : MainAPI() {
 
     override fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search/$query"
-        val response = get(url).text
+        val response = app.get(url).text
         val document = Jsoup.parse(response)
         val items = document.select("div.resultinner > a.resulta")
         if (items.isEmpty()) return ArrayList()
@@ -216,7 +209,7 @@ class DubbedAnimeProvider : MainAPI() {
         }.toList())
         for (hl in hls) {
             try {
-                val sources = get("$mainUrl/xz/api/playeri.php?url=$hl&_=$unixTime").text
+                val sources = app.get("$mainUrl/xz/api/playeri.php?url=$hl&_=$unixTime").text
                 val find = "src=\"(.*?)\".*?label=\"(.*?)\"".toRegex().find(sources)
                 if (find != null) {
                     val quality = find.groupValues[2]
@@ -254,12 +247,13 @@ class DubbedAnimeProvider : MainAPI() {
                 null
             )
         } else {
-            val response = get(url).text
+            val response = app.get(url).text
             val document = Jsoup.parse(response)
             val title = document.selectFirst("h4").text()
             val descriptHeader = document.selectFirst("div.animeDescript")
             val descript = descriptHeader.selectFirst("> p").text()
-            val year = descriptHeader.selectFirst("> div.distatsx > div.sroverd").text().replace("Released: ", "")
+            val year = descriptHeader.selectFirst("> div.distatsx > div.sroverd").text()
+                .replace("Released: ", "")
                 .toIntOrNull()
 
             val episodes = document.select("a.epibloks").map {
@@ -268,20 +262,12 @@ class DubbedAnimeProvider : MainAPI() {
             }
 
             val img = fixUrl(document.select("div.fkimgs > img").attr("src"))
-            return AnimeLoadResponse(
-                null,
-                null,
-                title,
-                url,
-                this.name,
-                TvType.Anime,
-                img,
-                year,
-                ArrayList(episodes),
-                null,
-                null,
-                descript,
-            )
+            return newAnimeLoadResponse(title, url, TvType.Anime) {
+                posterUrl = img
+                this.year = year
+                addEpisodes(DubStatus.Dubbed, episodes)
+                plot = descript
+            }
         }
     }
 }

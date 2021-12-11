@@ -13,12 +13,10 @@ class APIRepository(val api: MainAPI) {
         var dubStatusActive = HashSet<DubStatus>()
 
         val noneApi = object : MainAPI() {
-            override val name: String
-                get() = "None"
+            override val name = "None"
         }
         val randomApi = object : MainAPI() {
-            override val name: String
-                get() = "Random"
+            override val name = "Random"
         }
 
         val noneRepo = APIRepository(noneApi)
@@ -49,7 +47,7 @@ class APIRepository(val api: MainAPI) {
         }
     }
 
-    suspend fun getMainPage(): Resource<HomePageResponse> {
+    suspend fun getMainPage(): Resource<HomePageResponse?> {
         return safeApiCall {
             api.getMainPage() ?: throw ErrorLoadingException()
         }

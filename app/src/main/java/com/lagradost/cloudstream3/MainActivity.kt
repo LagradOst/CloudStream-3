@@ -12,22 +12,28 @@ import android.content.res.Resources
 import android.os.Build
 import android.os.Bundle
 import android.view.*
+import android.view.KeyEvent.ACTION_DOWN
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.core.view.isVisible
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceManager
 import com.google.android.gms.cast.framework.*
+import com.google.android.material.navigationrail.NavigationRailView
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import com.lagradost.cloudstream3.APIHolder.apis
 import com.lagradost.cloudstream3.APIHolder.getApiDubstatusSettings
 import com.lagradost.cloudstream3.APIHolder.restrictedApis
 import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.network.initRequestClient
+import com.lagradost.cloudstream3.network.Requests
 import com.lagradost.cloudstream3.receivers.VideoDownloadRestartReceiver
+import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.OAuth2Apis
+import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.OAuth2accountApis
+import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.appString
 import com.lagradost.cloudstream3.ui.APIRepository
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_NAVIGATE_TO
 import com.lagradost.cloudstream3.ui.player.PlayerEventType
@@ -42,9 +48,11 @@ import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
 import com.lagradost.cloudstream3.utils.UIHelper.checkWrite
 import com.lagradost.cloudstream3.utils.UIHelper.getResourceColor
 import com.lagradost.cloudstream3.utils.UIHelper.hasPIPPermission
+import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.requestRW
 import com.lagradost.cloudstream3.utils.UIHelper.shouldShowPIPMode
+import com.lagradost.cloudstream3.utils.UIHelper.showInputMethod
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_result.*
@@ -63,6 +71,9 @@ const val VLC_FROM_PROGRESS = -2
 const val VLC_EXTRA_POSITION_OUT = "extra_position"
 const val VLC_EXTRA_DURATION_OUT = "extra_duration"
 const val VLC_LAST_ID_KEY = "vlc_last_open_id"
+// Short name for requests client to make it nicer to use
+var app = Requests()
+
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
     override fun onColorSelected(dialogId: Int, color: Int) {
@@ -78,7 +89,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         updateLocale() // android fucks me by chaining lang when rotating the phone
     }
 
-    private var mCastSession: CastSession? = null
+    //private var mCastSession: CastSession? = null
     lateinit var mSessionManager: SessionManager
     private val mSessionManagerListener: SessionManagerListener<Session> by lazy { SessionManagerListenerImpl() }
 
@@ -117,7 +128,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         super.onResume()
         try {
             if (isCastApiAvailable()) {
-                mCastSession = mSessionManager.currentCastSession
+                //mCastSession = mSessionManager.currentCastSession
                 mSessionManager.addSessionManagerListener(mSessionManagerListener)
             }
         } catch (e: Exception) {
@@ -130,11 +141,105 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         try {
             if (isCastApiAvailable()) {
                 mSessionManager.removeSessionManagerListener(mSessionManagerListener)
-                mCastSession = null
+                //mCastSession = null
             }
         } catch (e: Exception) {
             logError(e)
         }
+    }
+
+    enum class FocusDirection {
+        Left,
+        Right,
+        Up,
+        Down,
+    }
+
+    private fun getNextFocus(view: View?, direction: FocusDirection, depth: Int = 0): Int? {
+        if (view == null || depth >= 10) {
+            return null
+        }
+
+        val nextId = when (direction) {
+            FocusDirection.Left -> {
+                view.nextFocusLeftId
+            }
+            FocusDirection.Up -> {
+                view.nextFocusUpId
+            }
+            FocusDirection.Right -> {
+                view.nextFocusRightId
+            }
+            FocusDirection.Down -> {
+                view.nextFocusDownId
+            }
+        }
+
+        return if (nextId != -1) {
+            val next = findViewById<View?>(nextId)
+            //println("NAME: ${next.accessibilityClassName} | ${next?.isShown}" )
+
+            if (next?.isShown == false) {
+                getNextFocus(next, direction, depth + 1)
+            } else {
+                if (depth == 0) {
+                    null
+                } else {
+                    nextId
+                }
+            }
+        } else {
+            null
+        }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
+        event?.keyCode?.let { keyCode ->
+            when (event.action) {
+                ACTION_DOWN -> {
+                    if (currentFocus != null) {
+                        val next = when (keyCode) {
+                            KeyEvent.KEYCODE_DPAD_LEFT -> getNextFocus(currentFocus, FocusDirection.Left)
+                            KeyEvent.KEYCODE_DPAD_RIGHT -> getNextFocus(currentFocus, FocusDirection.Right)
+                            KeyEvent.KEYCODE_DPAD_UP -> getNextFocus(currentFocus, FocusDirection.Up)
+                            KeyEvent.KEYCODE_DPAD_DOWN -> getNextFocus(currentFocus, FocusDirection.Down)
+
+                            else -> null
+                        }
+
+                        if (next != null && next != -1) {
+                            val nextView = findViewById<View?>(next)
+                            if(nextView != null) {
+                                nextView.requestFocus()
+                                return true
+                            }
+                        }
+
+                        when (keyCode) {
+
+                            KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                println("DPAD PRESSED $currentFocus")
+                                if (currentFocus is SearchView || currentFocus is SearchView.SearchAutoComplete) {
+                                    println("current PRESSED")
+                                    showInputMethod(currentFocus?.findFocus())
+                                }
+                            }
+                        }
+                    }
+                    //println("Keycode: $keyCode")
+                    //showToast(
+                    //    this,
+                    //    "Got Keycode $keyCode | ${KeyEvent.keyCodeToString(keyCode)} \n ${event?.action}",
+                    //    Toast.LENGTH_LONG
+                    //)
+                }
+            }
+        }
+
+        if (keyEventListener?.invoke(event) == true) {
+            return true
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -201,7 +306,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
 
         //when (keyCode) {
         //    KeyEvent.KEYCODE_DPAD_CENTER -> {
-        //        println("DPAD PRESSED ${this.isKeyboardOpen()}")
+        //        println("DPAD PRESSED")
         //    }
         //}
 
@@ -222,6 +327,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         val onDialogDismissedEvent = Event<Int>()
 
         var playerEventListener: ((PlayerEventType) -> Unit)? = null
+        var keyEventListener: ((KeyEvent?) -> Boolean)? = null
+
 
         var currentToast: Toast? = null
 
@@ -347,13 +454,21 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         if (intent == null) return
         val str = intent.dataString
         if (str != null) {
-            if (str.startsWith(DOWNLOAD_NAVIGATE_TO)) {
-                this.navigate(R.id.navigation_downloads)
+            if (str.contains(appString)) {
+                for (api in OAuth2Apis) {
+                    if (str.contains("/${api.redirectUrl}")) {
+                        api.handleRedirect(this, str)
+                    }
+                }
             } else {
-                for (api in apis) {
-                    if (str.startsWith(api.mainUrl)) {
-                        loadResult(str, api.name)
-                        break
+                if (str.startsWith(DOWNLOAD_NAVIGATE_TO)) {
+                    this.navigate(R.id.navigation_downloads)
+                } else {
+                    for (api in apis) {
+                        if (str.startsWith(api.mainUrl)) {
+                            loadResult(str, api.name)
+                            break
+                        }
                     }
                 }
             }
@@ -361,12 +476,18 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // init accounts
+        for (api in OAuth2accountApis) {
+            api.init(this)
+        }
+
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
 
-        val currentTheme = when (settingsManager.getString(getString(R.string.app_theme_key), "Black")) {
+        val currentTheme = when (settingsManager.getString(getString(R.string.app_theme_key), "AmoledLight")) {
             "Black" -> R.style.AppTheme
             "Light" -> R.style.LightMode
             "Amoled" -> R.style.AmoledMode
+            "AmoledLight" -> R.style.AmoledModeLight
             else -> R.style.AppTheme
         }
 
@@ -391,7 +512,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         ) // THEME IS SET BEFORE VIEW IS CREATED TO APPLY THE THEME TO THE MAIN VIEW
 
         updateLocale()
-        initRequestClient()
+        app.initClient(this)
         super.onCreate(savedInstanceState)
         try {
             if (isCastApiAvailable()) {
@@ -428,9 +549,11 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             .setPopExitAnim(R.anim.nav_pop_exit)
             .setPopUpTo(navController.graph.startDestination, false)
             .build()*/
-        nav_view.setupWithNavController(navController)
-
+        nav_view?.setupWithNavController(navController)
+        val navRail = findViewById<NavigationRailView?>(R.id.nav_rail_view)
+        navRail?.setupWithNavController(navController)
         navController.addOnDestinationChangedListener { _, destination, _ ->
+            this.hideKeyboard()
             // nav_view.hideKeyboard()
             /*if (destination.id != R.id.navigation_player) {
                 requestedOrientation = if (settingsManager?.getBoolean("force_landscape", false) == true) {
@@ -444,13 +567,16 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             cast_mini_controller_holder?.isVisible =
                 !listOf(R.id.navigation_results, R.id.navigation_player).contains(destination.id)
 
-            nav_view.isVisible = listOf(
+            val isNavVisible = listOf(
                 R.id.navigation_home,
                 R.id.navigation_search,
                 R.id.navigation_downloads,
                 R.id.navigation_settings,
                 R.id.navigation_download_child
             ).contains(destination.id)
+
+            nav_view?.isVisible = isNavVisible
+            navRail?.isVisible = isNavVisible
         }
 
         /*nav_view.setOnNavigationItemSelectedListener { item ->
@@ -471,7 +597,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             true
         }*/
 
-        nav_view.itemRippleColor = ColorStateList.valueOf(getResourceColor(R.attr.colorPrimary, 0.1f))
+        val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.colorPrimary, 0.1f))
+        nav_view?.itemRippleColor = rippleColor
+        navRail?.itemRippleColor = rippleColor
 
         if (!checkWrite()) {
             requestRW()
@@ -582,6 +710,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             e.printStackTrace()
         }
         APIRepository.dubStatusActive = getApiDubstatusSettings()
+
 
 /*
         val relativePath = (Environment.DIRECTORY_DOWNLOADS) + File.separatorChar

@@ -1,8 +1,10 @@
 package com.lagradost.cloudstream3.utils
 
 import android.app.Activity
+import android.content.ComponentName
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -18,10 +20,11 @@ import com.google.android.gms.cast.framework.CastState
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.wrappers.Wrappers
-import com.lagradost.cloudstream3.R
-import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.ui.result.ResultFragment
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
+import java.net.URL
+import java.net.URLDecoder
 
 object AppUtils {
     fun getVideoContentUri(context: Context, videoFilePath: String): Uri? {
@@ -40,6 +43,37 @@ object AppUtils {
                 MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values
             )
         }
+    }
+
+    fun Context.openBrowser(url: String) {
+        val components = arrayOf(ComponentName(applicationContext, MainActivity::class.java))
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.data = Uri.parse(url)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+            startActivity(
+                Intent.createChooser(intent, null)
+                    .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, components)
+            )
+        else
+            startActivity(intent)
+    }
+
+    fun splitQuery(url: URL): Map<String, String> {
+        val queryPairs: MutableMap<String, String> = LinkedHashMap()
+        val query: String = url.query
+        val pairs = query.split("&").toTypedArray()
+        for (pair in pairs) {
+            val idx = pair.indexOf("=")
+            queryPairs[URLDecoder.decode(pair.substring(0, idx), "UTF-8")] =
+                URLDecoder.decode(pair.substring(idx + 1), "UTF-8")
+        }
+        return queryPairs
+    }
+
+    /** Any object as json string */
+    fun Any.toJson(): String {
+        return mapper.writeValueAsString(this)
     }
 
     /**| S1:E2 Hello World
@@ -75,14 +109,28 @@ object AppUtils {
         return ""
     }
 
-    fun AppCompatActivity.loadResult(url: String, apiName: String, startAction: Int = 0, startValue: Int = 0) {
+    //private val viewModel: ResultViewModel by activityViewModels()
+
+    fun AppCompatActivity.loadResult(
+        url: String,
+        apiName: String,
+        startAction: Int = 0,
+        startValue: Int = 0
+    ) {
         this.runOnUiThread {
-            viewModelStore.clear()
-            this.navigate(R.id.global_to_navigation_results, ResultFragment.newInstance(url, apiName, startAction, startValue))
+            // viewModelStore.clear()
+            this.navigate(
+                R.id.global_to_navigation_results,
+                ResultFragment.newInstance(url, apiName, startAction, startValue)
+            )
         }
     }
 
-    fun Activity?.loadSearchResult(card: SearchResponse, startAction: Int = 0, startValue: Int = 0) {
+    fun Activity?.loadSearchResult(
+        card: SearchResponse,
+        startAction: Int = 0,
+        startValue: Int = 0
+    ) {
         (this as AppCompatActivity?)?.loadResult(card.url, card.apiName, startAction, startValue)
     }
 
@@ -148,7 +196,8 @@ object AppUtils {
         val conManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkInfo = conManager.allNetworks
         return networkInfo.any {
-            conManager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true
+            conManager.getNetworkCapabilities(it)
+                ?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true
         }
     }
 
@@ -183,5 +232,24 @@ object AppUtils {
             null
         }
         return currentAudioFocusRequest
+    }
+
+    fun filterProviderByPreferredMedia(
+        apis: ArrayList<MainAPI>,
+        currentPrefMedia: Int
+    ): List<MainAPI> {
+        val allApis = apis.filter { api -> api.hasMainPage }
+        return if (currentPrefMedia < 1) {
+            allApis
+        } else {
+            // Filter API depending on preferred media type
+            val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.ONA)
+            val listEnumMovieTv = listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon)
+            val mediaTypeList = if (currentPrefMedia == 1) listEnumMovieTv else listEnumAnime
+
+            val filteredAPI =
+                allApis.filter { api -> api.supportedTypes.any { it in mediaTypeList } }
+            filteredAPI
+        }
     }
 }

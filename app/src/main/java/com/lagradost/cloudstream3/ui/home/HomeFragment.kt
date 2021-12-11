@@ -13,7 +13,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -26,6 +26,7 @@ import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
 import com.lagradost.cloudstream3.mvvm.Resource
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.observe
+import com.lagradost.cloudstream3.syncproviders.OAuth2API
 import com.lagradost.cloudstream3.ui.APIRepository.Companion.noneApi
 import com.lagradost.cloudstream3.ui.APIRepository.Companion.randomApi
 import com.lagradost.cloudstream3.ui.AutofitRecyclerView
@@ -34,6 +35,8 @@ import com.lagradost.cloudstream3.ui.result.START_ACTION_RESUME_LATEST
 import com.lagradost.cloudstream3.ui.search.*
 import com.lagradost.cloudstream3.ui.search.SearchFragment.Companion.filterSearchResponse
 import com.lagradost.cloudstream3.ui.search.SearchHelper.handleSearchClickCallback
+import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
+import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.loadSearchResult
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.setKey
@@ -47,10 +50,12 @@ import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbarView
 import com.lagradost.cloudstream3.utils.UIHelper.getGridIsCompact
 import com.lagradost.cloudstream3.utils.UIHelper.popupMenuNoIcons
 import com.lagradost.cloudstream3.utils.UIHelper.popupMenuNoIconsAndNoStringRes
+import com.lagradost.cloudstream3.utils.UIHelper.setImage
 import com.lagradost.cloudstream3.widget.CenterZoomLayoutManager
 import kotlinx.android.synthetic.main.fragment_home.*
+import java.util.*
 
-const val HOME_BOOKMARK_VALUE = "home_bookmarked_last"
+const val HOME_BOOKMARK_VALUE_LIST = "home_bookmarked_last_list"
 
 class HomeFragment : Fragment() {
     companion object {
@@ -97,15 +102,15 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private lateinit var homeViewModel: HomeViewModel
+    private val homeViewModel: HomeViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        homeViewModel =
-            ViewModelProvider(this).get(HomeViewModel::class.java)
+        //homeViewModel =
+        //     ViewModelProvider(this).get(HomeViewModel::class.java)
 
         return inflater.inflate(R.layout.fragment_home, container, false)
     }
@@ -114,42 +119,6 @@ class HomeFragment : Fragment() {
 
     private fun toggleMainVisibility(visible: Boolean) {
         home_main_holder.isVisible = visible
-    }
-
-    @SuppressLint("SetTextI18n")
-    private fun chooseRandomMainPage() {
-        val home = currentHomePage
-        if (home != null && home.items.isNotEmpty()) {
-            val randomItems = home.items.shuffled().flatMap { it.list }.distinctBy { it.url }.toList().shuffled()
-            if (randomItems.isNullOrEmpty()) {
-                toggleMainVisibility(false)
-            } else {
-                val randomSize = randomItems.size
-                home_main_poster_recyclerview.adapter =
-                    HomeChildItemAdapter(randomItems, R.layout.home_result_big_grid) { callback ->
-                        handleSearchClickCallback(activity, callback)
-                    }
-                home_main_poster_recyclerview.post {
-                    (home_main_poster_recyclerview.layoutManager as CenterZoomLayoutManager?)?.let { manager ->
-
-                        manager.updateSize(forceUpdate = true)
-                        if (randomSize > 2) {
-                            manager.scrollToPosition(randomSize / 2)
-                            manager.snap { dx ->
-                                home_main_poster_recyclerview?.post {
-                                    // this is the best I can do, fuck android for not including instant scroll
-                                    home_main_poster_recyclerview?.smoothScrollBy(dx,0)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                toggleMainVisibility(true)
-            }
-        } else {
-            toggleMainVisibility(false)
-        }
     }
 
     private fun fixGrid() {
@@ -167,19 +136,9 @@ class HomeFragment : Fragment() {
     }
 
     private val apiChangeClickListener = View.OnClickListener { view ->
-        val allApis = apis.filter { api -> api.hasMainPage }.toMutableList()
-        var validAPIs = allApis
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
         val currentPrefMedia = settingsManager.getInt(getString(R.string.preferred_media_settings), 0)
-
-        // Filter API depending on preferred media type
-        if (currentPrefMedia > 0) {
-            val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.ONA)
-            val listEnumMovieTv = listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon)
-            val mediaTypeList = if (currentPrefMedia==1) listEnumMovieTv else listEnumAnime
-
-            validAPIs = allApis.filter { api -> api.supportedTypes.any { it in mediaTypeList } }.toMutableList()
-        }
+        val validAPIs = AppUtils.filterProviderByPreferredMedia(apis, currentPrefMedia).toMutableList()
 
         validAPIs.add(0, randomApi)
         validAPIs.add(0, noneApi)
@@ -206,7 +165,11 @@ class HomeFragment : Fragment() {
     private fun reloadStored() {
         context?.let { ctx ->
             homeViewModel.loadResumeWatching(ctx)
-            homeViewModel.loadStoredData(ctx, WatchType.fromInternalId(ctx.getKey(HOME_BOOKMARK_VALUE)))
+            val list = EnumSet.noneOf(WatchType::class.java)
+            ctx.getKey<IntArray>(HOME_BOOKMARK_VALUE_LIST)?.map { WatchType.fromInternalId(it) }?.let {
+                list.addAll(it)
+            }
+            homeViewModel.loadStoredData(ctx, list)
         }
     }
 
@@ -233,6 +196,7 @@ class HomeFragment : Fragment() {
                 val typeChoices = listOf(
                     Pair(R.string.movies, listOf(TvType.Movie)),
                     Pair(R.string.tv_series, listOf(TvType.TvSeries)),
+                    Pair(R.string.documentaries, listOf(TvType.Documentary)),
                     Pair(R.string.cartoons, listOf(TvType.Cartoon)),
                     Pair(R.string.anime, listOf(TvType.Anime, TvType.ONA, TvType.AnimeMovie)),
                     Pair(R.string.torrent, listOf(TvType.Torrent)),
@@ -242,30 +206,72 @@ class HomeFragment : Fragment() {
             }
         }
 
+        observe(homeViewModel.randomItems) { items ->
+            if (items.isNullOrEmpty()) {
+                toggleMainVisibility(false)
+            } else {
+                val tempAdapter = home_main_poster_recyclerview.adapter as HomeChildItemAdapter?
+                // no need to reload if it has the same data
+                if (tempAdapter != null && tempAdapter.cardList == items) {
+                    toggleMainVisibility(true)
+                    return@observe
+                }
+
+                val randomSize = items.size
+                home_main_poster_recyclerview.adapter =
+                    HomeChildItemAdapter(
+                        items,
+                        R.layout.home_result_big_grid,
+                        nextFocusUp = home_main_poster_recyclerview.nextFocusUpId,
+                        nextFocusDown = home_main_poster_recyclerview.nextFocusDownId
+                    ) { callback ->
+                        handleSearchClickCallback(activity, callback)
+                    }
+                home_main_poster_recyclerview?.post {
+                    (home_main_poster_recyclerview?.layoutManager as CenterZoomLayoutManager?)?.let { manager ->
+                        manager.updateSize(forceUpdate = true)
+                        if (randomSize > 2) {
+                            manager.scrollToPosition(randomSize / 2)
+                            manager.snap { dx ->
+                                home_main_poster_recyclerview?.post {
+                                    // this is the best I can do, fuck android for not including instant scroll
+                                    home_main_poster_recyclerview?.smoothScrollBy(dx, 0)
+                                }
+                            }
+                        }
+                    }
+                }
+                toggleMainVisibility(true)
+            }
+        }
+
         observe(homeViewModel.page) { data ->
             when (data) {
                 is Resource.Success -> {
+                    home_loading_shimmer?.stopShimmer()
+
                     val d = data.value
 
                     currentHomePage = d
                     (home_master_recycler?.adapter as ParentItemAdapter?)?.items =
-                        d.items.mapNotNull {
+                        d?.items?.mapNotNull {
                             try {
                                 HomePageList(it.name, it.list.filterSearchResponse())
                             } catch (e: Exception) {
                                 logError(e)
                                 null
                             }
-                        }
+                        } ?: listOf()
 
                     home_master_recycler?.adapter?.notifyDataSetChanged()
-                    chooseRandomMainPage()
 
-                    home_loading.visibility = View.GONE
-                    home_loading_error.visibility = View.GONE
-                    home_loaded.visibility = View.VISIBLE
+                    home_loading?.isVisible = false
+                    home_loading_error?.isVisible = false
+                    home_loaded?.isVisible = true
                 }
                 is Resource.Failure -> {
+                    home_loading_shimmer?.stopShimmer()
+
                     result_error_text.text = data.errorString
 
                     home_reload_connectionerror.setOnClickListener(apiChangeClickListener)
@@ -285,14 +291,15 @@ class HomeFragment : Fragment() {
                         }
                     }
 
-                    home_loading.visibility = View.GONE
-                    home_loading_error.visibility = View.VISIBLE
-                    home_loaded.visibility = View.GONE
+                    home_loading?.isVisible = false
+                    home_loading_error?.isVisible = true
+                    home_loaded?.isVisible = false
                 }
                 is Resource.Loading -> {
-                    home_loading.visibility = View.VISIBLE
-                    home_loading_error.visibility = View.GONE
-                    home_loaded.visibility = View.GONE
+                    home_loading_shimmer?.startShimmer()
+                    home_loading?.isVisible = true
+                    home_loading_error?.isVisible = false
+                    home_loaded?.isVisible = false
                 }
             }
         }
@@ -304,9 +311,51 @@ class HomeFragment : Fragment() {
             activity?.loadHomepageList(item)
         })
 
+        val toggleList = listOf(
+            Pair(home_type_watching_btt, WatchType.WATCHING),
+            Pair(home_type_completed_btt, WatchType.COMPLETED),
+            Pair(home_type_dropped_btt, WatchType.DROPPED),
+            Pair(home_type_on_hold_btt, WatchType.ONHOLD),
+            Pair(home_plan_to_watch_btt, WatchType.PLANTOWATCH),
+        )
+
+        for (item in toggleList) {
+            val watch = item.second
+            item.first?.setOnClickListener { itemView ->
+                val list = EnumSet.noneOf(WatchType::class.java)
+                itemView.context.getKey<IntArray>(HOME_BOOKMARK_VALUE_LIST)?.map { WatchType.fromInternalId(it) }?.let {
+                    list.addAll(it)
+                }
+
+                if (list.contains(watch)) {
+                    list.remove(watch)
+                } else {
+                    list.add(watch)
+                }
+                homeViewModel.loadStoredData(itemView.context, list)
+            }
+
+            item.first?.setOnLongClickListener { itemView ->
+                homeViewModel.loadStoredData(itemView.context, EnumSet.of(watch))
+                return@setOnLongClickListener true
+            }
+        }
+
         observe(homeViewModel.availableWatchStatusTypes) { availableWatchStatusTypes ->
-            context?.setKey(HOME_BOOKMARK_VALUE, availableWatchStatusTypes.first.internalId)
-            home_bookmark_select?.setOnClickListener {
+            context?.setKey(
+                HOME_BOOKMARK_VALUE_LIST,
+                availableWatchStatusTypes.first.map { it.internalId }.toIntArray()
+            )
+
+            for (item in toggleList) {
+                val watch = item.second
+                item.first?.apply {
+                    isVisible = availableWatchStatusTypes.second.contains(watch)
+                    isSelected = availableWatchStatusTypes.first.contains(watch)
+                }
+            }
+
+            /*home_bookmark_select?.setOnClickListener {
                 it.popupMenuNoIcons(availableWatchStatusTypes.second.map { type ->
                     Pair(
                         type.internalId,
@@ -316,18 +365,20 @@ class HomeFragment : Fragment() {
                     homeViewModel.loadStoredData(it.context, WatchType.fromInternalId(this.itemId))
                 }
             }
-            home_bookmarked_parent_item_title?.text = getString(availableWatchStatusTypes.first.stringRes)
+            home_bookmarked_parent_item_title?.text = getString(availableWatchStatusTypes.first.stringRes)*/
         }
 
-        observe(homeViewModel.bookmarks) { bookmarks ->
-            home_bookmarked_holder.isVisible = bookmarks.isNotEmpty()
+        observe(homeViewModel.bookmarks) { pair ->
+            home_bookmarked_holder.isVisible = pair.first
+
+            val bookmarks = pair.second
             (home_bookmarked_child_recyclerview?.adapter as HomeChildItemAdapter?)?.cardList = bookmarks
             home_bookmarked_child_recyclerview?.adapter?.notifyDataSetChanged()
 
-            home_bookmarked_child_more_info.setOnClickListener {
+            home_bookmarked_child_more_info?.setOnClickListener {
                 activity?.loadHomepageList(
                     HomePageList(
-                        home_bookmarked_parent_item_title?.text?.toString() ?: getString(R.string.error_bookmarks_text),
+                        getString(R.string.error_bookmarks_text), //home_bookmarked_parent_item_title?.text?.toString() ?: getString(R.string.error_bookmarks_text),
                         bookmarks
                     )
                 )
@@ -349,7 +400,11 @@ class HomeFragment : Fragment() {
             }
         }
 
-        home_bookmarked_child_recyclerview.adapter = HomeChildItemAdapter(ArrayList()) { callback ->
+        home_bookmarked_child_recyclerview.adapter = HomeChildItemAdapter(
+            ArrayList(),
+            nextFocusUp = home_bookmarked_child_recyclerview?.nextFocusUpId,
+            nextFocusDown = home_bookmarked_child_recyclerview?.nextFocusDownId
+        ) { callback ->
             if (callback.action == SEARCH_ACTION_SHOW_METADATA) {
                 val id = callback.card.id
                 if (id != null) {
@@ -365,7 +420,11 @@ class HomeFragment : Fragment() {
             }
         }
 
-        home_watch_child_recyclerview.adapter = HomeChildItemAdapter(ArrayList()) { callback ->
+        home_watch_child_recyclerview.adapter = HomeChildItemAdapter(
+            ArrayList(),
+            nextFocusUp = home_watch_child_recyclerview?.nextFocusUpId,
+            nextFocusDown = home_watch_child_recyclerview?.nextFocusDownId
+        ) { callback ->
             if (callback.action == SEARCH_ACTION_SHOW_METADATA) {
                 val id = callback.card.id
                 if (id != null) {
@@ -378,7 +437,7 @@ class HomeFragment : Fragment() {
                         if (itemId == 1) {
                             handleSearchClickCallback(
                                 activity,
-                                SearchClickCallback(SEARCH_ACTION_LOAD, callback.view, callback.card)
+                                SearchClickCallback(SEARCH_ACTION_LOAD, callback.view, -1, callback.card)
                             )
                             reloadStored()
                         }
@@ -405,7 +464,7 @@ class HomeFragment : Fragment() {
         LinearSnapHelper().attachToRecyclerView(home_main_poster_recyclerview) // snap
         val centerLayoutManager = CenterZoomLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
         centerLayoutManager.setOnSizeListener { index ->
-            (home_main_poster_recyclerview.adapter as HomeChildItemAdapter?)?.cardList?.get(index)?.let { random ->
+            (home_main_poster_recyclerview?.adapter as HomeChildItemAdapter?)?.cardList?.get(index)?.let { random ->
                 home_main_play.setOnClickListener {
                     activity.loadSearchResult(random, START_ACTION_RESUME_LATEST)
                 }
@@ -419,13 +478,39 @@ class HomeFragment : Fragment() {
                     } else ""
             }
         }
-        home_main_poster_recyclerview.layoutManager = centerLayoutManager  // scale
+        home_main_poster_recyclerview?.layoutManager = centerLayoutManager  // scale
 
         reloadStored()
         val apiName = context?.getKey<String>(HOMEPAGE_API)
+        val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
+        val currentPrefMedia = settingsManager.getInt(getString(R.string.preferred_media_settings), 0)
         if (homeViewModel.apiName.value != apiName || apiName == null) {
             //println("Caught home: " + homeViewModel.apiName.value + " at " + apiName)
-            homeViewModel.loadAndCancel(apiName, 0)
+            homeViewModel.loadAndCancel(apiName, currentPrefMedia)
+        }
+
+        // nice profile pic on homepage
+        home_profile_picture_holder?.isVisible = false
+        context?.let { ctx ->
+            // just in case
+            if (ctx.isTvSettings()) {
+                home_change_api_loading?.isFocusable = true
+                home_change_api_loading?.isFocusableInTouchMode = true
+                home_change_api?.isFocusable = true
+                home_change_api?.isFocusableInTouchMode = true
+                // home_bookmark_select?.isFocusable = true
+                // home_bookmark_select?.isFocusableInTouchMode = true
+            }
+
+            for (syncApi in OAuth2API.OAuth2Apis) {
+                val login = syncApi.loginInfo(ctx)
+                val pic = login?.profilePicture
+                if (pic != null) {
+                    home_profile_picture.setImage(pic)
+                    home_profile_picture_holder.isVisible = true
+                    break
+                }
+            }
         }
     }
 }

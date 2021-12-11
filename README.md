@@ -1,10 +1,12 @@
 # CloudStream-3
 
+![GitHub release](https://img.shields.io/github/v/release/LagradOst/cloudstream-3?sort=semver&style=for-the-badge)
+[![Discord](https://img.shields.io/discord/737724143126052974?style=for-the-badge)](https://discord.gg/5Hus6fM)
+
+
 **DOWNLOAD:**
 https://github.com/LagradOst/CloudStream-3/releases
 
-**Discord:**
-https://discord.gg/5Hus6fM
 
 ***Features:***
 + **AdFree**, No ads whatsoever
@@ -12,6 +14,11 @@ https://discord.gg/5Hus6fM
 + Bookmarks
 + Download and stream movies, tv-shows and anime
 + Chromecast
+
+***Screenshots:***
+
+<img src="./.github/home.jpg" height="400"/><img src="./.github/search.jpg" height="400"/><img src="./.github/downloads.jpg" height="400"/><img src="./.github/results.jpg" height="400"/>
+<img src="./.github/player.jpg" height="200"/>
 
 ***The list of supported languages:***
 * 🇱🇧 Arabic
@@ -28,11 +35,9 @@ https://discord.gg/5Hus6fM
 * 🇳🇴 Norsk
 * 🇩🇪 German
 * 🇹🇷 Turkish
-
-***SCREENSHOTS:***
-
-<img src="./.github/home.jpg" height="400"/><img src="./.github/search.jpg" height="400"/><img src="./.github/downloads.jpg" height="400"/><img src="./.github/results.jpg" height="400"/>
-<img src="./.github/player.jpg" height="200"/>
+* 🇲🇰 Macedonian
+* 🇧🇷 Portuguese (Brazil)
+* 🇷🇴 Romanian
 
 ***Disclaimer:***
 
@@ -46,26 +51,26 @@ CloudStream 3 does not host any content on the app, and has no control over what
 
 It merely scrapes 3rd-party websites that are publicly accessable via any regular web browser. It is the responsibility of user to avoid any actions that might violate the laws governing his/her locality. Use CloudStream 3 at your own risk.
 
+
 ***Sites used:***
 <!-- Do not remove those two comments -->
 <!--SITE LIST START-->
 - [gogoanime.vc](https://gogoanime.vc) 
 - [allanime.site](https://allanime.site) 
 - [animeflick.net](https://animeflick.net) 
-- [kawaiifu.com](https://kawaiifu.com) 
 - [tenshi.moe](https://tenshi.moe) 
 - [wcostream.cc](https://wcostream.cc) 
 - [bestdubbedanime.com](https://bestdubbedanime.com) 
 - [hdm.to](https://hdm.to) 
+- [ihavenotv.com](https://ihavenotv.com) 
 - [vmovee.watch](https://www.vmovee.watch) 
 - [wcostream.com](https://www.wcostream.com) 
-- [allmoviesforyou.co](https://allmoviesforyou.co) 
+- [allmoviesforyou.net](https://allmoviesforyou.net) 
 - [vidembed.cc](https://vidembed.cc) 
-- [vf-film.org](https://vf-film.org) 
-- [asianload.cc](https://asianload.cc) 
-- [sflix.to](https://sflix.to) 
-- [zoro.to](https://zoro.to) 
+- [vf-film.me](https://vf-film.me) 
+- [vf-serie.org](https://vf-serie.org) 
+- [asianembed.io](https://asianembed.io) 
 - [trailers.to](https://trailers.to) 
-- [thenos.org](https://www.thenos.org) 
+- [zoro.to](https://zoro.to) 
 - [asiaflix.app](https://asiaflix.app) 
 <!--SITE LIST END-->

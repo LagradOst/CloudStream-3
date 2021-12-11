@@ -57,13 +57,9 @@
         <item name="white">#FFF</item>
     </style>
 
-    <!--   <style name="PreferencesTheme" parent="@style/Base.Theme.AppCompat">
-         <item name="android:textColorPrimary">?attr/textColor</item>
-         <item name="android:textColorSecondary">?attr/grayTextColor</item>
-         <item name="android:colorAccent">?attr/colorAccent</item>
-         <item name="android:colorControlHighlight">@color/colorPrimary</item>
-       <item name="android:tint">?attr/textColor</item>
-    </style>-->
+    <style name="AmoledModeLight" parent="AmoledMode">
+        <item name="primaryGrayBackground">@color/amoledModeLight</item>
+    </style>
 
     <style name="AmoledMode">
         <item name="primaryGrayBackground">@color/black</item>
@@ -135,9 +131,9 @@
     <style name="OverlayPrimaryColorRed">
         <item name="colorPrimary">@color/colorPrimaryRed</item>
         <item name="android:colorPrimary">@color/colorPrimaryRed</item>
-        <item name="colorPrimaryDark">#D53333</item>
-        <item name="colorAccent">#F53B3B</item>
-        <item name="colorOnPrimary">#EC3838</item>
+        <item name="colorPrimaryDark">#B62B2B</item>
+        <item name="colorAccent">@color/colorPrimaryRed</item> <!--#F53B3B-->
+        <item name="colorOnPrimary">@color/colorPrimaryRed</item> <!--#EC3838-->
         <!-- Needed for leanback fuckery -->
         <item name="android:colorAccent">@color/colorPrimaryRed</item>
     </style>
@@ -309,10 +305,51 @@
         <item name="android:textColor">?attr/textColor</item>
         <item name="rippleColor">?attr/textColor</item>
     </style>
+    
+    <style name="RoundedSelectableButton">
+        <item name="backgroundTint">@color/toggle_button</item>
+        <item name="rippleColor">@color/textColor</item>
+        <item name="android:textColor">@color/toggle_button_text</item>
+        <item name="cornerRadius">100dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">@color/toggle_button_outline</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">45dp</item>
+        <item name="android:paddingTop">0dp</item>
+        <item name="android:paddingBottom">0dp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <!--<item name="android:layout_marginStart">10dp</item>-->
+        <item name="android:layout_marginEnd">5dp</item>
+        <item name="textAllCaps">false</item>
+        <item name="android:textSize">13sp</item>
+    </style>
 
     <style name="MultiSelectButton" parent="BlackButton">
         <item name="android:layout_height">40dp</item>
         <item name="android:layout_width">wrap_content</item>
+    </style>
+
+    <style name="VideoButton">
+        <item name="android:stateListAnimator">@null</item>
+        <item name="strokeColor">@color/transparent</item>
+        <item name="backgroundTint">@color/transparent</item>
+        <item name="rippleColor">@color/video_button_ripple</item>
+        <item name="android:shadowColor">@color/transparent</item>
+
+        <item name="cornerRadius">3dp</item>
+        <item name="iconTint">@color/white</item>
+        <item name="textColor">@color/white</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">45dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="textAllCaps">false</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:layout_marginStart">10dp</item>
+        <item name="android:layout_marginEnd">10dp</item>
     </style>
 
     <!--@color/white ?attr/colorPrimary-->

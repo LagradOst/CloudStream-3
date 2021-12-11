@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.network.WebViewResolver
-import com.lagradost.cloudstream3.network.get
-import com.lagradost.cloudstream3.network.text
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -13,26 +11,16 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.net.URI
 
-class SflixProvider : MainAPI() {
-    override val mainUrl: String
-        get() = "https://sflix.to"
-    override val name: String
-        get() = "Sflix"
+class SflixProvider(providerUrl: String, providerName: String) : MainAPI() {
+    override val mainUrl = providerUrl
+    override val name = providerName
 
-    override val hasQuickSearch: Boolean
-        get() = false
-
-    override val hasMainPage: Boolean
-        get() = true
-
-    override val hasChromecastSupport: Boolean
-        get() = true
-
-    override val hasDownloadSupport: Boolean
-        get() = true
-
-    override val supportedTypes: Set<TvType>
-        get() = setOf(
+    override val hasQuickSearch = false
+    override val hasMainPage = true
+    override val hasChromecastSupport = true
+    override val hasDownloadSupport = true
+    override val usesWebView = true
+    override val supportedTypes = setOf(
             TvType.Movie,
             TvType.TvSeries,
         )
@@ -66,7 +54,7 @@ class SflixProvider : MainAPI() {
     }
 
     override fun getMainPage(): HomePageResponse {
-        val html = get("$mainUrl/home").text
+        val html = app.get("$mainUrl/home").text
         val document = Jsoup.parse(html)
 
         val all = ArrayList<HomePageList>()
@@ -100,7 +88,7 @@ class SflixProvider : MainAPI() {
 
     override fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search/${query.replace(" ", "-")}"
-        val html = get(url).text
+        val html = app.get(url).text
         val document = Jsoup.parse(html)
 
         return document.select("div.flw-item").map {
@@ -134,7 +122,7 @@ class SflixProvider : MainAPI() {
     }
 
     override fun load(url: String): LoadResponse {
-        val html = get(url).text
+        val html = app.get(url).text
         val document = Jsoup.parse(html)
 
         val details = document.select("div.detail_page-watch")
@@ -164,7 +152,7 @@ class SflixProvider : MainAPI() {
         if (isMovie) {
             // Movies
             val episodesUrl = "$mainUrl/ajax/movie/episodes/$id"
-            val episodes = get(episodesUrl).text
+            val episodes = app.get(episodesUrl).text
 
             // Supported streams, they're identical
             val sourceId = Jsoup.parse(episodes).select("a").firstOrNull {
@@ -191,7 +179,7 @@ class SflixProvider : MainAPI() {
                 null
             )
         } else {
-            val seasonsHtml = get("$mainUrl/ajax/v2/tv/seasons/$id").text
+            val seasonsHtml = app.get("$mainUrl/ajax/v2/tv/seasons/$id").text
             val seasonsDocument = Jsoup.parse(seasonsHtml)
             val episodes = arrayListOf<TvSeriesEpisode>()
 
@@ -199,7 +187,7 @@ class SflixProvider : MainAPI() {
                 val seasonId = element.attr("data-id")
                 if (seasonId.isNullOrBlank()) return@forEachIndexed
 
-                val seasonHtml = get("$mainUrl/ajax/v2/season/episodes/$seasonId").text
+                val seasonHtml = app.get("$mainUrl/ajax/v2/season/episodes/$seasonId").text
                 val seasonDocument = Jsoup.parse(seasonHtml)
                 seasonDocument.select("div.flw-item.film_single-item.episode-item.eps-item")
                     .forEachIndexed { _, it ->
@@ -276,7 +264,7 @@ class SflixProvider : MainAPI() {
         // Only used for tv series
         val url = if (split.size == 2) {
             val episodesUrl = "$mainUrl/ajax/v2/episode/servers/${split[1]}"
-            val episodes = get(episodesUrl).text
+            val episodes = app.get(episodesUrl).text
 
             // Supported streams, they're identical
             val sourceId = Jsoup.parse(episodes).select("a").firstOrNull {
@@ -289,7 +277,7 @@ class SflixProvider : MainAPI() {
             data
         }
 
-        val sources = get(
+        val sources = app.get(
             url,
             interceptor = WebViewResolver(
                 Regex("""/getSources""")

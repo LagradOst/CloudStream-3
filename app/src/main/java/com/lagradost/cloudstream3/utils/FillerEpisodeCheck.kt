@@ -1,10 +1,8 @@
 package com.lagradost.cloudstream3.utils
 
-import com.lagradost.cloudstream3.network.get
-import com.lagradost.cloudstream3.network.text
+import com.lagradost.cloudstream3.app
 import org.jsoup.Jsoup
 import java.util.*
-import kotlin.collections.HashMap
 
 object FillerEpisodeCheck {
     private const val MAIN_URL = "https://www.animefillerlist.com"
@@ -12,20 +10,20 @@ object FillerEpisodeCheck {
     var list: HashMap<String, String>? = null
 
     private fun fixName(name: String): String {
-        return name.toLowerCase(Locale.ROOT)/*.replace(" ", "")*/.replace("-", " ").replace("[^a-zA-Z0-9 ]".toRegex(), "")
+        return name.lowercase(Locale.ROOT)/*.replace(" ", "")*/.replace("-", " ").replace("[^a-zA-Z0-9 ]".toRegex(), "")
     }
 
     private fun getFillerList(): Boolean {
         if (list != null) return true
         try {
-            val result = get("$MAIN_URL/shows").text
+            val result = app.get("$MAIN_URL/shows").text
             val documented = Jsoup.parse(result)
             val localHTMLList = documented.select("div#ShowList > div.Group > ul > li > a")
             val localList = HashMap<String, String>()
             for (i in localHTMLList) {
                 val name = i.text()
 
-                if (name.toLowerCase(Locale.ROOT).contains("manga only")) continue
+                if (name.lowercase(Locale.ROOT).contains("manga only")) continue
 
                 val href = i.attr("href")
                 if (name.isNullOrEmpty() || href.isNullOrEmpty()) {
@@ -73,7 +71,7 @@ object FillerEpisodeCheck {
             val realQuery = fixName(query.replace(blackListRegex, "")).replace("shippuuden", "shippuden")
             if (!localList.containsKey(realQuery)) return null
             val href = localList[realQuery]?.replace(MAIN_URL, "") ?: return null // JUST IN CASE
-            val result = get("$MAIN_URL$href").text
+            val result = app.get("$MAIN_URL$href").text
             val documented = Jsoup.parse(result) ?: return null
             val hashMap = HashMap<Int, Boolean>()
             documented.select("table.EpisodeList > tbody > tr").forEach {

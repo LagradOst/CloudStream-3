@@ -10,7 +10,7 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -29,13 +29,13 @@ import com.lagradost.cloudstream3.ui.APIRepository.Companion.typesActive
 import com.lagradost.cloudstream3.ui.home.HomeFragment
 import com.lagradost.cloudstream3.ui.home.HomeFragment.Companion.loadHomepageList
 import com.lagradost.cloudstream3.ui.home.ParentItemAdapter
+import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.setKey
 import com.lagradost.cloudstream3.utils.SEARCH_PROVIDER_TOGGLE
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.lagradost.cloudstream3.utils.UIHelper.getGridIsCompact
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
-import com.lagradost.cloudstream3.utils.UIHelper.showInputMethod
 import kotlinx.android.synthetic.main.fragment_search.*
 import java.util.concurrent.locks.ReentrantLock
 
@@ -53,15 +53,13 @@ class SearchFragment : Fragment() {
         }
     }
 
-    private lateinit var searchViewModel: SearchViewModel
+    private val searchViewModel: SearchViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View? {
-        searchViewModel =
-            ViewModelProvider(this).get(SearchViewModel::class.java)
         activity?.window?.setSoftInputMode(
             WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
         )
@@ -142,7 +140,7 @@ class SearchFragment : Fragment() {
 
                 val typeChoices = listOf(
                     Pair(R.string.movies, listOf(TvType.Movie)),
-                    Pair(R.string.tv_series, listOf(TvType.TvSeries)),
+                    Pair(R.string.tv_series, listOf(TvType.TvSeries, TvType.Documentary)),
                     Pair(R.string.cartoons, listOf(TvType.Cartoon)),
                     Pair(R.string.anime, listOf(TvType.Anime, TvType.ONA, TvType.AnimeMovie)),
                     Pair(R.string.torrent, listOf(TvType.Torrent)),
@@ -297,9 +295,17 @@ class SearchFragment : Fragment() {
             }
         }
 
+        if(context?.isTvSettings() == true) {
+            search_filter.isFocusable = true
+            search_filter.isFocusableInTouchMode = true
+        }
+
         main_search.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
-                searchViewModel.searchAndCancel(query)
+                context?.let { ctx ->
+                    searchViewModel.searchAndCancel(query = query, context = ctx)
+                }
+
                 main_search?.let {
                     hideKeyboard(it)
                 }
@@ -366,12 +372,12 @@ class SearchFragment : Fragment() {
             typesActive = it.getApiTypeSettings()
         }
 
-        main_search.setOnQueryTextFocusChangeListener { searchView, b ->
+        /*main_search.setOnQueryTextFocusChangeListener { _, b ->
             if (b) {
                 // https://stackoverflow.com/questions/12022715/unable-to-show-keyboard-automatically-in-the-searchview
                 showInputMethod(view.findFocus())
             }
-        }
+        }*/
         //main_search.onActionViewExpanded()*/
 
         val masterAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder> = ParentItemAdapter(listOf(), { callback ->

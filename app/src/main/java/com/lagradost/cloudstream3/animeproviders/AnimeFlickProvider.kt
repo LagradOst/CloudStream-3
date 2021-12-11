@@ -1,8 +1,6 @@
 package com.lagradost.cloudstream3.animeproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.network.get
-import com.lagradost.cloudstream3.network.text
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.extractorApis
@@ -18,26 +16,20 @@ class AnimeFlickProvider : MainAPI() {
         }
     }
 
-    override val mainUrl: String
-        get() = "https://animeflick.net"
-    override val name: String
-        get() = "AnimeFlick"
-    override val hasQuickSearch: Boolean
-        get() = false
-    override val hasMainPage: Boolean
-        get() = false
+    override val mainUrl = "https://animeflick.net"
+    override val name = "AnimeFlick"
+    override val hasQuickSearch = false
+    override val hasMainPage = false
 
-    override val supportedTypes: Set<TvType>
-        get() = setOf(
-            TvType.AnimeMovie,
-            TvType.Anime,
-            TvType.ONA
-        )
-
+    override val supportedTypes = setOf(
+        TvType.AnimeMovie,
+        TvType.Anime,
+        TvType.ONA
+    )
 
     override fun search(query: String): ArrayList<SearchResponse> {
         val link = "https://animeflick.net/search.php?search=$query"
-        val html = get(link).text
+        val html = app.get(link).text
         val doc = Jsoup.parse(html)
 
         return ArrayList(doc.select(".row.mt-2").map {
@@ -57,7 +49,7 @@ class AnimeFlickProvider : MainAPI() {
     }
 
     override fun load(url: String): LoadResponse {
-        val html = get(url).text
+        val html = app.get(url).text
         val doc = Jsoup.parse(html)
 
         val poster = mainUrl + doc.selectFirst("img.rounded").attr("src")
@@ -76,21 +68,15 @@ class AnimeFlickProvider : MainAPI() {
             AnimeEpisode(link, name)
         }.reversed()
 
-        return AnimeLoadResponse(
-            title,
-            null,
-            title,
-            url,
-            this.name,
-            getType(title),
-            poster,
-            year,
-            null,
-            episodes,
-            null,
-            description,
-            genres
-        )
+        return newAnimeLoadResponse(title, url, getType(title)) {
+            posterUrl = poster
+            this.year = year
+
+            addEpisodes(DubStatus.Subbed, episodes)
+
+            plot = description
+            tags = genres
+        }
     }
 
     override fun loadLinks(
@@ -99,7 +85,7 @@ class AnimeFlickProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val html = get(data).text
+        val html = app.get(data).text
 
         val episodeRegex = Regex("""(https://.*?\.mp4)""")
         val links = episodeRegex.findAll(html).map {

@@ -2,17 +2,17 @@ package com.lagradost.cloudstream3.extractors
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mapper
-import com.lagradost.cloudstream3.network.post
-import com.lagradost.cloudstream3.network.text
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.getQualityFromName
 
-class XStreamCdn : ExtractorApi() {
+open class XStreamCdn : ExtractorApi() {
     override val name: String = "XStreamCdn"
     override val mainUrl: String = "https://embedsito.com"
     override val requiresReferer = false
+    var domainUrl: String = "embedsito.com"
 
     private data class ResponseData(
         @JsonProperty("file") val file: String,
@@ -26,17 +26,7 @@ class XStreamCdn : ExtractorApi() {
     )
 
     override fun getExtractorUrl(id: String): String {
-        return "$mainUrl/api/source/$id"
-    }
-
-    private fun getQuality(string: String): Int {
-        return when (string) {
-            "360p" -> Qualities.P480.value
-            "480p" -> Qualities.P480.value
-            "720p" -> Qualities.P720.value
-            "1080p" -> Qualities.P1080.value
-            else -> Qualities.Unknown.value
-        }
+        return "$domainUrl/api/source/$id"
     }
 
     override fun getUrl(url: String, referer: String?): List<ExtractorLink> {
@@ -44,10 +34,13 @@ class XStreamCdn : ExtractorApi() {
             "Referer" to url,
             "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0",
         )
-        val newUrl = url.replace("$mainUrl/v/", "$mainUrl/api/source/")
+        val id = url.trimEnd('/').split("/").last()
+        val newUrl = "https://${domainUrl}/api/source/${id}"
         val extractedLinksList: MutableList<ExtractorLink> = mutableListOf()
-        with(post(newUrl, headers = headers)) {
+        with(app.post(newUrl, headers = headers)) {
+            if (this.code != 200) return listOf()
             val text = this.text
+            if (text.isEmpty()) return listOf()
             if (text == """{"success":false,"data":"Video not found or has been removed"}""") return listOf()
             mapper.readValue<ResponseJson?>(text)?.let {
                 if (it.success && it.data != null) {
@@ -58,7 +51,7 @@ class XStreamCdn : ExtractorApi() {
                                 "$name ${data.label}",
                                 data.file,
                                 url,
-                                getQuality(data.label),
+                                getQualityFromName(data.label),
                             )
                         )
                     }

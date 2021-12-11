@@ -1,30 +1,22 @@
 package com.lagradost.cloudstream3.animeproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.network.get
-import com.lagradost.cloudstream3.network.text
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.jsoup.Jsoup
 import java.util.*
 
 class KawaiifuProvider : MainAPI() {
-    override val mainUrl: String
-        get() = "https://kawaiifu.com"
-    override val name: String
-        get() = "Kawaiifu"
-    override val hasQuickSearch: Boolean
-        get() = false
-    override val hasMainPage: Boolean
-        get() = true
+    override val mainUrl = "https://kawaiifu.com"
+    override val name = "Kawaiifu"
+    override val hasQuickSearch = false
+    override val hasMainPage = true
 
-    override val supportedTypes: Set<TvType>
-        get() = setOf(TvType.Anime, TvType.AnimeMovie, TvType.ONA)
-
+    override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.ONA)
 
     override fun getMainPage(): HomePageResponse {
         val items = ArrayList<HomePageList>()
-        val resp = get(mainUrl).text
+        val resp = app.get(mainUrl).text
 
         val soup = Jsoup.parse(resp)
 
@@ -68,7 +60,7 @@ class KawaiifuProvider : MainAPI() {
 
     override fun search(query: String): ArrayList<SearchResponse> {
         val link = "$mainUrl/search-movie?keyword=${query}"
-        val html = get(link).text
+        val html = app.get(link).text
         val soup = Jsoup.parse(html)
 
         return ArrayList(soup.select(".item").map {
@@ -89,7 +81,7 @@ class KawaiifuProvider : MainAPI() {
     }
 
     override fun load(url: String): LoadResponse {
-        val html = get(url).text
+        val html = app.get(url).text
         val soup = Jsoup.parse(html)
 
         val title = soup.selectFirst(".title").text()
@@ -97,10 +89,10 @@ class KawaiifuProvider : MainAPI() {
         val description = soup.select(".sub-desc p")
             .filter { it.select("strong").isEmpty() && it.select("iframe").isEmpty() }.joinToString("\n") { it.text() }
         val year = url.split("/").filter { it.contains("-") }[0].split("-")[1].toIntOrNull()
+
+        val episodesLink = soup.selectFirst("a[href*=\".html-episode\"]").attr("href") ?: throw ErrorLoadingException("Error getting episode list")
         val episodes = Jsoup.parse(
-            get(
-                soup.selectFirst("a[href*=\".html-episode\"]").attr("href")
-            ).text
+            app.get(episodesLink).text
         ).selectFirst(".list-ep").select("li").map {
             AnimeEpisode(
                 it.selectFirst("a").attr("href"),
@@ -109,23 +101,13 @@ class KawaiifuProvider : MainAPI() {
         }
         val poster = soup.selectFirst("a.thumb > img").attr("src")
 
-
-        return AnimeLoadResponse(
-            title,
-            null,
-            title,
-            url,
-            this.name,
-            TvType.Anime,
-            poster,
-            year,
-            null,
-            episodes,
-            ShowStatus.Ongoing,
-            description,
-            ArrayList(tags),
-            ArrayList()
-        )
+        return newAnimeLoadResponse(title, url, TvType.Anime) {
+            this.year = year
+            posterUrl = poster
+            addEpisodes(DubStatus.Subbed, episodes)
+            plot = description
+            this.tags = tags
+        }
     }
 
     override fun loadLinks(
@@ -134,7 +116,7 @@ class KawaiifuProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val htmlSource = get(data).text
+        val htmlSource = app.get(data).text
         val soupa = Jsoup.parse(htmlSource)
 
         val episodeNum = if (data.contains("ep=")) data.split("ep=")[1].split("&")[0].toIntOrNull() else null
@@ -154,7 +136,7 @@ class KawaiifuProvider : MainAPI() {
                     .map { source -> Pair(source.attr("src"), source.attr("data-quality")) }
                 Triple(it.first, sources, it.second.second)
             } else {
-                val html = get(it.second.first).text
+                val html = app.get(it.second.first).text
                 val soup = Jsoup.parse(html)
 
                 val sources = soup.select("video > source")

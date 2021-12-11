@@ -1,8 +1,6 @@
 package com.lagradost.cloudstream3.extractors
 
-import com.lagradost.cloudstream3.network.get
-import com.lagradost.cloudstream3.network.text
-import com.lagradost.cloudstream3.network.url
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
@@ -10,8 +8,8 @@ import com.lagradost.cloudstream3.utils.getQualityFromName
 import java.net.URI
 
 class MultiQuality : ExtractorApi() {
-    override val name: String = "MultiQuality"
-    override val mainUrl: String = "https://gogo-play.net"
+    override val name = "MultiQuality"
+    override val mainUrl = "https://gogo-play.net"
     private val sourceRegex = Regex("""file:\s*['"](.*?)['"],label:\s*['"](.*?)['"]""")
     private val m3u8Regex = Regex(""".*?(\d*).m3u8""")
     private val urlRegex = Regex("""(.*?)([^/]+$)""")
@@ -23,12 +21,12 @@ class MultiQuality : ExtractorApi() {
 
     override fun getUrl(url: String, referer: String?): List<ExtractorLink> {
         val extractedLinksList: MutableList<ExtractorLink> = mutableListOf()
-        with(get(url)) {
+        with(app.get(url)) {
             sourceRegex.findAll(this.text).forEach { sourceMatch ->
                 val extractedUrl = sourceMatch.groupValues[1]
                 // Trusting this isn't mp4, may fuck up stuff
                 if (URI(extractedUrl).path.endsWith(".m3u8")) {
-                    with(get(extractedUrl)) {
+                    with(app.get(extractedUrl)) {
                         m3u8Regex.findAll(this.text).forEach { match ->
                             extractedLinksList.add(
                                 ExtractorLink(
