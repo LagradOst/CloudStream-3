@@ -233,7 +233,7 @@
     <string name="site">Site</string>
     <string name="synopsis">Synopsis</string>
 
-    <string name="queued">Queued</string>
+    <string name="queued">queued</string>
     <string name="no_subtitles">No Subtitles</string>
     <string name="default_subtitles">Default</string>
 
@@ -337,7 +337,7 @@
     <string name="trakt_account_settings" translatable="false">Trakt</string>
     -->
     <string name="login_format">%s %s</string>
-    <string name="account">Account</string>
+    <string name="account">account</string>
     <string name="logout">Logout</string>
     <string name="login">Login</string>
     <string name="switch_account">Switch account</string>
