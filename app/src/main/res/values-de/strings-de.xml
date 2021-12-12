@@ -204,5 +204,12 @@
     <string name="login">Anmelden</string>
     <string name="switch_account">Konto wechseln</string>
     <string name="add_account">Konto hinzufügen</string>
+    <string name="none">Keine</string>
+    <string name="normal">Normal</string>
+    <string name="all">Alle</string>
+    <string name="subtitles_outline">Umrandung</string>
+    <string name="subtitles_depressed">Gesenkt</string>
+    <string name="subtitles_shadow">Schatten</string>
+    <string name="subtitles_raised">Erhöht</string>
     <string name="subtitles_example_text">Kaufen Sie jede Woche vier gute bequeme Pelze</string>
 </resources>
