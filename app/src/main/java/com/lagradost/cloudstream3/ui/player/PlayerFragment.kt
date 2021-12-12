@@ -88,6 +88,7 @@ import com.lagradost.cloudstream3.utils.DataStore.setKey
 import com.lagradost.cloudstream3.utils.DataStoreHelper.setLastWatched
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
 import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
+import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.getNavigationBarHeight
 import com.lagradost.cloudstream3.utils.UIHelper.getStatusBarHeight
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
@@ -103,9 +104,10 @@ import java.io.File
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSession
-import kotlin.concurrent.thread
 import kotlin.math.abs
 import kotlin.math.ceil
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.properties.Delegates
 
 
@@ -125,12 +127,13 @@ const val OPENING_PERCENTAGE = 50
 const val AUTOLOAD_NEXT_EPISODE_PERCENTAGE = 80
 
 enum class PlayerEventType(val value: Int) {
-    Stop(-1),
+    //Stop(-1),
     Pause(0),
     Play(1),
     SeekForward(2),
     SeekBack(3),
-    SkipCurrentChapter(4),
+
+    //SkipCurrentChapter(4),
     NextEpisode(5),
     PrevEpisode(5),
     PlayPauseToggle(7),
@@ -409,7 +412,7 @@ class PlayerFragment : Fragment() {
 
     private fun onClickChange() {
         isShowing = !isShowing
-        if(isShowing) {
+        if (isShowing) {
             autoHide()
         }
         activity?.hideSystemUI()
@@ -551,7 +554,7 @@ class PlayerFragment : Fragment() {
                 if (swipeVerticalEnabled) {
                     val distanceMultiplierY = 2F
                     val distanceY = (motionEvent.rawY - currentY) * distanceMultiplierY
-                    val diffY = distanceY * 2.0 / height
+                    val diffY = distanceY * 2.0 / min(height, width)
 
                     // Forces 'smooth' moving preventing a bug where you
                     // can make it think it moved half a screen in a frame
@@ -561,7 +564,7 @@ class PlayerFragment : Fragment() {
                         preventHorizontalSwipe = true
                     }
                     if (hasPassedVerticalSwipeThreshold) {
-                        if (currentX > width * 0.5) {
+                        if (currentX > max(height, width) * 0.5) {
                             if (audioManager != null && progressBarLeftHolder != null) {
                                 val currentVolume =
                                     audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
@@ -617,7 +620,7 @@ class PlayerFragment : Fragment() {
                 if (swipeEnabled) {
                     val distanceMultiplierX = 2F
                     val distanceX = (motionEvent.rawX - currentX) * distanceMultiplierX
-                    val diffX = distanceX * 2.0 / width
+                    val diffX = distanceX * 2.0 / max(height, width)
                     if (abs(diffX - prevDiffX) > 0.5) {
                         return
                     }
@@ -744,9 +747,7 @@ class PlayerFragment : Fragment() {
     }
 
     private fun safeReleasePlayer() {
-        thread {
-            simpleCache?.release()
-        }
+        simpleCache?.release()
         if (this::exoPlayer.isInitialized) {
             exoPlayer.release()
         }
@@ -1189,11 +1190,11 @@ class PlayerFragment : Fragment() {
                         listOf(0.5f, 0.75f, 0.85f, 1f, 1.15f, 1.25f, 1.4f, 1.5f, 1.75f, 2f)
                     val speedIndex = speedsNumbers.indexOf(playbackSpeed)
 
-                    context?.let { ctx ->
-                        ctx.showDialog(
+                    activity?.let { act ->
+                        act.showDialog(
                             speedsText,
                             speedIndex,
-                            ctx.getString(R.string.player_speed),
+                            act.getString(R.string.player_speed),
                             false,
                             {
                                 activity?.hideSystemUI()
@@ -1236,7 +1237,7 @@ class PlayerFragment : Fragment() {
                             autoHide()
                             saveArguments()
                             SubtitlesFragment.push(activity)
-                            sourceDialog.dismiss()
+                            sourceDialog.dismissSafe(activity)
                         }
                         var sourceIndex = 0
                         var startSource = 0
@@ -1297,7 +1298,7 @@ class PlayerFragment : Fragment() {
                         }
 
                         cancelButton.setOnClickListener {
-                            sourceDialog.dismiss()
+                            sourceDialog.dismissSafe(activity)
                         }
 
                         applyButton.setOnClickListener {
@@ -1324,7 +1325,7 @@ class PlayerFragment : Fragment() {
                             if (init) {
                                 initPlayer(getCurrentUrl())
                             }
-                            sourceDialog.dismiss()
+                            sourceDialog.dismissSafe(activity)
                         }
                     }
                 }
@@ -1796,11 +1797,15 @@ class PlayerFragment : Fragment() {
     }
 
     private fun getCurrentUrl(): ExtractorLink? {
-        val urls = getUrls() ?: return null
-        for (i in urls) {
-            if (i.getId() == playerData.mirrorId) {
-                return i
+        try {
+            val urls = getUrls() ?: return null
+            for (i in urls) {
+                if (i.getId() == playerData.mirrorId) {
+                    return i
+                }
             }
+        } catch (e: Exception) {
+            return null
         }
 
         return null
@@ -1964,7 +1969,6 @@ class PlayerFragment : Fragment() {
         // torrentStream?.stopStream()
         // torrentStream = null
 
-        super.onDestroy()
         canEnterPipMode = false
 
         savePositionInPlayer()
@@ -1974,6 +1978,7 @@ class PlayerFragment : Fragment() {
 
         activity?.showSystemUI()
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_USER
+        super.onDestroy()
     }
 
     override fun onPause() {
@@ -2189,11 +2194,11 @@ class PlayerFragment : Fragment() {
                 setUpstreamDataSourceFactory(getDataSourceFactory())
             }
 
-            val _exoPlayer =
+            val exoPlayerBuilder =
                 ExoPlayer.Builder(requireContext())
                     .setTrackSelector(trackSelector)
 
-            exoPlayer = _exoPlayer.build().apply {
+            exoPlayer = exoPlayerBuilder.build().apply {
                 playWhenReady = isPlayerPlaying
                 seekTo(currentWindow, playbackPosition)
                 setMediaSource(
