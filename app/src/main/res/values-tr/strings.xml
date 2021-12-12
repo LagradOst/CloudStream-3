@@ -91,9 +91,9 @@
     <string name="reload_error">Yeniden bağlanmayı dene…</string>
     <string name="result_go_back">Geri Git</string>
     <string name="play_episode">Bölümü Oynat</string>
-    <!--<string name="need_storage">Allow to download episodes</string>-->
+    <!--<string name="need_storage">Bölümleri indirmek için izin ver</string>-->
 
-    <string name="download">İndirme</string>
+    <string name="download">İndir</string>
     <string name="downloaded">İndirildi</string>
     <string name="downloading">İndiriliyor</string>
     <string name="download_paused">İndirme Durduruldu</string>
@@ -105,7 +105,7 @@
     <string name="error_loading_links_toast">Bağlantıları yüklerken hata</string>
     <string name="download_storage_text">Dahili Depolama</string>
 
-    <string name="app_dubbed_text">Seslendirme</string>
+    <string name="app_dubbed_text">Dublaj</string>
     <string name="app_subbed_text">Altyazı</string>
 
     <string name="popup_delete_file">Dosyayı Sil</string>
@@ -114,7 +114,7 @@
     <string name="popup_pause_download">İndirmeyi Durdur</string>
 
     <string name="pref_disable_acra">Otomatik hata bildirmeyi devre dışı bırak</string>
-    <string name="home_more_info">Daha fazka bilgi</string>
+    <string name="home_more_info">Daha fazla bilgi</string>
     <string name="home_expanded_hide">Gizle</string>
     <string name="home_play">Oynat</string>
     <string name="home_info">Bilgi</string>
@@ -143,14 +143,14 @@
 
     <string name="subs_auto_select_language">Dili Otomatik Seç</string>
     <string name="subs_download_languages">Dilleri İndir</string>
-    <string name="subs_hold_to_reset_to_default">Varsayılana dönmek için basılı tutun</string>
+    <string name="subs_hold_to_reset_to_default">Varsayılana dönmek için basılı tut</string>
     <string name="continue_watching">İzlemeye Devam Edin</string>
 
     <string name="action_remove_watching">Kaldır</string>
     <string name="action_open_watching">Daha Fazla Bilgi</string>
 
     <string name="vpn_might_be_needed">Bu sağlayıcının düzgün bir şekilde çalışması için VPN gerekebilir</string>
-    <string name="vpn_torrent">Bu sağlayıcınınki Torrent, VPN önerilir</string>
+    <string name="vpn_torrent">Bu sağlayıcı Torrent'tir, VPN önerilir</string>
     <string name="torrent_plot">Açıklama</string>
     <string name="normal_no_plot">Olay örgüsü bulunamadı</string>
     <string name="torrent_no_plot">Açıklama bulunamadı</string>
@@ -179,13 +179,13 @@
     <string name="advanced_search_des">Sağlayıcı tarafından ayrılmış arama sonuçlarını verir</string>
     <string name="bug_report_settings_off">Yalnızca çökmelerle ilgili verileri gönderir</string>
     <string name="bug_report_settings_on">Hiçbir veri göndermez</string>
-    <string name="show_fillers_settings">Anime için doldurucu bölümü göster</string>
+    <string name="show_fillers_settings">Anime için filler bölümü göster</string>
     <string name="updates_settings">Uygulama güncellemelerini göster</string>
     <string name="updates_settings_des">Başlangıçta yeni güncellemeleri otomatik olarak ara</string>
     <string name="uprereleases_settings">Ön sürümlere güncelleme</string>
     <string name="uprereleases_settings_des">Yalnızca tam sürümler yerine önsürüm güncellemeleri arayın</string>
     <string name="github">Github</string>
-    <string name="lightnovel">Aynı geliştiricilerden Light novel uygulaması</string>
+    <string name="lightnovel">Aynı geliştiricilerden Light Novel uygulaması</string>
     <string name="anim">Aynı geliştiricilerden Anime uygulaması</string>
     <string name="discord">Discord\'a gelin</string>
     <string name="benene">Geliştiricilere muz ver</string>
@@ -222,17 +222,17 @@
     <string name="site">Site</string>
     <string name="synopsis">Özet</string>
 
-    <string name="queued">sıraya eklendi</string>
+    <string name="queued">Sıraya eklendi</string>
     <string name="no_subtitles">Altyazı yok</string>
     <string name="default_subtitles">Varsayılan</string>
 
-    <string name="free_storage">Bağımsız</string>
-    <string name="used_storage">Kullanıldı</string>
+    <string name="free_storage">Kullanılmayan</string>
+    <string name="used_storage">Kullanılan</string>
     <string name="app_storage">Uygulama</string>
 
     <string name="movies">Filmler</string>
-    <string name="tv_series">Televizyon Dizisi</string>
-    <string name="cartoons">Karikatürler</string>
+    <string name="tv_series">Diziler</string>
+    <string name="cartoons">Çizgi Filmler</string>
     <string name="anime">Anime</string>
     <string name="torrent">Torrent</string>
 
@@ -264,15 +264,15 @@
     <string name="update">Güncelleme</string>
     <string name="watch_quality_pref">Tercih edilen izleme kalitesi</string>
     <string name="dns_pref">HTTPS üzerinden DNS</string>
-    <string name="dns_pref_summary">İSS\'nin engellemelerini geçmek için kullanışlı</string>
+    <string name="dns_pref_summary">İSS\'nın engellemelerini geçmek için kullanışlı</string>
     
     <string name="download_path_pref">İndirme yolu</string>
 
 
-    <string name="display_subbed_dubbed_settings">Seslendirilmiş/Altyazılı Anime\'yi göster</string>
+    <string name="display_subbed_dubbed_settings">Dublajlı/Altyazılı Anime\'yi göster</string>
 
     <string name="resize_fit">Ekrana sığdır</string>
-    <string name="resize_fill">Yay</string>
+    <string name="resize_fill">Ekrana yay</string>
     <string name="resize_zoom">Yakınlaştır</string>
 
     <string name="general">Genel</string>
@@ -281,10 +281,10 @@
     <string name="preferred_media_settings">Tercih Edilen Medya</string>    
 
     <string name="automatic">Otomatik</string>
-    <string name="tv_layout">Tv Düzeni</string>
+    <string name="tv_layout">TV Düzeni</string>
     <string name="phone_layout">Telefon Düzeni</string>
 
-    <string name="primary_color_settings">Ana Renk</string>
+    <string name="primary_color_settings">Birincil Renk</string>
     <string name="app_theme_settings">Uygulama Teması</string>
 
     <!-- account stuff -->
@@ -299,7 +299,7 @@
     <string name="trakt_account_settings" translatable="false">Trakt</string>
     -->
     <string name="login_format">%s %s</string>
-    <string name="account">hesap</string>
+    <string name="account">Hesap</string>
     <string name="logout">Çıkış yap</string>
     <string name="login">Giriş yap</string>
     <string name="switch_account">Hesap değiştir</string>
