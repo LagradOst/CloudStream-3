@@ -1,32 +1,23 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import android.util.Log
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.extractors.MixDrop
+import com.lagradost.cloudstream3.extractors.VoeExtractor
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.jsoup.Jsoup
 
-class PinoyMoviePedia : MainAPI() {
+class PinoyMoviePediaProvider : MainAPI() {
     override val name = "Pinoy Moviepedia"
     override val mainUrl = "https://pinoymoviepedia.ru"
     override val lang = "tl"
-
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
-
     override val hasDownloadSupport = false
     override val hasMainPage = true
     override val hasQuickSearch = false
-
-    private data class JsonVoeLinks(
-        @JsonProperty("hls") val url: String?,
-        @JsonProperty("video_height") val label: Int?
-    )
 
     override fun getMainPage(): HomePageResponse {
         val all = ArrayList<HomePageList>()
@@ -218,32 +209,11 @@ class PinoyMoviePedia : MainAPI() {
                                     sources.addAll(src)
                                 }
                             }
-                            if (url.contains("voe.sx/")) {
-                                val doc = Jsoup.parse(app.get(url).text)?.toString() ?: ""
-                                if (doc.isNotEmpty()) {
-                                    val start = "const sources ="
-                                    var src = doc.substring(doc.indexOf(start))
-                                    src = src.substring(start.length, src.indexOf(";"))
-                                        .replace("0,", "0")
-                                        .trim()
-                                    //Log.i(this.name, "Result => (src) ${src}")
-                                    mapper.readValue<JsonVoeLinks?>(src)?.let { voelink ->
-                                        //Log.i(this.name, "Result => (voelink) ${voelink}")
-                                        val linkUrl = voelink.url
-                                        val linkLabel = voelink.label?.toString() ?: ""
-                                        if (!linkUrl.isNullOrEmpty()) {
-                                            sources.add(
-                                                ExtractorLink(
-                                                    name = "Voe m3u8 ${linkLabel}",
-                                                    source = "Voe",
-                                                    url = linkUrl,
-                                                    quality = getQualityFromName(linkLabel),
-                                                    referer = url,
-                                                    isM3u8 = true
-                                                )
-                                            )
-                                        }
-                                    }
+                            if (url.startsWith("https://voe.sx")) {
+                                val extractor = VoeExtractor()
+                                val src = extractor.getUrl(url)
+                                if (!src.isNullOrEmpty()) {
+                                    sources.addAll(src)
                                 }
                             }
                             if (url.startsWith("https://upstream.to")) {
