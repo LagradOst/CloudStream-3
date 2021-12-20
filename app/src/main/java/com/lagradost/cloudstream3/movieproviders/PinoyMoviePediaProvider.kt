@@ -15,7 +15,7 @@ class PinoyMoviePediaProvider : MainAPI() {
     override val mainUrl = "https://pinoymoviepedia.ru"
     override val lang = "tl"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
-    override val hasDownloadSupport = false
+    override val hasDownloadSupport = true
     override val hasMainPage = true
     override val hasQuickSearch = false
 
@@ -45,7 +45,7 @@ class PinoyMoviePediaProvider : MainAPI() {
                         val urlTitle = it?.select("div.data")
                         // Fetch details
                         val link = urlTitle?.select("a")?.attr("href") ?: ""
-                        val name = urlTitle?.text() ?: "<No Title>"
+                        val name = urlTitle?.text() ?: ""
                         val image = it?.select("div.poster > img")?.attr("src")
                         // Get Year from Title
                         val rex = Regex("\\((\\d+)")
@@ -62,7 +62,9 @@ class PinoyMoviePediaProvider : MainAPI() {
                             year,
                             null,
                         )
-                    }
+                    }.filter { a -> a.url.isNotEmpty() }
+                            .filter { b -> b.name.isNotEmpty() }
+                            .distinctBy { c -> c.url }
                     // Add
                     all.add(
                         HomePageList(
@@ -89,7 +91,7 @@ class PinoyMoviePediaProvider : MainAPI() {
                 val details = inner.select("div.details")
                 val href = details?.select("div.title > a")?.attr("href") ?: ""
 
-                val title = details?.select("div.title")?.text() ?: "<Untitled>"
+                val title = details?.select("div.title")?.text() ?: ""
                 val link: String = when (href != "") {
                     true -> fixUrl(href)
                     false -> ""
@@ -105,9 +107,11 @@ class PinoyMoviePediaProvider : MainAPI() {
                     image,
                     year
                 )
-            }
+            }.filter { a -> a.url.isNotEmpty() }
+                    .filter { b -> b.name.isNotEmpty() }
+                    .distinctBy { c -> c.url }
         }
-        return listOf<SearchResponse>()
+        return listOf()
     }
 
     override fun load(url: String): LoadResponse {
@@ -262,7 +266,7 @@ class PinoyMoviePediaProvider : MainAPI() {
                             if (url.startsWith("https://mixdrop.co/")) {
                                 val extractor = MixDrop()
                                 val src = extractor.getUrl(url)
-                                if (src != null) {
+                                if (!src.isNullOrEmpty()) {
                                     sources.addAll(src)
                                 }
                             }

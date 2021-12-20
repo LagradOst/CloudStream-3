@@ -32,7 +32,7 @@ class PinoyHDXyzProvider : MainAPI() {
                         // Get inner div from article
                         val innerBody = it?.select("a")?.firstOrNull()
                         // Fetch details
-                        val name = it?.text() ?: "<No Title>"
+                        val name = it?.text() ?: ""
                         val link = innerBody?.attr("href") ?: ""
                         val imgsrc = innerBody?.select("img")?.attr("src")
                         val image = when (!imgsrc.isNullOrEmpty()) {
@@ -54,7 +54,9 @@ class PinoyHDXyzProvider : MainAPI() {
                             year,
                             null,
                         )
-                    }
+                    }.filter { a -> a.url.isNotEmpty() }
+                            .filter { b -> b.name.isNotEmpty() }
+                            .distinctBy { c -> c.url }
                     // Add
                     all.add(
                         HomePageList(
@@ -79,7 +81,7 @@ class PinoyHDXyzProvider : MainAPI() {
             return document.map {
 
                 val link = it?.select("a")?.firstOrNull()?.attr("href") ?: ""
-                val title = it?.text() ?: "<Untitled>"
+                val title = it?.text() ?: ""
                 val year = null
                 val image = null // site provides no image on search page
 
@@ -91,7 +93,9 @@ class PinoyHDXyzProvider : MainAPI() {
                     image,
                     year
                 )
-            }
+            }.filter { a -> a.url.isNotEmpty() }
+                    .filter { b -> b.name.isNotEmpty() }
+                    .distinctBy { c -> c.url }
         }
         return listOf()
     }
@@ -230,7 +234,7 @@ class PinoyHDXyzProvider : MainAPI() {
                         if (url.startsWith("https://mixdrop.co/")) {
                             val extractor = MixDrop()
                             val src = extractor.getUrl(url)
-                            if (src != null) {
+                            if (!src.isNullOrEmpty()) {
                                 sources.addAll(src)
                             }
                         }

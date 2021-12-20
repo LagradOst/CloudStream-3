@@ -50,7 +50,8 @@ class PinoyMoviesEsProvider : MainAPI() {
                             year,
                             null,
                         )
-                    }.filter { a -> a.url.isNotEmpty() }.filter { b -> b.name.isNotEmpty() }
+                    }.filter { a -> a.url.isNotEmpty() }
+                            .filter { b -> b.name.isNotEmpty() }
                             .distinctBy { c -> c.url }
                     if (!elements.isNullOrEmpty()) {
                         all.add(HomePageList(
@@ -280,7 +281,7 @@ class PinoyMoviesEsProvider : MainAPI() {
                             if (url.startsWith("https://mixdrop.co/")) {
                                 val extractor = MixDrop()
                                 val src = extractor.getUrl(url)
-                                if (src != null) {
+                                if (!src.isNullOrEmpty()) {
                                     sources.addAll(src)
                                 }
                             }
