@@ -36,7 +36,7 @@ class PinoyMoviesEsProvider : MainAPI() {
                         }
                         // Fetch details
                         val link = urlTitle?.select("a")?.attr("href") ?: ""
-                        val name = urlTitle?.text() ?: "<No Title>"
+                        val name = urlTitle?.text() ?: ""
                         val year = urlTitle?.select("span")?.text()?.toIntOrNull()
                         //Log.i(this.name, "Result => (link) ${link}")
                         val image = it?.select("div.poster > img")?.attr("data-src")
@@ -50,7 +50,8 @@ class PinoyMoviesEsProvider : MainAPI() {
                             year,
                             null,
                         )
-                    }.filter { a -> a.url.isNotEmpty() }
+                    }.filter { a -> a.url.isNotEmpty() }.filter { b -> b.name.isNotEmpty() }
+                            .distinctBy { c -> c.url }
                     if (!elements.isNullOrEmpty()) {
                         all.add(HomePageList(
                                 title, elements
