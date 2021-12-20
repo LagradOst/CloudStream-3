@@ -57,8 +57,8 @@ class FilmanProvider : MainAPI() {
         val url = "$mainUrl/wyszukiwarka?phrase=$query"
         val response = app.get(url).text
         val document = Jsoup.parse(response)
-        val movies = document.select("#advanced-search > div").get(1).select(".item")
-        val series = document.select("#advanced-search > div").get(3).select(".item")
+        val movies = document.select("#advanced-search > div")[1].select(".item")
+        val series = document.select("#advanced-search > div")[3].select(".item")
         if (movies.isEmpty() && series.isEmpty()) return ArrayList()
         fun getVideos(type: TvType, items: Elements): ArrayList<SearchResponse> {
             val returnValue = ArrayList<SearchResponse>()
@@ -83,7 +83,7 @@ class FilmanProvider : MainAPI() {
         var title = document.select("span[itemprop=title]").text()
         val data = document.select("#links").outerHtml()
         val posterUrl = document.select("#single-poster > img").attr("src")
-        val year = document.select(".info > ul").get(0).select("li").get(1).text().toIntOrNull()
+        val year = document.select(".info > ul")[0].select("li")[1].text().toIntOrNull()
         val plot = document.select(".description").text()
         val episodesElements = document.select("#episode-list").select("a[href]")
         if (episodesElements.isEmpty()) {
