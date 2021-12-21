@@ -83,6 +83,8 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     SBPlay(),
     FEmbed(),
     WatchSB(),
+    Uqload(),
+    Evoload(),
 
     // dood extractors
     DoodToExtractor(),
