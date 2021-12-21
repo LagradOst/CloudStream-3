@@ -45,7 +45,7 @@ class UpstreamExtractor: ExtractorApi() {
                 sources.add(
                     ExtractorLink(
                     name = "Upstream m3u8",
-                    source = "Voe",
+                    source = this.name,
                     url = linkUrl,
                     quality = Qualities.Unknown.value,
                     referer = referer!!,
