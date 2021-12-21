@@ -55,7 +55,7 @@ class FrenchStreamProvider : MainAPI() {
                 MovieSearchResponse(
                     title,
                     href,
-                    "French Stream",
+                    this.name,
                     TvType.Movie,
                     poster,
                     year,
