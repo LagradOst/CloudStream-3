@@ -2,13 +2,11 @@ package com.lagradost.cloudstream3.movieproviders
 
 import android.util.Log
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.DoodLaExtractor
 import com.lagradost.cloudstream3.extractors.FEmbed
-import com.lagradost.cloudstream3.extractors.MixDrop
-import com.lagradost.cloudstream3.extractors.VoeExtractor
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
+import java.lang.Exception
 
 class PinoyMoviePediaProvider : MainAPI() {
     override val name = "Pinoy Moviepedia"
@@ -21,61 +19,56 @@ class PinoyMoviePediaProvider : MainAPI() {
 
     override fun getMainPage(): HomePageResponse {
         val all = ArrayList<HomePageList>()
-        try {
-            val html = app.get(mainUrl, timeout = 15).text
-            val document = Jsoup.parse(html)
-            val mainbody = document.getElementsByTag("body")
-            // All rows will be hardcoded bc of the nature of the site
-            val rows: List<Pair<String, String>> = listOf(
-                Pair("Latest Movies", "featured-titles"),
-                Pair("Movies", "dt-movies"),
-                Pair("Digitally Restored", "genre_digitally-restored"),
-                Pair("Action", "genre_action"),
-                Pair("Romance", "genre_romance"),
-                Pair("Comedy", "genre_comedy"),
-                Pair("Family", "genre_family")
-                //Pair("Adult +18", "genre_pinay-sexy-movies")
-            )
-            for (item in rows) {
-                val title = item.first
-                val inner = mainbody?.select("div#${item.second} > article")
-                if (inner != null) {
-                    val elements: List<SearchResponse> = inner.map {
-                        // Get inner div from article
-                        val urlTitle = it?.select("div.data")
-                        // Fetch details
-                        val link = urlTitle?.select("a")?.attr("href") ?: ""
-                        val name = urlTitle?.text() ?: ""
-                        val image = it?.select("div.poster > img")?.attr("src")
-                        // Get Year from Title
-                        val rex = Regex("\\((\\d+)")
-                        val yearRes = rex.find(name)?.value ?: ""
-                        val year = yearRes.replace("(", "").toIntOrNull()
+        val html = app.get(mainUrl).text
+        val document = Jsoup.parse(html)
+        val mainbody = document.getElementsByTag("body")
+        // All rows will be hardcoded bc of the nature of the site
+        val rows: List<Pair<String, String>> = listOf(
+            Pair("Latest Movies", "featured-titles"),
+            Pair("Movies", "dt-movies"),
+            Pair("Digitally Restored", "genre_digitally-restored"),
+            Pair("Action", "genre_action"),
+            Pair("Romance", "genre_romance"),
+            Pair("Comedy", "genre_comedy"),
+            Pair("Family", "genre_family")
+            //Pair("Adult +18", "genre_pinay-sexy-movies")
+        )
+        for (item in rows) {
+            val title = item.first
+            val inner = mainbody?.select("div#${item.second} > article")
+            if (inner != null) {
+                val elements: List<SearchResponse> = inner.map {
+                    // Get inner div from article
+                    val urlTitle = it?.select("div.data")
+                    // Fetch details
+                    val link = urlTitle?.select("a")?.attr("href") ?: ""
+                    val name = urlTitle?.text() ?: ""
+                    val image = it?.select("div.poster > img")?.attr("src")
+                    // Get Year from Title
+                    val rex = Regex("\\((\\d+)")
+                    val yearRes = rex.find(name)?.value ?: ""
+                    val year = yearRes.replace("(", "").toIntOrNull()
 
-                        val tvType = TvType.Movie
-                        MovieSearchResponse(
-                            name,
-                            link,
-                            this.name,
-                            tvType,
-                            image,
-                            year,
-                            null,
-                        )
-                    }.filter { a -> a.url.isNotEmpty() }
-                            .filter { b -> b.name.isNotEmpty() }
-                            .distinctBy { c -> c.url }
-                    // Add
-                    all.add(
-                        HomePageList(
-                            title, elements
-                        )
+                    val tvType = TvType.Movie
+                    MovieSearchResponse(
+                        name,
+                        link,
+                        this.name,
+                        tvType,
+                        image,
+                        year,
+                        null,
                     )
-                }
+                }.filter { a -> a.url.isNotEmpty() }
+                        .filter { b -> b.name.isNotEmpty() }
+                        .distinctBy { c -> c.url }
+                // Add
+                all.add(
+                    HomePageList(
+                        title, elements
+                    )
+                )
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Log.i(this.name, "Result => (Exception) ${e}")
         }
         return HomePageResponse(all)
     }
@@ -192,90 +185,21 @@ class PinoyMoviePediaProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         if (data == "about:blank") return false
-        if (data == "") return false
+        if (data.isEmpty()) return false
         val sources = mutableListOf<ExtractorLink>()
-        try {
-            if (data.contains("playcontainer")) {
-                // parse movie servers
-                //Log.i(this.name, "Result => (data) ${data}")
-                val urls = Jsoup.parse(data).select("div")?.map { item ->
-                    item.select("iframe")?.attr("src")
+
+        // parse movie servers
+        if (data.contains("playcontainer")) {
+            Jsoup.parse(data).select("div")?.map { item ->
+                val url = item.select("iframe")?.attr("src")
+                if (!url.isNullOrEmpty()) {
+                    //Log.i(this.name, "Result => (url) ${url}")
+                    loadExtractor(url, url, callback)
                 }
-                if (!urls.isNullOrEmpty()) {
-                    for (url in urls) {
-                        if (!url.isNullOrEmpty()) {
-                            //Log.i(this.name, "Result => (url) ${url}")
-                            if (url.contains("dood.watch")) {
-                                // WIP: Not working for current domain. Still, adding it.
-                                val extractor = DoodLaExtractor()
-                                val src = extractor.getUrl(url)
-                                if (src != null) {
-                                    sources.addAll(src)
-                                }
-                            }
-                            if (url.startsWith("https://voe.sx")) {
-                                val extractor = VoeExtractor()
-                                val src = extractor.getUrl(url)
-                                if (!src.isNullOrEmpty()) {
-                                    sources.addAll(src)
-                                }
-                            }
-                            if (url.startsWith("https://upstream.to")) {
-                                // WIP: m3u8 link fetched but not playing
-                                //Log.i(this.name, "Result => (no extractor) ${url}")
-                                val doc = Jsoup.parse(app.get(url, referer = "https://upstream.to").text)?.toString() ?: ""
-                                if (doc.isNotEmpty()) {
-                                    var reg = Regex("(?<=master)(.*)(?=hls)")
-                                    val result = reg.find(doc)?.groupValues?.map {
-                                        it.trim('|')
-                                    }?.toList()
-                                    reg = Regex("(?<=\\|file\\|)(.*)(?=\\|remove\\|)")
-                                    val domainList = reg.find(doc)?.groupValues?.get(1)?.split("|")
-                                    var domain = when (!domainList.isNullOrEmpty()) {
-                                        true -> {
-                                            if (domainList.isNotEmpty()) {
-                                                var domName = ""
-                                                for (part in domainList) {
-                                                    domName = "${part}.${domName}"
-                                                }
-                                                domName.trimEnd('.')
-                                            } else { "" }
-                                        }
-                                        false -> ""
-                                    }
-                                    //Log.i(this.name, "Result => (domain) ${domain}")
-                                    if (domain.isEmpty()) {
-                                        domain = "s96.upstreamcdn.co"
-                                        //Log.i(this.name, "Result => (default domain) ${domain}")
-                                    }
-                                    result?.forEach {
-                                        val linkUrl = "https://${domain}/hls/${it}/master.m3u8"
-                                        sources.add(
-                                            ExtractorLink(
-                                                name = "Upstream m3u8",
-                                                source = "Voe",
-                                                url = linkUrl,
-                                                quality = Qualities.Unknown.value,
-                                                referer = "https://upstream.to",
-                                                isM3u8 = true
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                            if (url.startsWith("https://mixdrop.co/")) {
-                                val extractor = MixDrop()
-                                val src = extractor.getUrl(url)
-                                if (!src.isNullOrEmpty()) {
-                                    sources.addAll(src)
-                                }
-                            }
-                            // end if
-                        }
-                    }
-                }
-            } else {
-                // parse single link
+            }
+        } else {
+            // parse single link
+            try {
                 if (data.contains("fembed.com")) {
                     val extractor = FEmbed()
                     extractor.domainUrl = "diasfem.com"
@@ -284,18 +208,17 @@ class PinoyMoviePediaProvider : MainAPI() {
                         sources.addAll(src)
                     }
                 }
+            } catch (e: Exception) {
+                Log.i(this.name, "Result => (exception) $e")
             }
-            // Invoke sources
-            if (sources.isNotEmpty()) {
-                for (source in sources) {
-                    callback.invoke(source)
-                    //Log.i(this.name, "Result => (source) ${source.url}")
-                }
+        }
+        // Invoke sources
+        if (sources.isNotEmpty()) {
+            for (source in sources) {
+                callback.invoke(source)
+                //Log.i(this.name, "Result => (source) ${source.url}")
                 return true
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Log.i(this.name, "Result => (e) ${e}")
         }
         return false
     }

@@ -2,9 +2,8 @@ package com.lagradost.cloudstream3.movieproviders
 
 import android.util.Log
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.MixDrop
-import com.lagradost.cloudstream3.extractors.VoeExtractor
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 
 class PinoyHDXyzProvider : MainAPI() {
@@ -19,56 +18,50 @@ class PinoyHDXyzProvider : MainAPI() {
 
     override fun getMainPage(): HomePageResponse {
         val all = ArrayList<HomePageList>()
-        try {
-            val html = app.get(mainUrl, timeout = 15).text
-            val document = Jsoup.parse(html)
-            val mainbody = document.getElementsByTag("body")
+        val html = app.get(mainUrl, referer = mainUrl).text
+        val document = Jsoup.parse(html)
+        val mainbody = document.getElementsByTag("body")
 
-            mainbody?.select("div.section-cotent.col-md-12.bordert")?.forEach { row ->
-                val title = row?.select("div.title-section.tt")?.text() ?: "<Row>"
-                val inner = row?.select("li.img_frame.preview-tumb7")
-                if (inner != null) {
-                    val elements: List<SearchResponse> = inner.map {
-                        // Get inner div from article
-                        val innerBody = it?.select("a")?.firstOrNull()
-                        // Fetch details
-                        val name = it?.text() ?: ""
-                        val link = innerBody?.attr("href") ?: ""
-                        val imgsrc = innerBody?.select("img")?.attr("src")
-                        val image = when (!imgsrc.isNullOrEmpty()) {
-                            true -> "${mainUrl}${imgsrc}"
-                            false -> null
-                        }
-                        //Log.i(this.name, "Result => (innerBody, image) ${innerBody} / ${image}")
-                        // Get Year from Link
-                        val rex = Regex("_(\\d+)_")
-                        val yearRes = rex.find(link)?.value ?: ""
-                        val year = yearRes.replace("_", "").toIntOrNull()
-                        //Log.i(this.name, "Result => (yearRes, year) ${yearRes} / ${year}")
-                        MovieSearchResponse(
-                            name,
-                            link,
-                            this.name,
-                            TvType.Movie,
-                            image,
-                            year,
-                            null,
-                        )
-                    }.filter { a -> a.url.isNotEmpty() }
-                            .filter { b -> b.name.isNotEmpty() }
-                            .distinctBy { c -> c.url }
-                    // Add
-                    all.add(
-                        HomePageList(
-                            title, elements
-                        )
+        mainbody?.select("div.section-cotent.col-md-12.bordert")?.forEach { row ->
+            val title = row?.select("div.title-section.tt")?.text() ?: "<Row>"
+            val inner = row?.select("li.img_frame.preview-tumb7")
+            if (inner != null) {
+                val elements: List<SearchResponse> = inner.map {
+                    // Get inner div from article
+                    val innerBody = it?.select("a")?.firstOrNull()
+                    // Fetch details
+                    val name = it?.text() ?: ""
+                    val link = innerBody?.attr("href") ?: ""
+                    val imgsrc = innerBody?.select("img")?.attr("src")
+                    val image = when (!imgsrc.isNullOrEmpty()) {
+                        true -> "${mainUrl}${imgsrc}"
+                        false -> null
+                    }
+                    //Log.i(this.name, "Result => (innerBody, image) ${innerBody} / ${image}")
+                    // Get Year from Link
+                    val rex = Regex("_(\\d+)_")
+                    val yearRes = rex.find(link)?.value ?: ""
+                    val year = yearRes.replace("_", "").toIntOrNull()
+                    //Log.i(this.name, "Result => (yearRes, year) ${yearRes} / ${year}")
+                    MovieSearchResponse(
+                        name,
+                        link,
+                        this.name,
+                        TvType.Movie,
+                        image,
+                        year,
+                        null,
                     )
-                }
+                }.filter { a -> a.url.isNotEmpty() }
+                        .filter { b -> b.name.isNotEmpty() }
+                        .distinctBy { c -> c.url }
+                // Add
+                all.add(
+                    HomePageList(
+                        title, elements
+                    )
+                )
             }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Log.i(this.name, "Result => (Exception) $e")
         }
         return HomePageResponse(all)
     }
@@ -153,7 +146,7 @@ class PinoyHDXyzProvider : MainAPI() {
             }
         }
         val streamlinks = listOfLinks.toString()
-        Log.i(this.name, "Result => (streamlinks) ${streamlinks}")
+        //Log.i(this.name, "Result => (streamlinks) ${streamlinks}")
 
         // Parse episodes if series
         if (tvtype == TvType.TvSeries) {
@@ -167,15 +160,14 @@ class PinoyHDXyzProvider : MainAPI() {
                 if (epListText.isNotEmpty()) {
                     epListText = epListText.substring(indexStart.length, epListText.indexOf(")"))
                         .trim().trim('\'')
-
+                    //Log.i(this.name, "Result => (epListText) ${epListText}")
                     val epList = epListText.split(',')
-                    Log.i(this.name, "Result => (epListText) ${epListText}")
                     //Log.i(this.name, "Result => (epLinks) ${epLinks}")
                     if (!epList.isNullOrEmpty()) {
                         var count = 0
-                        for (ep in epList) {
+                        epList.forEach { ep ->
                             count++
-                            val epTitle = " Episode ${count}"
+                            val epTitle = " Episode $count"
                             //Log.i(this.name, "Result => (epLinks href) ${href}")
                             episodeList.add(
                                 TvSeriesEpisode(
@@ -215,40 +207,13 @@ class PinoyHDXyzProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         if (data == "about:blank") return false
-        if (data == "") return false
-        val sources = mutableListOf<ExtractorLink>()
+        if (data.isEmpty()) return false
         try {
-            val urls = data.trim('[').trim(']').split(',')
-            if (!urls.isNullOrEmpty()) {
-                for (item in urls) {
-                    if (item.isNotEmpty()) {
-                        val url = item.trim()
-                        //Log.i(this.name, "Result => (url) ${url}")
-                        if (url.startsWith("https://voe.sx")) {
-                            val extractor = VoeExtractor()
-                            val src = extractor.getUrl(url)
-                            if (!src.isNullOrEmpty()) {
-                                sources.addAll(src)
-                            }
-                        }
-                        if (url.startsWith("https://mixdrop.co/")) {
-                            val extractor = MixDrop()
-                            val src = extractor.getUrl(url)
-                            if (!src.isNullOrEmpty()) {
-                                sources.addAll(src)
-                            }
-                        }
-                        // end if
-                    }
+            data.trim('[').trim(']').split(',').map { item ->
+                if (item.isNotEmpty()) {
+                    val url = item.trim()
+                    loadExtractor(url, url, callback)
                 }
-            }
-            // Invoke sources
-            if (sources.isNotEmpty()) {
-                for (source in sources) {
-                    callback.invoke(source)
-                    //Log.i(this.name, "Result => (source) ${source.url}")
-                }
-                return true
             }
         } catch (e: Exception) {
             e.printStackTrace()

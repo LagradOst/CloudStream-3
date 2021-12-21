@@ -2,13 +2,10 @@ package com.lagradost.cloudstream3.movieproviders
 
 import android.util.Log
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.DoodLaExtractor
-import com.lagradost.cloudstream3.extractors.FEmbed
-import com.lagradost.cloudstream3.extractors.MixDrop
-import com.lagradost.cloudstream3.extractors.VoeExtractor
+import com.lagradost.cloudstream3.extractors.*
 import com.lagradost.cloudstream3.network.DdosGuardKiller
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 import org.jsoup.select.Elements
 
@@ -21,83 +18,71 @@ class PinoyMoviesEsProvider : MainAPI() {
     override val hasMainPage = true
     override val hasQuickSearch = false
 
-    fun getRowElements(mainbody: Elements, rows: List<Pair<String, String>>, sep: String): MutableList<HomePageList>? {
-        try {
-            val all = mutableListOf<HomePageList>()
-            for (item in rows) {
-                val title = item.first
-                val inner = mainbody.select("div${sep}${item.second} > article")
-                if (inner != null) {
-                    val elements: List<SearchResponse> = inner.map {
-                        // Get inner div from article
-                        var urlTitle = it?.select("div.data.dfeatur")
-                        if (urlTitle.isNullOrEmpty()) {
-                            urlTitle = it?.select("div.data")
-                        }
-                        // Fetch details
-                        val link = urlTitle?.select("a")?.attr("href") ?: ""
-                        val name = urlTitle?.text() ?: ""
-                        val year = urlTitle?.select("span")?.text()?.toIntOrNull()
-                        //Log.i(this.name, "Result => (link) ${link}")
-                        val image = it?.select("div.poster > img")?.attr("data-src")
-
-                        MovieSearchResponse(
-                            name,
-                            link,
-                            this.name,
-                            TvType.Movie,
-                            image,
-                            year,
-                            null,
-                        )
-                    }.filter { a -> a.url.isNotEmpty() }
-                            .filter { b -> b.name.isNotEmpty() }
-                            .distinctBy { c -> c.url }
-                    if (!elements.isNullOrEmpty()) {
-                        all.add(HomePageList(
-                                title, elements
-                        ))
+    private fun getRowElements(mainbody: Elements, rows: List<Pair<String, String>>, sep: String): MutableList<HomePageList> {
+        val all = mutableListOf<HomePageList>()
+        for (item in rows) {
+            val title = item.first
+            val inner = mainbody.select("div${sep}${item.second} > article")
+            if (inner != null) {
+                val elements: List<SearchResponse> = inner.map {
+                    // Get inner div from article
+                    var urlTitle = it?.select("div.data.dfeatur")
+                    if (urlTitle.isNullOrEmpty()) {
+                        urlTitle = it?.select("div.data")
                     }
+                    // Fetch details
+                    val link = urlTitle?.select("a")?.attr("href") ?: ""
+                    val name = urlTitle?.text() ?: ""
+                    val year = urlTitle?.select("span")?.text()?.toIntOrNull()
+                    //Log.i(this.name, "Result => (link) ${link}")
+                    val image = it?.select("div.poster > img")?.attr("data-src")
+
+                    MovieSearchResponse(
+                        name,
+                        link,
+                        this.name,
+                        TvType.Movie,
+                        image,
+                        year,
+                        null,
+                    )
+                }.filter { a -> a.url.isNotEmpty() }
+                        .filter { b -> b.name.isNotEmpty() }
+                        .distinctBy { c -> c.url }
+                if (!elements.isNullOrEmpty()) {
+                    all.add(HomePageList(
+                            title, elements
+                    ))
                 }
             }
-            return all
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Log.i(this.name, "Result => (Exception) ${e}")
         }
-        return null
+        return all
     }
     override fun getMainPage(): HomePageResponse {
         val all = ArrayList<HomePageList>()
-        try {
-            val html = app.get(mainUrl, timeout = 15).text
-            val document = Jsoup.parse(html)
-            val mainbody = document.getElementsByTag("body")
-            if (mainbody != null) {
-                // All rows will be hardcoded bc of the nature of the site
-                val homepage1 = getRowElements(mainbody, listOf(
-                    Pair("Suggestion", "items.featured"),
-                    Pair("All Movies", "items.full")
-                ), ".")
-                if (!homepage1.isNullOrEmpty()) {
-                    all.addAll(homepage1)
-                }
-                //2nd rows
-                val homepage2 = getRowElements(mainbody, listOf(
-                    Pair("Action", "genre_action"),
-                    Pair("Comedy", "genre_comedy"),
-                    Pair("Romance", "genre_romance"),
-                    Pair("Horror", "genre_horror")
-                    //Pair("Rated-R", "genre_rated-r")
-                ), "#")
-                if (!homepage2.isNullOrEmpty()) {
-                    all.addAll(homepage2)
-                }
+        val html = app.get(mainUrl).text
+        val document = Jsoup.parse(html)
+        val mainbody = document.getElementsByTag("body")
+        if (mainbody != null) {
+            // All rows will be hardcoded bc of the nature of the site
+            val homepage1 = getRowElements(mainbody, listOf(
+                Pair("Suggestion", "items.featured"),
+                Pair("All Movies", "items.full")
+            ), ".")
+            if (homepage1.isNotEmpty()) {
+                all.addAll(homepage1)
             }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Log.i(this.name, "Result => (Exception) ${e}")
+            //2nd rows
+            val homepage2 = getRowElements(mainbody, listOf(
+                Pair("Action", "genre_action"),
+                Pair("Comedy", "genre_comedy"),
+                Pair("Romance", "genre_romance"),
+                Pair("Horror", "genre_horror")
+                //Pair("Rated-R", "genre_rated-r")
+            ), "#")
+            if (homepage2.isNotEmpty()) {
+                all.addAll(homepage2)
+            }
         }
         return HomePageResponse(all)
     }
@@ -207,86 +192,17 @@ class PinoyMoviesEsProvider : MainAPI() {
             callback: (ExtractorLink) -> Unit
     ): Boolean {
         if (data == "about:blank") return false
-        if (data == "") return false
+        if (data.isEmpty()) return false
         val sources = mutableListOf<ExtractorLink>()
         try {
             if (data.contains("playcontainer")) {
                 // parse movie servers
                 //Log.i(this.name, "Result => (data) ${data}")
-                val urls = Jsoup.parse(data).select("div")?.map { item ->
-                    item.select("iframe")?.attr("src")
-                }
-                if (!urls.isNullOrEmpty()) {
-                    for (url in urls) {
-                        if (!url.isNullOrEmpty()) {
-                            //Log.i(this.name, "Result => (url) ${url}")
-                            if (url.contains("dood.watch")) {
-                                // WIP: Not working for current domain. Still, adding it.
-                                val extractor = DoodLaExtractor()
-                                val src = extractor.getUrl(url)
-                                if (src != null) {
-                                    sources.addAll(src)
-                                }
-                            }
-                            if (url.startsWith("https://voe.sx")) {
-                                val extractor = VoeExtractor()
-                                val src = extractor.getUrl(url)
-                                if (!src.isNullOrEmpty()) {
-                                    sources.addAll(src)
-                                }
-                            }
-                            if (url.startsWith("https://upstream.to")) {
-                                // WIP: m3u8 link fetched but not playing
-                                //Log.i(this.name, "Result => (no extractor) ${url}")
-                                val doc = Jsoup.parse(app.get(url, referer = "https://upstream.to").text)?.toString() ?: ""
-                                if (doc.isNotEmpty()) {
-                                    var reg = Regex("(?<=master)(.*)(?=hls)")
-                                    val result = reg.find(doc)?.groupValues?.map {
-                                        it.trim('|')
-                                    }?.toList()
-                                    reg = Regex("(?<=\\|file\\|)(.*)(?=\\|remove\\|)")
-                                    val domainList = reg.find(doc)?.groupValues?.get(1)?.split("|")
-                                    var domain = when (!domainList.isNullOrEmpty()) {
-                                        true -> {
-                                            if (domainList.isNotEmpty()) {
-                                                var domName = ""
-                                                for (part in domainList) {
-                                                    domName = "${part}.${domName}"
-                                                }
-                                                domName.trimEnd('.')
-                                            } else { "" }
-                                        }
-                                        false -> ""
-                                    }
-                                    //Log.i(this.name, "Result => (domain) ${domain}")
-                                    if (domain.isEmpty()) {
-                                        domain = "s96.upstreamcdn.co"
-                                        //Log.i(this.name, "Result => (default domain) ${domain}")
-                                    }
-                                    result?.forEach {
-                                        val linkUrl = "https://${domain}/hls/${it}/master.m3u8"
-                                        sources.add(
-                                            ExtractorLink(
-                                                name = "Upstream m3u8",
-                                                source = "Voe",
-                                                url = linkUrl,
-                                                quality = Qualities.Unknown.value,
-                                                referer = "https://upstream.to",
-                                                isM3u8 = true
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                            if (url.startsWith("https://mixdrop.co/")) {
-                                val extractor = MixDrop()
-                                val src = extractor.getUrl(url)
-                                if (!src.isNullOrEmpty()) {
-                                    sources.addAll(src)
-                                }
-                            }
-                            // end if
-                        }
+                Jsoup.parse(data).select("div")?.map { item ->
+                    val url = item.select("iframe")?.attr("src")
+                    if (!url.isNullOrEmpty()) {
+                        //Log.i(this.name, "Result => (url) ${url}")
+                        loadExtractor(url, url, callback)
                     }
                 }
             } else {

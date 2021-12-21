@@ -7,7 +7,6 @@ import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
-import org.jsoup.Jsoup
 
 open class VoeExtractor : ExtractorApi() {
     override val name: String = "Voe"
@@ -22,7 +21,7 @@ open class VoeExtractor : ExtractorApi() {
 
     override fun getUrl(url: String, referer: String?): List<ExtractorLink> {
         val extractedLinksList: MutableList<ExtractorLink> = mutableListOf()
-        val doc = Jsoup.parse(app.get(url).text)?.toString() ?: ""
+        val doc = app.get(url).text
         if (doc.isNotEmpty()) {
             val start = "const sources ="
             var src = doc.substring(doc.indexOf(start))
