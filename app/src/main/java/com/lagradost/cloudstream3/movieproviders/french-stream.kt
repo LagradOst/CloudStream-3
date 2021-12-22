@@ -81,7 +81,7 @@ class FrenchStreamProvider : MainAPI() {
             val date = soup.select("ul.flist-col > li")[2].text().toIntOrNull()
             val ratingAverage = soup.select("div.fr-count > div").text().toIntOrNull()
             val tags = soup.select("ul.flist-col > li")[1]
-            val tagsList = tags.select("a").withIndex().map { (idk, a) ->  // all the tags like action, thriller ...; idk what to put here but if removed it doesn't work
+            val tagsList = tags.select("a").withIndex().map { (_, a) ->  // all the tags like action, thriller ...; unused variable
                 a.text()
             }
             return MovieLoadResponse(
