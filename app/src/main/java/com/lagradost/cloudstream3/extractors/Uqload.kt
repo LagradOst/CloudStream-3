@@ -11,7 +11,6 @@ class Uqload : ExtractorApi() {
 
     override fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         with(app.get(url)) {  // raised error ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED (3003) is due to the response: "error_nofile"
-            println(srcRegex.find(this.text)?.groupValues?.get(1)?.replace("\"", ""))
             srcRegex.find(this.text)?.groupValues?.get(1)?.replace("\"", "")?.let { link ->
                 return listOf(
                     ExtractorLink(
