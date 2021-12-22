@@ -85,6 +85,8 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     WatchSB(),
     Uqload(),
     Evoload(),
+    VoeExtractor(),
+    UpstreamExtractor(),
 
     // dood extractors
     DoodToExtractor(),
