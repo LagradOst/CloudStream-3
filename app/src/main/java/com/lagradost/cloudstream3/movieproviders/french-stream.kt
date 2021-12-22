@@ -109,7 +109,6 @@ class FrenchStreamProvider : MainAPI() {
                         a.text()
                     }
                 else ""
-                println(epTitle)
                 if (poster == null) {
                     poster = a.selectFirst("div.fposter > img")?.attr("src")
                 }
