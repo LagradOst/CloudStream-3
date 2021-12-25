@@ -6,12 +6,14 @@ import com.lagradost.cloudstream3.pmap
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
+
 /**
  * overrideMainUrl is necessary for for other vidstream clones like vidembed.cc
  * If they diverge it'd be better to make them separate.
  * */
-open class Pelisplus(val mainUrl: String) {
+class Pelisplus(val mainUrl: String) {
     val name: String = "Vidstream"
 
     private fun getExtractorUrl(id: String): String {
@@ -43,21 +45,25 @@ open class Pelisplus(val mainUrl: String) {
                 val pageDoc = Jsoup.parse(page.text)
                 val qualityRegex = Regex("(\\d+)P")
 
-                pageDoc.select(".dowload > a[download]").forEach {
-                    val qual = if (it.text()
+                //a[download]
+                pageDoc.select(".dowload > a")?.pmap { element ->
+                    val href = element.attr("href") ?: return@pmap
+                    val qual = if (element.text()
                             .contains("HDP")
-                    ) "1080" else qualityRegex.find(it.text())?.destructured?.component1().toString()
+                    ) "1080" else qualityRegex.find(element.text())?.destructured?.component1().toString()
 
-                    callback.invoke(
-                        ExtractorLink(
-                            this.name,
-                            if (qual == "null") this.name else "${this.name} - " + qual + "p",
-                            it.attr("href"),
-                            page.url,
-                            getQualityFromName(qual),
-                            it.attr("href").contains(".m3u8")
+                    if (!loadExtractor(href, link, callback)) {
+                        callback.invoke(
+                            ExtractorLink(
+                                this.name,
+                                if (qual == "null") this.name else "${this.name} - " + qual + "p",
+                                href,
+                                page.url,
+                                getQualityFromName(qual),
+                                element.attr("href").contains(".m3u8")
+                            )
                         )
-                    )
+                    }
                 }
             }
 
