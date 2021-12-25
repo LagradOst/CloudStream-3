@@ -4,7 +4,7 @@ import com.lagradost.cloudstream3.TvType
 
 /** Needs to inherit from MainAPI() to
  * make the app know what functions to call
- */
+ */ 
 class PelisplusProvider : PelisplusProviderTemplate() {
     // mainUrl is good to have as a holder for the url to make future changes easier.
     override val mainUrl: String
