@@ -10,10 +10,12 @@ import java.net.URI
 /** Needs to inherit from MainAPI() to
  * make the app know what functions to call
  */
+
 open class PelisplusProviderTemplate : MainAPI() {
     override val lang = "es"
     open val homePageUrlList = listOf<String>()
     open val pelisplusExtractorUrl: String? = null
+
 
 
 //    // mainUrl is good to have as a holder for the url to make future changes easier.
@@ -28,12 +30,10 @@ open class PelisplusProviderTemplate : MainAPI() {
     // gives results on the site instead of bringing you to another page.
     // if hasQuickSearch is true and quickSearch() hasn't been overridden you will get errors.
     // VidEmbed actually has quick search on their site, but the function wasn't implemented.
-    override val hasQuickSearch: Boolean
-        get() = false
+    override val hasQuickSearch = false
 
     // If getMainPage() is functional, used to display the homepage in app, an optional, but highly encouraged endevour.
-    override val hasMainPage: Boolean
-        get() = true
+    override val hasMainPage = true
 
     // Sometimes on sites the urls can be something like "/movie.html" which translates to "*full site url*/movie.html" in the browser
     private fun fixUrl(url: String): String {
