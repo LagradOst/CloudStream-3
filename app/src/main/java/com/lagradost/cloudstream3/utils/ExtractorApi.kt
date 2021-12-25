@@ -81,7 +81,11 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     Streamhub(),
 
     FEmbed(),
+    FeHD(),
+    Fplayer(),
     WatchSB(),
+    WatchSB1(),
+    WatchSB2(),
     VoeExtractor(),
     UpstreamExtractor(),
 
@@ -89,6 +93,7 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     DoodToExtractor(),
     DoodSoExtractor(),
     DoodLaExtractor(),
+    DoodWsExtractor(),
 
     AsianLoad(),
 
