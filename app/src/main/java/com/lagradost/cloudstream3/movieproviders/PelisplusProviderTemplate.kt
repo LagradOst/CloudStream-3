@@ -11,6 +11,7 @@ import java.net.URI
  * make the app know what functions to call
  */
 open class PelisplusProviderTemplate : MainAPI() {
+    override val lang = "es"
     open val homePageUrlList = listOf<String>()
     open val pelisplusExtractorUrl: String? = null
 
@@ -57,7 +58,7 @@ open class PelisplusProviderTemplate : MainAPI() {
         return ArrayList(soup.select(".listing.items > .video-block").map { li ->
             // Selects the href in <a href="...">
             val href = fixUrl(li.selectFirst("a").attr("href"))
-            val poster = li.selectFirst("img")?.attr("src")?.replace("//img", "https://img")
+            val poster = fixUrl(li.selectFirst("img").attr("src"))
 
             // .text() selects all the text in the element, be careful about doing this while too high up in the html hierarchy
             val title = li.selectFirst(".name").text()
@@ -98,7 +99,7 @@ open class PelisplusProviderTemplate : MainAPI() {
                 else
                     li.selectFirst(".name").text()
             else ""
-            val epThumb = li.selectFirst("img")?.attr("src")?.replace("//img", "https://img")
+            val epThumb = fixUrl(li.selectFirst("img").attr("src"))
             val epDate = li.selectFirst(".meta > .date").text()
 
             if (poster == null) {
