@@ -228,7 +228,7 @@ open class PelisplusProviderTemplate : MainAPI() {
         // This case is a both unorthodox and you normally do not call extractors as they detect the url returned and does the rest.
         val vidstreamObject = Pelisplus(pelisplusExtractorUrl ?: mainUrl)
         // https://vidembed.cc/streaming.php?id=MzUwNTY2&... -> MzUwNTY2
-        val id = Regex("""id=([^&]*)""").find(iframeLink)?.groupValues?.get(1)
+        val id = Regex("""id=([^?]*)""").find(iframeLink)?.groupValues?.get(1)
 
         if (id != null) {
             vidstreamObject.getUrl(id, isCasting, callback)
