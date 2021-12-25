@@ -2,8 +2,6 @@ package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.Pelisplus
-import com.lagradost.cloudstream3.extractors.Pelisplus1
-import com.lagradost.cloudstream3.extractors.Pelisplus2
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.jsoup.Jsoup
