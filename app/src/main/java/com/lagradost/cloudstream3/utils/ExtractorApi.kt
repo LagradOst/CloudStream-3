@@ -84,8 +84,6 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     FeHD(),
     Fplayer(),
     WatchSB(),
-    WatchSB1(),
-    WatchSB2(),
     VoeExtractor(),
     UpstreamExtractor(),
 
@@ -98,6 +96,7 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     AsianLoad(),
 
     SBPlay(),
+    SBPlay1(),
     SBPlay2(),
 )
 

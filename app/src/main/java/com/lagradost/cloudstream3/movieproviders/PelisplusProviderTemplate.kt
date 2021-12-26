@@ -16,8 +16,6 @@ open class PelisplusProviderTemplate : MainAPI() {
     open val homePageUrlList = listOf<String>()
     open val pelisplusExtractorUrl: String? = null
 
-
-
 //    // mainUrl is good to have as a holder for the url to make future changes easier.
 //    override val mainUrl: String
 //        get() = "https://vidembed.cc"
@@ -34,17 +32,6 @@ open class PelisplusProviderTemplate : MainAPI() {
 
     // If getMainPage() is functional, used to display the homepage in app, an optional, but highly encouraged endevour.
     override val hasMainPage = true
-
-    // Sometimes on sites the urls can be something like "/movie.html" which translates to "*full site url*/movie.html" in the browser
-    private fun fixUrl(url: String): String {
-        return if (url.startsWith("//")) {
-            "https:$url"
-        } else if (url.startsWith("/")) {
-            "$mainUrl$url"
-        } else {
-            url
-        }
-    }
 
     // Searching returns a SearchResponse, which can be one of the following: AnimeSearchResponse, MovieSearchResponse, TorrentSearchResponse, TvSeriesSearchResponse
     // Each of the classes requires some different data, but always has some critical things like name, poster and url.
@@ -92,7 +79,7 @@ open class PelisplusProviderTemplate : MainAPI() {
         val description = soup.selectFirst(".post-entry")?.text()?.trim()
         var poster: String? = null
 
-        val episodes = soup.select(".listing.items.lists > .video-block").withIndex().map { (_, li) ->
+        val episodes = soup.select(".listing.items.lists > .video-block").map { li ->
             val epTitle = if (li.selectFirst(".name") != null)
                 if (li.selectFirst(".name").text().contains("Episode"))
                     "Episode " + li.selectFirst(".name").text().split("Episode")[1].trim()
@@ -103,7 +90,8 @@ open class PelisplusProviderTemplate : MainAPI() {
             val epDate = li.selectFirst(".meta > .date").text()
 
             if (poster == null) {
-                poster = li.selectFirst("img")?.attr("onerror")?.replace("//img", "https://img")?.split("=")?.get(1)?.replace(Regex("[';]"), "")
+                poster = li.selectFirst("img")?.attr("onerror")?.replace("//img", "https://img")?.split("=")?.get(1)
+                    ?.replace(Regex("[';]"), "")
             }
 
             val epNum = Regex("""Episode (\d+)""").find(epTitle)?.destructured?.component1()?.toIntOrNull()
@@ -231,7 +219,6 @@ open class PelisplusProviderTemplate : MainAPI() {
 
         if (id != null) {
             vidstreamObject.getUrl(id, isCasting, callback)
-          
         }
 
         val html = app.get(fixUrl(iframeLink)).text
@@ -246,7 +233,7 @@ open class PelisplusProviderTemplate : MainAPI() {
         }
         servers.forEach {
             // When checking strings make sure to make them lowercase and trimmed because edgecases like "beta server " wouldn't work otherwise.
-            if (it.first.trim().equals( "beta server", ignoreCase = true)) {
+            if (it.first.trim().equals("beta server", ignoreCase = true)) {
                 // Group 1: link, Group 2: Label
                 // Regex can be used to effectively parse small amounts of json without bothering with writing a json class.
                 val sourceRegex = Regex("""sources:[\W\w]*?file:\s*["'](.*?)["'][\W\w]*?label:\s*["'](.*?)["']""")
