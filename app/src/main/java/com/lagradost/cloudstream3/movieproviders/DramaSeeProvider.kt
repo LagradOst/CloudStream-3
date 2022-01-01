@@ -4,6 +4,7 @@ import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 
 class DramaSeeProvider : MainAPI() {
@@ -72,16 +73,20 @@ class DramaSeeProvider : MainAPI() {
     }
 
     override fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/search/?q=${query.replace(" ", "+")}"
-        val html = app.get(url).text
-        val document = Jsoup.parse(html).select("div.portfolio-thumb")
-        if (document != null) {
+        val url = "$mainUrl/search?q=$query"
+        val html = app.get(url).document
+        val document = html.getElementsByTag("body")
+                .select("section > main > ul.series > li")
+        if (!document.isNullOrEmpty()) {
             return document.map {
 
-                val link = it?.select("a")?.firstOrNull()?.attr("href") ?: ""
-                val title = it?.text() ?: ""
+                val innerA = it?.select("a.series-img")
+                val href = innerA?.attr("href") ?: ""
+                val link = if (href.isNotEmpty()) { fixUrl(href) } else { "" }
+                val title = it?.select("a.series-name")?.text() ?: ""
                 val year = null
-                val image = null // site provides no image on search page
+                val imgsrc = innerA?.select("img")?.attr("src") ?: ""
+                val image = if (imgsrc.isNotEmpty()) { fixUrl(imgsrc) } else { "" }
 
                 MovieSearchResponse(
                     title,
@@ -122,6 +127,7 @@ class DramaSeeProvider : MainAPI() {
         // Episodes Links
         val episodeList = ArrayList<TvSeriesEpisode>()
         val eps = body?.select("ul.episodes > li.episode-item")
+        //Log.i(this.name, "Result => (eps) ${eps}")
         if (!eps.isNullOrEmpty()) {
             for (ep in eps) {
                 if (ep != null) {
@@ -204,44 +210,28 @@ class DramaSeeProvider : MainAPI() {
                         if (url.startsWith("//")) {
                             url = "https:$url"
                         }
-                        Log.i(this.name, "Result => (url) ${url}")
-                        if (url.startsWith("https://mixdrop")) {
-                            val extractor = MixDrop()
-                            val src = extractor.getUrl(url)
-                            if (!src.isNullOrEmpty()) {
-                                sources.addAll(src)
-                            }
-                            break
-                        }
-                        if (url.startsWith("https://asianload")) {
-                            val extractor = AsianLoad()
-                            val src = extractor.getUrl(url)
-                            if (!src.isNullOrEmpty()) {
-                                sources.addAll(src)
-                            }
-                            break
-                        }
-                        if (url.startsWith("https://dood.la")) {
-                            val extractor = DoodLaExtractor()
-                            val src = extractor.getUrl(url)
-                            if (!src.isNullOrEmpty()) {
-                                sources.addAll(src)
-                            }
-                            break
-                        }
-                        if (url.startsWith("https://streamtape")) {
-                            val extractor = StreamTape()
-                            val src = extractor.getUrl(url)
-                            if (!src.isNullOrEmpty()) {
-                                sources.addAll(src)
-                            }
-                            break
-                        }
-                        if (url.startsWith("https://sbplay")) {
-                            val extractor = StreamSB()
-                            val src = extractor.getUrl(url)
-                            if (!src.isNullOrEmpty()) {
-                                sources.addAll(src)
+                        //Log.i(this.name, "Result => (url) ${url}")
+                        if (url.startsWith("https://asianembed.io")) {
+                            // Fetch links
+                            val doc = app.get(url).document
+                            val links = doc.select("div#list-server-more > ul > li.linkserver")
+                            if (!links.isNullOrEmpty()) {
+                                links.forEach {
+                                    val datavid = it.attr("data-video") ?: ""
+                                    //Log.i(this.name, "Result => (datavid) ${datavid}")
+                                    if (datavid.isNotEmpty()) {
+                                        if (datavid.startsWith("https://fembed-hd.com")) {
+                                            val extractor = XStreamCdn()
+                                            extractor.domainUrl = "fembed-hd.com"
+                                            val src = extractor.getUrl(datavid, url)
+                                            if (!src.isNullOrEmpty()) {
+                                                sources.addAll(src)
+                                            }
+                                        } else {
+                                            loadExtractor(datavid, url, callback)
+                                        }
+                                    }
+                                }
                             }
                             break
                         }
@@ -254,6 +244,7 @@ class DramaSeeProvider : MainAPI() {
                             }
                             break
                         }
+                        loadExtractor(url, url, callback)
                         // end if
                     }
                 }
