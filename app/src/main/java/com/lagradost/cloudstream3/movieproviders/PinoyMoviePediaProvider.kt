@@ -150,7 +150,7 @@ class PinoyMoviePediaProvider : MainAPI() {
                         //Log.i(this.name, "Result => (epLinks href) ${href}")
                         episodeList.add(
                             TvSeriesEpisode(
-                                name,
+                                "Episode $epNum",
                                 null,
                                 epNum,
                                 href,
