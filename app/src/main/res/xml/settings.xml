@@ -60,6 +60,7 @@
                 android:summary="@string/double_tap_to_seek_settings_des"
                 app:defaultValue="false"
         />
+        <!--
         <SwitchPreference
                 android:icon="@drawable/ic_baseline_brightness_7_24"
                 app:key="@string/use_system_brightness_key"
@@ -67,6 +68,7 @@
                 android:summary="@string/use_system_brightness_settings_des"
                 app:defaultValue="false"
         />
+        -->
     </PreferenceCategory>
     <PreferenceCategory
             android:key="general"

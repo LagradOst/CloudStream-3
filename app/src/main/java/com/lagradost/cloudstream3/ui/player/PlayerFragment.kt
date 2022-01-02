@@ -48,7 +48,9 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.C.TIME_UNSET
 import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
-import com.google.android.exoplayer2.source.*
+import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
+import com.google.android.exoplayer2.source.MergingMediaSource
+import com.google.android.exoplayer2.source.SingleSampleMediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.SubtitleView
@@ -102,7 +104,6 @@ import com.lagradost.cloudstream3.utils.VideoDownloadManager.getId
 import kotlinx.android.synthetic.main.fragment_player.*
 import kotlinx.android.synthetic.main.player_custom_layout.*
 import kotlinx.coroutines.*
-import okhttp3.internal.format
 import java.io.File
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
@@ -124,6 +125,7 @@ const val EXTRA_CONTROL_TYPE = "control_type"
 const val PLAYBACK_SPEED = "playback_speed"
 const val RESIZE_MODE_KEY = "resize_mode" // Last used resize mode
 const val PLAYBACK_SPEED_KEY = "playback_speed" // Last used playback speed
+const val PLAYBACK_FASTFORWARD = "playback_ffw"
 const val PREFERRED_SUBS_KEY = "preferred_subtitles" // Last used resize mode
 
 const val OPENING_PERCENTAGE = 50
@@ -138,7 +140,7 @@ enum class PlayerEventType(val value: Int) {
 
     //SkipCurrentChapter(4),
     NextEpisode(5),
-    PrevEpisode(5),
+    PrevEpisode(6),
     PlayPauseToggle(7),
     ToggleMute(8),
     Lock(9),
@@ -949,7 +951,7 @@ class PlayerFragment : Fragment() {
         video_title.startAnimation(fadeAnimation)
 
         // BOTTOM
-        lock_holder.startAnimation(fadeAnimation)
+        player_lock_holder.startAnimation(fadeAnimation)
         video_go_back_holder2.startAnimation(fadeAnimation)
 
         shadow_overlay.startAnimation(fadeAnimation)
@@ -1725,8 +1727,7 @@ class PlayerFragment : Fragment() {
                     is Resource.Failure -> {
                         //WTF, HOW DID YOU EVEN GET HERE
                     }
-                    else -> {
-                    }
+                    else -> Unit
                 }
             }
         }
@@ -2451,7 +2452,6 @@ class PlayerFragment : Fragment() {
                             .setPosition( /* positionMs= */exoPlayer.contentDuration * AUTOLOAD_NEXT_EPISODE_PERCENTAGE / 100)
                             //   .setPayload(customPayloadData)
                             .setDeleteAfterDelivery(false)
-
                             .send()
 
                     } else {
@@ -2479,8 +2479,7 @@ class PlayerFragment : Fragment() {
                             Player.STATE_BUFFERING -> {
                                 changeSkip()
                             }
-                            else -> {
-                            }
+                            else -> Unit
                         }
                     }
                 }

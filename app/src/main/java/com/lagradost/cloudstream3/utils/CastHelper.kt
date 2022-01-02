@@ -79,9 +79,7 @@ object CastHelper {
                     callback.invoke(true)
                     println("FAILED AND LOAD NEXT")
                 }
-                else -> {
-                    //IDK DO SMTH HERE
-                }
+                else -> Unit //IDK DO SMTH HERE
             }
         }
     }

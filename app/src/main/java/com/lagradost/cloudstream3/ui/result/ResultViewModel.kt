@@ -441,9 +441,7 @@ class ResultViewModel : ViewModel() {
                     }
                 }
             }
-            else -> {
-                // nothing
-            }
+            else -> Unit
         }
     }
 

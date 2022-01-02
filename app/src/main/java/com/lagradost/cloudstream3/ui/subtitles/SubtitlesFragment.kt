@@ -138,8 +138,7 @@ class SubtitlesFragment : Fragment() {
             2 -> state.backgroundColor = realColor
             3 -> state.windowColor = realColor
 
-            else -> {
-            }
+            else -> Unit
         }
         updateState()
     }

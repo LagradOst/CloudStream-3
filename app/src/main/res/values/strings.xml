@@ -226,6 +226,8 @@
     <string name="cancel" translatable="false">@string/sort_cancel</string>
     <string name="pause">Pause</string>
     <string name="resume">Resume</string>
+    <string name="go_back_30">-30</string>
+    <string name="go_forward_30">+30</string>
     <string name="delete_message" formatted="true">This will permanently delete %s\nAre you sure?</string>
 
     <string name="status_ongoing">Ongoing</string>

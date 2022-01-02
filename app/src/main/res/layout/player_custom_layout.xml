@@ -61,7 +61,7 @@
             android:id="@+id/timeMenu"
             android:orientation="horizontal"
             app:layout_constraintTop_toBottomOf="@+id/topMenuRight"
-            app:layout_constraintBottom_toTopOf="@+id/centerMenu"
+            app:layout_constraintBottom_toTopOf="@+id/player_center_menu"
     >
         <TextView
                 android:layout_width="match_parent"
@@ -83,7 +83,7 @@
                 android:id="@+id/timeText"
                 android:gravity="center"
                 android:textSize="30sp"
-                android:alpha="0"
+                tools:text="+100"
                 android:shadowColor="@android:color/black"
                 android:shadowRadius="10.0"
                 android:textColor="@android:color/white"
@@ -240,7 +240,7 @@
                 android:gravity="center"
                 android:orientation="horizontal"
                 android:layout_gravity="center"
-                android:id="@+id/centerMenu"
+                android:id="@+id/player_center_menu"
         >
 
             <FrameLayout
@@ -430,7 +430,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:id="@+id/video_bar"
+                    android:id="@+id/player_video_bar"
             >
                 <TextView
                         tools:text="15:30"
@@ -501,7 +501,7 @@
 
                             style="@style/VideoButton"/>
                     <LinearLayout
-                            android:id="@+id/lock_holder"
+                            android:id="@+id/player_lock_holder"
                             android:orientation="horizontal"
                             android:layout_width="wrap_content"
                             android:layout_height="match_parent">
@@ -583,7 +583,6 @@
                 android:id="@+id/progressBarLeftHolder"
                 android:layout_width="100dp"
                 android:layout_height="wrap_content"
-                android:alpha="0"
         >
             <!--VERY hacky layout -->
             <ImageView
@@ -606,6 +605,7 @@
                     android:indeterminate="false"
                     style="@android:style/Widget.Material.ProgressBar.Horizontal"
                     android:max="100"
+                    tools:progress="30"
                     android:layout_marginStart="40dp"
                     android:layout_gravity="end|center_vertical"
                     android:progress="100"
@@ -623,7 +623,6 @@
                 android:id="@+id/progressBarRightHolder"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:alpha="0"
                 tools:ignore="RtlHardcoded">
 
             <ImageView

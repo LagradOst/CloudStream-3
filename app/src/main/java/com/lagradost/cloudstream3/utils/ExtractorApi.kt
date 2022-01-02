@@ -133,8 +133,7 @@ fun getPostForm(requestUrl : String, html : String) : String? {
             "id" -> id = value
             "mode" -> mode = value
             "hash" -> hash = value
-            else -> {
-            }
+            else -> Unit
         }
     }
     if (op == null || id == null || mode == null || hash == null) {

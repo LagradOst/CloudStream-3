@@ -491,9 +491,7 @@ class ResultFragment : Fragment() {
                             Toast.LENGTH_SHORT
                         )
                     }
-                    else -> {
-
-                    }
+                    else -> Unit
                 }
                 return false
             }
@@ -947,8 +945,7 @@ class ResultFragment : Fragment() {
                         }
                     }
                 }
-                else -> {
-                }
+                else -> Unit
             }
             arguments?.remove("startValue")
             arguments?.remove("startAction")
@@ -1069,8 +1066,7 @@ class ResultFragment : Fragment() {
                         setDuration(d.duration)
                         setRating(d.publicScore)
                     }
-                    else -> {
-                    }
+                    else -> Unit
                 }
             }
         }
