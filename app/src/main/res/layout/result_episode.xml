@@ -55,7 +55,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
         <ImageView
-                android:tint="?attr/textColor"
+                app:tint="?attr/textColor"
                 android:layout_marginStart="10dp"
                 android:layout_marginEnd="10dp"
                 android:layout_gravity="center_vertical"
@@ -109,7 +109,7 @@
                 android:nextFocusLeft="@id/episode_holder"
                 android:nextFocusRight="@id/episode_holder"
 
-                android:tint="?attr/white"
+                app:tint="?attr/white"
 
                 android:id="@+id/result_episode_download"
                 android:visibility="visible"

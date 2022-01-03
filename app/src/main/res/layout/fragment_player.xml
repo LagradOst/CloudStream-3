@@ -132,7 +132,7 @@
                 android:textColor="@color/white"
                 android:id="@+id/video_torrent_seeders"
                 tools:text="17 seeders"
-                app:layout_constraintTop_toBottomOf="@+id/video_title">
+                app:layout_constraintTop_toBottomOf="@+id/player_video_title">
         </TextView>
     </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -166,9 +166,9 @@
                             android:layout_width="30dp"
                             android:layout_height="30dp"
                             android:layout_gravity="center_vertical|start"
-                            android:tint="?attr/white"
                             android:src="@drawable/ic_baseline_arrow_back_24"
-                            android:contentDescription="@string/go_back">
+                            android:contentDescription="@string/go_back"
+                            app:tint="?attr/white">
                     </ImageView>
                     <LinearLayout
                             android:gravity="end"
@@ -196,15 +196,14 @@
                                 android:id="@+id/result_add_sync"
                                 android:layout_width="30dp"
                                 android:layout_height="30dp"
-                                android:layout_marginRight="10dp"
+                                android:layout_marginEnd="10dp"
                                 android:elevation="10dp"
-
-                                android:tint="?attr/textColor"
 
                                 android:background="?android:attr/selectableItemBackgroundBorderless"
                                 android:src="@drawable/ic_baseline_add_24"
                                 android:layout_gravity="end|center_vertical"
-                                android:contentDescription="@string/add_sync">
+                                android:contentDescription="@string/add_sync"
+                                app:tint="?attr/textColor">
                         </ImageView>
 
                         <ImageView
@@ -216,15 +215,14 @@
                                 android:id="@+id/result_share"
                                 android:layout_width="25dp"
                                 android:layout_height="25dp"
-                                android:layout_marginRight="10dp"
+                                android:layout_marginEnd="10dp"
                                 android:elevation="10dp"
-
-                                android:tint="?attr/textColor"
 
                                 android:background="?android:attr/selectableItemBackgroundBorderless"
                                 android:src="@drawable/ic_outline_share_24"
                                 android:layout_gravity="end|center_vertical"
-                                android:contentDescription="@string/result_share">
+                                android:contentDescription="@string/result_share"
+                                app:tint="?attr/textColor">
                         </ImageView>
                         <ImageView
                                 android:nextFocusUp="@id/result_back"
@@ -238,12 +236,11 @@
                                 android:layout_margin="5dp"
                                 android:elevation="10dp"
 
-                                android:tint="?attr/textColor"
-
                                 android:background="?android:attr/selectableItemBackgroundBorderless"
                                 android:src="@drawable/ic_baseline_public_24"
                                 android:layout_gravity="end|center_vertical"
-                                android:contentDescription="@string/result_open_in_browser">
+                                android:contentDescription="@string/result_open_in_browser"
+                                app:tint="?attr/textColor">
                         </ImageView>
 
                         <ImageView
@@ -258,12 +255,11 @@
                                 android:layout_margin="5dp"
                                 android:elevation="10dp"
 
-                                android:tint="?attr/textColor"
-
                                 android:background="?android:attr/selectableItemBackgroundBorderless"
                                 android:src="@drawable/search_icon"
                                 android:layout_gravity="end|center_vertical"
-                                android:contentDescription="@string/result_open_in_browser">
+                                android:contentDescription="@string/result_open_in_browser"
+                                app:tint="?attr/textColor">
                         </ImageView>
                     </LinearLayout>
                 </FrameLayout>

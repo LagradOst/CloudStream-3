@@ -360,16 +360,16 @@ class PlayerFragment : Fragment() {
     }
 
     private fun updateClick() {
-        click_overlay?.isVisible = !isShowing
+        //click_overlay?.isVisible = !isShowing
 
         val titleMove = if (isShowing) 0f else -50.toPx.toFloat()
-        video_title?.let {
+        player_video_title?.let {
             ObjectAnimator.ofFloat(it, "translationY", titleMove).apply {
                 duration = 200
                 start()
             }
         }
-        video_title_rez?.let {
+        player_video_title_rez?.let {
             ObjectAnimator.ofFloat(it, "translationY", titleMove).apply {
                 duration = 200
                 start()
@@ -402,12 +402,12 @@ class PlayerFragment : Fragment() {
         if (!isLocked) {
             player_ffwd_holder?.alpha = 1f
             player_rew_holder?.alpha = 1f
-            player_pause_holder?.alpha = 1f
+            player_pause_play?.alpha = 1f
 
             shadow_overlay?.startAnimation(fadeAnimation)
             player_ffwd_holder?.startAnimation(fadeAnimation)
             player_rew_holder?.startAnimation(fadeAnimation)
-            player_pause_holder?.startAnimation(fadeAnimation)
+            player_pause_play?.startAnimation(fadeAnimation)
         } //else {
             //player_ffwd_holder?.alpha = 0f
             //player_ffwd_holder?.alpha = 0f
@@ -498,7 +498,7 @@ class PlayerFragment : Fragment() {
                     ) * (1 / 255).toFloat())
                 else lp?.screenBrightness!!
             }
-        } else brightness_overlay.alpha
+        } else 0f//brightness_overlay.alpha
     }
 
     private fun setBrightness(context: Context?, alpha: Float) {
@@ -521,7 +521,7 @@ class PlayerFragment : Fragment() {
                 activity?.window?.attributes = lp
             }
         } else {
-            brightness_overlay?.alpha = realAlpha
+            //brightness_overlay?.alpha = realAlpha
         }
 
         context?.setKey(VIDEO_PLAYER_BRIGHTNESS, realAlpha)
@@ -580,17 +580,17 @@ class PlayerFragment : Fragment() {
                     }
                     if (hasPassedVerticalSwipeThreshold) {
                         if (currentX > max(height, width) * 0.5) {
-                            if (audioManager != null && progressBarLeftHolder != null) {
+                            if (audioManager != null && player_progressbar_left_holder != null) {
                                 val currentVolume =
                                     audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
                                 val maxVolume =
                                     audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
 
-                                if (progressBarLeftHolder?.alpha ?: 0f <= 0f) {
+                                if (player_progressbar_left_holder?.alpha ?: 0f <= 0f) {
                                     cachedVolume = currentVolume.toFloat() / maxVolume.toFloat()
                                 }
 
-                                progressBarLeftHolder?.alpha = 1f
+                                player_progressbar_left_holder?.alpha = 1f
                                 val vol = minOf(
                                     1f,
                                     cachedVolume - diffY.toFloat() * 0.5f
@@ -621,8 +621,8 @@ class PlayerFragment : Fragment() {
                                 }
                                 currentY = motionEvent.rawY
                             }
-                        } else if (progressBarRightHolder != null) {
-                            progressBarRightHolder?.alpha = 1f
+                        } else if (player_progressbar_right_holder != null) {
+                            player_progressbar_right_holder?.alpha = 1f
 
                             val alpha = changeBrightness(-diffY.toFloat())
                             player_progressbar_right?.max = 100 * 100
@@ -659,10 +659,10 @@ class PlayerFragment : Fragment() {
                             }${
                                 convertTimeToString(abs(skipTime / 1000.0))
                             }]"
-                        timeText.alpha = 1f
-                        timeText.text = timeString
+                        player_time_text.alpha = 1f
+                        player_time_text.text = timeString
                     } else {
-                        timeText.alpha = 0f
+                        player_time_text.alpha = 0f
                     }
                 }
             }
@@ -686,11 +686,11 @@ class PlayerFragment : Fragment() {
                 prevDiffX = 0.0
                 skipTime = 0
 
-                timeText.animate().alpha(0f).setDuration(200)
+                player_time_text.animate().alpha(0f).setDuration(200)
                     .setInterpolator(AccelerateInterpolator()).start()
-                progressBarRightHolder.animate().alpha(0f).setDuration(200)
+                player_progressbar_right_holder.animate().alpha(0f).setDuration(200)
                     .setInterpolator(AccelerateInterpolator()).start()
-                progressBarLeftHolder.animate().alpha(0f).setDuration(200)
+                player_progressbar_left_holder.animate().alpha(0f).setDuration(200)
                     .setInterpolator(AccelerateInterpolator()).start()
                 //val fadeAnimation = AlphaAnimation(1f, 0f)
                 //fadeAnimation.duration = 100
@@ -725,17 +725,17 @@ class PlayerFragment : Fragment() {
             val isAnime =
                 data.isAnimeBased()//(data is AnimeLoadResponse && (data.type == TvType.Anime || data.type == TvType.ONA))
 
-            skip_op?.isVisible = (isAnime && !nextEp)
-            skip_episode?.isVisible = ((!isAnime || nextEp) && hasNext)
+            player_skip_op?.isVisible = (isAnime && !nextEp)
+            player_skip_episode?.isVisible = ((!isAnime || nextEp) && hasNext)
         } else {
             val isAnime = data.isAnimeBased()
 
             if (isAnime) {
-                skip_op?.isVisible = true
-                skip_episode?.isVisible = false
+                player_skip_op?.isVisible = true
+                player_skip_episode?.isVisible = false
             } else {
-                skip_episode?.isVisible = data.isEpisodeBased()
-                skip_op?.isVisible = false
+                player_skip_episode?.isVisible = data.isEpisodeBased()
+                player_skip_op?.isVisible = false
             }
         }
     }
@@ -923,7 +923,7 @@ class PlayerFragment : Fragment() {
 
         isLocked = !isLocked
         if (isLocked && isShowing) {
-            player_pause_holder?.postDelayed({
+            player_pause_play?.postDelayed({
                 if (isLocked && isShowing) {
                     onClickChange()
                 }
@@ -933,26 +933,26 @@ class PlayerFragment : Fragment() {
         //if(isShowing) {
         val fadeTo = if (isLocked) 0f else 1f
 
-        val fadeAnimation = AlphaAnimation(video_title.alpha, fadeTo)
+        val fadeAnimation = AlphaAnimation(player_video_title.alpha, fadeTo)
         fadeAnimation.duration = 100
         //   fadeAnimation.startOffset = 100
         fadeAnimation.fillAfter = true
 
         // MENUS
         //centerMenu.startAnimation(fadeAnimation)
-        player_pause_holder?.startAnimation(fadeAnimation)
+        player_pause_play?.startAnimation(fadeAnimation)
         player_ffwd_holder?.startAnimation(fadeAnimation)
         player_rew_holder?.startAnimation(fadeAnimation)
         player_media_route_button?.startAnimation(fadeAnimation)
         //video_bar.startAnimation(fadeAnimation)
 
         //TITLE
-        video_title_rez.startAnimation(fadeAnimation)
-        video_title.startAnimation(fadeAnimation)
+        player_video_title_rez.startAnimation(fadeAnimation)
+        player_video_title.startAnimation(fadeAnimation)
 
         // BOTTOM
         player_lock_holder.startAnimation(fadeAnimation)
-        video_go_back_holder2.startAnimation(fadeAnimation)
+        player_go_back_holder.startAnimation(fadeAnimation)
 
         shadow_overlay.startAnimation(fadeAnimation)
         // }
@@ -961,14 +961,14 @@ class PlayerFragment : Fragment() {
     }
 
     private fun updateLock() {
-        lock_player?.setIconResource(if (isLocked) R.drawable.video_locked else R.drawable.video_unlocked)
+        player_lock?.setIconResource(if (isLocked) R.drawable.video_locked else R.drawable.video_unlocked)
         var color = if (isLocked) context?.colorFromAttribute(R.attr.colorPrimary)
         else Color.WHITE
         if (color != null) {
-            lock_player?.setTextColor(color)
-            lock_player?.iconTint = ColorStateList.valueOf(color)
+            player_lock?.setTextColor(color)
+            player_lock?.iconTint = ColorStateList.valueOf(color)
             color = Color.argb(50, color.red, color.green, color.blue)
-            lock_player?.rippleColor = ColorStateList.valueOf(color)
+            player_lock?.rippleColor = ColorStateList.valueOf(color)
             //if(isLocked) {
             //    lock_player?.iconTint = ContextCompat.getColorStateList(lock_player.context, R.color.white)
 //
@@ -981,22 +981,22 @@ class PlayerFragment : Fragment() {
         val isClick = !isLocked
 
         exo_play?.isClickable = isClick
-        sources_btt?.isClickable = isClick
+        player_sources_btt?.isClickable = isClick
         exo_pause?.isClickable = isClick
         exo_ffwd?.isClickable = isClick
         exo_rew?.isClickable = isClick
         exo_prev?.isClickable = isClick
-        video_go_back?.isClickable = isClick
+        player_go_back?.isClickable = isClick
         exo_progress?.isClickable = isClick
         //next_episode_btt.isClickable = isClick
         playback_speed_btt?.isClickable = isClick
-        skip_op?.isClickable = isClick
-        skip_episode?.isClickable = isClick
-        resize_player?.isClickable = isClick
+        player_skip_op?.isClickable = isClick
+        player_skip_episode?.isClickable = isClick
+        player_resize_btt?.isClickable = isClick
         exo_progress?.isEnabled = isClick
         player_media_route_button?.isEnabled = isClick
         if (isClick && isShowing) {
-            player_pause_holder?.alpha = 1f
+            player_pause_play?.alpha = 1f
             player_rew_holder?.alpha = 1f
             player_ffwd_holder?.alpha = 1f
         }
@@ -1805,7 +1805,7 @@ class PlayerFragment : Fragment() {
             }
         }
 
-        lock_player?.setOnClickListener {
+        player_lock?.setOnClickListener {
             handlePlayerEvent(PlayerEventType.Lock)
         }
 
@@ -1837,11 +1837,11 @@ class PlayerFragment : Fragment() {
             Listener()
         )
 
-        click_overlay?.setOnTouchListener(
-            Listener()
-        )
+        //click_overlay?.setOnTouchListener(
+        //    Listener()
+        //)
 
-        video_go_back.setOnClickListener {
+        player_go_back.setOnClickListener {
             //activity?.popCurrentPage(isInPlayer = true, isInExpandedView = false, isInResults = false)
             activity?.popCurrentPage()
         }
@@ -1857,28 +1857,28 @@ class PlayerFragment : Fragment() {
             handlePlayerEvent(PlayerEventType.ShowSpeed)
         }
 
-        sources_btt.setOnClickListener {
+        player_sources_btt.setOnClickListener {
             autoHide()
             handlePlayerEvent(PlayerEventType.ShowMirrors)
         }
 
         player_view?.resizeMode = resizeModes[resizeMode].first
         if (playerResizeEnabled) {
-            resize_player?.visibility = VISIBLE
-            resize_player?.setOnClickListener {
+            player_resize_btt?.visibility = VISIBLE
+            player_resize_btt?.setOnClickListener {
                 autoHide()
                 handlePlayerEvent(PlayerEventType.Resize)
             }
         } else {
-            resize_player?.visibility = GONE
+            player_resize_btt?.visibility = GONE
         }
 
-        skip_op?.setOnClickListener {
+        player_skip_op?.setOnClickListener {
             autoHide()
             skipOP()
         }
 
-        skip_episode?.setOnClickListener {
+        player_skip_episode?.setOnClickListener {
             autoHide()
             handlePlayerEvent(PlayerEventType.NextEpisode)
         }
@@ -2349,7 +2349,7 @@ class PlayerFragment : Fragment() {
                 epEpisode = uriData.episode
                 epSeason = uriData.season
                 isEpisodeBased = epEpisode != null
-                video_title_rez?.text = ""
+                player_video_title_rez?.text = ""
             } else if (localData != null && currentUrl != null) {
                 val data = localData!!
                 val localEpisode = getEpisode()
@@ -2358,13 +2358,13 @@ class PlayerFragment : Fragment() {
                     epSeason = localEpisode.season
                     hName = data.name
                     isEpisodeBased = data.isEpisodeBased()
-                    video_title_rez?.text = currentUrl.name
+                    player_video_title_rez?.text = currentUrl.name
                 }
             }
 
             player_view?.performClick()
 
-            video_title?.text = hName +
+            player_video_title?.text = hName +
                     if (isEpisodeBased)
                         if (epSeason == null)
                             " - ${getString(R.string.episode)} $epEpisode"
@@ -2423,7 +2423,7 @@ class PlayerFragment : Fragment() {
                     val playerHeight = exoPlayer.videoFormat?.height
                     val playerWidth = exoPlayer.videoFormat?.width
 
-                    video_title_rez?.text =
+                    player_video_title_rez?.text =
                         if (playerHeight == null || playerWidth == null) currentUrl?.name
                             ?: "" else
                         // if (isTorrent) "${width}x${height}" else

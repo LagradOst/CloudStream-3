@@ -55,7 +55,7 @@
     </LinearLayout>
 -->
     <RelativeLayout
-            android:id="@+id/timeMenu"
+            android:id="@+id/player_time_menu"
             android:layout_width="match_parent"
             android:layout_height="200dp"
             android:orientation="horizontal"
@@ -63,7 +63,7 @@
             app:layout_constraintTop_toBottomOf="@+id/topMenuRight">
 
         <TextView
-                android:id="@+id/timeTextLeft"
+                android:id="@+id/player_time_text_left"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginStart="100dp"
@@ -77,7 +77,7 @@
         </TextView>
 
         <TextView
-                android:id="@+id/timeText"
+                android:id="@+id/player_time_text"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
@@ -90,7 +90,7 @@
         </TextView>
 
         <TextView
-                android:id="@+id/timeTextRight"
+                android:id="@+id/time_text_right"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginEnd="100dp"
@@ -102,7 +102,7 @@
     </RelativeLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/video_holder"
+            android:id="@+id/player_video_holder"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
@@ -112,7 +112,7 @@
                 android:layout_height="match_parent">
 
             <TextView
-                    android:id="@+id/video_title"
+                    android:id="@+id/player_video_title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="80dp"
@@ -126,7 +126,7 @@
                     tools:text="Hello world" />
 
             <TextView
-                    android:id="@+id/video_title_rez"
+                    android:id="@+id/player_video_title_rez"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="80dp"
@@ -135,56 +135,8 @@
                     android:gravity="center"
                     android:textColor="@color/white"
                     app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/video_title"
+                    app:layout_constraintTop_toBottomOf="@+id/player_video_title"
                     tools:text="1920x1080" />
-            <!--
-            <LinearLayout
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintLeft_toLeftOf="parent"
-                    android:gravity="end"
-                    android:layout_margin="5dp"
-                    android:paddingEnd="60dp"
-                    android:paddingStart="60dp"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/topMenuRight"
-            >
-
-                <androidx.cardview.widget.CardView
-                        android:id="@+id/next_episode_btt"
-                        xmlns:card_view="http://schemas.android.com/apk/res-auto"
-                        android:layout_width="150dp"
-                        android:layout_height="40dp"
-                        android:layout_margin="15dp"
-                        card_view:cardCornerRadius="2dp"
-                        android:foreground="@drawable/outline_card"
-                        card_view:cardBackgroundColor="@color/black_overlay"
-                        card_view:cardElevation="0dp"
-                >
-                    <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:text="@string/next_episode"
-                            android:gravity="start|center"
-                            android:paddingStart="10dp"
-                            android:paddingEnd="10dp"
-                            android:layout_gravity="center"
-                            android:textColor="@android:color/white"
-                    >
-                    </TextView>
-                    <ImageView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:src="@drawable/exo_controls_next"
-                            android:layout_gravity="right|center"
-                            android:paddingEnd="10dp"
-                            android:paddingStart="10dp"
-                            tools:ignore="RtlHardcoded">
-
-                    </ImageView>
-                </androidx.cardview.widget.CardView>
-            </LinearLayout>-->
-
 
             <androidx.mediarouter.app.MediaRouteButton
                     android:id="@+id/player_media_route_button"
@@ -198,7 +150,7 @@
                     app:layout_constraintTop_toTopOf="parent" />
 
             <FrameLayout
-                    android:id="@+id/video_go_back_holder2"
+                    android:id="@+id/player_go_back_holder"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_margin="5dp"
@@ -214,7 +166,7 @@
                         android:contentDescription="@string/go_back_img_des" />
 
                 <ImageView
-                        android:id="@+id/video_go_back"
+                        android:id="@+id/player_go_back"
                         android:layout_width="70dp"
                         android:layout_height="70dp"
                         android:layout_gravity="center"
@@ -226,89 +178,30 @@
         </FrameLayout>
 
         <FrameLayout
-                android:id="@+id/player_pause_holder"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_gravity="center"
+                android:id="@+id/player_pause_play_holder"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"
-
                 app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_width="100dp"
+                android:layout_height="100dp">
+
             <ImageView
                     android:id="@+id/player_pause_play"
                     android:nextFocusLeft="@id/exo_rew"
                     android:nextFocusRight="@id/exo_ffwd"
-                    android:nextFocusUp="@id/video_go_back"
-                    android:nextFocusDown="@id/lock_player"
+                    android:nextFocusUp="@id/player_go_back"
+                    android:nextFocusDown="@id/player_lock"
+
+                    android:layout_gravity="center"
 
                     android:src="@drawable/netflix_pause"
                     android:background="@drawable/video_tap_button"
 
                     android:layout_width="70dp"
                     android:layout_height="70dp"
-                    android:layout_gravity="center"
-                    >
-            </ImageView>
+                    tools:ignore="ContentDescription" />
         </FrameLayout>
-        <!--
-        <FrameLayout
-                android:id="@+id/player_pause_holder"
-                android:background="@color/black"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_gravity="center"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
-
-            <FrameLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-
-                <ImageButton
-                        android:id="@id/exo_play"
-                        android:layout_width="70dp"
-                        android:layout_height="70dp"
-                        android:layout_gravity="center"
-
-                        android:background="@drawable/video_tap_button"
-
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:nextFocusLeft="@id/exo_rew"
-                        android:nextFocusRight="@id/exo_ffwd"
-                        android:nextFocusUp="@id/video_go_back"
-                        android:nextFocusDown="@id/lock_player"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/netflix_play"
-                        app:tint="@color/white"
-                        tools:ignore="ContentDescription" />
-
-                <ImageButton
-
-                        android:id="@id/exo_pause"
-                        android:layout_width="70dp"
-                        android:layout_height="70dp"
-                        android:layout_gravity="center"
-
-                        android:background="@drawable/video_tap_button"
-                        android:clickable="true"
-
-                        android:focusable="true"
-                        android:nextFocusLeft="@id/exo_rew"
-                        android:nextFocusRight="@id/exo_ffwd"
-                        android:nextFocusUp="@id/video_go_back"
-                        android:nextFocusDown="@id/lock_player"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/netflix_pause"
-                        app:tint="@color/white"
-                        tools:ignore="ContentDescription" />
-            </FrameLayout>
-
-        </FrameLayout>-->
 
         <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/player_center_menu"
@@ -354,8 +247,8 @@
 
                         android:background="@drawable/video_tap_button_skip"
                         android:nextFocusLeft="@id/exo_rew"
-                        android:nextFocusUp="@id/video_go_back"
-                        android:nextFocusDown="@id/lock_player"
+                        android:nextFocusUp="@id/player_go_back"
+                        android:nextFocusDown="@id/player_lock"
                         android:padding="10dp"
                         android:scaleType="fitCenter"
                         android:scaleX="-1"
@@ -395,8 +288,8 @@
 
                         android:background="@drawable/video_tap_button_skip"
                         android:nextFocusRight="@id/exo_rew"
-                        android:nextFocusUp="@id/video_go_back"
-                        android:nextFocusDown="@id/lock_player"
+                        android:nextFocusUp="@id/player_go_back"
+                        android:nextFocusDown="@id/player_lock"
                         android:padding="10dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/netflix_skip_forward"
@@ -405,7 +298,6 @@
                         tools:ignore="ContentDescription" />
             </FrameLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
-
 
         <LinearLayout
                 android:layout_width="match_parent"
@@ -542,10 +434,10 @@
                         android:paddingBottom="10dp">
 
                     <com.google.android.material.button.MaterialButton
-                            android:id="@+id/lock_player"
+                            android:id="@+id/player_lock"
                             style="@style/VideoButton"
-                            android:nextFocusLeft="@id/skip_episode"
-                            android:nextFocusRight="@id/resize_player"
+                            android:nextFocusLeft="@id/player_skip_episode"
+                            android:nextFocusRight="@id/player_resize_btt"
                             android:text="@string/video_lock"
                             app:icon="@drawable/video_locked"
 
@@ -558,9 +450,9 @@
                             android:orientation="horizontal">
 
                         <com.google.android.material.button.MaterialButton
-                                android:id="@+id/resize_player"
+                                android:id="@+id/player_resize_btt"
                                 style="@style/VideoButton"
-                                android:nextFocusLeft="@id/lock_player"
+                                android:nextFocusLeft="@id/player_lock"
 
                                 android:nextFocusRight="@id/playback_speed_btt"
                                 android:text="@string/video_aspect_ratio_resize"
@@ -569,36 +461,36 @@
                         <com.google.android.material.button.MaterialButton
                                 android:id="@+id/playback_speed_btt"
                                 style="@style/VideoButton"
-                                android:nextFocusLeft="@id/resize_player"
+                                android:nextFocusLeft="@id/player_resize_btt"
 
-                                android:nextFocusRight="@id/sources_btt"
+                                android:nextFocusRight="@id/player_sources_btt"
                                 app:icon="@drawable/ic_baseline_speed_24"
                                 tools:text="Speed" />
 
                         <com.google.android.material.button.MaterialButton
-                                android:id="@+id/sources_btt"
+                                android:id="@+id/player_sources_btt"
                                 style="@style/VideoButton"
                                 android:nextFocusLeft="@id/playback_speed_btt"
 
-                                android:nextFocusRight="@id/skip_op"
+                                android:nextFocusRight="@id/player_skip_op"
                                 android:text="@string/video_source"
                                 app:icon="@drawable/ic_baseline_playlist_play_24" />
 
                         <com.google.android.material.button.MaterialButton
-                                android:id="@+id/skip_op"
+                                android:id="@+id/player_skip_op"
                                 style="@style/VideoButton"
-                                android:nextFocusLeft="@id/sources_btt"
+                                android:nextFocusLeft="@id/player_sources_btt"
 
-                                android:nextFocusRight="@id/skip_episode"
+                                android:nextFocusRight="@id/player_skip_episode"
                                 android:text="@string/video_skip_op"
                                 app:icon="@drawable/ic_baseline_fast_forward_24" />
 
                         <com.google.android.material.button.MaterialButton
-                                android:id="@+id/skip_episode"
+                                android:id="@+id/player_skip_episode"
                                 style="@style/VideoButton"
-                                android:nextFocusLeft="@id/skip_op"
+                                android:nextFocusLeft="@id/player_skip_op"
 
-                                android:nextFocusRight="@id/lock_player"
+                                android:nextFocusRight="@id/player_lock"
                                 android:text="@string/next_episode"
                                 app:icon="@drawable/ic_baseline_skip_next_24" />
                     </LinearLayout>
@@ -607,29 +499,13 @@
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <View
-
-            android:id="@+id/brightness_overlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:alpha="0"
-            android:background="@android:color/black" />
-
-    <View
-            android:id="@+id/click_overlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clickable="true"
-            android:focusable="true"
-            android:visibility="gone" />
-
     <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="horizontal">
 
         <RelativeLayout
-                android:id="@+id/progressBarLeftHolder"
+                android:id="@+id/player_progressbar_left_holder"
                 android:layout_width="100dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
@@ -671,7 +547,7 @@
         </RelativeLayout>
 
         <RelativeLayout
-                android:id="@+id/progressBarRightHolder"
+                android:id="@+id/player_progressbar_right_holder"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"

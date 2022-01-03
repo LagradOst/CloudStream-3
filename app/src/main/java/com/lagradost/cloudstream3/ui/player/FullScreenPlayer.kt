@@ -22,29 +22,35 @@ import androidx.core.graphics.red
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.preference.PreferenceManager
+import com.google.android.gms.cast.framework.CastButtonFactory
+import com.google.android.gms.cast.framework.CastContext
+import com.google.android.gms.cast.framework.CastState
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
 import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import com.lagradost.cloudstream3.utils.UIHelper.getNavigationBarHeight
 import com.lagradost.cloudstream3.utils.UIHelper.getStatusBarHeight
 import com.lagradost.cloudstream3.utils.UIHelper.hideSystemUI
+import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
 import com.lagradost.cloudstream3.utils.UIHelper.showSystemUI
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import com.lagradost.cloudstream3.utils.Vector2
+import kotlinx.android.synthetic.main.fragment_result.*
 import kotlinx.android.synthetic.main.player_custom_layout.*
 import kotlin.math.*
 
-const val MINIMUM_SEEK_TIME = 7000
+const val MINIMUM_SEEK_TIME = 7000L         // when swipe seeking
 const val MINIMUM_VERTICAL_SWIPE = 2.0f     // in percentage
 const val MINIMUM_HORIZONTAL_SWIPE = 2.0f   // in percentage
 const val VERTICAL_MULTIPLIER = 2.0f
 const val HORIZONTAL_MULTIPLIER = 2.0f
-const val DOUBLE_TAB_MAXIMUM_HOLD_TIME = 200
-const val DOUBLE_TAB_MINIMUM_TIME_BETWEEN = 200
-const val DOUBLE_TAB_PAUSE_PERCENTAGE = 0.15 // in both directions
+const val DOUBLE_TAB_MAXIMUM_HOLD_TIME = 200L
+const val DOUBLE_TAB_MINIMUM_TIME_BETWEEN = 200L    // this also affects the UI show response time
+const val DOUBLE_TAB_PAUSE_PERCENTAGE = 0.15        // in both directions
 
 // All the UI Logic for the player
 class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
@@ -118,13 +124,13 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
         }
 
         val titleMove = if (isShowing) 0f else -50.toPx.toFloat()
-        video_title?.let {
+        player_video_title?.let {
             ObjectAnimator.ofFloat(it, "translationY", titleMove).apply {
                 duration = 200
                 start()
             }
         }
-        video_title_rez?.let {
+        player_video_title_rez?.let {
             ObjectAnimator.ofFloat(it, "translationY", titleMove).apply {
                 duration = 200
                 start()
@@ -158,12 +164,12 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
         if (!isLocked) {
             player_ffwd_holder?.alpha = 1f
             player_rew_holder?.alpha = 1f
-            player_pause_holder?.alpha = 1f
+            player_pause_play_holder?.alpha = 1f
 
             shadow_overlay?.startAnimation(fadeAnimation)
             player_ffwd_holder?.startAnimation(fadeAnimation)
             player_rew_holder?.startAnimation(fadeAnimation)
-            player_pause_holder?.startAnimation(fadeAnimation)
+            player_pause_play?.startAnimation(fadeAnimation)
         }
 
         bottom_player_bar?.startAnimation(fadeAnimation)
@@ -261,7 +267,7 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
                     exo_rew_text?.post {
                         resetRewindText()
                         player_center_menu?.isGone = !isShowing
-                        player_rew_holder?.alpha = if (isShowing) 1f else 0f
+                        player_ffwd_holder?.alpha = if (isShowing) 1f else 0f
                     }
                 }
             })
@@ -327,7 +333,7 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
 
         val fadeTo = if (isLocked) 0f else 1f
 
-        val fadeAnimation = AlphaAnimation(video_title.alpha, fadeTo).apply {
+        val fadeAnimation = AlphaAnimation(player_video_title.alpha, fadeTo).apply {
             duration = 100
             fillAfter = true
         }
@@ -335,19 +341,19 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
         updateUIVisibility()
         // MENUS
         //centerMenu.startAnimation(fadeAnimation)
-        player_pause_holder?.startAnimation(fadeAnimation)
+        player_pause_play?.startAnimation(fadeAnimation)
         player_ffwd_holder?.startAnimation(fadeAnimation)
         player_rew_holder?.startAnimation(fadeAnimation)
         player_media_route_button?.startAnimation(fadeAnimation)
         //video_bar.startAnimation(fadeAnimation)
 
         //TITLE
-        video_title_rez?.startAnimation(fadeAnimation)
-        video_title?.startAnimation(fadeAnimation)
+        player_video_title_rez?.startAnimation(fadeAnimation)
+        player_video_title?.startAnimation(fadeAnimation)
 
         // BOTTOM
         player_lock_holder?.startAnimation(fadeAnimation)
-        video_go_back_holder2?.startAnimation(fadeAnimation)
+        player_go_back_holder?.startAnimation(fadeAnimation)
 
         shadow_overlay?.startAnimation(fadeAnimation)
 
@@ -358,19 +364,22 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
         val isGone = isLocked || !isShowing
         player_lock_holder?.isGone = isGone
         player_video_bar?.isGone = isGone
-        player_pause_holder?.isGone = isGone
+        player_pause_play_holder?.isGone = isGone
         player_top_holder?.isGone = isGone
         player_center_menu?.isGone = isGone
+        player_lock?.isGone = !isShowing
+        player_media_route_button?.isClickable = !isGone
+        player_go_back_holder?.isGone = isGone
     }
 
     private fun updateLockUI() {
-        lock_player?.setIconResource(if (isLocked) R.drawable.video_locked else R.drawable.video_unlocked)
+        player_lock?.setIconResource(if (isLocked) R.drawable.video_locked else R.drawable.video_unlocked)
         val color = if (isLocked) context?.colorFromAttribute(R.attr.colorPrimary)
         else Color.WHITE
         if (color != null) {
-            lock_player?.setTextColor(color)
-            lock_player?.iconTint = ColorStateList.valueOf(color)
-            lock_player?.rippleColor =
+            player_lock?.setTextColor(color)
+            player_lock?.iconTint = ColorStateList.valueOf(color)
+            player_lock?.rippleColor =
                 ColorStateList.valueOf(Color.argb(50, color.red, color.green, color.blue))
         }
     }
@@ -380,16 +389,32 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
         currentTapIndex++
         val index = currentTapIndex
         player_holder?.postDelayed({
-            if (isShowing && index == currentTapIndex && player.getIsPlaying()) {
+            if (!isCurrentTouchValid && isShowing && index == currentTapIndex && player.getIsPlaying()) {
                 onClickChange()
             }
         }, 2000)
+    }
+
+    // this is used because you don't want to hide UI when double tap seeking
+    private var currentDoubleTapIndex = 0
+    private fun toggleShowDelayed() {
+        if (doubleTapEnabled) {
+            val index = currentDoubleTapIndex
+            player_holder?.postDelayed({
+                if (index == currentDoubleTapIndex) {
+                    onClickChange()
+                }
+            }, DOUBLE_TAB_MINIMUM_TIME_BETWEEN)
+        } else {
+            onClickChange()
+        }
     }
 
     private var isCurrentTouchValid = false
     private var currentTouchStart: Vector2? = null
     private var currentTouchLast: Vector2? = null
     private var currentTouchAction: TouchAction? = null
+    private var currentLastTouchAction: TouchAction? = null
     private var currentTouchStartPlayerTime: Long? =
         null // the time in the player when you first click
     private var currentTouchStartTime: Long? = null // the system time when you first click
@@ -549,7 +574,7 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
                 val holdTime = currentTouchStartTime?.minus(System.currentTimeMillis())
                 if (isCurrentTouchValid // is valid
                     && currentTouchAction == null // no other action like swiping is taking place
-
+                    && currentLastTouchAction == null // last action was none, this prevents mis input random seek
                     && holdTime != null
                     && holdTime < DOUBLE_TAB_MAXIMUM_HOLD_TIME // it is a click not a long hold
                 ) {
@@ -560,6 +585,7 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
                         currentClickCount++
 
                         if (currentClickCount >= 1) { // have double clicked
+                            currentDoubleTapIndex++
                             if (doubleTapPauseEnabled) { // you can pause if your tap is in the middle of the screen
                                 when {
                                     currentTouch.x < screenWidth / 2 - (DOUBLE_TAB_PAUSE_PERCENTAGE * screenWidth) -> {
@@ -583,25 +609,29 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
                     } else {
                         // is a valid click but not fast enough for seek
                         currentClickCount = 0
-
-                        onClickChange()
+                        toggleShowDelayed()
+                        //onClickChange()
                     }
                 } else {
                     currentClickCount = 0
                 }
 
+                // call auto hide as it wont hide when you have your finger down
+                autoHide()
+
                 // reset variables
                 isCurrentTouchValid = false
                 currentTouchStart = null
+                currentLastTouchAction = currentTouchAction
                 currentTouchAction = null
                 currentTouchStartPlayerTime = null
                 currentTouchLast = null
                 currentTouchStartTime = null
 
                 // resets UI
-                timeText?.isVisible = false
-                progressBarLeftHolder?.isVisible = false
-                progressBarRightHolder?.isVisible = false
+                player_time_text?.isVisible = false
+                player_progressbar_left_holder?.isVisible = false
+                player_progressbar_right_holder?.isVisible = false
                 currentLastTouchEndTime = System.currentTimeMillis()
             }
             MotionEvent.ACTION_MOVE -> {
@@ -615,6 +645,12 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
                             if (abs(diffFromStart.y * 100 / screenHeight) > MINIMUM_VERTICAL_SWIPE) {
                                 // left = Brightness, right = Volume, but the UI is reversed to show the UI better
                                 currentTouchAction = if (startTouch.x < screenWidth / 2) {
+                                    // hide the UI if you hold brightness to show screen better, better UX
+                                    if (isShowing) {
+                                        isShowing = false
+                                        animateLayoutChanges()
+                                    }
+
                                     TouchAction.Brightness
                                 } else {
                                     TouchAction.Volume
@@ -636,9 +672,9 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
                             diffFromLast.y * VERTICAL_MULTIPLIER / screenHeight.toFloat()
 
                         // update UI
-                        timeText?.isVisible = false
-                        progressBarLeftHolder?.isVisible = false
-                        progressBarRightHolder?.isVisible = false
+                        player_time_text?.isVisible = false
+                        player_progressbar_left_holder?.isVisible = false
+                        player_progressbar_right_holder?.isVisible = false
 
                         when (currentTouchAction) {
                             TouchAction.Time -> {
@@ -653,15 +689,15 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
                                         currentTouch
                                     )?.let { newMs ->
                                         val skipMs = newMs - startTime
-                                        timeText?.text = "${convertTimeToString(newMs / 1000)} [${
+                                        player_time_text?.text = "${convertTimeToString(newMs / 1000)} [${
                                             (if (abs(skipMs) < 1000) "" else (if (skipMs > 0) "+" else "-"))
                                         }${convertTimeToString(abs(skipMs / 1000))}]"
-                                        timeText?.isVisible = true
+                                        player_time_text?.isVisible = true
                                     }
                                 }
                             }
                             TouchAction.Brightness -> {
-                                progressBarRightHolder?.isVisible = true
+                                player_progressbar_right_holder?.isVisible = true
                                 val lastRequested = currentRequestedBrightness
                                 currentRequestedBrightness =
                                     min(
@@ -690,7 +726,7 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
                             }
                             TouchAction.Volume -> {
                                 (activity?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager)?.let { audioManager ->
-                                    progressBarLeftHolder?.isVisible = true
+                                    player_progressbar_left_holder?.isVisible = true
                                     val maxVolume =
                                         audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
                                     val currentVolume =
@@ -785,46 +821,49 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
             logError(e)
         }
 
-        //exo_pause?.setOnClickListener {
-        //    if (!isLocked)
-        //        player.handleEvent(CSPlayerEvent.Pause)
-        //}
-        //exo_play?.setOnClickListener {
-        //    if (!isLocked)
-        //        player.handleEvent(CSPlayerEvent.Play)
-        //}
-
         player_pause_play?.setOnClickListener {
+            autoHide()
             player.handleEvent(CSPlayerEvent.PlayPauseToggle)
         }
 
         // init clicks
-        resize_player?.setOnClickListener {
+        player_resize_btt?.setOnClickListener {
+            autoHide()
             nextResize()
         }
 
         playback_speed_btt?.setOnClickListener {
+            autoHide()
             showSpeedDialog()
         }
 
-        skip_op?.setOnClickListener {
+        player_skip_op?.setOnClickListener {
+            autoHide()
             skipOp()
         }
 
-        skip_episode?.setOnClickListener {
+        player_skip_episode?.setOnClickListener {
+            autoHide()
             player.handleEvent(CSPlayerEvent.NextEpisode)
         }
 
-        lock_player?.setOnClickListener {
+        player_lock?.setOnClickListener {
+            autoHide()
             toggleLock()
         }
 
         exo_rew?.setOnClickListener {
+            autoHide()
             rewind()
         }
 
         exo_ffwd?.setOnClickListener {
+            autoHide()
             fastForward()
+        }
+
+        player_go_back?.setOnClickListener {
+            activity?.popCurrentPage()
         }
 
         player_holder?.setOnTouchListener { callView, event ->
@@ -838,6 +877,26 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
             animateLayoutChanges()
             resetFastForwardText()
             resetRewindText()
+
+            // init chromecast UI
+            activity?.let {
+                if (it.isCastApiAvailable()) {
+                    try {
+                        CastButtonFactory.setUpMediaRouteButton(it, player_media_route_button)
+                        val castContext = CastContext.getSharedInstance(it.applicationContext)
+
+                        player_media_route_button?.isGone = castContext.castState == CastState.NO_DEVICES_AVAILABLE
+                        castContext.addCastStateListener { state ->
+                            player_media_route_button?.isGone = state == CastState.NO_DEVICES_AVAILABLE
+                        }
+                    } catch (e: Exception) {
+                        logError(e)
+                    }
+                } else {
+                    // if cast is not possible hide UI
+                    player_media_route_button?.isGone = true
+                }
+            }
         } catch (e: Exception) {
             logError(e)
         }
