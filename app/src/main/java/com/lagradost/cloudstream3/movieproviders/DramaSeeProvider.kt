@@ -22,21 +22,21 @@ class DramaSeeProvider : MainAPI() {
         val mainbody = document.getElementsByTag("body")
 
         return HomePageResponse(
-    mainbody?.select("section")?.mapNotNull { row ->
+    mainbody?.select("section")?.map { row ->
             val main = row?.select("main")
 
             val title = main?.select("div.title > div > h2")?.text() ?: "Main"
-            val inner = main?.select("li.series-item")
+            val inner = main?.select("li.series-item") ?: return@map null
 
             HomePageList(
                 title,
-                inner?.mapNotNull {
+                inner.mapNotNull {
                 // Get inner div from article
                 val innerBody = it?.selectFirst("a")
                 // Fetch details
-                val link = fixUrlNull(innerBody?.attr("href")) ?: ""
+                val link = fixUrlNull(innerBody?.attr("href")) ?: return@mapNotNull null
                 val image = fixUrlNull(innerBody?.select("img")?.attr("src")) ?: ""
-                val name = it?.selectFirst("a.series-name")?.text() ?: ""
+                val name = it?.selectFirst("a.series-name")?.text() ?: "<Untitled>"
                 //Log.i(this.name, "Result => (innerBody, image) ${innerBody} / ${image}")
                 MovieSearchResponse(
                     name,
@@ -47,8 +47,8 @@ class DramaSeeProvider : MainAPI() {
                     year = null,
                     id = null,
                 )
-                }?.distinctBy { c -> c.url } ?: listOf())
-            } ?: listOf()
+                }.distinctBy { c -> c.url })
+            }?.filterNotNull() ?: listOf()
         )
     }
 
@@ -60,12 +60,12 @@ class DramaSeeProvider : MainAPI() {
 
         return document.map {
             val innerA = it?.select("a.series-img")
-            val href = innerA?.attr("href") ?: ""
-            val link = if (href.isNotEmpty()) { fixUrl(href) } else { "" }
-            val title = it?.select("a.series-name")?.text() ?: ""
+            val href = innerA?.attr("href") ?: return@map null
+            val link = fixUrlNull(href) ?: return@map null
+            val title = it?.select("a.series-name")?.text() ?: return@map null
             val year = null
-            val imgsrc = innerA?.select("img")?.attr("src") ?: ""
-            val image = if (imgsrc.isNotEmpty()) { fixUrl(imgsrc) } else { "" }
+            val imgsrc = innerA?.select("img")?.attr("src") ?: return@map null
+            val image = fixUrl(imgsrc)
 
             MovieSearchResponse(
                 title,
@@ -75,9 +75,7 @@ class DramaSeeProvider : MainAPI() {
                 image,
                 year
             )
-        }.filter { a -> a.url.isNotEmpty() }
-            .filter { b -> b.name.isNotEmpty() }
-            .distinctBy { c -> c.url }
+        }.filterNotNull()
     }
 
     override fun load(url: String): LoadResponse {
@@ -86,12 +84,7 @@ class DramaSeeProvider : MainAPI() {
         val inner = body?.select("div.series-info")
 
         // Video details
-        var poster = inner?.select("div.img > img")?.attr("src") ?: ""
-        if (poster.isNotEmpty()) {
-            if (!poster.startsWith("http")) {
-                poster = fixUrl(poster)
-            }
-        }
+        val poster = fixUrlNull(inner?.select("div.img > img")?.attr("src")) ?: ""
         //Log.i(this.name, "Result => (imgLinkCode) ${imgLinkCode}")
         val title = inner?.select("h1.series-name")?.text() ?: ""
         val year = if (title.length > 5) { title.substring(title.length - 5)
@@ -144,9 +137,9 @@ class DramaSeeProvider : MainAPI() {
                 }
             }
         }
-        val streamlinks = episodeList[0].data //TODO: Fetch streaming vid links from ep link
+        //If there's only 1 episode, consider it a movie.
         if (episodeList.size == 1) {
-            return MovieLoadResponse(title, url, this.name, TvType.Movie, streamlinks, poster, year, descript, null, null)
+            return MovieLoadResponse(title, url, this.name, TvType.Movie, episodeList[0].data, poster, year, descript, null, null)
         }
         return TvSeriesLoadResponse(
             title,
@@ -172,9 +165,8 @@ class DramaSeeProvider : MainAPI() {
         if (data == "about:blank") return false
         if (data == "[]") return false
         if (data.isEmpty()) return false
-        val sources = mutableListOf<ExtractorLink>()
-        val urls = data.trim('[').trim(']').split(',')
 
+        val urls = data.trim('[').trim(']').split(',')
         if (!urls.isNullOrEmpty()) {
             for (item in urls) {
                 if (item.isNotEmpty()) {
@@ -196,8 +188,8 @@ class DramaSeeProvider : MainAPI() {
                                         val extractor = XStreamCdn()
                                         extractor.domainUrl = "fembed-hd.com"
                                         val src = extractor.getUrl(datavid, url)
-                                        if (!src.isNullOrEmpty()) {
-                                            sources.addAll(src)
+                                        src.forEach { link ->
+                                            callback.invoke(link)
                                         }
                                     } else {
                                         loadExtractor(datavid, url, callback)
@@ -205,27 +197,17 @@ class DramaSeeProvider : MainAPI() {
                                 }
                             }
                         }
-                        break
-                    }
-                    if (url.startsWith("https://embedsito.com")) {
+                    } else if (url.startsWith("https://embedsito.com")) {
                         val extractor = XStreamCdn()
                         extractor.domainUrl = "embedsito.com"
                         val src = extractor.getUrl(url)
-                        if (!src.isNullOrEmpty()) {
-                            sources.addAll(src)
+                        src.forEach { link ->
+                            callback.invoke(link)
                         }
-                        break
-                    }
-                    loadExtractor(url, url, callback)
-                    // end if
+                    } else {
+                        loadExtractor(url, url, callback)
+                    } // end if
                 }
-            }
-        }
-        // Invoke sources
-        if (sources.isNotEmpty()) {
-            for (source in sources) {
-                callback.invoke(source)
-                //Log.i(this.name, "Result => (source) ${source.url}")
             }
             return true
         }
