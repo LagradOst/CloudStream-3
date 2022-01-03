@@ -5,6 +5,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.drawable.AnimatedImageDrawable
+import android.graphics.drawable.AnimatedVectorDrawable
 import android.media.metrics.PlaybackErrorEvent
 import android.os.Build
 import android.os.Bundle
@@ -16,11 +18,8 @@ import android.widget.Toast
 import androidx.annotation.LayoutRes
 import androidx.annotation.StringRes
 import androidx.fragment.app.Fragment
-import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.PlaybackException
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.SubtitleView
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
@@ -51,10 +50,29 @@ abstract class AbstractPlayerFragment(
     val player: IPlayer = CS3IPlayer()
 ) : Fragment() {
     var resizeMode: Int = 0
-    var subStyle : SaveCaptionStyle? = null
-    var subView : SubtitleView? = null
+    var subStyle: SaveCaptionStyle? = null
+    var subView: SubtitleView? = null
 
-    private fun updatePIPModeActions(isPlaying: Boolean) {
+    private fun updateIsPlaying(playing: Pair<Boolean, Boolean>) {
+        val (wasPlaying, isPlaying) = playing
+
+
+        if (wasPlaying != isPlaying) {
+            player_pause_play.setImageResource(if (isPlaying) R.drawable.play_to_pause else R.drawable.pause_to_play)
+            val drawable = player_pause_play?.drawable
+
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+                if (drawable is AnimatedImageDrawable) {
+                    drawable.start()
+                }
+            }
+            if (drawable is AnimatedVectorDrawable) {
+                drawable.start()
+            }
+        } else {
+            player_pause_play?.setImageResource(if (isPlaying) R.drawable.netflix_pause else R.drawable.netflix_play)
+        }
+
         MainActivity.canEnterPipMode = isPlaying
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             activity?.let { act ->
@@ -78,7 +96,12 @@ abstract class AbstractPlayerFragment(
                         if (ACTION_MEDIA_CONTROL != intent.action) {
                             return
                         }
-                        player.handleEvent(CSPlayerEvent.values()[intent.getIntExtra(EXTRA_CONTROL_TYPE, 0)])
+                        player.handleEvent(
+                            CSPlayerEvent.values()[intent.getIntExtra(
+                                EXTRA_CONTROL_TYPE,
+                                0
+                            )]
+                        )
                     }
                 }
                 val filter = IntentFilter()
@@ -86,7 +109,8 @@ abstract class AbstractPlayerFragment(
                     ACTION_MEDIA_CONTROL
                 )
                 activity?.registerReceiver(pipReceiver, filter)
-                updatePIPModeActions(player.getIsPlaying())
+                val isPlaying = player.getIsPlaying()
+                updateIsPlaying(Pair(isPlaying, isPlaying))
             } else {
                 // Restore the full-screen UI.
                 player_holder.alpha = 1f
@@ -165,17 +189,6 @@ abstract class AbstractPlayerFragment(
         }
     }
 
-    private fun getTrackSelector(context: Context): TrackSelector {
-        val trackSelector = DefaultTrackSelector(context)
-        trackSelector.parameters = DefaultTrackSelector.ParametersBuilder(context)
-            // .setRendererDisabled(C.TRACK_TYPE_VIDEO, true)
-            .setRendererDisabled(C.TRACK_TYPE_TEXT, true)
-            .setDisabledTextTrackSelectionFlags(C.TRACK_TYPE_TEXT)
-            .clearSelectionOverrides()
-            .build()
-        return trackSelector
-    }
-
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         resizeMode = getKey(RESIZE_MODE_KEY) ?: 0
@@ -183,7 +196,7 @@ abstract class AbstractPlayerFragment(
 
         player.initCallbacks(
             playerUpdated = ::playerUpdated,
-            updatePIPModeActions = ::updatePIPModeActions,
+            updatePIPModeActions = ::updateIsPlaying,
             playerError = ::playerError,
             requestAutoFocus = ::requestAudioFocus,
         )
@@ -219,7 +232,8 @@ abstract class AbstractPlayerFragment(
         val lp = activity?.window?.attributes
         lp?.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            lp?.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+            lp?.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
         }
         activity?.window?.attributes = lp
 

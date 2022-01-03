@@ -38,7 +38,7 @@
      <string name="pick_source">Fuentes</string>
      <string name="pick_subtitle">Subtítulos</string>
      <string name="reload_error">Reintentar conexión…</string>
-     <string name="result_go_back">Ir atrás</string>
+     <string name="go_back">Ir atrás</string>
      <string name="play_episode">Reproducir capítulo</string>
      <string name="download">Descarga</string>
      <string name="downloaded">Descargada</string>

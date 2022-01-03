@@ -29,13 +29,15 @@ import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSession
 
+const val TAG = "CS3ExoPlayer"
+
 class CS3IPlayer : IPlayer {
-    val TAG = "CS3ExoPlayer"
+
     private var isPlaying = false
     private var exoPlayer: ExoPlayer? = null
 
     /** Cache */
-    private val cacheSize = 500L * 1024L * 1024L // 500 mb
+    private val cacheSize = 300L * 1024L * 1024L // 300 mb TODO MAKE SETTING
     private val seekActionTime = 30000L
 
     private var ignoreSSL: Boolean = true
@@ -66,7 +68,7 @@ class CS3IPlayer : IPlayer {
     private var exoPlayerSelectedTracks = listOf<Pair<String, Boolean>>()
 
     /** isPlaying */
-    private var updatePIPModeActions: ((Boolean) -> Unit)? = null
+    private var updateIsPlaying: ((Pair<Boolean, Boolean>) -> Unit)? = null
     private var requestAutoFocus: (() -> Unit)? = null
     private var playerError: ((Exception) -> Unit)? = null
 
@@ -88,7 +90,7 @@ class CS3IPlayer : IPlayer {
 
     override fun initCallbacks(
         playerUpdated: (Any?) -> Unit,
-        updatePIPModeActions: ((Boolean) -> Unit)?,
+        updateIsPlaying: ((Pair<Boolean, Boolean>) -> Unit)?,
         requestAutoFocus: (() -> Unit)?,
         playerError: ((Exception) -> Unit)?,
         playerDimensionsLoaded: ((Pair<Int, Int>) -> Unit)?,
@@ -98,7 +100,7 @@ class CS3IPlayer : IPlayer {
         prevEpisode: (() -> Unit)?
     ) {
         this.playerUpdated = playerUpdated
-        this.updatePIPModeActions = updatePIPModeActions
+        this.updateIsPlaying = updateIsPlaying
         this.requestAutoFocus = requestAutoFocus
         this.playerError = playerError
         this.playerDimensionsLoaded = playerDimensionsLoaded
@@ -112,7 +114,12 @@ class CS3IPlayer : IPlayer {
         subtitleHelper.initSubtitles(subView, subHolder, style)
     }
 
-    override fun loadPlayer(context: Context, sameEpisode: Boolean, link: ExtractorLink?, uri: Uri?) {
+    override fun loadPlayer(
+        context: Context,
+        sameEpisode: Boolean,
+        link: ExtractorLink?,
+        uri: Uri?
+    ) {
         Log.i(TAG, "loadPlayer")
         if (!sameEpisode)
             playbackPosition = 0
@@ -127,7 +134,6 @@ class CS3IPlayer : IPlayer {
             loadOfflinePlayer(context, uri)
         }
     }
-
 
 
     override fun updateSubtitleStyle(style: SaveCaptionStyle) {
@@ -421,7 +427,8 @@ class CS3IPlayer : IPlayer {
 
                 override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
                     exoPlayer?.let { exo ->
-                        updatePIPModeActions?.invoke(exo.isPlaying)
+                        updateIsPlaying?.invoke(Pair(isPlaying, exo.isPlaying))
+                        isPlaying = exo.isPlaying
                     }
 
                     if (playWhenReady) {
@@ -527,7 +534,11 @@ class CS3IPlayer : IPlayer {
             val onlineSourceFactory = createOnlineSource(link)
             val offlineSourceFactory = context.createOfflineSource()
 
-            val (subSources, activeSubtitles) = getSubSources(onlineSourceFactory, offlineSourceFactory, subtitleHelper)
+            val (subSources, activeSubtitles) = getSubSources(
+                onlineSourceFactory,
+                offlineSourceFactory,
+                subtitleHelper
+            )
             subtitleHelper.setActiveSubtitles(activeSubtitles)
 
             simpleCache = getCache(context, cacheSize)

@@ -77,7 +77,7 @@
     <string name="pick_source">Kaynaklar</string>
     <string name="pick_subtitle">Altyazılar</string>
     <string name="reload_error">Yeniden bağlanmayı dene…</string>
-    <string name="result_go_back">Geri Git</string>
+    <string name="go_back">Geri Git</string>
     <string name="play_episode">Bölümü Oynat</string>
     <!--<string name="need_storage">Allow to download episodes</string>-->
 

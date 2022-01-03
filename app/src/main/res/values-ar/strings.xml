@@ -43,7 +43,7 @@
     <string name="pick_source">المصادر</string>
     <string name="pick_subtitle">الترجمة</string>
     <string name="reload_error">…إعادة محاولة الاتصال</string>
-    <string name="result_go_back">ارجع للخلف</string>
+    <string name="go_back">ارجع للخلف</string>
     <string name="play_episode">تشغيل الحلقة</string>
     <!--<string name="need_storage">السماح بتحميل الحلقات</string>-->
 

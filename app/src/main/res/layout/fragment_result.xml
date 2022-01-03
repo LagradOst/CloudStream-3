@@ -168,7 +168,7 @@
                             android:layout_gravity="center_vertical|start"
                             android:tint="?attr/white"
                             android:src="@drawable/ic_baseline_arrow_back_24"
-                            android:contentDescription="@string/result_go_back">
+                            android:contentDescription="@string/go_back">
                     </ImageView>
                     <LinearLayout
                             android:gravity="end"

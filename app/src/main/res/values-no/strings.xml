@@ -43,7 +43,7 @@
     <string name="pick_source">Kilder</string>
     <string name="pick_subtitle">Undertekster</string>
     <string name="reload_error">Prøv tilkoblingen på nytt…</string>
-    <string name="result_go_back">Gå tilbake</string>
+    <string name="go_back">Gå tilbake</string>
     <string name="play_episode">Spille Episode</string>
     <!--<string name="need_storage">Tillat å laste ned episoder</string>-->
 

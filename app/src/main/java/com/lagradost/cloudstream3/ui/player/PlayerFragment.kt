@@ -408,11 +408,11 @@ class PlayerFragment : Fragment() {
             player_ffwd_holder?.startAnimation(fadeAnimation)
             player_rew_holder?.startAnimation(fadeAnimation)
             player_pause_holder?.startAnimation(fadeAnimation)
-        } else {
+        } //else {
             //player_ffwd_holder?.alpha = 0f
             //player_ffwd_holder?.alpha = 0f
             //player_pause_holder?.alpha = 0f
-        }
+        //}
 
         bottom_player_bar?.startAnimation(fadeAnimation)
         player_top_holder?.startAnimation(fadeAnimation)
@@ -1024,6 +1024,7 @@ class PlayerFragment : Fragment() {
         return getPen(code.value)
     }
 
+    @SuppressLint("UnspecifiedImmutableFlag")
     private fun getPen(code: Int): PendingIntent {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PendingIntent.getBroadcast(

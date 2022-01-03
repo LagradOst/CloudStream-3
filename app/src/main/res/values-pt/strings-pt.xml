@@ -46,7 +46,7 @@
     <string name="pick_source">Origems</string>
     <string name="pick_subtitle">Subtítulos</string>
     <string name="reload_error">Reintentar conexão…</string>
-    <string name="result_go_back">Voltar Atrás</string>
+    <string name="go_back">Voltar Atrás</string>
     <string name="play_episode">Assistir Episódio</string>
 	
     <string name="download">Descàrregar</string>

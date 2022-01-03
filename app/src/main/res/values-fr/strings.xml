@@ -28,7 +28,7 @@
     <string name="pick_source">Sources</string>
     <string name="pick_subtitle">Sous-titres</string>
     <string name="reload_error">Réessayer la connection…</string>
-    <string name="result_go_back">Retour</string>
+    <string name="go_back">Retour</string>
     <string name="episode_poster_img_des">Miniature de l\'Episode</string>
     <string name="play_episode">Lire l\'Episode</string>
     <string name="need_storage">Permet de télécharger les épisodes</string>

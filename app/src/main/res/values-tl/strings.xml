@@ -50,7 +50,7 @@
     <string name="pick_source">Sources</string>
     <string name="pick_subtitle">Subtitles</string>
     <string name="reload_error">Retry connection…</string>
-    <string name="result_go_back">Go back</string>
+    <string name="go_back">Go back</string>
     <string name="play_episode">I-play ang episode</string>
     <!--<string name="need_storage">Payagan sa Itabi</string>-->
 

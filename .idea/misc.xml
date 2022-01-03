@@ -3,6 +3,13 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/vl/IdeaProjects/CloudStream-3/app/src/debug/res/drawable-hdpi/pause_to_play.xml" value="0.3421875" />
+        <entry key="..\:/Users/vl/IdeaProjects/CloudStream-3/app/src/debug/res/drawable-hdpi/play_to_pause.xml" value="0.3421875" />
+        <entry key="..\:/Users/vl/IdeaProjects/CloudStream-3/app/src/main/res/drawable/netflix_pause.xml" value="0.3421875" />
+        <entry key="..\:/Users/vl/IdeaProjects/CloudStream-3/app/src/main/res/drawable/netflix_play.xml" value="0.3421875" />
+        <entry key="..\:/Users/vl/IdeaProjects/CloudStream-3/app/src/main/res/drawable/video_tap_button.xml" value="0.3421875" />
+        <entry key="..\:/Users/vl/IdeaProjects/CloudStream-3/app/src/main/res/drawable/video_tap_button_always_white.xml" value="0.22135416666666666" />
+        <entry key="..\:/Users/vl/IdeaProjects/CloudStream-3/app/src/main/res/layout/player_custom_layout.xml" value="0.22" />
         <entry key="app/src/main/res/layout/fragment_result.xml" value="0.75" />
       </map>
     </option>

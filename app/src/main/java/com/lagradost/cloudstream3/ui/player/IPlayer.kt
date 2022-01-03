@@ -31,7 +31,7 @@ interface IPlayer {
 
     fun initCallbacks(
         playerUpdated: (Any?) -> Unit,
-        updatePIPModeActions: ((Boolean) -> Unit)? = null,
+        updatePIPModeActions: ((Pair<Boolean,Boolean>) -> Unit)? = null,
         requestAutoFocus: (() -> Unit)? = null,
         playerError: ((Exception) -> Unit)? = null,
         playerDimensionsLoaded: ((Pair<Int, Int>) -> Unit)? = null,
