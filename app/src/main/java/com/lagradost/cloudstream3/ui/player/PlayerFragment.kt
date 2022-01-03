@@ -598,8 +598,8 @@ class PlayerFragment : Fragment() {
                                 cachedVolume = vol
                                 //progressBarRight?.progress = ((1f - alpha) * 100).toInt()
 
-                                progressBarLeft?.max = 100 * 100
-                                progressBarLeft?.progress = ((vol) * 100 * 100).toInt()
+                                player_progressbar_left?.max = 100 * 100
+                                player_progressbar_left?.progress = ((vol) * 100 * 100).toInt()
 
                                 if (audioManager.isVolumeFixed) {
                                     // Lmao might earrape, we'll see in bug reports
@@ -625,8 +625,8 @@ class PlayerFragment : Fragment() {
                             progressBarRightHolder?.alpha = 1f
 
                             val alpha = changeBrightness(-diffY.toFloat())
-                            progressBarRight?.max = 100 * 100
-                            progressBarRight?.progress = ((1f - alpha) * 100 * 100).toInt()
+                            player_progressbar_right?.max = 100 * 100
+                            player_progressbar_right?.progress = ((1f - alpha) * 100 * 100).toInt()
                             currentY = motionEvent.rawY
                         }
                     }
@@ -829,7 +829,7 @@ class PlayerFragment : Fragment() {
         override fun onChange(selfChange: Boolean) {
             val currentVolume = audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)
             val maxVolume = audioManager?.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            val progressBarLeft = activity.findViewById<ProgressBar>(R.id.progressBarLeft)
+            val progressBarLeft = activity.findViewById<ProgressBar>(R.id.player_progressbar_left)
             if (currentVolume != null && maxVolume != null) {
                 progressBarLeft?.progress = currentVolume * 100 / maxVolume
             }

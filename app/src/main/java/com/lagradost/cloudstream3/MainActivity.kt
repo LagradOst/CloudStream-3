@@ -57,6 +57,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.showInputMethod
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_result.*
+import java.io.File
 import java.util.*
 import kotlin.concurrent.thread
 
@@ -721,6 +722,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         }
         APIRepository.dubStatusActive = getApiDubstatusSettings()
 
+        try {
+            // this ensures that no unnecessary space is taken
+            File(filesDir, "exoplayer").deleteRecursively() // old cache
+            File(cacheDir, "exoplayer").deleteOnExit()      // current cache
+        } catch (e : Exception) {
+            logError(e)
+        }
 
 /*
         val relativePath = (Environment.DIRECTORY_DOWNLOADS) + File.separatorChar
