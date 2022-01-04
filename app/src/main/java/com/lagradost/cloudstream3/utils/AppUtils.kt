@@ -20,10 +20,17 @@ import com.google.android.gms.cast.framework.CastState
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.wrappers.Wrappers
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.MainActivity
+import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.ui.result.ResultFragment
+import com.lagradost.cloudstream3.utils.FillerEpisodeCheck.toClassDir
+import com.lagradost.cloudstream3.utils.JsUnpacker.Companion.load
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
+import okhttp3.Cache
+import java.io.File
 import java.net.URL
 import java.net.URLDecoder
 
@@ -59,7 +66,7 @@ object AppUtils {
                 )
             else
                 startActivity(intent)
-        } catch (e : Exception) {
+        } catch (e: Exception) {
             logError(e)
         }
     }
@@ -112,6 +119,13 @@ object AppUtils {
             }
         }
         return ""
+    }
+
+    fun Activity?.loadCache() {
+        try {
+            cacheClass("android.net.NetworkCapabilities".load())
+        } catch (_: Exception) {
+        }
     }
 
     //private val viewModel: ResultViewModel by activityViewModels()
@@ -203,6 +217,17 @@ object AppUtils {
         return networkInfo.any {
             conManager.getNetworkCapabilities(it)
                 ?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true
+        }
+    }
+
+    private fun Activity?.cacheClass(clazz: Any?) {
+        clazz?.let { c ->
+            this?.cacheDir?.let {
+                Cache(
+                    directory = File(it, c.toClassDir()),
+                    maxSize = 20L * 1024L * 1024L // 20 MiB
+                )
+            }
         }
     }
 

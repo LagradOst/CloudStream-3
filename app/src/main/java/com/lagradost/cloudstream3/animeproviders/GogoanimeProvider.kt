@@ -2,8 +2,8 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 import java.util.*
 
@@ -191,7 +191,7 @@ class GogoanimeProvider : MainAPI() {
         }
     }
 
-    private fun extractVideos(uri: String): List<ExtractorLink> {
+    private fun extractVideos(uri: String, callback: (ExtractorLink) -> Unit) {
         val html = app.get(uri).text
         val doc = Jsoup.parse(html)
 
@@ -201,12 +201,12 @@ class GogoanimeProvider : MainAPI() {
         val page = app.get(link, headers = mapOf("Referer" to iframe))
         val pageDoc = Jsoup.parse(page.text)
 
-        return pageDoc.select(".dowload > a").pmap {
+        pageDoc.select(".dowload > a").pmap {
             if (it.hasAttr("download")) {
                 val qual = if (it.text()
                         .contains("HDP")
                 ) "1080" else qualityRegex.find(it.text())?.destructured?.component1().toString()
-                listOf(
+                callback(
                     ExtractorLink(
                         "Gogoanime",
                         if (qual == "null") "Gogoanime" else "Gogoanime - " + qual + "p",
@@ -218,16 +218,9 @@ class GogoanimeProvider : MainAPI() {
                 )
             } else {
                 val url = it.attr("href")
-                val extractorLinks = ArrayList<ExtractorLink>()
-                for (api in extractorApis) {
-                    if (url.startsWith(api.mainUrl)) {
-                        extractorLinks.addAll(api.getSafeUrl(url) ?: listOf())
-                        break
-                    }
-                }
-                extractorLinks
+                loadExtractor(url, null, callback)
             }
-        }.flatten()
+        }
     }
 
     override fun loadLinks(
@@ -236,9 +229,7 @@ class GogoanimeProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        for (source in extractVideos(data)) {
-            callback.invoke(source)
-        }
+        extractVideos(data, callback)
         return true
     }
 }

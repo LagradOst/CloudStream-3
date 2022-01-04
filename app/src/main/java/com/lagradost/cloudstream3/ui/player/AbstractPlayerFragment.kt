@@ -32,8 +32,6 @@ import com.lagradost.cloudstream3.ui.subtitles.SaveCaptionStyle
 import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.requestLocalAudioFocus
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.UIHelper
 import com.lagradost.cloudstream3.utils.UIHelper.hideSystemUI
 import kotlinx.android.synthetic.main.fragment_player.*
@@ -53,9 +51,20 @@ abstract class AbstractPlayerFragment(
     var subStyle: SaveCaptionStyle? = null
     var subView: SubtitleView? = null
 
+    open fun nextEpisode() {
+        throw NotImplementedError()
+    }
+
+    open fun prevEpisode() {
+        throw NotImplementedError()
+    }
+
+    open fun playerPositionChanged(posDur: Pair<Long, Long>) {
+        throw NotImplementedError()
+    }
+
     private fun updateIsPlaying(playing: Pair<Boolean, Boolean>) {
         val (wasPlaying, isPlaying) = playing
-
 
         if (wasPlaying != isPlaying) {
             player_pause_play.setImageResource(if (isPlaying) R.drawable.play_to_pause else R.drawable.pause_to_play)
@@ -194,12 +203,17 @@ abstract class AbstractPlayerFragment(
         resizeMode = getKey(RESIZE_MODE_KEY) ?: 0
         resize(resizeMode, false)
 
+        //TODO ADD BUFFERING METHOD
         player.initCallbacks(
             playerUpdated = ::playerUpdated,
-            updatePIPModeActions = ::updateIsPlaying,
+            updateIsPlaying = ::updateIsPlaying,
             playerError = ::playerError,
             requestAutoFocus = ::requestAudioFocus,
+            nextEpisode = ::nextEpisode,
+            prevEpisode = ::prevEpisode,
+            playerPositionChanged = ::playerPositionChanged,
         )
+
         if (player is CS3IPlayer) {
             subView = player_view?.findViewById(R.id.exo_subtitles)
             subStyle = SubtitlesFragment.getCurrentSavedStyle()
@@ -207,7 +221,7 @@ abstract class AbstractPlayerFragment(
             SubtitlesFragment.applyStyleEvent += ::onSubStyleChanged
         }
 
-        context?.let { ctx ->
+        /*context?.let { ctx ->
             player.loadPlayer(
                 ctx,
                 false,
@@ -220,7 +234,7 @@ abstract class AbstractPlayerFragment(
                     false
                 ),
             )
-        }
+        }*/
     }
 
     override fun onDestroy() {
@@ -268,10 +282,6 @@ abstract class AbstractPlayerFragment(
 
         if (showToast)
             showToast(activity, resize.nameRes, Toast.LENGTH_SHORT)
-    }
-
-    override fun onStart() {
-        super.onStart()
     }
 
     override fun onStop() {

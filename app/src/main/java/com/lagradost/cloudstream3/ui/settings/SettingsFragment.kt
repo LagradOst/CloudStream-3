@@ -452,7 +452,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
             val currentQuality =
                 settingsManager.getInt(
-                    getString(R.string.watch_quality_pref),
+                    getString(R.string.quality_pref_key),
                     Qualities.values().last().value
                 )
 
@@ -462,7 +462,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 getString(R.string.watch_quality_pref),
                 true,
                 {}) {
-                settingsManager.edit().putInt(getString(R.string.watch_quality_pref), prefValues[it])
+                settingsManager.edit().putInt(getString(R.string.quality_pref_key), prefValues[it])
                     .apply()
             }
             return@setOnPreferenceClickListener true

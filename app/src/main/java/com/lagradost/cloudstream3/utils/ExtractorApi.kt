@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.utils
 
+import android.net.Uri
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.*
@@ -15,6 +16,11 @@ data class ExtractorLink(
     val isM3u8: Boolean = false,
     override val headers: Map<String, String> = mapOf()
 ) : VideoDownloadManager.IDownloadableMinimum
+
+data class ExtractorUri(
+    val uri : Uri,
+    val id : Int,
+)
 
 data class ExtractorSubtitleLink(
     val name: String,

@@ -777,7 +777,7 @@ class PlayerFragment : Fragment() {
         video_go_back_holder_holder?.visibility = VISIBLE
 
         overlay_loading_skip_button?.visibility = VISIBLE
-        loading_overlay?.startAnimation(alphaAnimation)
+        player_loading_overlay?.startAnimation(alphaAnimation)
         savePositionInPlayer()
         safeReleasePlayer()
     }
@@ -1845,7 +1845,7 @@ class PlayerFragment : Fragment() {
             //activity?.popCurrentPage(isInPlayer = true, isInExpandedView = false, isInResults = false)
             activity?.popCurrentPage()
         }
-        video_go_back_holder.setOnClickListener {
+        player_loading_go_back.setOnClickListener {
             //println("video_go_back_pressed")
             // activity?.popCurrentPage(isInPlayer = true, isInExpandedView = false, isInResults = false)
             activity?.popCurrentPage()
@@ -2058,7 +2058,7 @@ class PlayerFragment : Fragment() {
         }
         activity?.window?.attributes = lp
 
-        loading_overlay?.isVisible = false
+        player_loading_overlay?.isVisible = false
         savePos()
         SubtitlesFragment.applyStyleEvent -= ::onSubStyleChanged
 
@@ -2321,12 +2321,12 @@ class PlayerFragment : Fragment() {
                 override fun onAnimationRepeat(animation: Animation?) {}
 
                 override fun onAnimationEnd(animation: Animation?) {
-                    loading_overlay?.post { video_go_back_holder_holder?.visibility = GONE; }
+                    player_loading_overlay?.post { video_go_back_holder_holder?.visibility = GONE; }
                 }
             })
             overlay_loading_skip_button?.visibility = GONE
 
-            loading_overlay?.startAnimation(alphaAnimation)
+            player_loading_overlay?.startAnimation(alphaAnimation)
 
             exoPlayer.setHandleAudioBecomingNoisy(true) // WHEN HEADPHONES ARE PLUGGED OUT https://github.com/google/ExoPlayer/issues/7288
             player_view?.player = exoPlayer

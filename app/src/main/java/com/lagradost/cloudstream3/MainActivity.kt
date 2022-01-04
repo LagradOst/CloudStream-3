@@ -40,6 +40,7 @@ import com.lagradost.cloudstream3.ui.download.DOWNLOAD_NAVIGATE_TO
 import com.lagradost.cloudstream3.ui.player.PlayerEventType
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
 import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
+import com.lagradost.cloudstream3.utils.AppUtils.loadCache
 import com.lagradost.cloudstream3.utils.AppUtils.loadResult
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.removeKey
@@ -487,6 +488,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
     private fun handleAppIntent(intent: Intent?) {
         if (intent == null) return
         val str = intent.dataString
+        loadCache()
         if (str != null) {
             if (str.contains(appString)) {
                 for (api in OAuth2Apis) {
@@ -589,6 +591,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         navController.addOnDestinationChangedListener { _, destination, _ ->
             updateNavBar(destination)
         }
+        loadCache()
 
         /*nav_view.setOnNavigationItemSelectedListener { item ->
             when (item.itemId) {
@@ -724,6 +727,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
 
         try {
             // this ensures that no unnecessary space is taken
+            loadCache()
             File(filesDir, "exoplayer").deleteRecursively() // old cache
             File(cacheDir, "exoplayer").deleteOnExit()      // current cache
         } catch (e : Exception) {

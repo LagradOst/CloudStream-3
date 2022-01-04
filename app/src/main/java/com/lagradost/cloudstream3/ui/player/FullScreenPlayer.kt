@@ -30,6 +30,7 @@ import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
 import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import com.lagradost.cloudstream3.utils.UIHelper.getNavigationBarHeight
@@ -39,7 +40,6 @@ import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
 import com.lagradost.cloudstream3.utils.UIHelper.showSystemUI
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import com.lagradost.cloudstream3.utils.Vector2
-import kotlinx.android.synthetic.main.fragment_result.*
 import kotlinx.android.synthetic.main.player_custom_layout.*
 import kotlin.math.*
 
@@ -53,24 +53,26 @@ const val DOUBLE_TAB_MINIMUM_TIME_BETWEEN = 200L    // this also affects the UI 
 const val DOUBLE_TAB_PAUSE_PERCENTAGE = 0.15        // in both directions
 
 // All the UI Logic for the player
-class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
+open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
     // state of player UI
-    private var isShowing = false
-    private var isLocked = false
+    protected var isShowing = false
+    protected var isLocked = false
 
     // options for player
-    private var fastForwardTime = 10000L
-    private var swipeHorizontalEnabled = false
-    private var swipeVerticalEnabled = false
-    private var playBackSpeedEnabled = false
-    private var playerResizeEnabled = false
-    private var doubleTapEnabled = false
-    private var doubleTapPauseEnabled = true
+    protected var currentPrefQuality =
+        Qualities.P2160.value // preferred maximum quality, used for ppl w bad internet or on cell
+    protected var fastForwardTime = 10000L
+    protected var swipeHorizontalEnabled = false
+    protected var swipeVerticalEnabled = false
+    protected var playBackSpeedEnabled = false
+    protected var playerResizeEnabled = false
+    protected var doubleTapEnabled = false
+    protected var doubleTapPauseEnabled = true
 
     //private var useSystemBrightness = false
-    private var useTrueSystemBrightness = true
+    protected var useTrueSystemBrightness = true
 
-    private val displayMetrics: DisplayMetrics = Resources.getSystem().displayMetrics
+    protected val displayMetrics: DisplayMetrics = Resources.getSystem().displayMetrics
 
     // screenWidth and screenHeight does always
     // refer to the screen while in landscape mode
@@ -779,6 +781,16 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
         return true
     }
 
+    protected fun uiReset() {
+        isLocked = false
+        isShowing = false
+        updateLockUI()
+        updateUIVisibility()
+        animateLayoutChanges()
+        resetFastForwardText()
+        resetRewindText()
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -814,6 +826,10 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
                         ctx.getString(R.string.double_tap_enabled_key),
                         false
                     )
+                currentPrefQuality = settingsManager.getInt(
+                    ctx.getString(R.string.quality_pref_key),
+                    currentPrefQuality
+                )
                 // useSystemBrightness =
                 //    settingsManager.getBoolean(ctx.getString(R.string.use_system_brightness_key), false)
             }
@@ -872,11 +888,7 @@ class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player_v2) {
 
         // init UI
         try {
-            updateLockUI()
-            updateUIVisibility()
-            animateLayoutChanges()
-            resetFastForwardText()
-            resetRewindText()
+            uiReset()
 
             // init chromecast UI
             activity?.let {

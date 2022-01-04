@@ -48,8 +48,8 @@ import com.lagradost.cloudstream3.ui.download.DOWNLOAD_ACTION_DOWNLOAD
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_NAVIGATE_TO
 import com.lagradost.cloudstream3.ui.download.DownloadButtonSetup.handleDownloadClick
 import com.lagradost.cloudstream3.ui.download.EasyDownloadButton
-import com.lagradost.cloudstream3.ui.player.PlayerData
-import com.lagradost.cloudstream3.ui.player.PlayerFragment
+import com.lagradost.cloudstream3.ui.player.GeneratorPlayer
+import com.lagradost.cloudstream3.ui.player.RepoLinkGenerator
 import com.lagradost.cloudstream3.ui.quicksearch.QuickSearchFragment
 import com.lagradost.cloudstream3.ui.search.SearchAdapter
 import com.lagradost.cloudstream3.ui.search.SearchHelper
@@ -59,6 +59,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.isAppInstalled
 import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
 import com.lagradost.cloudstream3.utils.AppUtils.isConnectedToChromecast
+import com.lagradost.cloudstream3.utils.AppUtils.loadCache
 import com.lagradost.cloudstream3.utils.AppUtils.openBrowser
 import com.lagradost.cloudstream3.utils.CastHelper.startCast
 import com.lagradost.cloudstream3.utils.Coroutines.main
@@ -360,6 +361,7 @@ class ResultFragment : Fragment() {
 
         activity?.window?.decorView?.clearFocus()
         hideKeyboard()
+        activity?.loadCache()
 
         activity?.fixPaddingStatusbar(result_scroll)
         //activity?.fixPaddingStatusbar(result_barstatus)
@@ -835,12 +837,20 @@ class ResultFragment : Fragment() {
 
                 ACTION_PLAY_EPISODE_IN_PLAYER -> {
                     if (buildInPlayer) {
-                        activity.navigate(
-                            R.id.global_to_navigation_player, PlayerFragment.newInstance(
-                                PlayerData(index, null, 0),
-                                episodeClick.data.getRealPosition()
+                        //activity.navigate(
+                        //    R.id.global_to_navigation_player, PlayerFragment.newInstance(
+                        //        PlayerData(index, null, 0),
+                        //        episodeClick.data.getRealPosition()
+                        //    )
+                        //)
+                        currentEpisodes?.let { episodes ->
+                            activity?.navigate(
+                                R.id.global_to_navigation_player, GeneratorPlayer.newInstance(
+                                    RepoLinkGenerator(episodes, episodes.indexOf(episodeClick.data))
+                                )
                             )
-                        )
+                        }
+
                     }
                 }
 

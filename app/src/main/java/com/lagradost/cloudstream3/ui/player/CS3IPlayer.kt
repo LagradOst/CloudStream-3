@@ -24,6 +24,7 @@ import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.ui.subtitles.SaveCaptionStyle
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorUri
 import java.io.File
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
@@ -32,7 +33,6 @@ import javax.net.ssl.SSLSession
 const val TAG = "CS3ExoPlayer"
 
 class CS3IPlayer : IPlayer {
-
     private var isPlaying = false
     private var exoPlayer: ExoPlayer? = null
 
@@ -47,7 +47,7 @@ class CS3IPlayer : IPlayer {
     private var lastMuteVolume: Float = 1.0f
 
     private var currentLink: ExtractorLink? = null
-    private var currentDownloadedFile: Uri? = null
+    private var currentDownloadedFile: ExtractorUri? = null
     private var hasUsedFirstRender = false
 
     private var currentWindow: Int = 0
@@ -118,20 +118,24 @@ class CS3IPlayer : IPlayer {
         context: Context,
         sameEpisode: Boolean,
         link: ExtractorLink?,
-        uri: Uri?
+        data: ExtractorUri?,
+        startPosition : Long?,
     ) {
         Log.i(TAG, "loadPlayer")
         if (!sameEpisode)
             playbackPosition = 0
 
+        startPosition?.let {
+            playbackPosition = it
+        }
         // we want autoplay because of TV and UX
         isPlaying = true
         // release the current exoplayer and cache
         releasePlayer()
         if (link != null) {
             loadOnlinePlayer(context, link)
-        } else if (uri != null) {
-            loadOfflinePlayer(context, uri)
+        } else if (data != null) {
+            loadOfflinePlayer(context, data)
         }
     }
 
@@ -142,6 +146,7 @@ class CS3IPlayer : IPlayer {
 
     private fun saveData() {
         Log.i(TAG, "saveData")
+        updatedTime()
 
         exoPlayer?.let { exo ->
             playbackPosition = exo.currentPosition
@@ -152,6 +157,8 @@ class CS3IPlayer : IPlayer {
 
     private fun releasePlayer() {
         Log.i(TAG, "releasePlayer")
+
+        updatedTime()
 
         exoPlayer?.release()
         simpleCache?.release()
@@ -178,6 +185,10 @@ class CS3IPlayer : IPlayer {
     override fun onResume(context: Context) {
         if (exoPlayer == null)
             reloadPlayer(context)
+    }
+
+    override fun release() {
+        releasePlayer()
     }
 
     override fun setPlaybackSpeed(speed: Float) {
@@ -488,12 +499,12 @@ class CS3IPlayer : IPlayer {
         }
     }
 
-    private fun loadOfflinePlayer(context: Context, uri: Uri) {
+    private fun loadOfflinePlayer(context: Context, data: ExtractorUri) {
         Log.i(TAG, "loadOfflinePlayer")
         try {
-            currentDownloadedFile = uri
+            currentDownloadedFile = data
 
-            val mediaItem = getMediaItem(MimeTypes.VIDEO_MP4, uri)
+            val mediaItem = getMediaItem(MimeTypes.VIDEO_MP4, data.uri)
             val offlineSourceFactory = context.createOfflineSource()
             val (subSources, activeSubtitles) = getSubSources(
                 offlineSourceFactory,
