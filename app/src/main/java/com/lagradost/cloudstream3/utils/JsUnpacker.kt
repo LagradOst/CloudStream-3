@@ -187,7 +187,7 @@ class JsUnpacker(packedJS: String?) {
                 0x64
             )
 
-        fun String.load(): Any? {
+        fun String.load(): String? {
             return try {
                 var load = this
 

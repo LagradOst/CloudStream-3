@@ -372,6 +372,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             showToast(act, act.getString(message), duration)
         }
 
+        /** duration is Toast.LENGTH_SHORT if null*/
         fun showToast(act: Activity?, message: String?, duration: Int? = null) {
             if (act == null || message == null) return
             try {

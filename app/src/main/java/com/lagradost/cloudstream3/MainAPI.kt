@@ -370,6 +370,11 @@ fun TvType.isMovieType(): Boolean {
     return this == TvType.Movie || this == TvType.AnimeMovie || this == TvType.Torrent
 }
 
+// returns if the type has an anime opening
+fun TvType.isAnimeOp(): Boolean {
+    return this == TvType.Anime || this == TvType.ONA
+}
+
 data class SubtitleFile(val lang: String, val url: String)
 
 class HomePageResponse(

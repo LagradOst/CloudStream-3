@@ -33,15 +33,19 @@ data class SubtitleData(
 )
 
 class PlayerSubtitleHelper {
-    private var activeSubtitles: List<SubtitleData> = listOf()
-    private var allSubtitles: List<SubtitleData> = listOf()
+    private var activeSubtitles: Set<SubtitleData> = emptySet()
+    private var allSubtitles: Set<SubtitleData> = emptySet()
 
-    fun getAllSubtitles(): List<SubtitleData> {
+    fun getAllSubtitles(): Set<SubtitleData> {
         return allSubtitles
     }
 
-    fun setActiveSubtitles(list: List<SubtitleData>) {
+    fun setActiveSubtitles(list: Set<SubtitleData>) {
         activeSubtitles = list
+    }
+
+    fun setAllSubtitles(list: Set<SubtitleData>) {
+        allSubtitles = list
     }
 
     private var subStyle: SaveCaptionStyle? = null
@@ -86,18 +90,14 @@ class PlayerSubtitleHelper {
         }
     }
 
-    fun subtitleStatus(name: String): SubtitleStatus {
-        return when {
-            activeSubtitles.any { it.name == name } -> {
-                SubtitleStatus.IS_ACTIVE
-            }
-            allSubtitles.any { it.name == name } -> {
-                SubtitleStatus.REQUIRES_RELOAD
-            }
-            else -> {
-                SubtitleStatus.NOT_FOUND
-            }
+    fun subtitleStatus(sub : SubtitleData?): SubtitleStatus {
+        if(activeSubtitles.contains(sub)) {
+            return SubtitleStatus.IS_ACTIVE
         }
+        if(allSubtitles.contains(sub)) {
+            return SubtitleStatus.REQUIRES_RELOAD
+        }
+        return SubtitleStatus.NOT_FOUND
     }
 
     fun setSubStyle(style: SaveCaptionStyle) {
@@ -115,6 +115,7 @@ class PlayerSubtitleHelper {
     }
 
     fun initSubtitles(subView: SubtitleView?, subHolder: FrameLayout?, style: SaveCaptionStyle?) {
+        subtitleView = subView
         subView?.let { sView ->
             (sView.parent as ViewGroup?)?.removeView(sView)
             subHolder?.addView(sView)

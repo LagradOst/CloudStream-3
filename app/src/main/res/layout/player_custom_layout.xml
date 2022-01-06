@@ -177,30 +177,56 @@
             </FrameLayout>
         </FrameLayout>
 
+        <!--use for thinner app:trackThickness="3dp" com.google.android.material.progressindicator.CircularProgressIndicator-->
+        <ProgressBar
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+
+                android:focusable="false"
+                android:clickable="false"
+                android:focusableInTouchMode="false"
+
+                android:indeterminate="true"
+                android:visibility="gone"
+                tools:visibility="visible"
+                android:id="@+id/player_buffering"
+                android:layout_gravity="center"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content" />
+
+        <!-- This nested layout is necessary because of buffering and clicking-->
         <FrameLayout
-                android:id="@+id/player_pause_play_holder"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 android:layout_width="100dp"
-                android:layout_height="100dp">
+                android:layout_height="100dp"
+                android:id="@+id/player_pause_play_holder_holder">
 
-            <ImageView
-                    android:id="@+id/player_pause_play"
-                    android:nextFocusLeft="@id/exo_rew"
-                    android:nextFocusRight="@id/exo_ffwd"
-                    android:nextFocusUp="@id/player_go_back"
-                    android:nextFocusDown="@id/player_lock"
+            <FrameLayout
+                    tools:ignore="uselessParent"
+                    android:id="@+id/player_pause_play_holder"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+                <ImageView
+                        android:id="@+id/player_pause_play"
+                        android:nextFocusLeft="@id/exo_rew"
+                        android:nextFocusRight="@id/exo_ffwd"
+                        android:nextFocusUp="@id/player_go_back"
+                        android:nextFocusDown="@id/player_lock"
 
-                    android:layout_gravity="center"
+                        android:layout_gravity="center"
 
-                    android:src="@drawable/netflix_pause"
-                    android:background="@drawable/video_tap_button"
+                        android:src="@drawable/netflix_pause"
+                        android:background="@drawable/video_tap_button"
 
-                    android:layout_width="70dp"
-                    android:layout_height="70dp"
-                    tools:ignore="ContentDescription" />
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        tools:ignore="ContentDescription" />
+            </FrameLayout>
         </FrameLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -348,6 +374,7 @@
                     tools:ignore="ContentDescription"
                     android:layout_height="0dp"
                     android:layout_width="0dp" />
+
             <ImageButton
                     android:id="@id/exo_pause"
                     app:tint="?attr/colorPrimaryDark"

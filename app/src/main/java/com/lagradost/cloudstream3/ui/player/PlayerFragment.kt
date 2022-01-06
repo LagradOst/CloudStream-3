@@ -1294,31 +1294,31 @@ class PlayerFragment : Fragment() {
                             sourceDialog.findViewById<MaterialButton>(R.id.apply_btt)!!
                         val cancelButton =
                             sourceDialog.findViewById<MaterialButton>(R.id.cancel_btt)!!
-                        val subsSettings = sourceDialog.findViewById<View>(R.id.subs_settings)!!
+                        //val subsSettings = sourceDialog.findViewById<View>(R.id.subs_settings)!!
 
-                        val subtitleLoadButton =
-                            sourceDialog.findViewById<MaterialButton>(R.id.load_btt)!!
+                        //val subtitleLoadButton =
+                        //    sourceDialog.findViewById<MaterialButton>(R.id.load_btt)!!
 
-                        subtitleLoadButton.setOnClickListener {
-//                            "vtt" -> "text/vtt"
-//                            "srt" -> "application/x-subrip"// "text/plain"
-                            subsPathPicker.launch(
-                                arrayOf(
-                                    "text/vtt",
-                                    "application/x-subrip",
-                                    "text/plain",
-                                    "text/str",
-                                    "application/octet-stream"
-                                )
-                            )
-                        }
+                        //subtitleLoadButton.setOnClickListener {
+//                      //      "vtt" -> "text/vtt"
+//                      //      "srt" -> "application/x-subrip"// "text/plain"
+                        //    subsPathPicker.launch(
+                        //        arrayOf(
+                        //            "text/vtt",
+                        //            "application/x-subrip",
+                        //            "text/plain",
+                        //            "text/str",
+                        //            "application/octet-stream"
+                        //        )
+                        //    )
+                        //}
 
-                        subsSettings.setOnClickListener {
-                            autoHide()
-                            saveArguments()
-                            SubtitlesFragment.push(activity)
-                            sourceDialog.dismissSafe(activity)
-                        }
+                        //subsSettings.setOnClickListener {
+                        //    autoHide()
+                        //    saveArguments()
+                        //    SubtitlesFragment.push(activity)
+                        //    sourceDialog.dismissSafe(activity)
+                        //}
 
                         var sourceIndex = 0
                         var startSource = 0

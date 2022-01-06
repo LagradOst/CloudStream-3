@@ -9,6 +9,8 @@ import kotlin.math.max
 import kotlin.math.min
 
 class RepoLinkGenerator(private val episodes: List<ResultEpisode>, private var currentIndex: Int) : IGenerator {
+    override val hasCache = true
+
     override fun hasNext(): Boolean {
         return currentIndex < episodes.size - 1
     }
@@ -36,6 +38,10 @@ class RepoLinkGenerator(private val episodes: List<ResultEpisode>, private var c
         return episodes[currentIndex].id
     }
 
+    override fun getCurrent(): Any {
+        return episodes[currentIndex]
+    }
+
     // this is a simple array that is used to instantly load links if they are already loaded
     var linkCache = Array<Set<ExtractorLink>>(size = episodes.size, init = { setOf() })
     var subsCache = Array<Set<SubtitleData>>(size = episodes.size, init = { setOf() })
@@ -52,11 +58,18 @@ class RepoLinkGenerator(private val episodes: List<ResultEpisode>, private var c
         val currentLinkCache = if (clearCache) mutableSetOf() else linkCache[index].toMutableSet()
         val currentSubsCache = if (clearCache) mutableSetOf() else subsCache[index].toMutableSet()
 
+        val currentLinks = mutableSetOf<String>()       // makes all urls unique
+        val currentSubsUrls = mutableSetOf<String>()    // makes all subs urls unique
+        val currentSubsNames = mutableSetOf<String>()   // makes all subs names unique
+
         currentLinkCache.forEach { link ->
+            currentLinks.add(link.url)
             callback(Pair(link, null))
         }
 
         currentSubsCache.forEach { sub ->
+            currentSubsUrls.add(sub.url)
+            currentSubsNames.add(sub.name)
             subtitleCallback(sub)
         }
 
@@ -72,18 +85,34 @@ class RepoLinkGenerator(private val episodes: List<ResultEpisode>, private var c
             isCasting,
             { file ->
                 val correctFile = PlayerSubtitleHelper.getSubtitleData(file)
-                if (!currentSubsCache.contains(correctFile)) {
-                    subtitleCallback(correctFile)
-                    currentSubsCache.add(correctFile)
-                    subsCache[index] = currentSubsCache
+                if(!currentSubsUrls.contains(correctFile.url)) {
+                    currentSubsUrls.add(correctFile.url)
+
+                    // this part makes sure that all names are unique for UX
+                    var name = correctFile.name
+                    var count = 0
+                    while(currentSubsNames.contains(name)) {
+                        count++
+                        name = "${correctFile.name} $count"
+                    }
+
+                    currentSubsNames.add(name)
+                    val updatedFile = correctFile.copy(name = name)
+
+                    if (!currentSubsCache.contains(updatedFile)) {
+                        subtitleCallback(updatedFile)
+                        currentSubsCache.add(updatedFile)
+                        subsCache[index] = currentSubsCache
+                    }
                 }
             },
             { link ->
-                if (!currentLinkCache.contains(link)) {
-                    println("ADDED LINK $link")
-
-                    callback(Pair(link, null))
-                    linkCache[index] = currentLinkCache
+                if(!currentLinks.contains(link.url)) {
+                    if (!currentLinkCache.contains(link)) {
+                        currentLinks.add(link.url)
+                        callback(Pair(link, null))
+                        linkCache[index] = currentLinkCache
+                    }
                 }
             }
         )

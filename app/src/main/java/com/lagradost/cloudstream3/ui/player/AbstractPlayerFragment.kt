@@ -17,6 +17,7 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.LayoutRes
 import androidx.annotation.StringRes
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.PlaybackException
@@ -43,6 +44,12 @@ enum class PlayerResize(@StringRes val nameRes: Int) {
     Zoom(R.string.resize_zoom),
 }
 
+// when the player should switch skip op to next episode
+const val SKIP_OP_VIDEO_PERCENTAGE = 50
+
+// when the player should preload the next episode for faster loading
+const val PRELOAD_NEXT_EPISODE_PERCENTAGE = 80
+
 abstract class AbstractPlayerFragment(
     @LayoutRes val layout: Int,
     val player: IPlayer = CS3IPlayer()
@@ -50,6 +57,7 @@ abstract class AbstractPlayerFragment(
     var resizeMode: Int = 0
     var subStyle: SaveCaptionStyle? = null
     var subView: SubtitleView? = null
+    var isBuffering = true
 
     open fun nextEpisode() {
         throw NotImplementedError()
@@ -63,29 +71,43 @@ abstract class AbstractPlayerFragment(
         throw NotImplementedError()
     }
 
-    private fun updateIsPlaying(playing: Pair<Boolean, Boolean>) {
+    open fun playerDimensionsLoaded(widthHeight : Pair<Int, Int>) {
+        throw NotImplementedError()
+    }
+
+    private fun updateIsPlaying(playing: Pair<CSPlayerLoading, CSPlayerLoading>) {
         val (wasPlaying, isPlaying) = playing
+        val isPlayingRightNow = CSPlayerLoading.IsPlaying == isPlaying
 
-        if (wasPlaying != isPlaying) {
-            player_pause_play.setImageResource(if (isPlaying) R.drawable.play_to_pause else R.drawable.pause_to_play)
-            val drawable = player_pause_play?.drawable
+        isBuffering = CSPlayerLoading.IsBuffering == isPlaying
+        if (isBuffering) {
+            player_pause_play_holder_holder?.isVisible = false
+            player_buffering?.isVisible = true
+        } else {
+            player_pause_play_holder_holder?.isVisible = true
+            player_buffering?.isVisible = false
 
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                if (drawable is AnimatedImageDrawable) {
+            if (wasPlaying != isPlaying) {
+                player_pause_play?.setImageResource(if (isPlayingRightNow) R.drawable.play_to_pause else R.drawable.pause_to_play)
+                val drawable = player_pause_play?.drawable
+
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+                    if (drawable is AnimatedImageDrawable) {
+                        drawable.start()
+                    }
+                }
+                if (drawable is AnimatedVectorDrawable) {
                     drawable.start()
                 }
+            } else {
+                player_pause_play?.setImageResource(if (isPlayingRightNow) R.drawable.netflix_pause else R.drawable.netflix_play)
             }
-            if (drawable is AnimatedVectorDrawable) {
-                drawable.start()
-            }
-        } else {
-            player_pause_play?.setImageResource(if (isPlaying) R.drawable.netflix_pause else R.drawable.netflix_play)
         }
 
-        MainActivity.canEnterPipMode = isPlaying
+        MainActivity.canEnterPipMode = isPlayingRightNow
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             activity?.let { act ->
-                PlayerPipHelper.updatePIPModeActions(act, isPlaying)
+                PlayerPipHelper.updatePIPModeActions(act, isPlayingRightNow)
             }
         }
     }
@@ -119,7 +141,9 @@ abstract class AbstractPlayerFragment(
                 )
                 activity?.registerReceiver(pipReceiver, filter)
                 val isPlaying = player.getIsPlaying()
-                updateIsPlaying(Pair(isPlaying, isPlaying))
+                val isPlayingValue =
+                    if (isPlaying) CSPlayerLoading.IsPlaying else CSPlayerLoading.IsPaused
+                updateIsPlaying(Pair(isPlayingValue, isPlayingValue))
             } else {
                 // Restore the full-screen UI.
                 player_holder.alpha = 1f
@@ -134,6 +158,10 @@ abstract class AbstractPlayerFragment(
         }
     }
 
+    open fun nextMirror() {
+        throw NotImplementedError()
+    }
+
     private fun playerError(exception: Exception) {
         when (exception) {
             is PlaybackException -> {
@@ -141,14 +169,12 @@ abstract class AbstractPlayerFragment(
                 val errorName = exception.errorCodeName
                 when (val code = exception.errorCode) {
                     PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND, PlaybackException.ERROR_CODE_IO_NO_PERMISSION, PlaybackException.ERROR_CODE_IO_UNSPECIFIED -> {
-                        // if (currentUrl?.url != "") {
                         showToast(
                             activity,
                             "${getString(R.string.source_error)}\n$errorName ($code)\n$msg",
                             Toast.LENGTH_SHORT
                         )
-                        // tryNextMirror() //TODO
-                        //}
+                        nextMirror()
                     }
                     PlaybackException.ERROR_CODE_REMOTE_ERROR, PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS, PlaybackException.ERROR_CODE_TIMEOUT, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED, PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE -> {
                         showToast(
@@ -156,6 +182,7 @@ abstract class AbstractPlayerFragment(
                             "${getString(R.string.remote_error)}\n$errorName ($code)\n$msg",
                             Toast.LENGTH_SHORT
                         )
+                        nextMirror()
                     }
                     PlaybackException.ERROR_CODE_DECODING_FAILED, PlaybackErrorEvent.ERROR_AUDIO_TRACK_INIT_FAILED, PlaybackErrorEvent.ERROR_AUDIO_TRACK_OTHER, PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED, PlaybackException.ERROR_CODE_DECODER_INIT_FAILED, PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED -> {
                         showToast(
@@ -163,6 +190,7 @@ abstract class AbstractPlayerFragment(
                             "${getString(R.string.render_error)}\n$errorName ($code)\n$msg",
                             Toast.LENGTH_SHORT
                         )
+                        nextMirror()
                     }
                     else -> {
                         showToast(
@@ -203,7 +231,6 @@ abstract class AbstractPlayerFragment(
         resizeMode = getKey(RESIZE_MODE_KEY) ?: 0
         resize(resizeMode, false)
 
-        //TODO ADD BUFFERING METHOD
         player.initCallbacks(
             playerUpdated = ::playerUpdated,
             updateIsPlaying = ::updateIsPlaying,
@@ -212,6 +239,11 @@ abstract class AbstractPlayerFragment(
             nextEpisode = ::nextEpisode,
             prevEpisode = ::prevEpisode,
             playerPositionChanged = ::playerPositionChanged,
+            playerDimensionsLoaded = ::playerDimensionsLoaded,
+            requestedListeningPercentages = listOf(
+                SKIP_OP_VIDEO_PERCENTAGE,
+                PRELOAD_NEXT_EPISODE_PERCENTAGE
+            )
         )
 
         if (player is CS3IPlayer) {

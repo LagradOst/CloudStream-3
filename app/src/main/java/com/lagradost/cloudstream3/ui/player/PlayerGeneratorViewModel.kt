@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lagradost.cloudstream3.mvvm.Resource
+import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorUri
@@ -22,7 +23,7 @@ class PlayerGeneratorViewModel : ViewModel() {
     private val _loadingLinks = MutableLiveData<Resource<Boolean?>>()
     val loadingLinks: LiveData<Resource<Boolean?>> = _loadingLinks
 
-    fun getId() : Int? {
+    fun getId(): Int? {
         return generator?.getCurrentId()
     }
 
@@ -45,14 +46,22 @@ class PlayerGeneratorViewModel : ViewModel() {
         }
     }
 
+    fun hasNextEpisode(): Boolean? {
+        return generator?.hasNext()
+    }
+
     fun preLoadNextLinks() = viewModelScope.launch {
         safeApiCall {
-            if (generator?.hasNext() == true) {
+            if (generator?.hasCache == true && generator?.hasNext() == true) {
                 generator?.next()
                 generator?.generateLinks(clearCache = false, isCasting = false, {}, {})
                 generator?.prev()
             }
         }
+    }
+
+    fun getMeta(): Any? {
+        return normalSafeApiCall { generator?.getCurrent() }
     }
 
     fun attachGenerator(newGenerator: IGenerator?) {
@@ -61,9 +70,17 @@ class PlayerGeneratorViewModel : ViewModel() {
         }
     }
 
+    fun addSubtitles(file: Set<SubtitleData>) {
+        val subs = (_currentSubs.value?.toMutableSet() ?: mutableSetOf())
+        subs.addAll(file)
+        _currentSubs.postValue(subs)
+    }
+
     fun loadLinks(clearCache: Boolean = false, isCasting: Boolean = false) = viewModelScope.launch {
         val currentLinks = mutableSetOf<Pair<ExtractorLink?, ExtractorUri?>>()
         val currentSubs = mutableSetOf<SubtitleData>()
+
+
         _loadingLinks.postValue(Resource.Loading())
         val loadingState = safeApiCall {
             generator?.generateLinks(clearCache = clearCache, isCasting = isCasting, {

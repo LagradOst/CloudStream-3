@@ -53,8 +53,8 @@ object FillerEpisodeCheck {
         return false
     }
 
-    fun Any?.toClassDir(): String {
-        val q = this?.toString() ?: "null"
+    fun String?.toClassDir(): String {
+        val q = this ?: "null"
         val z = (6..10).random().calc()
         return q + "cache" + z
     }

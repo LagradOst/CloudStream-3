@@ -11,6 +11,7 @@ import android.media.AudioManager
 import android.os.Bundle
 import android.provider.Settings
 import android.util.DisplayMetrics
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.animation.AlphaAnimation
@@ -27,6 +28,7 @@ import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastState
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
+import com.lagradost.cloudstream3.MainActivity
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
@@ -111,6 +113,10 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         R.drawable.ic_baseline_volume_up_24,
     )
 
+    open fun showMirrorsDialogue() {
+        throw NotImplementedError()
+    }
+
     /** Returns false if the touch is on the status bar or navigation bar*/
     private fun isValidTouch(rawX: Float, rawY: Float): Boolean {
         val statusHeight = statusBarHeight ?: 0
@@ -156,7 +162,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         val sStyle = subStyle
         if (sView != null && sStyle != null) {
             val move = if (isShowing) -((bottom_player_bar?.height?.toFloat()
-                ?: 0f) + 10.toPx) else -sStyle.elevation.toPx.toFloat()
+                ?: 0f) + 40.toPx) else -sStyle.elevation.toPx.toFloat()
             ObjectAnimator.ofFloat(sView, "translationY", move).apply {
                 duration = 200
                 start()
@@ -166,12 +172,22 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         if (!isLocked) {
             player_ffwd_holder?.alpha = 1f
             player_rew_holder?.alpha = 1f
-            player_pause_play_holder?.alpha = 1f
+           // player_pause_play_holder?.alpha = 1f
 
             shadow_overlay?.startAnimation(fadeAnimation)
             player_ffwd_holder?.startAnimation(fadeAnimation)
             player_rew_holder?.startAnimation(fadeAnimation)
             player_pause_play?.startAnimation(fadeAnimation)
+
+            /*if (isBuffering) {
+                    player_pause_play?.isVisible = false
+                    player_pause_play_holder?.isVisible = false
+                } else {
+                    player_pause_play?.isVisible = true
+                    player_pause_play_holder?.startAnimation(fadeAnimation)
+                    player_pause_play?.startAnimation(fadeAnimation)
+                }*/
+            //player_buffering?.startAnimation(fadeAnimation)
         }
 
         bottom_player_bar?.startAnimation(fadeAnimation)
@@ -367,6 +383,8 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         player_lock_holder?.isGone = isGone
         player_video_bar?.isGone = isGone
         player_pause_play_holder?.isGone = isGone
+        player_pause_play?.isGone = isGone
+        //player_buffering?.isGone = isGone
         player_top_holder?.isGone = isGone
         player_center_menu?.isGone = isGone
         player_lock?.isGone = !isShowing
@@ -387,7 +405,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
     }
 
     private var currentTapIndex = 0
-    private fun autoHide() {
+    protected fun autoHide() {
         currentTapIndex++
         val index = currentTapIndex
         player_holder?.postDelayed({
@@ -691,9 +709,10 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
                                         currentTouch
                                     )?.let { newMs ->
                                         val skipMs = newMs - startTime
-                                        player_time_text?.text = "${convertTimeToString(newMs / 1000)} [${
-                                            (if (abs(skipMs) < 1000) "" else (if (skipMs > 0) "+" else "-"))
-                                        }${convertTimeToString(abs(skipMs / 1000))}]"
+                                        player_time_text?.text =
+                                            "${convertTimeToString(newMs / 1000)} [${
+                                                (if (abs(skipMs) < 1000) "" else (if (skipMs > 0) "+" else "-"))
+                                            }${convertTimeToString(abs(skipMs / 1000))}]"
                                         player_time_text?.isVisible = true
                                     }
                                 }
@@ -781,9 +800,66 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         return true
     }
 
+    private fun handleKeyEvent(event: KeyEvent): Boolean {
+        event.keyCode.let { keyCode ->
+            when (event.action) {
+                KeyEvent.ACTION_DOWN -> {
+                    when (keyCode) {
+                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_DPAD_UP -> {
+                            if (!isShowing) {
+                                onClickChange()
+                                return true
+                            }
+                        }
+                    }
+
+                    //println("Keycode: $keyCode")
+                    //showToast(
+                    //    this,
+                    //    "Got Keycode $keyCode | ${KeyEvent.keyCodeToString(keyCode)} \n ${event?.action}",
+                    //    Toast.LENGTH_LONG
+                    //)
+                }
+            }
+
+            when (keyCode) {
+                // don't allow dpad move when hidden
+                KeyEvent.KEYCODE_DPAD_LEFT,
+                KeyEvent.KEYCODE_DPAD_DOWN,
+                KeyEvent.KEYCODE_DPAD_UP,
+                KeyEvent.KEYCODE_DPAD_RIGHT,
+                KeyEvent.KEYCODE_DPAD_DOWN_LEFT,
+                KeyEvent.KEYCODE_DPAD_DOWN_RIGHT,
+                KeyEvent.KEYCODE_DPAD_UP_LEFT,
+                KeyEvent.KEYCODE_DPAD_UP_RIGHT -> {
+                    if (!isShowing) {
+                        return true
+                    } else {
+                        autoHide()
+                    }
+                }
+
+                // netflix capture back and hide ~monke
+                KeyEvent.KEYCODE_BACK -> {
+                    if (isShowing) {
+                        onClickChange()
+                        return true
+                    }
+                }
+            }
+        }
+
+        return false
+    }
+
     protected fun uiReset() {
         isLocked = false
         isShowing = false
+
+        // if nothing has loaded these buttons should not be visible
+        player_skip_episode?.isVisible = false
+        player_skip_op?.isVisible = false
+
         updateLockUI()
         updateUIVisibility()
         animateLayoutChanges()
@@ -798,6 +874,60 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         // init variables
         setPlayBackSpeed(getKey(PLAYBACK_SPEED_KEY) ?: 1.0f)
         fastForwardTime = getKey(PLAYBACK_FASTFORWARD) ?: 10000L
+
+        // handle tv controls
+        MainActivity.playerEventListener = { eventType ->
+            when (eventType) {
+                PlayerEventType.Lock -> {
+                    toggleLock()
+                }
+                PlayerEventType.NextEpisode -> {
+                    player.handleEvent(CSPlayerEvent.NextEpisode)
+                }
+                PlayerEventType.Pause -> {
+                    player.handleEvent(CSPlayerEvent.Pause)
+                }
+                PlayerEventType.PlayPauseToggle -> {
+                    player.handleEvent(CSPlayerEvent.PlayPauseToggle)
+                }
+                PlayerEventType.Play -> {
+                    player.handleEvent(CSPlayerEvent.Play)
+                }
+                PlayerEventType.Resize -> {
+                    nextResize()
+                }
+                PlayerEventType.PrevEpisode -> {
+                    player.handleEvent(CSPlayerEvent.PrevEpisode)
+                }
+                PlayerEventType.SeekForward -> {
+                    player.handleEvent(CSPlayerEvent.SeekForward)
+                }
+                PlayerEventType.ShowSpeed -> {
+                    showSpeedDialog()
+                }
+                PlayerEventType.SeekBack -> {
+                    player.handleEvent(CSPlayerEvent.SeekBack)
+                }
+                PlayerEventType.ToggleMute -> {
+                    player.handleEvent(CSPlayerEvent.ToggleMute)
+                }
+                PlayerEventType.ToggleHide -> {
+                    onClickChange()
+                }
+                PlayerEventType.ShowMirrors -> {
+                    showMirrorsDialogue()
+                }
+            }
+        }
+
+        // handle tv controls directly based on player state
+        MainActivity.keyEventListener = { keyEvent ->
+            if (keyEvent != null) {
+                handleKeyEvent(keyEvent)
+            } else {
+                false
+            }
+        }
 
         try {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(activity)
@@ -882,6 +1012,10 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
             activity?.popCurrentPage()
         }
 
+        player_sources_btt?.setOnClickListener {
+            showMirrorsDialogue()
+        }
+
         player_holder?.setOnTouchListener { callView, event ->
             return@setOnTouchListener handleMotionEvent(callView, event)
         }
@@ -897,9 +1031,11 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
                         CastButtonFactory.setUpMediaRouteButton(it, player_media_route_button)
                         val castContext = CastContext.getSharedInstance(it.applicationContext)
 
-                        player_media_route_button?.isGone = castContext.castState == CastState.NO_DEVICES_AVAILABLE
+                        player_media_route_button?.isGone =
+                            castContext.castState == CastState.NO_DEVICES_AVAILABLE
                         castContext.addCastStateListener { state ->
-                            player_media_route_button?.isGone = state == CastState.NO_DEVICES_AVAILABLE
+                            player_media_route_button?.isGone =
+                                state == CastState.NO_DEVICES_AVAILABLE
                         }
                     } catch (e: Exception) {
                         logError(e)

@@ -6,6 +6,8 @@ import kotlin.math.max
 import kotlin.math.min
 
 class DownloadFileGenerator(private val episodes: List<ExtractorUri>, private var currentIndex: Int = 0) : IGenerator {
+    override val hasCache = false
+
     override fun hasNext(): Boolean {
         return currentIndex < episodes.size - 1
     }
@@ -31,6 +33,10 @@ class DownloadFileGenerator(private val episodes: List<ExtractorUri>, private va
 
     override fun getCurrentId(): Int {
         return episodes[currentIndex].id
+    }
+
+    override fun getCurrent(): Any {
+        return episodes[currentIndex]
     }
 
     override fun generateLinks(

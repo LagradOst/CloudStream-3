@@ -18,21 +18,28 @@ enum class CSPlayerEvent(val value: Int) {
     ToggleMute(8),
 }
 
+enum class CSPlayerLoading {
+    IsPaused,
+    IsPlaying,
+    IsBuffering,
+    //IsDone,
+}
+
 /** Abstract Exoplayer logic, can be expanded to other players */
 interface IPlayer {
-    fun getPlaybackSpeed() : Float
+    fun getPlaybackSpeed(): Float
     fun setPlaybackSpeed(speed: Float)
 
-    fun getIsPlaying() : Boolean
-    fun getDuration() : Long?
-    fun getPosition() : Long?
+    fun getIsPlaying(): Boolean
+    fun getDuration(): Long?
+    fun getPosition(): Long?
 
     fun seekTime(time: Long)
     fun seekTo(time: Long)
 
     fun initCallbacks(
         playerUpdated: (Any?) -> Unit,                              // attach player to view
-        updateIsPlaying: ((Pair<Boolean,Boolean>) -> Unit)? = null, // (wasPlaying, isPlaying)
+        updateIsPlaying: ((Pair<CSPlayerLoading, CSPlayerLoading>) -> Unit)? = null, // (wasPlaying, isPlaying)
         requestAutoFocus: (() -> Unit)? = null,                     // current player starts, asking for all other programs to shut the fuck up
         playerError: ((Exception) -> Unit)? = null,                 // player error when rendering or misc, used to display toast or log
         playerDimensionsLoaded: ((Pair<Int, Int>) -> Unit)? = null, // (with, height), for UI
@@ -43,8 +50,22 @@ interface IPlayer {
     )
 
     fun updateSubtitleStyle(style: SaveCaptionStyle)
-    fun loadPlayer(context: Context, sameEpisode : Boolean, link: ExtractorLink? = null, data: ExtractorUri? = null, startPosition : Long? = null)
-    fun handleEvent(event : CSPlayerEvent)
+    fun loadPlayer(
+        context: Context,
+        sameEpisode: Boolean,
+        link: ExtractorLink? = null,
+        data: ExtractorUri? = null,
+        startPosition: Long? = null,
+        subtitles : Set<SubtitleData>,
+    )
+
+    fun reloadPlayer(context: Context)
+
+    fun setActiveSubtitles(subtitles : Set<SubtitleData>)
+    fun setPreferredSubtitles(subtitle : SubtitleData?) : Boolean // returns true if the player requires a reload, null for nothing
+    fun getCurrentPreferredSubtitle() : SubtitleData?
+
+    fun handleEvent(event: CSPlayerEvent)
 
     fun onStop()
     fun onPause()

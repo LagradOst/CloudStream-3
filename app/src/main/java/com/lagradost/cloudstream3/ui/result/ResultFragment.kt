@@ -111,6 +111,7 @@ data class ResultEpisode(
     val rating: Int?,
     val description: String?,
     val isFiller: Boolean?,
+    val tvType: TvType,
 )
 
 fun ResultEpisode.getRealPosition(): Long {
@@ -141,6 +142,7 @@ fun buildResultEpisode(
     rating: Int?,
     description: String?,
     isFiller: Boolean?,
+    tvType: TvType,
 ): ResultEpisode {
     val posDur = getViewPos(id)
     return ResultEpisode(
@@ -156,7 +158,8 @@ fun buildResultEpisode(
         posDur?.duration ?: 0,
         rating,
         description,
-        isFiller
+        isFiller,
+        tvType,
     )
 }
 
@@ -1296,6 +1299,7 @@ class ResultFragment : Fragment() {
                                                         null,
                                                         null,
                                                         null,
+                                                        d.type,
                                                     )
                                                 )
                                             )

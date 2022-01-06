@@ -220,7 +220,7 @@ object AppUtils {
         }
     }
 
-    private fun Activity?.cacheClass(clazz: Any?) {
+    private fun Activity?.cacheClass(clazz: String?) {
         clazz?.let { c ->
             this?.cacheDir?.let {
                 Cache(

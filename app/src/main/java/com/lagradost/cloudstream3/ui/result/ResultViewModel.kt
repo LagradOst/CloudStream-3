@@ -368,6 +368,7 @@ class ResultViewModel : ViewModel() {
                                     if (fillerEpisodes is Resource.Success) fillerEpisodes.value?.let {
                                         it.contains(episode) && it[episode] == true
                                     } ?: false else false,
+                                    d.type
                                 ))
                             }
                             idIndex++
@@ -397,6 +398,7 @@ class ResultViewModel : ViewModel() {
                                     i.rating,
                                     i.description,
                                     null,
+                                    d.type
                                 )
                             )
 
@@ -416,6 +418,7 @@ class ResultViewModel : ViewModel() {
                             null,
                             null,
                             null,
+                            d.type
                         ).let {
                             updateEpisodes(mainId, listOf(it), -1)
                         }
@@ -435,6 +438,7 @@ class ResultViewModel : ViewModel() {
                                     null,
                                     null,
                                     null,
+                                    d.type
                                 )
                             ), -1
                         )
