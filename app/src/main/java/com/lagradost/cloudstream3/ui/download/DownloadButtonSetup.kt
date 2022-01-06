@@ -80,7 +80,10 @@ object DownloadButtonSetup {
             DOWNLOAD_ACTION_LONG_CLICK -> {
                 activity?.let { act ->
                     val length =
-                        VideoDownloadManager.getDownloadFileInfoAndUpdateSettings(act, click.data.id)?.fileLength
+                        VideoDownloadManager.getDownloadFileInfoAndUpdateSettings(
+                            act,
+                            click.data.id
+                        )?.fileLength
                             ?: 0
                     if (length > 0) {
                         MainActivity.showToast(act, R.string.delete, Toast.LENGTH_LONG)
@@ -92,9 +95,11 @@ object DownloadButtonSetup {
             DOWNLOAD_ACTION_PLAY_FILE -> {
                 activity?.let { act ->
                     val info =
-                        VideoDownloadManager.getDownloadFileInfoAndUpdateSettings(act, click.data.id)
-                            ?: return
-                    //val keyInfo = act.getKey<VideoDownloadManager.DownloadedFileInfo>(
+                        VideoDownloadManager.getDownloadFileInfoAndUpdateSettings(
+                            act,
+                            click.data.id
+                        ) ?: return
+                    //val keyInfo = getKey<VideoDownloadManager.DownloadedFileInfo>(
                     //    VideoDownloadManager.KEY_DOWNLOAD_INFO,
                     //    click.data.id.toString()
                     //) ?: return
@@ -102,7 +107,13 @@ object DownloadButtonSetup {
                     act.navigate(
                         R.id.global_to_navigation_player, GeneratorPlayer.newInstance(
                             DownloadFileGenerator(
-                                listOf(ExtractorUri(uri = info.path, id = click.data.id)),
+                                listOf(
+                                    ExtractorUri(
+                                        uri = info.path,
+                                        id = click.data.id,
+                                        name = act.getString(R.string.downloaded_file) //click.data.name ?: keyInfo.displayName
+                                    )
+                                ),
                                 0
                             )
                         )

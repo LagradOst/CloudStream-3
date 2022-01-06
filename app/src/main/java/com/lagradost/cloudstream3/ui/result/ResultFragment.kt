@@ -98,6 +98,7 @@ const val START_ACTION_LOAD_EP = 2
 const val START_VALUE_NORMAL = 0
 
 data class ResultEpisode(
+    val headerName : String,
     val name: String?,
     val poster: String?,
     val episode: Int,
@@ -131,6 +132,7 @@ fun ResultEpisode.getDisplayPosition(): Long {
 }
 
 fun buildResultEpisode(
+    headerName: String,
     name: String?,
     poster: String?,
     episode: Int,
@@ -146,6 +148,7 @@ fun buildResultEpisode(
 ): ResultEpisode {
     val posDur = getViewPos(id)
     return ResultEpisode(
+        headerName,
         name,
         poster,
         episode,
@@ -1286,6 +1289,7 @@ class ResultFragment : Fragment() {
                                                 EpisodeClickEvent(
                                                     ACTION_DOWNLOAD_EPISODE,
                                                     ResultEpisode(
+                                                        d.name,
                                                         d.name,
                                                         null,
                                                         0,

@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.ui.player
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -17,6 +18,7 @@ import com.lagradost.cloudstream3.AcraApplication
 import com.lagradost.cloudstream3.MainActivity.Companion.showToast
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.isAnimeOp
+import com.lagradost.cloudstream3.isEpisodeBased
 import com.lagradost.cloudstream3.mvvm.Resource
 import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.mvvm.observe
@@ -76,6 +78,8 @@ class GeneratorPlayer : FullScreenPlayer() {
         currentSelectedLink = link
         currentMeta = viewModel.getMeta()
         isActive = true
+        setPlayerDimen(null)
+        setTitle()
 
         // load player
         context?.let { ctx ->
@@ -207,8 +211,9 @@ class GeneratorPlayer : FullScreenPlayer() {
                 val sourcesArrayAdapter =
                     ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
 
-                // TODO ADD ?: it.second?.id?
-                sourcesArrayAdapter.addAll(sortedUrls.map { it.first?.name ?: "NULL" })
+                sourcesArrayAdapter.addAll(sortedUrls.map {
+                    it.first?.name ?: it.second?.name ?: "NULL"
+                })
 
                 providerList.choiceMode = AbsListView.CHOICE_MODE_SINGLE
                 providerList.adapter = sourcesArrayAdapter
@@ -334,8 +339,37 @@ class GeneratorPlayer : FullScreenPlayer() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
+    fun setTitle() {
+        val meta = currentMeta
+        when (meta) {
+            is ResultEpisode -> {
+                player_video_title?.text = meta.headerName +
+                        if (meta.tvType.isEpisodeBased())
+                            if (meta.season == null)
+                                " - ${getString(R.string.episode)} ${meta.episode}"
+                            else
+                                " \"${getString(R.string.season_short)}${meta.season}:${getString(R.string.episode_short)}${meta.episode}\""
+                        else ""
+            }
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    fun setPlayerDimen(widthHeight: Pair<Int, Int>?) {
+        val extra = if (widthHeight != null) {
+            val (width, height) = widthHeight
+            " - ${width}x${height}"
+        } else {
+            ""
+        }
+        player_video_title_rez?.text =
+            (currentSelectedLink?.first?.name ?: currentSelectedLink?.second?.name
+            ?: "NULL") + extra
+    }
+
     override fun playerDimensionsLoaded(widthHeight: Pair<Int, Int>) {
-        val (width, height) = widthHeight
+        setPlayerDimen(widthHeight)
     }
 
     override fun onCreateView(

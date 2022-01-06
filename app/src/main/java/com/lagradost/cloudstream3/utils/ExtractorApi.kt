@@ -20,6 +20,7 @@ data class ExtractorLink(
 data class ExtractorUri(
     val uri : Uri,
     val id : Int,
+    val name : String,
 )
 
 data class ExtractorSubtitleLink(

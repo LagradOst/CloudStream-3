@@ -355,6 +355,7 @@ class ResultViewModel : ViewModel() {
 
                                 val episode = i.episode ?: (index + 1)
                                 episodes.add(buildResultEpisode(
+                                    d.name,
                                     filterName(i.name),
                                     i.posterUrl,
                                     episode,
@@ -387,6 +388,7 @@ class ResultViewModel : ViewModel() {
                         for ((index, i) in d.episodes.withIndex()) {
                             episodes.add(
                                 buildResultEpisode(
+                                    d.name,
                                     filterName(i.name),
                                     i.posterUrl,
                                     i.episode ?: (index + 1),
@@ -408,6 +410,7 @@ class ResultViewModel : ViewModel() {
                     is MovieLoadResponse -> {
                         buildResultEpisode(
                             d.name,
+                            d.name,
                             null,
                             0,
                             null,
@@ -427,6 +430,7 @@ class ResultViewModel : ViewModel() {
                         updateEpisodes(
                             mainId, listOf(
                                 buildResultEpisode(
+                                    d.name,
                                     d.name,
                                     null,
                                     0,
