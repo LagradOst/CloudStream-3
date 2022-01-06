@@ -165,6 +165,15 @@
         <item name="android:colorAccent">@color/colorPrimaryParty</item>
     </style>
 
+    <style name="OverlayPrimaryColorPink">
+        <item name="colorPrimary">@color/colorPrimaryPink</item>
+        <item name="android:colorPrimary">@color/colorPrimaryPink</item>
+        <item name="colorPrimaryDark">#DD1280</item>
+        <item name="colorAccent">#FF4DAE</item>
+        <item name="colorOnPrimary">#DD1280</item>
+        <item name="android:colorAccent">@color/colorPrimaryPink</item>
+    </style>
+
     <style name="LoadedStyle">
         <item name="android:navigationBarColor">?attr/primaryGrayBackground</item>
         <item name="android:windowBackground">?attr/primaryBlackBackground</item>

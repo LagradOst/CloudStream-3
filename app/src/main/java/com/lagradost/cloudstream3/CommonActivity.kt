@@ -157,6 +157,7 @@ object CommonActivity {
                 "Red" -> R.style.OverlayPrimaryColorRed
                 "Banana" -> R.style.OverlayPrimaryColorBanana
                 "Party" -> R.style.OverlayPrimaryColorParty
+                "Pink" -> R.style.OverlayPrimaryColorPink
                 else -> R.style.OverlayPrimaryColorNormal
             }
         act.theme.applyStyle(currentTheme, true)
