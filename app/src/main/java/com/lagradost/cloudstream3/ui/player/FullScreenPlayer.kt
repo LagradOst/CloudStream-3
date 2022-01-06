@@ -23,16 +23,12 @@ import androidx.core.graphics.red
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.preference.PreferenceManager
-import com.google.android.gms.cast.framework.CastButtonFactory
-import com.google.android.gms.cast.framework.CastContext
-import com.google.android.gms.cast.framework.CastState
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.CommonActivity.keyEventListener
 import com.lagradost.cloudstream3.CommonActivity.playerEventListener
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
 import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
@@ -43,6 +39,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
 import com.lagradost.cloudstream3.utils.UIHelper.showSystemUI
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import com.lagradost.cloudstream3.utils.Vector2
+import kotlinx.android.synthetic.main.fragment_player.*
 import kotlinx.android.synthetic.main.player_custom_layout.*
 import kotlin.math.*
 
@@ -363,7 +360,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         player_pause_play?.startAnimation(fadeAnimation)
         player_ffwd_holder?.startAnimation(fadeAnimation)
         player_rew_holder?.startAnimation(fadeAnimation)
-        player_media_route_button?.startAnimation(fadeAnimation)
+        //player_media_route_button?.startAnimation(fadeAnimation)
         //video_bar.startAnimation(fadeAnimation)
 
         //TITLE
@@ -389,7 +386,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         player_top_holder?.isGone = isGone
         player_center_menu?.isGone = isGone
         player_lock?.isGone = !isShowing
-        player_media_route_button?.isClickable = !isGone
+        //player_media_route_button?.isClickable = !isGone
         player_go_back_holder?.isGone = isGone
     }
 
@@ -1017,6 +1014,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
             showMirrorsDialogue()
         }
 
+        // it is !not! a bug that you cant touch the right side, it does not register inputs on navbar or status bar
         player_holder?.setOnTouchListener { callView, event ->
             return@setOnTouchListener handleMotionEvent(callView, event)
         }
@@ -1026,26 +1024,27 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
             uiReset()
 
             // init chromecast UI
-            activity?.let {
-                if (it.isCastApiAvailable()) {
-                    try {
-                        CastButtonFactory.setUpMediaRouteButton(it, player_media_route_button)
-                        val castContext = CastContext.getSharedInstance(it.applicationContext)
-
-                        player_media_route_button?.isGone =
-                            castContext.castState == CastState.NO_DEVICES_AVAILABLE
-                        castContext.addCastStateListener { state ->
-                            player_media_route_button?.isGone =
-                                state == CastState.NO_DEVICES_AVAILABLE
-                        }
-                    } catch (e: Exception) {
-                        logError(e)
-                    }
-                } else {
-                    // if cast is not possible hide UI
-                    player_media_route_button?.isGone = true
-                }
-            }
+            // removed due to having no use and bugging
+            //activity?.let {
+            //    if (it.isCastApiAvailable()) {
+            //        try {
+            //            CastButtonFactory.setUpMediaRouteButton(it, player_media_route_button)
+            //            val castContext = CastContext.getSharedInstance(it.applicationContext)
+            //
+            //            player_media_route_button?.isGone =
+            //                castContext.castState == CastState.NO_DEVICES_AVAILABLE
+            //            castContext.addCastStateListener { state ->
+            //                player_media_route_button?.isGone =
+            //                    state == CastState.NO_DEVICES_AVAILABLE
+            //            }
+            //        } catch (e: Exception) {
+            //            logError(e)
+            //        }
+            //    } else {
+            //        // if cast is not possible hide UI
+            //        player_media_route_button?.isGone = true
+            //    }
+            //}
         } catch (e: Exception) {
             logError(e)
         }

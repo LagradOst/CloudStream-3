@@ -13,7 +13,6 @@
     <string name="player_speed_text_format" formatted="true">سرعة (%.2fx)</string>
     <string name="rated_format" formatted="true">Rated: %.1f</string>
     <string name="new_update_format" formatted="true">!تم إيجاد تحديث جديد\n%s -> %s</string>
-    <string name="filler_format" formatted="true">(Filler) %s</string>
 
     <string name="app_name">CloudStream</string>
     <string name="title_home">الصفحة الرئيسية</string>

@@ -223,7 +223,7 @@
     <string name="home_main_poster_img_des">Główny plakat</string>
     <string name="home_next_random_img_des">Następny losowy</string>
     <string name="go_back_img_des">Wstecz</string>
-    <string name="filler_format">(WYpełniacz) %s</string>
+    <string name="filler">WYpełniacz</string>
     <string name="home_change_provider_img_des">Zmień dostawcę</string>
     <string name="preview_background_img_des">Pogląd tła</string>
 </resources>

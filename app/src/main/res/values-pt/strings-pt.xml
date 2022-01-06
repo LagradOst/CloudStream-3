@@ -15,7 +15,7 @@
     <string name="player_speed_text_format" formatted="true">Velocidade (%.2fx)</string>
     <string name="rated_format" formatted="true">Classificado: %.1f</string>
     <string name="new_update_format" formatted="true">Nova atualização encontrada!\n%s -> %s</string>
-    <string name="filler_format" formatted="true">(Cheio) %s</string>
+    <string name="filler" formatted="true">Cheio</string>
 	
     <string name="app_name">CloudStream</string>
     <string name="title_home">Início</string>

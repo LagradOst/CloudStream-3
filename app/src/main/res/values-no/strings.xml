@@ -13,7 +13,6 @@
     <string name="player_speed_text_format" formatted="true">Avspillingshastighet (%.2fx)</string>
     <string name="rated_format" formatted="true">Vurdert: %.1f</string>
     <string name="new_update_format" formatted="true">Ny oppdatering funnet!\n%s -> %s</string>
-    <string name="filler_format" formatted="true">(Filler) %s</string>
 
     <string name="app_name">CloudStream</string>
     <string name="title_home">Hjem</string>

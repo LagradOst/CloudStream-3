@@ -61,7 +61,7 @@
     <string name="player_speed_text_format" formatted="true">Speed (%.2fx)</string>
     <string name="rated_format" formatted="true">Rated: %.1f</string>
     <string name="new_update_format" formatted="true">New update found!\n%s -> %s</string>
-    <string name="filler_format" formatted="true">(Filler) %s</string>
+    <string name="filler" formatted="true">Filler</string>
     <string name="duration_format" formatted="true">%d min</string>
 
     <string name="app_name">CloudStream</string>

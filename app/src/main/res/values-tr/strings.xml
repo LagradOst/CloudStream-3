@@ -47,7 +47,7 @@
     <string name="player_speed_text_format" formatted="true">Hız (%.2fx)</string>
     <string name="rated_format" formatted="true">Puan: %.1f</string>
     <string name="new_update_format" formatted="true">Yeni güncelleme bulundu!\n%s -> %s</string>
-    <string name="filler_format" formatted="true">(Doldurucu) %s</string>
+    <string name="filler" formatted="true">Doldurucu</string>
 
     <string name="app_name">CloudStream</string>
     <string name="title_home">Ana Sayfa</string>

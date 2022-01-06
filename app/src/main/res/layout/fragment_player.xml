@@ -7,6 +7,7 @@
         xmlns:tools="http://schemas.android.com/tools"
         android:orientation="horizontal"
         android:keepScreenOn="true"
+        android:id="@+id/player_background"
         app:backgroundTint="@android:color/black"
         android:background="@android:color/black"
         android:screenOrientation="sensorLandscape"

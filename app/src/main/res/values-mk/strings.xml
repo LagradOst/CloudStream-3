@@ -4,7 +4,7 @@
     <string name="player_speed_text_format" formatted="true">Брзина (%.2fx)</string>
     <string name="rated_format" formatted="true">Оценето: %.1f</string>
     <string name="new_update_format" formatted="true">Пронајдена нова верзија на апликацијата!\n%s -> %s</string>
-    <string name="filler_format" formatted="true">(Филтер) %s</string>
+    <string name="filler" formatted="true">Филтер</string>
 
     <string name="app_name">CloudStream</string>
     <string name="title_home">Дома</string>
