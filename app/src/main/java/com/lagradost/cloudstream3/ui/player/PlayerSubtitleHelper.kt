@@ -52,7 +52,7 @@ class PlayerSubtitleHelper {
     private var subtitleView: SubtitleView? = null
 
     companion object {
-        private fun String.toSubtitleMimeType(): String {
+        fun String.toSubtitleMimeType(): String {
             return when {
                 endsWith("vtt", true) -> MimeTypes.TEXT_VTT
                 endsWith("srt", true) -> MimeTypes.APPLICATION_SUBRIP

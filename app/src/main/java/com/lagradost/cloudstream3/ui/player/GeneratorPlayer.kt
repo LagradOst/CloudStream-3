@@ -14,15 +14,12 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.button.MaterialButton
 import com.hippo.unifile.UniFile
-import com.lagradost.cloudstream3.AcraApplication
-import com.lagradost.cloudstream3.MainActivity.Companion.showToast
-import com.lagradost.cloudstream3.R
-import com.lagradost.cloudstream3.isAnimeOp
-import com.lagradost.cloudstream3.isEpisodeBased
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.mvvm.Resource
 import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.mvvm.observe
-import com.lagradost.cloudstream3.ui.player.PlayerFragment.Companion.toSubtitleMimeType
+import com.lagradost.cloudstream3.ui.player.PlayerSubtitleHelper.Companion.toSubtitleMimeType
 import com.lagradost.cloudstream3.ui.result.ResultEpisode
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -341,17 +338,35 @@ class GeneratorPlayer : FullScreenPlayer() {
 
     @SuppressLint("SetTextI18n")
     fun setTitle() {
-        val meta = currentMeta
-        when (meta) {
+        var headerName: String? = null
+        var episode: Int? = null
+        var season: Int? = null
+        var tvType: TvType? = null
+
+        when (val meta = currentMeta) {
             is ResultEpisode -> {
-                player_video_title?.text = meta.headerName +
-                        if (meta.tvType.isEpisodeBased())
-                            if (meta.season == null)
-                                " - ${getString(R.string.episode)} ${meta.episode}"
-                            else
-                                " \"${getString(R.string.season_short)}${meta.season}:${getString(R.string.episode_short)}${meta.episode}\""
-                        else ""
+                headerName = meta.headerName
+                episode = meta.episode
+                season = meta.season
+                tvType = meta.tvType
             }
+            is ExtractorUri -> {
+                headerName = meta.headerName
+                episode = meta.episode
+                season = meta.season
+                tvType = meta.tvType
+            }
+        }
+        player_video_title?.text = if (headerName != null) {
+            headerName +
+                    if (tvType.isEpisodeBased() && episode != null)
+                        if (season == null)
+                            " - ${getString(R.string.episode)} $episode"
+                        else
+                            " \"${getString(R.string.season_short)}${season}:${getString(R.string.episode_short)}${episode}\""
+                    else ""
+        } else {
+            ""
         }
     }
 
@@ -405,9 +420,9 @@ class GeneratorPlayer : FullScreenPlayer() {
                 }
                 is Resource.Success -> {
                     // provider returned false
-                    if (it.value != true) {
-                        showToast(activity, R.string.unexpected_error, Toast.LENGTH_SHORT)
-                    }
+                    //if (it.value != true) {
+                    //    showToast(activity, R.string.unexpected_error, Toast.LENGTH_SHORT)
+                    //}
                     startPlayer()
                 }
                 is Resource.Failure -> {

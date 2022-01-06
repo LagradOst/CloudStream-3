@@ -28,7 +28,8 @@ import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastState
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
-import com.lagradost.cloudstream3.MainActivity
+import com.lagradost.cloudstream3.CommonActivity.keyEventListener
+import com.lagradost.cloudstream3.CommonActivity.playerEventListener
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
@@ -876,7 +877,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         fastForwardTime = getKey(PLAYBACK_FASTFORWARD) ?: 10000L
 
         // handle tv controls
-        MainActivity.playerEventListener = { eventType ->
+        playerEventListener = { eventType ->
             when (eventType) {
                 PlayerEventType.Lock -> {
                     toggleLock()
@@ -921,7 +922,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         }
 
         // handle tv controls directly based on player state
-        MainActivity.keyEventListener = { keyEvent ->
+        keyEventListener = { keyEvent ->
             if (keyEvent != null) {
                 handleKeyEvent(keyEvent)
             } else {

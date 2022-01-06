@@ -469,7 +469,8 @@ fun LoadResponse?.isAnimeBased(): Boolean {
     return (this.type == TvType.Anime || this.type == TvType.ONA) // && (this is AnimeLoadResponse)
 }
 
-fun TvType.isEpisodeBased() : Boolean {
+fun TvType?.isEpisodeBased() : Boolean {
+    if (this == null) return false
     return (this == TvType.TvSeries || this == TvType.Anime)
 }
 

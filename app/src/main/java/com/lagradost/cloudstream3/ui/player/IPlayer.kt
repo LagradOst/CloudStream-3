@@ -5,6 +5,25 @@ import com.lagradost.cloudstream3.ui.subtitles.SaveCaptionStyle
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorUri
 
+enum class PlayerEventType(val value: Int) {
+    //Stop(-1),
+    Pause(0),
+    Play(1),
+    SeekForward(2),
+    SeekBack(3),
+
+    //SkipCurrentChapter(4),
+    NextEpisode(5),
+    PrevEpisode(5),
+    PlayPauseToggle(7),
+    ToggleMute(8),
+    Lock(9),
+    ToggleHide(10),
+    ShowSpeed(11),
+    ShowMirrors(12),
+    Resize(13),
+}
+
 enum class CSPlayerEvent(val value: Int) {
     Pause(0),
     Play(1),
@@ -24,6 +43,19 @@ enum class CSPlayerLoading {
     IsBuffering,
     //IsDone,
 }
+
+//http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4
+const val STATE_RESUME_WINDOW = "resumeWindow"
+const val STATE_RESUME_POSITION = "resumePosition"
+const val STATE_PLAYER_FULLSCREEN = "playerFullscreen"
+const val STATE_PLAYER_PLAYING = "playerOnPlay"
+const val ACTION_MEDIA_CONTROL = "media_control"
+const val EXTRA_CONTROL_TYPE = "control_type"
+const val PLAYBACK_SPEED = "playback_speed"
+const val RESIZE_MODE_KEY = "resize_mode" // Last used resize mode
+const val PLAYBACK_SPEED_KEY = "playback_speed" // Last used playback speed
+const val PREFERRED_SUBS_KEY = "preferred_subtitles" // Last used resize mode
+const val PLAYBACK_FASTFORWARD = "playback_fastforward" // Last used resize mode
 
 /** Abstract Exoplayer logic, can be expanded to other players */
 interface IPlayer {

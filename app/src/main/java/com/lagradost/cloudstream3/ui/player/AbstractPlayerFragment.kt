@@ -25,8 +25,11 @@ import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.SubtitleView
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
-import com.lagradost.cloudstream3.MainActivity
-import com.lagradost.cloudstream3.MainActivity.Companion.showToast
+import com.lagradost.cloudstream3.CommonActivity.canEnterPipMode
+import com.lagradost.cloudstream3.CommonActivity.isInPIPMode
+import com.lagradost.cloudstream3.CommonActivity.keyEventListener
+import com.lagradost.cloudstream3.CommonActivity.playerEventListener
+import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.ui.subtitles.SaveCaptionStyle
@@ -104,7 +107,7 @@ abstract class AbstractPlayerFragment(
             }
         }
 
-        MainActivity.canEnterPipMode = isPlayingRightNow
+        canEnterPipMode = isPlayingRightNow
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             activity?.let { act ->
                 PlayerPipHelper.updatePIPModeActions(act, isPlayingRightNow)
@@ -115,7 +118,7 @@ abstract class AbstractPlayerFragment(
     private var pipReceiver: BroadcastReceiver? = null
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
         try {
-            MainActivity.isInPIPMode = isInPictureInPictureMode
+            isInPIPMode = isInPictureInPictureMode
             if (isInPictureInPictureMode) {
                 // Hide the full-screen UI (controls, etc.) while in picture-in-picture mode.
                 player_holder.alpha = 0f
@@ -270,8 +273,8 @@ abstract class AbstractPlayerFragment(
     }
 
     override fun onDestroy() {
-        MainActivity.playerEventListener = null
-        MainActivity.keyEventListener = null
+        playerEventListener = null
+        keyEventListener = null
         SubtitlesFragment.applyStyleEvent -= ::onSubStyleChanged
 
         // simply resets brightness and notch settings that might have been overridden

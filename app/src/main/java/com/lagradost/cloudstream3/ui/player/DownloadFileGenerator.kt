@@ -1,11 +1,18 @@
 package com.lagradost.cloudstream3.ui.player
 
+import com.lagradost.cloudstream3.AcraApplication.Companion.context
+import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.ui.player.PlayerSubtitleHelper.Companion.toSubtitleMimeType
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorUri
+import com.lagradost.cloudstream3.utils.VideoDownloadManager
 import kotlin.math.max
 import kotlin.math.min
 
-class DownloadFileGenerator(private val episodes: List<ExtractorUri>, private var currentIndex: Int = 0) : IGenerator {
+class DownloadFileGenerator(
+    private val episodes: List<ExtractorUri>,
+    private var currentIndex: Int = 0
+) : IGenerator {
     override val hasCache = false
 
     override fun hasNext(): Boolean {
@@ -31,7 +38,7 @@ class DownloadFileGenerator(private val episodes: List<ExtractorUri>, private va
         currentIndex = min(episodes.size - 1, max(0, index))
     }
 
-    override fun getCurrentId(): Int {
+    override fun getCurrentId(): Int? {
         return episodes[currentIndex].id
     }
 
@@ -45,7 +52,37 @@ class DownloadFileGenerator(private val episodes: List<ExtractorUri>, private va
         callback: (Pair<ExtractorLink?, ExtractorUri?>) -> Unit,
         subtitleCallback: (SubtitleData) -> Unit
     ): Boolean {
-        callback(Pair(null, episodes[currentIndex]))
+        val meta = episodes[currentIndex]
+        callback(Pair(null, meta))
+
+        context?.let { ctx ->
+            val relative = meta.relativePath
+            val display = meta.displayName
+
+            if (display == null || relative == null) {
+                return@let
+            }
+            VideoDownloadManager.getFolder(ctx, relative, meta.basePath)
+                ?.forEach { file ->
+                    val name = display.removeSuffix(".mp4")
+                    if (file.first != meta.displayName && file.first.startsWith(name)) {
+                        val realName = file.first.removePrefix(name)
+                            .removeSuffix(".vtt")
+                            .removeSuffix(".srt")
+                            .removeSuffix(".txt")
+
+                        subtitleCallback(
+                            SubtitleData(
+                                realName.ifBlank { ctx.getString(R.string.default_subtitles) },
+                                file.second.toString(),
+                                SubtitleOrigin.DOWNLOADED_FILE,
+                                name.toSubtitleMimeType()
+                            )
+                        )
+                    }
+                }
+        }
+
         return true
     }
 }

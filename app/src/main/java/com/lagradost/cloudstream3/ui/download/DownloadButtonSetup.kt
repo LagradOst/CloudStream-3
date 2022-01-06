@@ -4,12 +4,14 @@ import android.app.Activity
 import android.content.DialogInterface
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import com.lagradost.cloudstream3.MainActivity
+import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
+import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.ui.player.DownloadFileGenerator
 import com.lagradost.cloudstream3.ui.player.GeneratorPlayer
 import com.lagradost.cloudstream3.utils.AppUtils.getNameFull
+import com.lagradost.cloudstream3.utils.DOWNLOAD_HEADER_CACHE
 import com.lagradost.cloudstream3.utils.ExtractorUri
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.VideoDownloadHelper
@@ -86,9 +88,9 @@ object DownloadButtonSetup {
                         )?.fileLength
                             ?: 0
                     if (length > 0) {
-                        MainActivity.showToast(act, R.string.delete, Toast.LENGTH_LONG)
+                        showToast(act, R.string.delete, Toast.LENGTH_LONG)
                     } else {
-                        MainActivity.showToast(act, R.string.download, Toast.LENGTH_LONG)
+                        showToast(act, R.string.download, Toast.LENGTH_LONG)
                     }
                 }
             }
@@ -99,10 +101,14 @@ object DownloadButtonSetup {
                             act,
                             click.data.id
                         ) ?: return
-                    //val keyInfo = getKey<VideoDownloadManager.DownloadedFileInfo>(
-                    //    VideoDownloadManager.KEY_DOWNLOAD_INFO,
-                    //    click.data.id.toString()
-                    //) ?: return
+                    val keyInfo = getKey<VideoDownloadManager.DownloadedFileInfo>(
+                        VideoDownloadManager.KEY_DOWNLOAD_INFO,
+                        click.data.id.toString()
+                    ) ?: return
+                    val parent = getKey<VideoDownloadHelper.DownloadHeaderCached>(
+                        DOWNLOAD_HEADER_CACHE,
+                        click.data.parentId.toString()
+                    ) ?: return
 
                     act.navigate(
                         R.id.global_to_navigation_player, GeneratorPlayer.newInstance(
@@ -110,8 +116,17 @@ object DownloadButtonSetup {
                                 listOf(
                                     ExtractorUri(
                                         uri = info.path,
+
                                         id = click.data.id,
-                                        name = act.getString(R.string.downloaded_file) //click.data.name ?: keyInfo.displayName
+                                        name = act.getString(R.string.downloaded_file), //click.data.name ?: keyInfo.displayName
+                                        season = click.data.season,
+                                        episode = click.data.episode,
+                                        headerName = parent.name,
+                                        tvType = parent.type,
+
+                                        basePath = keyInfo.basePath,
+                                        displayName = keyInfo.displayName,
+                                        relativePath = keyInfo.relativePath,
                                     )
                                 ),
                                 0
