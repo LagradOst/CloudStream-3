@@ -107,8 +107,11 @@ class GogoanimeProvider : MainAPI() {
                 this.name,
                 TvType.Anime,
                 it.selectFirst("img").attr("src"),
-                it.selectFirst(".released")?.text()?.split(":")?.getOrNull(1)?.trim()?.toIntOrNull(),
-                if (it.selectFirst(".name").text().contains("Dub")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(
+                it.selectFirst(".released")?.text()?.split(":")?.getOrNull(1)?.trim()
+                    ?.toIntOrNull(),
+                if (it.selectFirst(".name").text()
+                        .contains("Dub")
+                ) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(
                     DubStatus.Subbed
                 ),
             )
@@ -192,16 +195,14 @@ class GogoanimeProvider : MainAPI() {
     }
 
     private fun extractVideos(uri: String, callback: (ExtractorLink) -> Unit) {
-        val html = app.get(uri).text
-        val doc = Jsoup.parse(html)
+        val doc = app.get(uri).document
 
-        val iframe = "https:" + doc.selectFirst("div.play-video > iframe").attr("src")
+        val iframe = fixUrlNull(doc.selectFirst("div.play-video > iframe").attr("src")) ?: return
+
         val link = iframe.replace("streaming.php", "download")
-
         val page = app.get(link, headers = mapOf("Referer" to iframe))
-        val pageDoc = Jsoup.parse(page.text)
 
-        pageDoc.select(".dowload > a").pmap {
+        page.document.select(".dowload > a").pmap {
             if (it.hasAttr("download")) {
                 val qual = if (it.text()
                         .contains("HDP")
@@ -221,6 +222,15 @@ class GogoanimeProvider : MainAPI() {
                 loadExtractor(url, null, callback)
             }
         }
+
+        val streamingResponse = app.get(iframe, headers = mapOf("Referer" to iframe))
+        streamingResponse.document.select(".list-server-items > .linkserver")
+            ?.forEach { element ->
+                val status = element.attr("data-status") ?: return@forEach
+                if (status != "1") return@forEach
+                val data = element.attr("data-video") ?: return@forEach
+                loadExtractor(data, streamingResponse.url, callback)
+            }
     }
 
     override fun loadLinks(
