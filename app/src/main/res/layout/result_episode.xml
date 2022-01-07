@@ -46,7 +46,7 @@
             android:layout_width="match_parent"
             tools:progress="50"
             android:layout_gravity="bottom"
-            android:layout_height="5dp"></androidx.core.widget.ContentLoadingProgressBar>
+            android:layout_height="5dp" />
 
     <LinearLayout
             android:foreground="?android:attr/selectableItemBackgroundBorderless"

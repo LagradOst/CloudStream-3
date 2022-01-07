@@ -127,8 +127,6 @@
                         android:nextFocusRight="@id/episode_holder"
                         android:id="@+id/result_episode_download"
 
-                        android:tint="?attr/white"
-
                         android:visibility="visible"
                         android:layout_marginEnd="10dp"
                         android:layout_marginStart="10dp"
@@ -138,7 +136,8 @@
                         android:layout_width="30dp"
                         android:background="?selectableItemBackgroundBorderless"
                         android:src="@drawable/ic_baseline_play_arrow_24"
-                        android:contentDescription="@string/download"/>
+                        android:contentDescription="@string/download"
+                        app:tint="?attr/white" />
             </FrameLayout>
         </LinearLayout>
         <TextView

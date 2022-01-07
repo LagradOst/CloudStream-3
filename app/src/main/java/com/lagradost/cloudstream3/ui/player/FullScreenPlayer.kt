@@ -170,7 +170,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         if (!isLocked) {
             player_ffwd_holder?.alpha = 1f
             player_rew_holder?.alpha = 1f
-           // player_pause_play_holder?.alpha = 1f
+            // player_pause_play_holder?.alpha = 1f
 
             shadow_overlay?.startAnimation(fadeAnimation)
             player_ffwd_holder?.startAnimation(fadeAnimation)
@@ -954,6 +954,13 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
                         ctx.getString(R.string.double_tap_enabled_key),
                         false
                     )
+
+                doubleTapPauseEnabled =
+                    settingsManager.getBoolean(
+                        ctx.getString(R.string.double_tap_pause_enabled_key),
+                        false
+                    )
+
                 currentPrefQuality = settingsManager.getInt(
                     ctx.getString(R.string.quality_pref_key),
                     currentPrefQuality

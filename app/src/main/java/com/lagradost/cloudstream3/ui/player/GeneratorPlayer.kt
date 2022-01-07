@@ -32,7 +32,6 @@ import kotlinx.android.synthetic.main.fragment_player.*
 import kotlinx.android.synthetic.main.player_custom_layout.*
 
 // TODO Auto select subtitles
-// TODO settings for pause play click
 class GeneratorPlayer : FullScreenPlayer() {
     companion object {
         private var lastUsedGenerator: IGenerator? = null
