@@ -49,6 +49,7 @@ class GeneratorPlayer : FullScreenPlayer() {
     private var currentMeta: Any? = null
     private var nextMeta: Any? = null
     private var isActive: Boolean = false
+    private var isNextEpisode: Boolean = false // this is used to reset the watch time
 
     private fun startLoading() {
         player.release()
@@ -88,8 +89,10 @@ class GeneratorPlayer : FullScreenPlayer() {
                 sameEpisode,
                 url,
                 uri,
-                startPosition = if (sameEpisode) null else (DataStoreHelper.getViewPos(viewModel.getId())?.position
-                    ?: 0L),
+                startPosition = if (sameEpisode) null else {
+                    if (isNextEpisode) 0L else (DataStoreHelper.getViewPos(viewModel.getId())?.position
+                        ?: 0L)
+                },
                 currentSubs,
             )
         }
@@ -293,10 +296,12 @@ class GeneratorPlayer : FullScreenPlayer() {
     }
 
     override fun nextEpisode() {
+        isNextEpisode = true
         viewModel.loadLinksNext()
     }
 
     override fun prevEpisode() {
+        isNextEpisode = true
         viewModel.loadLinksPrev()
     }
 
@@ -325,9 +330,9 @@ class GeneratorPlayer : FullScreenPlayer() {
 
         val nextEp = percentage >= NEXT_WATCH_EPISODE_PERCENTAGE
         val resumeMeta = if (nextEp) nextMeta else currentMeta
-        if(resumeMeta == null && nextEp) {
+        if (resumeMeta == null && nextEp) {
             // remove last watched as it is the last episode and you have watched too much
-            when(val newMeta = currentMeta) {
+            when (val newMeta = currentMeta) {
                 is ResultEpisode -> {
                     DataStoreHelper.removeLastWatched(newMeta.parentId)
                 }
@@ -339,10 +344,22 @@ class GeneratorPlayer : FullScreenPlayer() {
             // save resume
             when (resumeMeta) {
                 is ResultEpisode -> {
-                    DataStoreHelper.setLastWatched(resumeMeta.parentId, resumeMeta.id, resumeMeta.episode, resumeMeta.season, isFromDownload = false)
+                    DataStoreHelper.setLastWatched(
+                        resumeMeta.parentId,
+                        resumeMeta.id,
+                        resumeMeta.episode,
+                        resumeMeta.season,
+                        isFromDownload = false
+                    )
                 }
                 is ExtractorUri -> {
-                    DataStoreHelper.setLastWatched(resumeMeta.parentId, resumeMeta.id, resumeMeta.episode, resumeMeta.season, isFromDownload = true)
+                    DataStoreHelper.setLastWatched(
+                        resumeMeta.parentId,
+                        resumeMeta.id,
+                        resumeMeta.episode,
+                        resumeMeta.season,
+                        isFromDownload = true
+                    )
                 }
             }
         }
