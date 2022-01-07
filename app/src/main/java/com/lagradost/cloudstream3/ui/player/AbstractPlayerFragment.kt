@@ -53,6 +53,9 @@ const val SKIP_OP_VIDEO_PERCENTAGE = 50
 // when the player should preload the next episode for faster loading
 const val PRELOAD_NEXT_EPISODE_PERCENTAGE = 80
 
+// when the player should mark the episode as watched and resume watching the next
+const val NEXT_WATCH_EPISODE_PERCENTAGE = 95
+
 abstract class AbstractPlayerFragment(
     @LayoutRes val layout: Int,
     val player: IPlayer = CS3IPlayer()
@@ -245,7 +248,8 @@ abstract class AbstractPlayerFragment(
             playerDimensionsLoaded = ::playerDimensionsLoaded,
             requestedListeningPercentages = listOf(
                 SKIP_OP_VIDEO_PERCENTAGE,
-                PRELOAD_NEXT_EPISODE_PERCENTAGE
+                PRELOAD_NEXT_EPISODE_PERCENTAGE,
+                NEXT_WATCH_EPISODE_PERCENTAGE,
             )
         )
 

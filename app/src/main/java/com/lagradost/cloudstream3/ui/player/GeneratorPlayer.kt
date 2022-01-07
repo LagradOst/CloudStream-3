@@ -47,6 +47,7 @@ class GeneratorPlayer : FullScreenPlayer() {
     private var currentSelectedLink: Pair<ExtractorLink?, ExtractorUri?>? = null
     private var currentSelectedSubtitles: SubtitleData? = null
     private var currentMeta: Any? = null
+    private var nextMeta: Any? = null
     private var isActive: Boolean = false
 
     private fun startLoading() {
@@ -74,6 +75,7 @@ class GeneratorPlayer : FullScreenPlayer() {
         uiReset()
         currentSelectedLink = link
         currentMeta = viewModel.getMeta()
+        nextMeta = viewModel.getNextMeta()
         isActive = true
         setPlayerDimen(null)
         setTitle()
@@ -170,7 +172,7 @@ class GeneratorPlayer : FullScreenPlayer() {
         context?.let { ctx ->
             val isPlaying = player.getIsPlaying()
             player.handleEvent(CSPlayerEvent.Pause)
-            val currentSubtitles = currentSubs.toList().sortedBy { it.name }
+            val currentSubtitles = sortSubs(currentSubs)
 
             val sourceBuilder = AlertDialog.Builder(ctx, R.style.AlertDialogCustomBlack)
                 .setView(R.layout.player_select_source_and_subs)
@@ -319,8 +321,32 @@ class GeneratorPlayer : FullScreenPlayer() {
         viewModel.getId()?.let {
             DataStoreHelper.setViewPos(it, position, duration)
         }
-
         val percentage = position * 100L / duration
+
+        val nextEp = percentage >= NEXT_WATCH_EPISODE_PERCENTAGE
+        val resumeMeta = if (nextEp) nextMeta else currentMeta
+        if(resumeMeta == null && nextEp) {
+            // remove last watched as it is the last episode and you have watched too much
+            when(val newMeta = currentMeta) {
+                is ResultEpisode -> {
+                    DataStoreHelper.removeLastWatched(newMeta.parentId)
+                }
+                is ExtractorUri -> {
+                    DataStoreHelper.removeLastWatched(newMeta.parentId)
+                }
+            }
+        } else {
+            // save resume
+            when (resumeMeta) {
+                is ResultEpisode -> {
+                    DataStoreHelper.setLastWatched(resumeMeta.parentId, resumeMeta.id, resumeMeta.episode, resumeMeta.season, isFromDownload = false)
+                }
+                is ExtractorUri -> {
+                    DataStoreHelper.setLastWatched(resumeMeta.parentId, resumeMeta.id, resumeMeta.episode, resumeMeta.season, isFromDownload = true)
+                }
+            }
+        }
+
         var isOpVisible = false
         when (val meta = currentMeta) {
             is ResultEpisode -> {
@@ -357,6 +383,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                 tvType = meta.tvType
             }
         }
+
         player_video_title?.text = if (headerName != null) {
             headerName +
                     if (tvType.isEpisodeBased() && episode != null)

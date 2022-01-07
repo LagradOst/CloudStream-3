@@ -118,6 +118,7 @@ object DownloadButtonSetup {
                                         uri = info.path,
 
                                         id = click.data.id,
+                                        parentId = click.data.parentId,
                                         name = act.getString(R.string.downloaded_file), //click.data.name ?: keyInfo.displayName
                                         season = click.data.season,
                                         episode = click.data.episode,

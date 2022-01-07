@@ -51,7 +51,7 @@ class PlayerGeneratorViewModel : ViewModel() {
     }
 
     fun preLoadNextLinks() = viewModelScope.launch {
-        safeApiCall {
+        normalSafeApiCall {
             if (generator?.hasCache == true && generator?.hasNext() == true) {
                 generator?.next()
                 generator?.generateLinks(clearCache = false, isCasting = false, {}, {})
@@ -62,6 +62,16 @@ class PlayerGeneratorViewModel : ViewModel() {
 
     fun getMeta(): Any? {
         return normalSafeApiCall { generator?.getCurrent() }
+    }
+
+    fun getNextMeta(): Any? {
+        return normalSafeApiCall {
+            if (generator?.hasNext() == false) return@normalSafeApiCall null
+            generator?.next()
+            val next = generator?.getCurrent()
+            generator?.prev()
+            next
+        }
     }
 
     fun attachGenerator(newGenerator: IGenerator?) {
@@ -79,7 +89,6 @@ class PlayerGeneratorViewModel : ViewModel() {
     fun loadLinks(clearCache: Boolean = false, isCasting: Boolean = false) = viewModelScope.launch {
         val currentLinks = mutableSetOf<Pair<ExtractorLink?, ExtractorUri?>>()
         val currentSubs = mutableSetOf<SubtitleData>()
-
 
         _loadingLinks.postValue(Resource.Loading())
         val loadingState = safeApiCall {

@@ -8,7 +8,7 @@ import com.lagradost.cloudstream3.utils.ExtractorUri
 import kotlin.math.max
 import kotlin.math.min
 
-class RepoLinkGenerator(private val episodes: List<ResultEpisode>, private var currentIndex: Int) : IGenerator {
+class RepoLinkGenerator(private val episodes: List<ResultEpisode>, private var currentIndex: Int = 0) : IGenerator {
     override val hasCache = true
 
     override fun hasNext(): Boolean {
@@ -111,6 +111,7 @@ class RepoLinkGenerator(private val episodes: List<ResultEpisode>, private var c
                     if (!currentLinkCache.contains(link)) {
                         currentLinks.add(link.url)
                         callback(Pair(link, null))
+                        currentLinkCache.add(link)
                         linkCache[index] = currentLinkCache
                     }
                 }

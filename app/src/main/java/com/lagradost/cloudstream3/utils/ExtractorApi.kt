@@ -27,6 +27,7 @@ data class ExtractorUri(
     val displayName: String? = null,
 
     val id : Int? = null,
+    val parentId : Int? = null,
     val episode : Int? = null,
     val season : Int? = null,
     val headerName : String? = null,
