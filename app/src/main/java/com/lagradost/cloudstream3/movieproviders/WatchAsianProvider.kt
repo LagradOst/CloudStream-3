@@ -144,9 +144,7 @@ class WatchAsianProvider : MainAPI() {
         //If there's only 1 episode, consider it a movie.
         if (episodeList.size == 1) {
             //Clean title
-            if (title.endsWith("Episode 1")) {
-                title = title.substring(0, title.length - "Episode 1".length)
-            }
+            title = title.removeSuffix("Episode 1")
             val streamlink = getServerLinks(episodeList[0].data)
             //Log.i(this.name, "Result => (streamlink) $streamlink")
             return MovieLoadResponse(title, url, this.name, TvType.Movie, streamlink, poster, year, descript, null, null)
