@@ -1,10 +1,11 @@
 package com.lagradost.cloudstream3.utils
 
+import android.net.Uri
+import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.*
 import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
-import com.lagradost.cloudstream3.network.text
 import org.jsoup.Jsoup
 
 data class ExtractorLink(
@@ -16,6 +17,22 @@ data class ExtractorLink(
     val isM3u8: Boolean = false,
     override val headers: Map<String, String> = mapOf()
 ) : VideoDownloadManager.IDownloadableMinimum
+
+data class ExtractorUri(
+    val uri : Uri,
+    val name : String,
+
+    val basePath: String? = null,
+    val relativePath: String? = null,
+    val displayName: String? = null,
+
+    val id : Int? = null,
+    val parentId : Int? = null,
+    val episode : Int? = null,
+    val season : Int? = null,
+    val headerName : String? = null,
+    val tvType: TvType? = null,
+)
 
 data class ExtractorSubtitleLink(
     val name: String,
@@ -80,8 +97,10 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     XStreamCdn(),
     StreamSB(),
     Streamhub(),
-    SBPlay(),
+
     FEmbed(),
+    FeHD(),
+    Fplayer(),
     WatchSB(),
     Uqload(),
     Evoload(),
@@ -92,8 +111,13 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     DoodToExtractor(),
     DoodSoExtractor(),
     DoodLaExtractor(),
+    DoodWsExtractor(),
 
-    AsianLoad()
+    AsianLoad(),
+
+    SBPlay(),
+    SBPlay1(),
+    SBPlay2(),
 )
 
 fun getExtractorApiFromName(name: String): ExtractorApi {
@@ -127,8 +151,7 @@ fun getPostForm(requestUrl : String, html : String) : String? {
             "id" -> id = value
             "mode" -> mode = value
             "hash" -> hash = value
-            else -> {
-            }
+            else -> Unit
         }
     }
     if (op == null || id == null || mode == null || hash == null) {

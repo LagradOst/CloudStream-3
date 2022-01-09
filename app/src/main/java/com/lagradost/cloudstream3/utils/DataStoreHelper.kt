@@ -119,11 +119,12 @@ object DataStoreHelper {
 
     fun setViewPos(id: Int?, pos: Long, dur: Long) {
         if (id == null) return
-        if (dur < 10_000) return // too short
+        if (dur < 30_000) return // too short
         setKey("$currentAccount/$VIDEO_POS_DUR", id.toString(), PosDur(pos, dur))
     }
 
-    fun getViewPos(id: Int): PosDur? {
+    fun getViewPos(id: Int?): PosDur? {
+        if(id == null) return null
         return getKey("$currentAccount/$VIDEO_POS_DUR", id.toString(), null)
     }
 

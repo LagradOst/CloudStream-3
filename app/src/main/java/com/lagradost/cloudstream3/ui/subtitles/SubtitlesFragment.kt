@@ -21,8 +21,9 @@ import com.google.android.exoplayer2.ui.CaptionStyleCompat
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
-import com.lagradost.cloudstream3.MainActivity
-import com.lagradost.cloudstream3.MainActivity.Companion.showToast
+import com.lagradost.cloudstream3.CommonActivity.onColorSelectedEvent
+import com.lagradost.cloudstream3.CommonActivity.onDialogDismissedEvent
+import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.utils.DataStore.setKey
 import com.lagradost.cloudstream3.utils.Event
@@ -63,8 +64,15 @@ class SubtitlesFragment : Fragment() {
         fun Context.fromSaveToStyle(data: SaveCaptionStyle): CaptionStyleCompat {
             val typeface = data.typeface
             return CaptionStyleCompat(
-                data.foregroundColor, data.backgroundColor, data.windowColor, data.edgeType, data.edgeColor,
-                if (typeface == null) Typeface.SANS_SERIF else ResourcesCompat.getFont(this, typeface)
+                data.foregroundColor,
+                data.backgroundColor,
+                data.windowColor,
+                data.edgeType,
+                data.edgeColor,
+                if (typeface == null) Typeface.SANS_SERIF else ResourcesCompat.getFont(
+                    this,
+                    typeface
+                )
             )
         }
 
@@ -138,8 +146,7 @@ class SubtitlesFragment : Fragment() {
             2 -> state.backgroundColor = realColor
             3 -> state.windowColor = realColor
 
-            else -> {
-            }
+            else -> Unit
         }
         updateState()
     }
@@ -174,14 +181,14 @@ class SubtitlesFragment : Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-        MainActivity.onColorSelectedEvent -= ::onColorSelected
+        onColorSelectedEvent -= ::onColorSelected
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         hide = arguments?.getBoolean("hide") ?: true
-        MainActivity.onColorSelectedEvent += ::onColorSelected
-        MainActivity.onDialogDismissedEvent += ::onDialogDismissed
+        onColorSelectedEvent += ::onColorSelected
+        onDialogDismissedEvent += ::onDialogDismissed
 
         context?.fixPaddingStatusbar(subs_root)
 
@@ -256,11 +263,26 @@ class SubtitlesFragment : Fragment() {
 
         subs_edge_type.setOnClickListener { textView ->
             val edgeTypes = listOf(
-                Pair(CaptionStyleCompat.EDGE_TYPE_NONE, textView.context.getString(R.string.subtitles_none)),
-                Pair(CaptionStyleCompat.EDGE_TYPE_OUTLINE, textView.context.getString(R.string.subtitles_outline)),
-                Pair(CaptionStyleCompat.EDGE_TYPE_DEPRESSED, textView.context.getString(R.string.subtitles_depressed)),
-                Pair(CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW, textView.context.getString(R.string.subtitles_shadow)),
-                Pair(CaptionStyleCompat.EDGE_TYPE_RAISED, textView.context.getString(R.string.subtitles_raised)),
+                Pair(
+                    CaptionStyleCompat.EDGE_TYPE_NONE,
+                    textView.context.getString(R.string.subtitles_none)
+                ),
+                Pair(
+                    CaptionStyleCompat.EDGE_TYPE_OUTLINE,
+                    textView.context.getString(R.string.subtitles_outline)
+                ),
+                Pair(
+                    CaptionStyleCompat.EDGE_TYPE_DEPRESSED,
+                    textView.context.getString(R.string.subtitles_depressed)
+                ),
+                Pair(
+                    CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW,
+                    textView.context.getString(R.string.subtitles_shadow)
+                ),
+                Pair(
+                    CaptionStyleCompat.EDGE_TYPE_RAISED,
+                    textView.context.getString(R.string.subtitles_raised)
+                ),
             )
 
             //showBottomDialog
@@ -375,7 +397,15 @@ class SubtitlesFragment : Fragment() {
 
         subs_auto_select_language.setOnClickListener { textView ->
             val langMap = arrayListOf(
-                SubtitleHelper.Language639("None", "None", "", "", "", "", ""),
+                SubtitleHelper.Language639(
+                    textView.context.getString(R.string.none),
+                    textView.context.getString(R.string.none),
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                ),
             )
             langMap.addAll(SubtitleHelper.languages)
 
@@ -438,7 +468,8 @@ class SubtitlesFragment : Fragment() {
                         getPixels(TypedValue.COMPLEX_UNIT_SP, 25.0f).toFloat(),
                         Cue.TEXT_SIZE_TYPE_ABSOLUTE
                     )
-                    .setText(subtitle_text.context.getString(R.string.subtitles_example_text)).build()
+                    .setText(subtitle_text.context.getString(R.string.subtitles_example_text))
+                    .build()
             )
         )
     }
