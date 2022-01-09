@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import android.util.Log
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -114,8 +115,8 @@ class WatchAsianProvider : MainAPI() {
             descript = inner?.text()
         } else {
             poster = body.select("meta[itemprop=\"image\"]")?.attr("content") ?: ""
-            title = body.select("div.block.watch-drama")?.select("h1")
-                ?.first()?.text() ?: ""
+            title = body.selectFirst("div.block.watch-drama")?.selectFirst("h1")
+                ?.text() ?: ""
             year = null
             descript = body.select("meta[name=\"description\"]")?.attr("content")
         }
@@ -132,7 +133,7 @@ class WatchAsianProvider : MainAPI() {
             val count = regex.find(epLink, mainUrl.length)?.value?.toIntOrNull() ?: 0
             //Log.i(this.name, "Result => $epLink (regexYear) ${count}")
             TvSeriesEpisode(
-                name = "Episode $count",
+                name = null,
                 season = null,
                 episode = count,
                 data = epLink,
@@ -142,6 +143,10 @@ class WatchAsianProvider : MainAPI() {
         } ?: listOf()
         //If there's only 1 episode, consider it a movie.
         if (episodeList.size == 1) {
+            //Clean title
+            if (title.endsWith("Episode 1")) {
+                title = title.substring(0, title.length - "Episode 1".length)
+            }
             val streamlink = getServerLinks(episodeList[0].data)
             //Log.i(this.name, "Result => (streamlink) $streamlink")
             return MovieLoadResponse(title, url, this.name, TvType.Movie, streamlink, poster, year, descript, null, null)
@@ -173,11 +178,9 @@ class WatchAsianProvider : MainAPI() {
         val links = if (data.startsWith(mainUrl)) {
             getServerLinks(data)
         } else { data }
-        links.replace("[", "")
-            .replace("]", "")
-            .split("\",")
+        mapper.readValue<List<String>>(links)
             .forEach { item ->
-                var url = item.replace("\"", "").trim()
+                var url = item.trim()
                 if (url.startsWith("//")) {
                     url = "https:$url"
                 }
@@ -190,8 +193,8 @@ class WatchAsianProvider : MainAPI() {
     private fun getServerLinks(url: String) : String {
         val moviedoc = app.get(url, referer = mainUrl).document
         return moviedoc.select("div.anime_muti_link > ul > li")
-            ?.map {
-                fixUrlNull(it?.attr("data-video")) ?: return@map null
-            }?.filterNotNull()?.toJson() ?: ""
+            ?.mapNotNull {
+                fixUrlNull(it?.attr("data-video")) ?: return@mapNotNull null
+            }?.toJson() ?: ""
     }
 }
