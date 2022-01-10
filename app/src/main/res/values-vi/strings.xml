@@ -6,8 +6,7 @@
     <string name="filler" formatted="true">Bộ lọc</string>
     <string name="duration_format" formatted="true">%d phút</string>
 
-    <string name="app_name">CloudStream</string>
-	<string name="title_home">Trang Chủ</string>
+    <string name="title_home">Trang Chủ</string>
     <string name="title_search">Tìm Kiếm</string>
     <string name="title_downloads">Tải Về</string>
     <string name="title_settings">Cài Đặt</string>
@@ -109,7 +108,6 @@
     <string name="player_size_settings_des">Điều này sẽ xóa khoảng đen của phim</string>
     <string name="player_subtitles_settings">Phụ đề</string>
     <string name="player_subtitles_settings_des">Cài đặt phụ đề</string>
-	<string name="eigengraumode_settings">Chế độ Eigengravy</string>
     <string name="eigengraumode_settings">Điều chỉnh tốc độ khi xem phim</string>
     <string name="eigengraumode_settings_des">Có thể điều chỉnh tốc độ phát phim</string>
     <string name="swipe_to_seek_settings">Vuốt để tua nhanh</string>
@@ -130,7 +128,7 @@
     <string name="advanced_search_des">Cho phép tìm kiếm theo bộ lọc từng nhà cung cấp</string>
     <string name="bug_report_settings_off">Chỉ gửi dữ liệu khi xảy ra lỗi đến nhà phát triển</string>
     <string name="bug_report_settings_on">Không gửi dữ liệu</string>
-	<string name="show_fillers_settings">Hiển thị tập phụ cho anime</string>
+    <string name="show_fillers_settings">Hiển thị tập phụ cho anime</string>
     <string name="updates_settings">Hiển thị thông báo cập nhật App</string>
     <string name="updates_settings_des">Tự động tìm kiếm và thông báo khi có bản cập nhật mới</string>
     <string name="uprereleases_settings">Cập nhật phiên bản Beta</string>
