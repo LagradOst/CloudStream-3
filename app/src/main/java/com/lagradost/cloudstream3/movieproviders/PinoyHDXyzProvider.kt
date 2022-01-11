@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import java.lang.Exception
 
 class PinoyHDXyzProvider : MainAPI() {
     override val name = "Pinoy-HD"
@@ -141,16 +142,18 @@ class PinoyHDXyzProvider : MainAPI() {
 
         var extraLinks = body?.select("div.tabcontent.hide")?.text()
         if (!extraLinks.isNullOrEmpty()) {
-            extraLinks = extraLinks.substring(extraLinks.indexOf("_x_Polus1"))
-            extraLinks = extraLinks.trim().substring("_x_Polus1".length)
-            extraLinks = extraLinks.substring(0, extraLinks.indexOf("<script>"))
-            extraLinks.split("_x_Polus").forEach { item ->
-                if (item.contains("https://")) {
-                    val lnkurl = item.substring(item.indexOf("https://")).trim()
-                    listOfLinks.add(lnkurl)
-                    Log.i(this.name, "Result => (lnkurl) $lnkurl")
+            try {
+                extraLinks = extraLinks.substring(extraLinks.indexOf("_x_Polus1"))
+                extraLinks = extraLinks.trim().substring("_x_Polus1".length)
+                extraLinks = extraLinks.substring(0, extraLinks.indexOf("<script>"))
+                extraLinks.split("_x_Polus").forEach { item ->
+                    if (item.contains("https://")) {
+                        val lnkurl = item.substring(item.indexOf("https://")).trim()
+                        listOfLinks.add(lnkurl)
+                        //Log.i(this.name, "Result => (lnkurl) $lnkurl")
+                    }
                 }
-            }
+            } catch (e: Exception) { }
         }
 
         // Parse episodes if series
@@ -170,7 +173,7 @@ class PinoyHDXyzProvider : MainAPI() {
                     epListText.split(',').forEach { ep ->
                         count++
                         val listEpStream = listOf(ep.trim()).toJson()
-                        Log.i(this.name, "Result => (ep $count) $listEpStream")
+                        //Log.i(this.name, "Result => (ep $count) $listEpStream")
                         episodeList.add(
                             TvSeriesEpisode(
                                 name = null,
