@@ -7,6 +7,7 @@ import android.app.AppOpsManager
 import android.app.Dialog
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Color
 import android.os.Build
@@ -66,6 +67,19 @@ object UIHelper {
             ),
             1337
         )
+    }
+
+    fun Activity?.getSpanCount() : Int? {
+        val compactView = this?.getGridIsCompact() ?: return null
+        val spanCountLandscape = if (compactView) 2 else 6
+        val spanCountPortrait = if (compactView) 1 else 3
+        val orientation = this.resources?.configuration?.orientation ?: return null
+
+        return if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            spanCountLandscape
+        } else {
+            spanCountPortrait
+        }
     }
 
     fun Fragment.hideKeyboard() {
@@ -327,6 +341,12 @@ object UIHelper {
 
     fun Dialog?.dismissSafe(activity: Activity?) {
         if (this?.isShowing == true && activity?.isFinishing == false) {
+            this.dismiss()
+        }
+    }
+
+    fun Dialog?.dismissSafe() {
+        if (this?.isShowing == true) {
             this.dismiss()
         }
     }

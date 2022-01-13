@@ -75,7 +75,7 @@ class AllMoviesForYouProvider : MainAPI() {
         val title = document.selectFirst("h1.Title").text()
         val descipt = document.selectFirst("div.Description > p").text()
         val rating =
-            document.selectFirst("div.Vote > div.post-ratings > span")?.text()?.toFloatOrNull()?.times(10)?.toInt()
+            document.selectFirst("div.Vote > div.post-ratings > span")?.text()?.toFloatOrNull()?.times(1000)?.toInt()
         val year = document.selectFirst("span.Date")?.text()
         val duration = document.selectFirst("span.Time").text()
         val backgroundPoster = fixUrl(document.selectFirst("div.Image > figure > img").attr("data-src"))
@@ -136,19 +136,13 @@ class AllMoviesForYouProvider : MainAPI() {
             val data = getLink(document)
                 ?: throw ErrorLoadingException("No Links Found")
 
-            return MovieLoadResponse(
-                title,
-                url,
-                this.name,
-                type,
-                mapper.writeValueAsString(data.filter { it != "about:blank" }),
-                backgroundPoster,
-                year?.toIntOrNull(),
-                descipt,
-                null,
-                rating,
-                duration = duration
-            )
+            return newMovieLoadResponse(title,url,type,mapper.writeValueAsString(data.filter { it != "about:blank" })) {
+               posterUrl = backgroundPoster
+                this.year = year?.toIntOrNull()
+                this.plot = descipt
+                this.rating = rating
+                setDuration(duration)
+            }
         }
     }
 

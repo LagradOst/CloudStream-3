@@ -10,9 +10,8 @@ import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import com.google.android.gms.common.api.PendingResult
 import com.google.android.gms.common.images.WebImage
-import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.sortSubs
 import com.lagradost.cloudstream3.ui.MetadataHolder
+import com.lagradost.cloudstream3.ui.player.SubtitleData
 import com.lagradost.cloudstream3.ui.result.ResultEpisode
 import com.lagradost.cloudstream3.utils.Coroutines.main
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +27,7 @@ object CastHelper {
         holder: MetadataHolder,
         index: Int,
         data: JSONObject?,
-        subtitles: List<SubtitleFile>
+        subtitles: List<SubtitleData>
     ): MediaInfo {
         val link = holder.currentLinks[index]
         val movieMetadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE)
@@ -40,7 +39,9 @@ object CastHelper {
                 (epData.name ?: "Episode ${epData.episode}") + " - ${link.name}"
         )
 
-        movieMetadata.putString(MediaMetadata.KEY_TITLE, holder.title)
+        holder.title?.let {
+            movieMetadata.putString(MediaMetadata.KEY_TITLE, it)
+        }
 
         val srcPoster = epData.poster ?: holder.poster
         if (srcPoster != null) {
@@ -48,9 +49,9 @@ object CastHelper {
         }
 
         var subIndex = 0
-        val tracks = sortSubs(subtitles).map {
+        val tracks = subtitles.map {
             MediaTrack.Builder(subIndex++.toLong(), MediaTrack.TYPE_TEXT)
-                .setName(it.lang)
+                .setName(it.name)
                 .setSubtype(MediaTrack.SUBTYPE_SUBTITLES)
                 .setContentId(it.url)
                 .build()
@@ -58,7 +59,7 @@ object CastHelper {
 
         val builder = MediaInfo.Builder(link.url)
             .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
-            .setContentType(MimeTypes.VIDEO_UNKNOWN)
+            .setContentType(if (link.isM3u8) MimeTypes.APPLICATION_M3U8 else MimeTypes.VIDEO_MP4)
             .setMetadata(movieMetadata)
             .setMediaTracks(tracks)
         data?.let {
@@ -77,9 +78,7 @@ object CastHelper {
                     callback.invoke(true)
                     println("FAILED AND LOAD NEXT")
                 }
-                else -> {
-                    //IDK DO SMTH HERE
-                }
+                else -> Unit //IDK DO SMTH HERE
             }
         }
     }
@@ -92,11 +91,11 @@ object CastHelper {
         currentEpisodeIndex: Int,
         episodes: List<ResultEpisode>,
         currentLinks: List<ExtractorLink>,
-        subtitles: List<SubtitleFile>,
+        subtitles: List<SubtitleData>,
         startIndex: Int? = null,
         startTime: Long? = null,
-    ) : Boolean {
-        if(this == null) return false
+    ): Boolean {
+        if (this == null) return false
         if (episodes.isEmpty()) return false
         if (currentLinks.size <= currentEpisodeIndex) return false
 
@@ -105,13 +104,15 @@ object CastHelper {
         val holder =
             MetadataHolder(apiName, isMovie, title, poster, currentEpisodeIndex, episodes, currentLinks, subtitles)
 
-        val index = if(startIndex == null || startIndex < 0) 0 else startIndex
+        val index = if (startIndex == null || startIndex < 0) 0 else startIndex
 
         val mediaItem =
             getMediaInfo(epData, holder, index, JSONObject(mapper.writeValueAsString(holder)), subtitles)
 
         awaitLinks(
-            this.remoteMediaClient?.load(MediaLoadRequestData.Builder().setMediaInfo(mediaItem).setCurrentTime(startTime ?: 0L).build() )
+            this.remoteMediaClient?.load(
+                MediaLoadRequestData.Builder().setMediaInfo(mediaItem).setCurrentTime(startTime ?: 0L).build()
+            )
         ) {
             if (currentLinks.size > index + 1)
                 startCast(

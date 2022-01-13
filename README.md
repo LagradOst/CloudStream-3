@@ -1,6 +1,9 @@
 # CloudStream-3
 
+<!-- ![Maintenance](https://img.shields.io/maintenance/yes/2022?color=blue&style=for-the-badge) -->
 ![GitHub release](https://img.shields.io/github/v/release/LagradOst/cloudstream-3?sort=semver&style=for-the-badge)
+![Downloads](https://img.shields.io/github/downloads/lagradost/CloudStream-3/total?color=blue&style=for-the-badge)
+![Build](https://img.shields.io/github/workflow/status/lagradost/CloudStream-3/Pre-release?style=for-the-badge)
 [![Discord](https://img.shields.io/discord/737724143126052974?style=for-the-badge)](https://discord.gg/5Hus6fM)
 
 
@@ -55,6 +58,7 @@ It merely scrapes 3rd-party websites that are publicly accessable via any regula
 ***Sites used:***
 <!-- Do not remove those two comments -->
 <!--SITE LIST START-->
+- [pelisplus.icu](https://pelisplus.icu) 
 - [gogoanime.wiki](https://gogoanime.wiki) 
 - [allanime.site](https://allanime.site) 
 - [animeflick.net](https://animeflick.net) 
@@ -70,7 +74,13 @@ It merely scrapes 3rd-party websites that are publicly accessable via any regula
 - [vf-film.me](https://vf-film.me) 
 - [vf-serie.org](https://vf-serie.org) 
 - [asianembed.io](https://asianembed.io) 
-- [trailers.to](https://trailers.to) 
+- [filman.cc](https://filman.cc) 
 - [zoro.to](https://zoro.to) 
+- [pinoymoviepedia.ru](https://pinoymoviepedia.ru) 
+- [pinoy-hd.xyz](https://www.pinoy-hd.xyz) 
+- [trailers.to](https://trailers.to) 
+- [dramasee.net](https://dramasee.net) 
+- [watchasian.sh](https://watchasian.sh) 
+- [kdramahood.com](https://kdramahood.com) 
 - [asiaflix.app](https://asiaflix.app) 
 <!--SITE LIST END-->

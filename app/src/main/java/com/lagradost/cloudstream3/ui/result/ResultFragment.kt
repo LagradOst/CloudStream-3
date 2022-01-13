@@ -3,11 +3,11 @@ package com.lagradost.cloudstream3.ui.result
 import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.Context
 import android.content.Context.CLIPBOARD_SERVICE
 import android.content.Intent
 import android.content.Intent.*
 import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,14 +15,16 @@ import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -33,36 +35,42 @@ import com.google.android.material.button.MaterialButton
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.getApiFromName
 import com.lagradost.cloudstream3.APIHolder.getId
-import com.lagradost.cloudstream3.MainActivity.Companion.getCastSession
-import com.lagradost.cloudstream3.MainActivity.Companion.showToast
-import com.lagradost.cloudstream3.mvvm.Resource
-import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
-import com.lagradost.cloudstream3.mvvm.observe
+import com.lagradost.cloudstream3.CommonActivity.getCastSession
+import com.lagradost.cloudstream3.CommonActivity.showToast
+import com.lagradost.cloudstream3.mvvm.*
+import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.SyncApis
+import com.lagradost.cloudstream3.syncproviders.SyncAPI
 import com.lagradost.cloudstream3.ui.WatchType
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_ACTION_DOWNLOAD
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_NAVIGATE_TO
 import com.lagradost.cloudstream3.ui.download.DownloadButtonSetup.handleDownloadClick
 import com.lagradost.cloudstream3.ui.download.EasyDownloadButton
-import com.lagradost.cloudstream3.ui.player.PlayerData
-import com.lagradost.cloudstream3.ui.player.PlayerFragment
+import com.lagradost.cloudstream3.ui.player.GeneratorPlayer
+import com.lagradost.cloudstream3.ui.player.SubtitleData
 import com.lagradost.cloudstream3.ui.quicksearch.QuickSearchFragment
+import com.lagradost.cloudstream3.ui.search.SearchAdapter
+import com.lagradost.cloudstream3.ui.search.SearchHelper
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
 import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment.Companion.getDownloadSubsLanguageISO639_1
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.isAppInstalled
 import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
 import com.lagradost.cloudstream3.utils.AppUtils.isConnectedToChromecast
+import com.lagradost.cloudstream3.utils.AppUtils.loadCache
+import com.lagradost.cloudstream3.utils.AppUtils.openBrowser
 import com.lagradost.cloudstream3.utils.CastHelper.startCast
 import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.cloudstream3.utils.DataStore.getFolderName
 import com.lagradost.cloudstream3.utils.DataStore.setKey
+import com.lagradost.cloudstream3.utils.DataStoreHelper.addSync
+import com.lagradost.cloudstream3.utils.DataStoreHelper.getSync
 import com.lagradost.cloudstream3.utils.DataStoreHelper.getViewPos
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showBottomDialog
 import com.lagradost.cloudstream3.utils.UIHelper.checkWrite
 import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
+import com.lagradost.cloudstream3.utils.UIHelper.getSpanCount
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
@@ -87,6 +95,7 @@ const val START_ACTION_LOAD_EP = 2
 const val START_VALUE_NORMAL = 0
 
 data class ResultEpisode(
+    val headerName: String,
     val name: String?,
     val poster: String?,
     val episode: Int,
@@ -100,6 +109,8 @@ data class ResultEpisode(
     val rating: Int?,
     val description: String?,
     val isFiller: Boolean?,
+    val tvType: TvType,
+    val parentId: Int?,
 )
 
 fun ResultEpisode.getRealPosition(): Long {
@@ -118,7 +129,8 @@ fun ResultEpisode.getDisplayPosition(): Long {
     return position
 }
 
-fun Context.buildResultEpisode(
+fun buildResultEpisode(
+    headerName: String,
     name: String?,
     poster: String?,
     episode: Int,
@@ -130,9 +142,12 @@ fun Context.buildResultEpisode(
     rating: Int?,
     description: String?,
     isFiller: Boolean?,
+    tvType: TvType,
+    parentId: Int?,
 ): ResultEpisode {
     val posDur = getViewPos(id)
     return ResultEpisode(
+        headerName,
         name,
         poster,
         episode,
@@ -145,7 +160,9 @@ fun Context.buildResultEpisode(
         posDur?.duration ?: 0,
         rating,
         description,
-        isFiller
+        isFiller,
+        tvType,
+        parentId,
     )
 }
 
@@ -156,7 +173,12 @@ fun ResultEpisode.getWatchProgress(): Float {
 
 class ResultFragment : Fragment() {
     companion object {
-        fun newInstance(url: String, apiName: String, startAction: Int = 0, startValue: Int = 0): Bundle {
+        fun newInstance(
+            url: String,
+            apiName: String,
+            startAction: Int = 0,
+            startValue: Int = 0
+        ): Bundle {
             return Bundle().apply {
                 putString("url", url)
                 putString("apiName", apiName)
@@ -167,10 +189,9 @@ class ResultFragment : Fragment() {
         }
     }
 
-    private var currentLoadingCount = 0 // THIS IS USED TO PREVENT LATE EVENTS, AFTER DISMISS WAS CLICKED
-    private val viewModel: ResultViewModel by activityViewModels()
-    private var allEpisodes: HashMap<Int, List<ExtractorLink>> = HashMap()
-    private var allEpisodesSubs: HashMap<Int, HashMap<String, SubtitleFile>> = HashMap()
+    private var currentLoadingCount =
+        0 // THIS IS USED TO PREVENT LATE EVENTS, AFTER DISMISS WAS CLICKED
+    private lateinit var viewModel: ResultViewModel //by activityViewModels()
     private var currentHeaderName: String? = null
     private var currentType: TvType? = null
     private var currentEpisodes: List<ResultEpisode>? = null
@@ -181,8 +202,8 @@ class ResultFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View? {
-        // viewModel =
-        //     ViewModelProvider(activity ?: this).get(ResultViewModel::class.java)
+        viewModel =
+            ViewModelProvider(this)[ResultViewModel::class.java]
         return inflater.inflate(R.layout.fragment_result, container, false)
     }
 
@@ -256,7 +277,69 @@ class ResultFragment : Fragment() {
     }
 
     var startAction: Int? = null
-    var startValue: Int? = null
+    private var startValue: Int? = null
+
+    private fun updateSync(id: Int) {
+        val syncList = getSync(id, SyncApis.map { it.idPrefix }) ?: return
+        val list = ArrayList<Pair<SyncAPI, String>>()
+        for (i in 0 until SyncApis.count()) {
+            val res = syncList[i] ?: continue
+            list.add(Pair(SyncApis[i], res))
+        }
+        viewModel.updateSync(context, list)
+    }
+
+    private fun setFormatText(textView: TextView?, @StringRes format: Int, arg: Any?) {
+        // java.util.IllegalFormatConversionException: f != java.lang.Integer
+        // This can fail with malformed formatting
+        normalSafeApiCall {
+            if (arg == null) {
+                textView?.isVisible = false
+            } else {
+                val text = context?.getString(format)?.format(arg)
+                if (text == null) {
+                    textView?.isVisible = false
+                } else {
+                    textView?.isVisible = true
+                    textView?.text = text
+                }
+            }
+        }
+    }
+
+    private fun setDuration(duration: Int?) {
+        setFormatText(result_meta_duration, R.string.duration_format, duration)
+    }
+
+    private fun setYear(year: Int?) {
+        setFormatText(result_meta_year, R.string.year_format, year)
+    }
+
+    private fun setRating(rating: Int?) {
+        setFormatText(result_meta_rating, R.string.rating_format, rating?.div(1000f))
+    }
+
+    private fun setRecommendations(rec: List<SearchResponse>?) {
+        return
+        result_recommendations?.isGone = rec.isNullOrEmpty()
+        rec?.let { list ->
+            (result_recommendations?.adapter as SearchAdapter?)?.apply {
+                cardList = list
+                notifyDataSetChanged()
+            }
+        }
+    }
+
+    private fun fixGrid() {
+        activity?.getSpanCount()?.let { count ->
+            result_recommendations?.spanCount = count
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        fixGrid()
+    }
 
     private fun lateFixDownloadButton(show: Boolean) {
         if (!show || currentType?.isMovieType() == false) {
@@ -273,6 +356,7 @@ class ResultFragment : Fragment() {
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        fixGrid()
 
         val restart = arguments?.getBoolean("restart") ?: false
         if (restart) {
@@ -281,6 +365,7 @@ class ResultFragment : Fragment() {
 
         activity?.window?.decorView?.clearFocus()
         hideKeyboard()
+        activity?.loadCache()
 
         activity?.fixPaddingStatusbar(result_scroll)
         //activity?.fixPaddingStatusbar(result_barstatus)
@@ -323,8 +408,10 @@ class ResultFragment : Fragment() {
                             VISIBLE
                         castContext.addCastStateListener { state ->
                             if (media_route_button != null) {
-                                if (state == CastState.NO_DEVICES_AVAILABLE) media_route_button.visibility = GONE else {
-                                    if (media_route_button.visibility == GONE) media_route_button.visibility = VISIBLE
+                                if (state == CastState.NO_DEVICES_AVAILABLE) media_route_button.visibility =
+                                    GONE else {
+                                    if (media_route_button.visibility == GONE) media_route_button.visibility =
+                                        VISIBLE
                                 }
                             }
                         }
@@ -350,73 +437,21 @@ class ResultFragment : Fragment() {
         }
 
         fun handleAction(episodeClick: EpisodeClickEvent): Job = main {
+            var currentLinks: Set<ExtractorLink>? = null
+            var currentSubs: Set<SubtitleData>? = null
+
             //val id = episodeClick.data.id
-            val index = episodeClick.data.index
-            val buildInPlayer = true
             currentLoadingCount++
-            var currentLinks: List<ExtractorLink>? = null
-            var currentSubs: HashMap<String, SubtitleFile>? = null
 
             val showTitle =
-                episodeClick.data.name ?: context?.getString(R.string.episode_name_format)?.format(
-                    getString(R.string.episode),
-                    episodeClick.data.episode
-                )
+                episodeClick.data.name ?: context?.getString(R.string.episode_name_format)
+                    ?.format(
+                        getString(R.string.episode),
+                        episodeClick.data.episode
+                    )
 
-            suspend fun requireLinks(isCasting: Boolean): Boolean {
-                val currentLinksTemp =
-                    if (allEpisodes.containsKey(episodeClick.data.id)) allEpisodes[episodeClick.data.id] else null
-                val currentSubsTemp =
-                    if (allEpisodesSubs.containsKey(episodeClick.data.id)) allEpisodesSubs[episodeClick.data.id] else null
-                if (currentLinksTemp != null && currentLinksTemp.isNotEmpty()) {
-                    currentLinks = currentLinksTemp
-                    currentSubs = currentSubsTemp
-                    return true
-                }
 
-                val skipLoading = getApiFromName(apiName).instantLinkLoading
-
-                var loadingDialog: AlertDialog? = null
-                val currentLoad = currentLoadingCount
-
-                if (!skipLoading) {
-                    val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustomTransparent)
-                    val customLayout = layoutInflater.inflate(R.layout.dialog_loading, null)
-                    builder.setView(customLayout)
-
-                    loadingDialog = builder.create()
-
-                    loadingDialog.show()
-                    loadingDialog.setOnDismissListener {
-                        currentLoadingCount++
-                    }
-                }
-
-                val data = viewModel.loadEpisode(episodeClick.data, isCasting)
-                if (currentLoadingCount != currentLoad) return false
-                loadingDialog?.dismissSafe(activity)
-
-                when (data) {
-                    is Resource.Success -> {
-                        currentLinks = data.value.links
-                        currentSubs = data.value.subs
-                        return true
-                    }
-                    is Resource.Failure -> {
-                        showToast(
-                            activity,
-                            R.string.error_loading_links_toast,
-                            Toast.LENGTH_SHORT
-                        )
-                    }
-                    else -> {
-
-                    }
-                }
-                return false
-            }
-
-            fun acquireSingeExtractorLink(
+            fun acquireSingleExtractorLink(
                 links: List<ExtractorLink>,
                 title: String,
                 callback: (ExtractorLink) -> Unit
@@ -432,7 +467,7 @@ class ResultFragment : Fragment() {
             }
 
             fun acquireSingeExtractorLink(title: String, callback: (ExtractorLink) -> Unit) {
-                acquireSingeExtractorLink(currentLinks ?: return, title, callback)
+                acquireSingleExtractorLink(sortUrls(currentLinks ?: return), title, callback)
             }
 
             fun startChromecast(startIndex: Int) {
@@ -445,13 +480,13 @@ class ResultFragment : Fragment() {
                     episodeClick.data.index,
                     eps,
                     sortUrls(currentLinks ?: return),
-                    currentSubs?.values?.toList() ?: emptyList(),
+                    sortSubs(currentSubs ?: return),
                     startTime = episodeClick.data.getRealPosition(),
                     startIndex = startIndex
                 )
             }
 
-            fun startDownload(links: List<ExtractorLink>, subs: List<SubtitleFile>?) {
+            fun startDownload(links: List<ExtractorLink>, subs: List<SubtitleData>?) {
                 val isMovie = currentIsMovie ?: return
                 val titleName = sanitizeFilename(currentHeaderName ?: return)
 
@@ -527,20 +562,21 @@ class ResultFragment : Fragment() {
                     // 1. Checks if the lang should be downloaded
                     // 2. Makes it into the download format
                     // 3. Downloads it as a .vtt file
-                    val downloadList = ctx.getDownloadSubsLanguageISO639_1()
+                    val downloadList = getDownloadSubsLanguageISO639_1()
                     main {
                         subs?.let { subsList ->
                             subsList.filter {
                                 downloadList.contains(
                                     SubtitleHelper.fromLanguageToTwoLetters(
-                                        it.lang,
+                                        it.name,
                                         true
                                     )
                                 )
                             }
-                                .map { ExtractorSubtitleLink(it.lang, it.url, "") }
+                                .map { ExtractorSubtitleLink(it.name, it.url, "") }
                                 .forEach { link ->
-                                    val epName = meta.name ?: "${context?.getString(R.string.episode)} ${meta.episode}"
+                                    val epName = meta.name
+                                        ?: "${context?.getString(R.string.episode)} ${meta.episode}"
                                     val fileName =
                                         sanitizeFilename(epName + if (downloadList.size > 1) " ${link.name}" else "")
                                     val topFolder = "$folder"
@@ -566,10 +602,56 @@ class ResultFragment : Fragment() {
                 }
             }
 
+            suspend fun requireLinks(isCasting: Boolean, displayLoading: Boolean = true): Boolean {
+                val skipLoading = getApiFromName(apiName).instantLinkLoading
+
+                var loadingDialog: AlertDialog? = null
+                val currentLoad = currentLoadingCount
+
+                if (!skipLoading && displayLoading) {
+                    val builder =
+                        AlertDialog.Builder(requireContext(), R.style.AlertDialogCustomTransparent)
+                    val customLayout = layoutInflater.inflate(R.layout.dialog_loading, null)
+                    builder.setView(customLayout)
+
+                    loadingDialog = builder.create()
+
+                    loadingDialog.show()
+                    loadingDialog.setOnDismissListener {
+                        currentLoadingCount++
+                    }
+                }
+
+                val data = viewModel.loadEpisode(episodeClick.data, isCasting)
+                if (currentLoadingCount != currentLoad) return false
+                loadingDialog?.dismissSafe(activity)
+
+                when (data) {
+                    is Resource.Success -> {
+                        currentLinks = data.value.first
+                        currentSubs = data.value.second
+                        return true
+                    }
+                    is Resource.Failure -> {
+                        showToast(
+                            activity,
+                            R.string.error_loading_links_toast,
+                            Toast.LENGTH_SHORT
+                        )
+                    }
+                    else -> Unit
+                }
+                return false
+            }
+
             val isLoaded = when (episodeClick.action) {
                 ACTION_PLAY_EPISODE_IN_PLAYER -> true
                 ACTION_CLICK_DEFAULT -> true
                 ACTION_SHOW_TOAST -> true
+                ACTION_DOWNLOAD_EPISODE -> {
+                    showToast(activity, R.string.download_started, Toast.LENGTH_SHORT)
+                    requireLinks(false, false)
+                }
                 ACTION_CHROME_CAST_EPISODE -> requireLinks(true)
                 ACTION_CHROME_CAST_MIRROR -> requireLinks(true)
                 else -> requireLinks(false)
@@ -584,9 +666,19 @@ class ResultFragment : Fragment() {
                 ACTION_CLICK_DEFAULT -> {
                     context?.let { ctx ->
                         if (ctx.isConnectedToChromecast()) {
-                            handleAction(EpisodeClickEvent(ACTION_CHROME_CAST_EPISODE, episodeClick.data))
+                            handleAction(
+                                EpisodeClickEvent(
+                                    ACTION_CHROME_CAST_EPISODE,
+                                    episodeClick.data
+                                )
+                            )
                         } else {
-                            handleAction(EpisodeClickEvent(ACTION_PLAY_EPISODE_IN_PLAYER, episodeClick.data))
+                            handleAction(
+                                EpisodeClickEvent(
+                                    ACTION_PLAY_EPISODE_IN_PLAYER,
+                                    episodeClick.data
+                                )
+                            )
                         }
                     }
                 }
@@ -596,7 +688,8 @@ class ResultFragment : Fragment() {
                         val builder = AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
                         var dialog: AlertDialog? = null
                         builder.setTitle(showTitle)
-                        val options = requireContext().resources.getStringArray(R.array.episode_long_click_options)
+                        val options =
+                            requireContext().resources.getStringArray(R.array.episode_long_click_options)
                         val optionsValues =
                             requireContext().resources.getIntArray(R.array.episode_long_click_options_values)
 
@@ -615,7 +708,9 @@ class ResultFragment : Fragment() {
                                 ACTION_CHROME_CAST_MIRROR -> isConnected
                                 ACTION_DOWNLOAD_EPISODE -> hasDownloadSupport
                                 ACTION_DOWNLOAD_MIRROR -> hasDownloadSupport
-                                ACTION_PLAY_EPISODE_IN_VLC_PLAYER -> context?.isAppInstalled(VLC_PACKAGE) ?: false
+                                ACTION_PLAY_EPISODE_IN_VLC_PLAYER -> context?.isAppInstalled(
+                                    VLC_PACKAGE
+                                ) ?: false
                                 else -> true
                             }
                             if (add) {
@@ -627,7 +722,12 @@ class ResultFragment : Fragment() {
                         builder.setItems(
                             verifiedOptions.toTypedArray()
                         ) { _, which ->
-                            handleAction(EpisodeClickEvent(verifiedOptionsValues[which], episodeClick.data))
+                            handleAction(
+                                EpisodeClickEvent(
+                                    verifiedOptionsValues[which],
+                                    episodeClick.data
+                                )
+                            )
                             dialog?.dismissSafe(activity)
                         }
 
@@ -680,17 +780,15 @@ class ResultFragment : Fragment() {
                                 if (act.checkWrite()) return@main
                             }
                             val data = currentLinks ?: return@main
-                            val subs = currentSubs
+                            val subs = currentSubs ?: return@main
 
                             val outputDir = act.cacheDir
                             val outputFile = withContext(Dispatchers.IO) {
                                 File.createTempFile("mirrorlist", ".m3u8", outputDir)
                             }
                             var text = "#EXTM3U"
-                            if (subs != null) {
-                                for (sub in subs.values) {
-                                    text += "\n#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subs\",NAME=\"${sub.lang}\",DEFAULT=NO,AUTOSELECT=NO,FORCED=NO,LANGUAGE=\"${sub.lang}\",URI=\"${sub.url}\""
-                                }
+                            for (sub in sortSubs(subs)) {
+                                text += "\n#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subs\",NAME=\"${sub.name}\",DEFAULT=NO,AUTOSELECT=NO,FORCED=NO,LANGUAGE=\"${sub.name}\",URI=\"${sub.url}\""
                             }
                             for (link in data.sortedBy { -it.quality }) {
                                 text += "\n#EXTINF:, ${link.name}\n${link.url}"
@@ -735,14 +833,15 @@ class ResultFragment : Fragment() {
                 }
 
                 ACTION_PLAY_EPISODE_IN_PLAYER -> {
-                    if (buildInPlayer) {
-                        activity.navigate(
-                            R.id.global_to_navigation_player, PlayerFragment.newInstance(
-                                PlayerData(index, null, 0),
-                                episodeClick.data.getRealPosition()
+                    viewModel.getGenerator(episodeClick.data)
+                        ?.let { generator ->
+                            activity?.navigate(
+                                R.id.global_to_navigation_player,
+                                GeneratorPlayer.newInstance(
+                                    generator
+                                )
                             )
-                        )
-                    }
+                        }
                 }
 
                 ACTION_RELOAD_EPISODE -> {
@@ -750,21 +849,29 @@ class ResultFragment : Fragment() {
                 }
 
                 ACTION_DOWNLOAD_EPISODE -> {
-                    startDownload(currentLinks ?: return@main, currentSubs?.values?.toList() ?: emptyList())
+                    startDownload(
+                        sortUrls(currentLinks ?: return@main),
+                        sortSubs(currentSubs ?: return@main)
+                    )
                 }
 
                 ACTION_DOWNLOAD_MIRROR -> {
-                    currentLinks?.let { links ->
-                        acquireSingeExtractorLink(
-                            links,//(currentLinks ?: return@main).filter { !it.isM3u8 },
-                            getString(R.string.episode_action_download_mirror)
-                        ) { link ->
-                            startDownload(listOf(link), currentSubs?.values?.toList() ?: emptyList())
-                        }
+                    acquireSingleExtractorLink(
+                        sortUrls(
+                            currentLinks ?: return@main
+                        ),//(currentLinks ?: return@main).filter { !it.isM3u8 },
+                        getString(R.string.episode_action_download_mirror)
+                    ) { link ->
+                        showToast(activity, R.string.download_started, Toast.LENGTH_SHORT)
+                        startDownload(
+                            listOf(link),
+                            sortSubs(currentSubs ?: return@acquireSingleExtractorLink)
+                        )
                     }
                 }
             }
         }
+
 
         val adapter: RecyclerView.Adapter<RecyclerView.ViewHolder> =
             EpisodeAdapter(
@@ -788,7 +895,7 @@ class ResultFragment : Fragment() {
                 //.map { watchType -> Triple(watchType.internalId, watchType.iconRes, watchType.stringRes) },
             ) {
                 context?.let { localContext ->
-                    viewModel.updateWatchStatus(localContext, WatchType.fromInternalId(this.itemId))
+                    viewModel.updateWatchStatus(WatchType.fromInternalId(this.itemId))
                 }
             }
         }
@@ -814,7 +921,7 @@ class ResultFragment : Fragment() {
                     fab.context.getString(R.string.action_add_to_bookmarks),
                     showApply = false,
                     {}) {
-                    viewModel.updateWatchStatus(fab.context, WatchType.values()[it])
+                    viewModel.updateWatchStatus(WatchType.values()[it])
                 }
             }
         }
@@ -840,8 +947,7 @@ class ResultFragment : Fragment() {
                         }
                     }
                 }
-                else -> {
-                }
+                else -> Unit
             }
             arguments?.remove("startValue")
             arguments?.remove("startAction")
@@ -849,19 +955,13 @@ class ResultFragment : Fragment() {
             startValue = null
         }
 
-        observe(viewModel.allEpisodes) {
-            allEpisodes = it
-        }
-
-        observe(viewModel.allEpisodesSubs) {
-            allEpisodesSubs = it
-        }
-
-        observe(viewModel.selectedSeason) { season ->
+        observe(viewModel.selectedSeason)
+        { season ->
             result_season_button?.text = fromIndexToSeasonText(season)
         }
 
-        observe(viewModel.seasonSelections) { seasonList ->
+        observe(viewModel.seasonSelections)
+        { seasonList ->
             result_season_button?.visibility = if (seasonList.size <= 1) GONE else VISIBLE
             result_season_button?.setOnClickListener {
                 result_season_button?.popupMenuNoIconsAndNoStringRes(
@@ -869,14 +969,14 @@ class ResultFragment : Fragment() {
                         .map { Pair(it ?: -2, fromIndexToSeasonText(it)) },
                 ) {
                     val id = this.itemId
-                    context?.let {
-                        viewModel.changeSeason(it, if (id == -2) null else id)
-                    }
+
+                    viewModel.changeSeason(if (id == -2) null else id)
                 }
             }
         }
 
-        observe(viewModel.publicEpisodes) { episodes ->
+        observe(viewModel.publicEpisodes)
+        { episodes ->
             when (episodes) {
                 is Resource.Failure -> {
                     result_episode_loading?.isVisible = false
@@ -898,11 +998,13 @@ class ResultFragment : Fragment() {
             }
         }
 
-        observe(viewModel.dubStatus) { status ->
+        observe(viewModel.dubStatus)
+        { status ->
             result_dub_select?.text = status.toString()
         }
 
-        observe(viewModel.dubSubSelections) { range ->
+        observe(viewModel.dubSubSelections)
+        { range ->
             dubRange = range
             result_dub_select?.visibility = if (range.size <= 1) GONE else VISIBLE
         }
@@ -910,14 +1012,20 @@ class ResultFragment : Fragment() {
         result_dub_select.setOnClickListener {
             val ranges = dubRange
             if (ranges != null) {
-                it.popupMenuNoIconsAndNoStringRes(ranges.map { status -> Pair(status.ordinal, status.toString()) }
+                it.popupMenuNoIconsAndNoStringRes(ranges.map { status ->
+                    Pair(
+                        status.ordinal,
+                        status.toString()
+                    )
+                }
                     .toList()) {
-                    viewModel.changeDubStatus(requireContext(), DubStatus.values()[itemId])
+                    viewModel.changeDubStatus(DubStatus.values()[itemId])
                 }
             }
         }
 
-        observe(viewModel.selectedRange) { range ->
+        observe(viewModel.selectedRange)
+        { range ->
             result_episode_select?.text = range
         }
 
@@ -929,8 +1037,9 @@ class ResultFragment : Fragment() {
         result_episode_select.setOnClickListener {
             val ranges = episodeRanges
             if (ranges != null) {
-                it.popupMenuNoIconsAndNoStringRes(ranges.mapIndexed { index, s -> Pair(index, s) }.toList()) {
-                    viewModel.changeRange(requireContext(), itemId)
+                it.popupMenuNoIconsAndNoStringRes(ranges.mapIndexed { index, s -> Pair(index, s) }
+                    .toList()) {
+                    viewModel.changeRange(itemId)
                 }
             }
         }
@@ -949,6 +1058,19 @@ class ResultFragment : Fragment() {
             currentId = it
         }
 
+        observe(viewModel.sync) { sync ->
+            for (s in sync) {
+                when (s) {
+                    is Resource.Success -> {
+                        val d = s.value ?: continue
+                        setDuration(d.duration)
+                        setRating(d.publicScore)
+                    }
+                    else -> Unit
+                }
+            }
+        }
+
         observe(viewModel.resultResponse) { data ->
             when (data) {
                 is Resource.Success -> {
@@ -965,7 +1087,7 @@ class ResultFragment : Fragment() {
                             VPNStatus.Torrent -> getString(R.string.vpn_torrent)
                             else -> ""
                         }
-                        result_vpn?.visibility = if (api.vpnStatus == VPNStatus.None) GONE else VISIBLE
+                        result_vpn?.isGone = api.vpnStatus == VPNStatus.None
 
                         result_info?.text = when (api.providerType) {
                             ProviderType.MetaProvider -> getString(R.string.provider_info_meta)
@@ -973,7 +1095,14 @@ class ResultFragment : Fragment() {
                         }
                         result_info?.isVisible = api.providerType == ProviderType.MetaProvider
 
-                        //result_bookmark_button.text = getString(R.string.type_watching)
+                        if (d.type.isEpisodeBased()) {
+                            val ep = d as? TvSeriesLoadResponse
+                            val epCount = ep?.episodes?.size ?: 1
+                            if (epCount < 1) {
+                                result_info?.text = getString(R.string.no_episodes_found)
+                                result_info?.isVisible = true
+                            }
+                        }
 
                         currentHeaderName = d.name
                         currentType = d.type
@@ -992,7 +1121,7 @@ class ResultFragment : Fragment() {
                         }
 
                         result_search?.setOnClickListener {
-                            QuickSearchFragment.push(activity, true, d.name)
+                            QuickSearchFragment.pushSearch(activity, d.name)
                         }
 
                         result_share?.setOnClickListener {
@@ -1001,6 +1130,22 @@ class ResultFragment : Fragment() {
                             i.putExtra(EXTRA_SUBJECT, d.name)
                             i.putExtra(EXTRA_TEXT, d.url)
                             startActivity(createChooser(i, d.name))
+                        }
+
+                        updateSync(d.getId())
+                        result_add_sync?.setOnClickListener {
+                            QuickSearchFragment.pushSync(activity, d.name) { click ->
+                                addSync(d.getId(), click.card.apiName, click.card.url)
+
+                                showToast(
+                                    activity,
+                                    context?.getString(R.string.added_sync_format)
+                                        ?.format(click.card.name),
+                                    Toast.LENGTH_SHORT
+                                )
+
+                                updateSync(d.getId())
+                            }
                         }
 
                         val metadataInfoArray = ArrayList<Pair<Int, String>>()
@@ -1015,33 +1160,27 @@ class ResultFragment : Fragment() {
                             }
                         }
 
-                        result_meta_year?.isGone = d.year == null
-                        result_meta_year?.text = d.year?.toString() ?: ""
-                        if (d.rating == null) {
-                            result_meta_rating?.isVisible = false
-                        } else {
-                            result_meta_rating?.isVisible = true
-                            result_meta_rating?.text = "%.1f/10.0".format(d.rating!!.toFloat() / 10f).replace(",", ".")
-                        }
-
-                        val duration = d.duration
-                        if (duration.isNullOrEmpty()) {
-                            result_meta_duration?.isVisible = false
-                        } else {
-                            result_meta_duration?.isVisible = true
-                            result_meta_duration?.text =
-                                if (duration.endsWith("min") || duration.endsWith("h")) duration else "${duration}min"
-                        }
+                        setDuration(d.duration)
+                        setYear(d.year)
+                        setRating(d.rating)
+                        setRecommendations(d.recommendations)
 
                         result_meta_site?.text = d.apiName
 
-                        result_poster?.setImage(d.posterUrl)
-                        result_poster_blur?.setImageBlur(d.posterUrl, 10, 3)
+                        if (!d.posterUrl.isNullOrEmpty()) {
+                            result_poster?.setImage(d.posterUrl)
+                            result_poster_blur?.setImageBlur(d.posterUrl, 10, 3)
+                        } else {
+                            result_poster?.setImageResource(R.drawable.default_cover)
+                            result_poster_blur?.setImageResource(R.drawable.default_cover)
+                        }
 
-                        result_poster_holder?.visibility = if (d.posterUrl.isNullOrBlank()) GONE else VISIBLE
+                        result_poster_holder?.visibility = VISIBLE
 
                         result_play_movie?.text =
-                            if (d.type == TvType.Torrent) getString(R.string.play_torrent_button) else getString(R.string.play_movie_button)
+                            if (d.type == TvType.Torrent) getString(R.string.play_torrent_button) else getString(
+                                R.string.play_movie_button
+                            )
                         //result_plot_header?.text =
                         //    if (d.type == TvType.Torrent) getString(R.string.torrent_plot) else getString(R.string.result_plot)
                         if (!d.plot.isNullOrEmpty()) {
@@ -1050,7 +1189,8 @@ class ResultFragment : Fragment() {
                                 syno = syno.substring(0, MAX_SYNO_LENGH) + "..."
                             }
                             result_descript.setOnClickListener {
-                                val builder: AlertDialog.Builder = AlertDialog.Builder(requireContext())
+                                val builder: AlertDialog.Builder =
+                                    AlertDialog.Builder(requireContext())
                                 builder.setMessage(d.plot)
                                     .setTitle(if (d.type == TvType.Torrent) R.string.torrent_plot else R.string.result_plot)
                                     .show()
@@ -1058,7 +1198,9 @@ class ResultFragment : Fragment() {
                             result_descript.text = syno
                         } else {
                             result_descript.text =
-                                if (d.type == TvType.Torrent) getString(R.string.torrent_no_plot) else getString(R.string.normal_no_plot)
+                                if (d.type == TvType.Torrent) getString(R.string.torrent_no_plot) else getString(
+                                    R.string.normal_no_plot
+                                )
                         }
 
                         result_tag?.removeAllViews()
@@ -1085,18 +1227,21 @@ class ResultFragment : Fragment() {
                             lateFixDownloadButton(true)
 
                             result_play_movie?.setOnClickListener {
-                                val card = currentEpisodes?.firstOrNull() ?: return@setOnClickListener
+                                val card =
+                                    currentEpisodes?.firstOrNull() ?: return@setOnClickListener
                                 handleAction(EpisodeClickEvent(ACTION_CLICK_DEFAULT, card))
                             }
 
                             result_play_movie?.setOnLongClickListener {
-                                val card = currentEpisodes?.firstOrNull() ?: return@setOnLongClickListener true
+                                val card = currentEpisodes?.firstOrNull()
+                                    ?: return@setOnLongClickListener true
                                 handleAction(EpisodeClickEvent(ACTION_SHOW_OPTIONS, card))
                                 return@setOnLongClickListener true
                             }
 
                             result_download_movie?.setOnLongClickListener {
-                                val card = currentEpisodes?.firstOrNull() ?: return@setOnLongClickListener true
+                                val card = currentEpisodes?.firstOrNull()
+                                    ?: return@setOnLongClickListener true
                                 handleAction(EpisodeClickEvent(ACTION_SHOW_OPTIONS, card))
                                 return@setOnLongClickListener true
                             }
@@ -1106,11 +1251,15 @@ class ResultFragment : Fragment() {
 //                                handleAction(EpisodeClickEvent(ACTION_SHOW_OPTIONS, card))
 //                            }
 
-                            result_download_movie?.visibility = if (hasDownloadSupport) VISIBLE else GONE
+                            result_download_movie?.visibility =
+                                if (hasDownloadSupport) VISIBLE else GONE
                             if (hasDownloadSupport) {
                                 val localId = d.getId()
                                 val file =
-                                    VideoDownloadManager.getDownloadFileInfoAndUpdateSettings(requireContext(), localId)
+                                    VideoDownloadManager.getDownloadFileInfoAndUpdateSettings(
+                                        requireContext(),
+                                        localId
+                                    )
                                 downloadButton?.dispose()
                                 downloadButton = EasyDownloadButton()
                                 downloadButton?.setUpMaterialButton(
@@ -1138,6 +1287,7 @@ class ResultFragment : Fragment() {
                                                     ACTION_DOWNLOAD_EPISODE,
                                                     ResultEpisode(
                                                         d.name,
+                                                        d.name,
                                                         null,
                                                         0,
                                                         null,
@@ -1150,12 +1300,18 @@ class ResultFragment : Fragment() {
                                                         null,
                                                         null,
                                                         null,
+                                                        d.type,
+                                                        localId,
                                                     )
                                                 )
                                             )
                                         }
                                     } else {
-                                        handleDownloadClick(activity, currentHeaderName, downloadClickEvent)
+                                        handleDownloadClick(
+                                            activity,
+                                            currentHeaderName,
+                                            downloadClickEvent
+                                        )
                                     }
                                 }
                             }
@@ -1188,16 +1344,28 @@ class ResultFragment : Fragment() {
             }
         }
 
+        val recAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder>? = activity?.let {
+            SearchAdapter(
+                ArrayList(),
+                result_recommendations,
+            ) { callback ->
+                SearchHelper.handleSearchClickCallback(activity, callback)
+            }
+        }
+
+        result_recommendations.adapter = recAdapter
+
         context?.let { ctx ->
             result_bookmark_button?.isVisible = ctx.isTvSettings()
 
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
-            val showFillers = settingsManager.getBoolean(ctx.getString(R.string.show_fillers_key), true)
+            val showFillers =
+                settingsManager.getBoolean(ctx.getString(R.string.show_fillers_key), true)
 
             val tempUrl = url
             if (tempUrl != null) {
                 result_reload_connectionerror.setOnClickListener {
-                    viewModel.load(it.context, tempUrl, apiName, showFillers)
+                    viewModel.load(tempUrl, apiName, showFillers)
                 }
 
                 result_reload_connection_open_in_browser?.setOnClickListener {
@@ -1211,18 +1379,12 @@ class ResultFragment : Fragment() {
                 }
 
                 result_meta_site?.setOnClickListener {
-                    val i = Intent(ACTION_VIEW)
-                    i.data = Uri.parse(tempUrl)
-                    try {
-                        startActivity(i)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    it.context?.openBrowser(tempUrl)
                 }
 
                 if (restart || viewModel.resultResponse.value == null) {
-                    viewModel.clear()
-                    viewModel.load(ctx, tempUrl, apiName, showFillers)
+                    //viewModel.clear()
+                    viewModel.load(tempUrl, apiName, showFillers)
                 }
             }
         }

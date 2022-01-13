@@ -22,6 +22,8 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.hippo.unifile.UniFile
+import com.lagradost.cloudstream3.AcraApplication.Companion.removeKey
+import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.MainActivity
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
@@ -30,7 +32,6 @@ import com.lagradost.cloudstream3.services.VideoDownloadService
 import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.removeKey
-import com.lagradost.cloudstream3.utils.DataStore.setKey
 import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -150,16 +151,20 @@ object VideoDownloadManager {
     private const val SUCCESS_DOWNLOAD_DONE = 1
     private const val SUCCESS_STREAM = 3
     private const val SUCCESS_STOPPED = 2
-    private const val ERROR_DELETING_FILE =
-        3 // will not download the next one, but is still classified as an error
+
+    // will not download the next one, but is still classified as an error
+    private const val ERROR_DELETING_FILE = 3
     private const val ERROR_CREATE_FILE = -2
     private const val ERROR_UNKNOWN = -10
-    private const val ERROR_OPEN_FILE = -3
+
+    //private const val ERROR_OPEN_FILE = -3
     private const val ERROR_TOO_SMALL_CONNECTION = -4
-    private const val ERROR_WRONG_CONTENT = -5
+
+    //private const val ERROR_WRONG_CONTENT = -5
     private const val ERROR_CONNECTION_ERROR = -6
-    private const val ERROR_MEDIA_STORE_URI_CANT_BE_CREATED = -7
-    private const val ERROR_CONTENT_RESOLVER_CANT_OPEN_STREAM = -8
+
+    //private const val ERROR_MEDIA_STORE_URI_CANT_BE_CREATED = -7
+    //private const val ERROR_CONTENT_RESOLVER_CANT_OPEN_STREAM = -8
     private const val ERROR_CONTENT_RESOLVER_NOT_FOUND = -9
 
     private const val KEY_RESUME_PACKAGES = "download_resume"
@@ -223,6 +228,9 @@ object VideoDownloadManager {
         }
     }
 
+    /**
+     * @param hlsProgress will together with hlsTotal display another notification if used, to lessen the confusion about estimated size.
+     * */
     private suspend fun createNotification(
         context: Context,
         source: String?,
@@ -231,164 +239,185 @@ object VideoDownloadManager {
         state: DownloadType,
         progress: Long,
         total: Long,
-        notificationCallback: (Int, Notification) -> Unit
+        notificationCallback: (Int, Notification) -> Unit,
+        hlsProgress: Long? = null,
+        hlsTotal: Long? = null,
 
-    ): Notification? {
-        if (total <= 0) return null// crash, invalid data
+        ): Notification? {
+        try {
+            if (total <= 0) return null// crash, invalid data
 
 //        main { // DON'T WANT TO SLOW IT DOWN
-        val builder = NotificationCompat.Builder(context, DOWNLOAD_CHANNEL_ID)
-            .setAutoCancel(true)
-            .setColorized(true)
-            .setOnlyAlertOnce(true)
-            .setShowWhen(false)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setColor(context.colorFromAttribute(R.attr.colorPrimary))
-            .setContentTitle(ep.mainName)
-            .setSmallIcon(
-                when (state) {
-                    DownloadType.IsDone -> imgDone
-                    DownloadType.IsDownloading -> imgDownloading
-                    DownloadType.IsPaused -> imgPaused
-                    DownloadType.IsFailed -> imgError
-                    DownloadType.IsStopped -> imgStopped
-                }
-            )
-
-        if (ep.sourceApiName != null) {
-            builder.setSubText(ep.sourceApiName)
-        }
-
-        if (source != null) {
-            val intent = Intent(context, MainActivity::class.java).apply {
-                data = source.toUri()
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-            val pendingIntent: PendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-            } else {
-                PendingIntent.getActivity(context, 0, intent, 0)
-            }
-            builder.setContentIntent(pendingIntent)
-        }
-
-        if (state == DownloadType.IsDownloading || state == DownloadType.IsPaused) {
-            builder.setProgress((total / 1000).toInt(), (progress / 1000).toInt(), false)
-        }
-
-        val rowTwoExtra = if (ep.name != null) " - ${ep.name}\n" else ""
-        val rowTwo = if (ep.season != null && ep.episode != null) {
-            "${context.getString(R.string.season_short)}${ep.season}:${context.getString(R.string.episode_short)}${ep.episode}" + rowTwoExtra
-        } else if (ep.episode != null) {
-            "${context.getString(R.string.episode)} ${ep.episode}" + rowTwoExtra
-        } else {
-            (ep.name ?: "") + ""
-        }
-        val downloadFormat = context.getString(R.string.download_format)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (ep.poster != null) {
-                val poster = withContext(Dispatchers.IO) {
-                    context.getImageBitmapFromUrl(ep.poster)
-                }
-                if (poster != null)
-                    builder.setLargeIcon(poster)
-            }
-
-            val progressPercentage = progress * 100 / total
-            val progressMbString = "%.1f".format(progress / 1000000f)
-            val totalMbString = "%.1f".format(total / 1000000f)
-            val bigText =
-                if (state == DownloadType.IsDownloading || state == DownloadType.IsPaused) {
-                    (if (linkName == null) "" else "$linkName\n") + "$rowTwo\n$progressPercentage % ($progressMbString MB/$totalMbString MB)"
-                } else if (state == DownloadType.IsFailed) {
-                    downloadFormat.format(context.getString(R.string.download_failed), rowTwo)
-                } else if (state == DownloadType.IsDone) {
-                    downloadFormat.format(context.getString(R.string.download_done), rowTwo)
-                } else {
-                    downloadFormat.format(context.getString(R.string.download_canceled), rowTwo)
-                }
-
-            val bodyStyle = NotificationCompat.BigTextStyle()
-            bodyStyle.bigText(bigText)
-            builder.setStyle(bodyStyle)
-        } else {
-            val txt = if (state == DownloadType.IsDownloading || state == DownloadType.IsPaused) {
-                rowTwo
-            } else if (state == DownloadType.IsFailed) {
-                downloadFormat.format(context.getString(R.string.download_failed), rowTwo)
-            } else if (state == DownloadType.IsDone) {
-                downloadFormat.format(context.getString(R.string.download_done), rowTwo)
-            } else {
-                downloadFormat.format(context.getString(R.string.download_canceled), rowTwo)
-            }
-
-            builder.setContentText(txt)
-        }
-
-        if ((state == DownloadType.IsDownloading || state == DownloadType.IsPaused) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val actionTypes: MutableList<DownloadActionType> = ArrayList()
-            // INIT
-            if (state == DownloadType.IsDownloading) {
-                actionTypes.add(DownloadActionType.Pause)
-                actionTypes.add(DownloadActionType.Stop)
-            }
-
-            if (state == DownloadType.IsPaused) {
-                actionTypes.add(DownloadActionType.Resume)
-                actionTypes.add(DownloadActionType.Stop)
-            }
-
-            // ADD ACTIONS
-            for ((index, i) in actionTypes.withIndex()) {
-                val actionResultIntent = Intent(context, VideoDownloadService::class.java)
-
-                actionResultIntent.putExtra(
-                    "type", when (i) {
-                        DownloadActionType.Resume -> "resume"
-                        DownloadActionType.Pause -> "pause"
-                        DownloadActionType.Stop -> "stop"
+            val builder = NotificationCompat.Builder(context, DOWNLOAD_CHANNEL_ID)
+                .setAutoCancel(true)
+                .setColorized(true)
+                .setOnlyAlertOnce(true)
+                .setShowWhen(false)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setColor(context.colorFromAttribute(R.attr.colorPrimary))
+                .setContentTitle(ep.mainName)
+                .setSmallIcon(
+                    when (state) {
+                        DownloadType.IsDone -> imgDone
+                        DownloadType.IsDownloading -> imgDownloading
+                        DownloadType.IsPaused -> imgPaused
+                        DownloadType.IsFailed -> imgError
+                        DownloadType.IsStopped -> imgStopped
                     }
                 )
 
-                actionResultIntent.putExtra("id", ep.id)
-
-                val pending: PendingIntent = PendingIntent.getService(
-                    // BECAUSE episodes lying near will have the same id +1, index will give the same requested as the previous episode, *100000 fixes this
-                    context, (4337 + index * 1000000 + ep.id),
-                    actionResultIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-
-                builder.addAction(
-                    NotificationCompat.Action(
-                        when (i) {
-                            DownloadActionType.Resume -> pressToResumeIcon
-                            DownloadActionType.Pause -> pressToPauseIcon
-                            DownloadActionType.Stop -> pressToStopIcon
-                        }, when (i) {
-                            DownloadActionType.Resume -> context.getString(R.string.resume)
-                            DownloadActionType.Pause -> context.getString(R.string.pause)
-                            DownloadActionType.Stop -> context.getString(R.string.cancel)
-                        }, pending
-                    )
-                )
+            if (ep.sourceApiName != null) {
+                builder.setSubText(ep.sourceApiName)
             }
-        }
 
-        if (!hasCreatedNotChanel) {
-            context.createNotificationChannel()
-        }
+            if (source != null) {
+                val intent = Intent(context, MainActivity::class.java).apply {
+                    data = source.toUri()
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                val pendingIntent: PendingIntent =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+                    } else {
+                        PendingIntent.getActivity(context, 0, intent, 0)
+                    }
+                builder.setContentIntent(pendingIntent)
+            }
 
-        val notification = builder.build()
-        notificationCallback(ep.id, notification)
-        with(NotificationManagerCompat.from(context)) {
-            // notificationId is a unique int for each notification that you must define
-            notify(ep.id, notification)
-        }
-        return notification
+            if (state == DownloadType.IsDownloading || state == DownloadType.IsPaused) {
+                builder.setProgress((total / 1000).toInt(), (progress / 1000).toInt(), false)
+            }
 
-//        }
+            val rowTwoExtra = if (ep.name != null) " - ${ep.name}\n" else ""
+            val rowTwo = if (ep.season != null && ep.episode != null) {
+                "${context.getString(R.string.season_short)}${ep.season}:${context.getString(R.string.episode_short)}${ep.episode}" + rowTwoExtra
+            } else if (ep.episode != null) {
+                "${context.getString(R.string.episode)} ${ep.episode}" + rowTwoExtra
+            } else {
+                (ep.name ?: "") + ""
+            }
+            val downloadFormat = context.getString(R.string.download_format)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (ep.poster != null) {
+                    val poster = withContext(Dispatchers.IO) {
+                        context.getImageBitmapFromUrl(ep.poster)
+                    }
+                    if (poster != null)
+                        builder.setLargeIcon(poster)
+                }
+
+                val progressPercentage: Long
+                val progressMbString: String
+                val totalMbString: String
+                val suffix: String
+
+                if (hlsProgress != null && hlsTotal != null) {
+                    progressPercentage = hlsProgress.toLong() * 100 / hlsTotal
+                    progressMbString = hlsProgress.toString()
+                    totalMbString = hlsTotal.toString()
+                    suffix = " - %.1f MB".format(progress / 1000000f)
+                } else {
+                    progressPercentage = progress * 100 / total
+                    progressMbString = "%.1f MB".format(progress / 1000000f)
+                    totalMbString = "%.1f MB".format(total / 1000000f)
+                    suffix = ""
+                }
+
+                val bigText =
+                    if (state == DownloadType.IsDownloading || state == DownloadType.IsPaused) {
+                        (if (linkName == null) "" else "$linkName\n") + "$rowTwo\n$progressPercentage % ($progressMbString/$totalMbString)$suffix"
+                    } else if (state == DownloadType.IsFailed) {
+                        downloadFormat.format(context.getString(R.string.download_failed), rowTwo)
+                    } else if (state == DownloadType.IsDone) {
+                        downloadFormat.format(context.getString(R.string.download_done), rowTwo)
+                    } else {
+                        downloadFormat.format(context.getString(R.string.download_canceled), rowTwo)
+                    }
+
+                val bodyStyle = NotificationCompat.BigTextStyle()
+                bodyStyle.bigText(bigText)
+                builder.setStyle(bodyStyle)
+            } else {
+                val txt =
+                    if (state == DownloadType.IsDownloading || state == DownloadType.IsPaused) {
+                        rowTwo
+                    } else if (state == DownloadType.IsFailed) {
+                        downloadFormat.format(context.getString(R.string.download_failed), rowTwo)
+                    } else if (state == DownloadType.IsDone) {
+                        downloadFormat.format(context.getString(R.string.download_done), rowTwo)
+                    } else {
+                        downloadFormat.format(context.getString(R.string.download_canceled), rowTwo)
+                    }
+
+                builder.setContentText(txt)
+            }
+
+            if ((state == DownloadType.IsDownloading || state == DownloadType.IsPaused) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val actionTypes: MutableList<DownloadActionType> = ArrayList()
+                // INIT
+                if (state == DownloadType.IsDownloading) {
+                    actionTypes.add(DownloadActionType.Pause)
+                    actionTypes.add(DownloadActionType.Stop)
+                }
+
+                if (state == DownloadType.IsPaused) {
+                    actionTypes.add(DownloadActionType.Resume)
+                    actionTypes.add(DownloadActionType.Stop)
+                }
+
+                // ADD ACTIONS
+                for ((index, i) in actionTypes.withIndex()) {
+                    val actionResultIntent = Intent(context, VideoDownloadService::class.java)
+
+                    actionResultIntent.putExtra(
+                        "type", when (i) {
+                            DownloadActionType.Resume -> "resume"
+                            DownloadActionType.Pause -> "pause"
+                            DownloadActionType.Stop -> "stop"
+                        }
+                    )
+
+                    actionResultIntent.putExtra("id", ep.id)
+
+                    val pending: PendingIntent = PendingIntent.getService(
+                        // BECAUSE episodes lying near will have the same id +1, index will give the same requested as the previous episode, *100000 fixes this
+                        context, (4337 + index * 1000000 + ep.id),
+                        actionResultIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+
+                    builder.addAction(
+                        NotificationCompat.Action(
+                            when (i) {
+                                DownloadActionType.Resume -> pressToResumeIcon
+                                DownloadActionType.Pause -> pressToPauseIcon
+                                DownloadActionType.Stop -> pressToStopIcon
+                            }, when (i) {
+                                DownloadActionType.Resume -> context.getString(R.string.resume)
+                                DownloadActionType.Pause -> context.getString(R.string.pause)
+                                DownloadActionType.Stop -> context.getString(R.string.cancel)
+                            }, pending
+                        )
+                    )
+                }
+            }
+
+            if (!hasCreatedNotChanel) {
+                context.createNotificationChannel()
+            }
+
+            val notification = builder.build()
+            notificationCallback(ep.id, notification)
+            with(NotificationManagerCompat.from(context)) {
+                // notificationId is a unique int for each notification that you must define
+                notify(ep.id, notification)
+            }
+            return notification
+        } catch (e: Exception) {
+            logError(e)
+            return null
+        }
     }
 
     private const val reservedChars = "|\\?*<\":>+[]/\'"
@@ -460,7 +489,7 @@ object VideoDownloadManager {
         val base = basePathToFile(context, basePath)
         val folder = base?.gotoDir(relativePath, false)
 
-        if (isScopedStorage && base.isDownloadDir()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && base.isDownloadDir()) {
             return context.contentResolver?.getExistingFolderStartName(relativePath)
         } else {
 //            val normalPath =
@@ -529,12 +558,12 @@ object VideoDownloadManager {
         }
     }
 
-    val isScopedStorage = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-
     data class CreateNotificationMetadata(
         val type: DownloadType,
         val bytesDownloaded: Long,
         val bytesTotal: Long,
+        val hlsProgress: Long? = null,
+        val hlsTotal: Long? = null,
     )
 
     data class StreamData(
@@ -561,7 +590,7 @@ object VideoDownloadManager {
         var resume = tryResume
         val baseFile = context.getBasePath()
 
-        if (isScopedStorage && baseFile.first?.isDownloadDir() == true) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && baseFile.first?.isDownloadDir() == true) {
             val cr = context.contentResolver ?: return StreamData(ERROR_CONTENT_RESOLVER_NOT_FOUND)
 
             val currentExistingFile =
@@ -658,7 +687,9 @@ object VideoDownloadManager {
 
         val displayName = getDisplayName(name, extension)
         val relativePath =
-            if (isScopedStorage && basePath.first.isDownloadDir()) getRelativePath(folder) else folder
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && basePath.first.isDownloadDir()) getRelativePath(
+                folder
+            ) else folder
 
         fun deleteFile(): Int {
             return delete(context, name, relativePath, extension, parentId, basePath.first)
@@ -720,7 +751,7 @@ object VideoDownloadManager {
         if (extension == "mp4" && bytesTotal < 5000000) return ERROR_TOO_SMALL_CONNECTION // DATA IS LESS THAN 5MB, SOMETHING IS WRONG
 
         parentId?.let {
-            context.setKey(
+            setKey(
                 KEY_DOWNLOAD_INFO,
                 it.toString(),
                 DownloadedFileInfo(
@@ -798,8 +829,8 @@ object VideoDownloadManager {
                     }
                     DownloadActionType.Stop -> {
                         isStopped = true; updateNotification()
-                        context.removeKey(KEY_RESUME_PACKAGES, event.first.toString())
-                        saveQueue(context)
+                        removeKey(KEY_RESUME_PACKAGES, event.first.toString())
+                        saveQueue()
                     }
                     DownloadActionType.Resume -> {
                         isPaused = false; updateNotification()
@@ -1025,7 +1056,7 @@ object VideoDownloadManager {
         val displayName = getDisplayName(name, extension)
 
         // If scoped storage and using download dir (not accessible with UniFile)
-        if (isScopedStorage && basePath.isDownloadDir()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && basePath.isDownloadDir()) {
             val relativePath = getRelativePath(folder)
             val lastContent =
                 context.contentResolver.getExistingDownloadUriOrNullQ(relativePath, displayName)
@@ -1081,7 +1112,9 @@ object VideoDownloadManager {
         val basePath = context.getBasePath()
 
         val relativePath =
-            if (isScopedStorage && basePath.first.isDownloadDir()) getRelativePath(folder) else folder
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && basePath.first.isDownloadDir()) getRelativePath(
+                folder
+            ) else folder
 
         val stream = setupStream(context, name, relativePath, extension, realIndex > 0)
         if (stream.errorCode != SUCCESS_STREAM) return stream.errorCode
@@ -1119,7 +1152,7 @@ object VideoDownloadManager {
 
         fun updateInfo() {
             parentId?.let {
-                context.setKey(
+                setKey(
                     KEY_DOWNLOAD_INFO,
                     it.toString(),
                     DownloadedFileInfo(
@@ -1164,6 +1197,8 @@ object VideoDownloadManager {
                     type,
                     bytesDownloaded,
                     (bytesDownloaded * (totalTs / tsProgress.toFloat())).toLong(),
+                    tsProgress,
+                    totalTs
                 )
             )
         }
@@ -1319,7 +1354,9 @@ object VideoDownloadManager {
                         meta.type,
                         meta.bytesDownloaded,
                         meta.bytesTotal,
-                        notificationCallback
+                        notificationCallback,
+                        meta.hlsProgress,
+                        meta.hlsTotal
                     )
                 }
             }
@@ -1364,7 +1401,7 @@ object VideoDownloadManager {
                         val link = item.links[index]
                         val resume = pkg.linkIndex == index
 
-                        context.setKey(
+                        setKey(
                             KEY_RESUME_PACKAGES,
                             id.toString(),
                             DownloadResumePackage(item, index)
@@ -1383,7 +1420,7 @@ object VideoDownloadManager {
                             }
                         }
                         if (connectionResult != null && connectionResult > 0) { // SUCCESS
-                            context.removeKey(KEY_RESUME_PACKAGES, id.toString())
+                            removeKey(KEY_RESUME_PACKAGES, id.toString())
                             break
                         }
                     }
@@ -1410,7 +1447,7 @@ object VideoDownloadManager {
             context.getKey<DownloadedFileInfo>(KEY_DOWNLOAD_INFO, id.toString()) ?: return null
         val base = basePathToFile(context, info.basePath)
 
-        if (isScopedStorage && base.isDownloadDir()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && base.isDownloadDir()) {
             val cr = context.contentResolver ?: return null
             val fileUri =
                 cr.getExistingDownloadUriOrNullQ(info.relativePath, info.displayName) ?: return null
@@ -1457,7 +1494,7 @@ object VideoDownloadManager {
         downloadStatusEvent.invoke(Pair(id, DownloadType.IsStopped))
         downloadDeleteEvent.invoke(id)
         val base = basePathToFile(context, info.basePath)
-        if (isScopedStorage && base.isDownloadDir()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && base.isDownloadDir()) {
             val cr = context.contentResolver ?: return false
             val fileUri =
                 cr.getExistingDownloadUriOrNullQ(info.relativePath, info.displayName)
@@ -1505,7 +1542,7 @@ object VideoDownloadManager {
 //            }
             downloadQueue.addLast(pkg)
             downloadCheck(context, notificationCallback)
-            if (setKey) saveQueue(context)
+            if (setKey) saveQueue()
         } else {
             downloadEvent.invoke(
                 Pair(pkg.item.ep.id, DownloadActionType.Resume)
@@ -1513,12 +1550,12 @@ object VideoDownloadManager {
         }
     }
 
-    private fun saveQueue(context: Context) {
+    private fun saveQueue() {
         val dQueue =
             downloadQueue.toList()
                 .mapIndexed { index, any -> DownloadQueueResumePackage(index, any) }
                 .toTypedArray()
-        context.setKey(KEY_RESUME_QUEUE_PACKAGES, dQueue)
+        setKey(KEY_RESUME_QUEUE_PACKAGES, dQueue)
     }
 
     /*fun isMyServiceRunning(context: Context, serviceClass: Class<*>): Boolean {
@@ -1576,7 +1613,7 @@ object VideoDownloadManager {
         pkg: DownloadResumePackage,
     ) {
         val key = pkg.item.ep.id.toString()
-        context.setKey(WORK_KEY_PACKAGE, key, pkg)
+        setKey(WORK_KEY_PACKAGE, key, pkg)
         startWork(context, key)
     }
 
@@ -1596,7 +1633,7 @@ object VideoDownloadManager {
         )
 
         val key = info.ep.id.toString()
-        context.setKey(WORK_KEY_INFO, key, info)
+        setKey(WORK_KEY_INFO, key, info)
         startWork(context, key)
     }
 

@@ -19,10 +19,13 @@ import androidx.fragment.app.Fragment
 import com.google.android.exoplayer2.text.Cue
 import com.google.android.exoplayer2.ui.CaptionStyleCompat
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
-import com.lagradost.cloudstream3.MainActivity
-import com.lagradost.cloudstream3.MainActivity.Companion.showToast
+import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
+import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
+import com.lagradost.cloudstream3.CommonActivity.onColorSelectedEvent
+import com.lagradost.cloudstream3.CommonActivity.onDialogDismissedEvent
+import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
-import com.lagradost.cloudstream3.utils.DataStore.getKey
+import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
 import com.lagradost.cloudstream3.utils.DataStore.setKey
 import com.lagradost.cloudstream3.utils.Event
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
@@ -62,8 +65,15 @@ class SubtitlesFragment : Fragment() {
         fun Context.fromSaveToStyle(data: SaveCaptionStyle): CaptionStyleCompat {
             val typeface = data.typeface
             return CaptionStyleCompat(
-                data.foregroundColor, data.backgroundColor, data.windowColor, data.edgeType, data.edgeColor,
-                if (typeface == null) Typeface.SANS_SERIF else ResourcesCompat.getFont(this, typeface)
+                data.foregroundColor,
+                data.backgroundColor,
+                data.windowColor,
+                data.edgeType,
+                data.edgeColor,
+                if (typeface == null) Typeface.SANS_SERIF else ResourcesCompat.getFont(
+                    this,
+                    typeface
+                )
             )
         }
 
@@ -87,8 +97,8 @@ class SubtitlesFragment : Fragment() {
             this.setKey(SUBTITLE_KEY, style)
         }
 
-        fun Context.getCurrentSavedStyle(): SaveCaptionStyle {
-            return this.getKey(SUBTITLE_KEY) ?: SaveCaptionStyle(
+        fun getCurrentSavedStyle(): SaveCaptionStyle {
+            return getKey(SUBTITLE_KEY) ?: SaveCaptionStyle(
                 getDefColor(0),
                 getDefColor(2),
                 getDefColor(3),
@@ -109,11 +119,11 @@ class SubtitlesFragment : Fragment() {
             return TypedValue.applyDimension(unit, size, metrics).toInt()
         }
 
-        fun Context.getDownloadSubsLanguageISO639_1(): List<String> {
+        fun getDownloadSubsLanguageISO639_1(): List<String> {
             return getKey(SUBTITLE_DOWNLOAD_KEY) ?: listOf("en")
         }
 
-        fun Context.getAutoSelectLanguageISO639_1(): String {
+        fun getAutoSelectLanguageISO639_1(): String {
             return getKey(SUBTITLE_AUTO_SELECT_KEY) ?: "en"
         }
     }
@@ -137,8 +147,7 @@ class SubtitlesFragment : Fragment() {
             2 -> state.backgroundColor = realColor
             3 -> state.windowColor = realColor
 
-            else -> {
-            }
+            else -> Unit
         }
         updateState()
     }
@@ -173,21 +182,29 @@ class SubtitlesFragment : Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-        MainActivity.onColorSelectedEvent -= ::onColorSelected
+        onColorSelectedEvent -= ::onColorSelected
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         hide = arguments?.getBoolean("hide") ?: true
-        MainActivity.onColorSelectedEvent += ::onColorSelected
-        MainActivity.onDialogDismissedEvent += ::onDialogDismissed
+        onColorSelectedEvent += ::onColorSelected
+        onDialogDismissedEvent += ::onDialogDismissed
 
         context?.fixPaddingStatusbar(subs_root)
 
-        state = requireContext().getCurrentSavedStyle()
+        state = getCurrentSavedStyle()
         context?.updateState()
 
+        val isTvSettings = context?.isTvSettings() == true
+
+        fun View.setFocusableInTv() {
+            this.isFocusableInTouchMode = isTvSettings
+        }
+
         fun View.setup(id: Int) {
+            setFocusableInTv()
+
             this.setOnClickListener {
                 activity?.let {
                     ColorPickerDialog.newBuilder()
@@ -215,6 +232,7 @@ class SubtitlesFragment : Fragment() {
                 activity?.hideSystemUI()
         }
 
+        subs_subtitle_elevation.setFocusableInTv()
         subs_subtitle_elevation.setOnClickListener { textView ->
             val suffix = "dp"
             val elevationTypes = listOf(
@@ -253,13 +271,29 @@ class SubtitlesFragment : Fragment() {
             return@setOnLongClickListener true
         }
 
+        subs_edge_type.setFocusableInTv()
         subs_edge_type.setOnClickListener { textView ->
             val edgeTypes = listOf(
-                Pair(CaptionStyleCompat.EDGE_TYPE_NONE, textView.context.getString(R.string.subtitles_none)),
-                Pair(CaptionStyleCompat.EDGE_TYPE_OUTLINE, textView.context.getString(R.string.subtitles_outline)),
-                Pair(CaptionStyleCompat.EDGE_TYPE_DEPRESSED, textView.context.getString(R.string.subtitles_depressed)),
-                Pair(CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW, textView.context.getString(R.string.subtitles_shadow)),
-                Pair(CaptionStyleCompat.EDGE_TYPE_RAISED, textView.context.getString(R.string.subtitles_raised)),
+                Pair(
+                    CaptionStyleCompat.EDGE_TYPE_NONE,
+                    textView.context.getString(R.string.subtitles_none)
+                ),
+                Pair(
+                    CaptionStyleCompat.EDGE_TYPE_OUTLINE,
+                    textView.context.getString(R.string.subtitles_outline)
+                ),
+                Pair(
+                    CaptionStyleCompat.EDGE_TYPE_DEPRESSED,
+                    textView.context.getString(R.string.subtitles_depressed)
+                ),
+                Pair(
+                    CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW,
+                    textView.context.getString(R.string.subtitles_shadow)
+                ),
+                Pair(
+                    CaptionStyleCompat.EDGE_TYPE_RAISED,
+                    textView.context.getString(R.string.subtitles_raised)
+                ),
             )
 
             //showBottomDialog
@@ -282,6 +316,7 @@ class SubtitlesFragment : Fragment() {
             return@setOnLongClickListener true
         }
 
+        subs_font_size.setFocusableInTv()
         subs_font_size.setOnClickListener { textView ->
             val suffix = "sp"
             val fontSizes = listOf(
@@ -333,6 +368,7 @@ class SubtitlesFragment : Fragment() {
             return@setOnLongClickListener true
         }
 
+        subs_font.setFocusableInTv()
         subs_font.setOnClickListener { textView ->
             val fontTypes = listOf(
                 Pair(null, textView.context.getString(R.string.normal)),
@@ -372,34 +408,44 @@ class SubtitlesFragment : Fragment() {
             return@setOnLongClickListener true
         }
 
+        subs_auto_select_language.setFocusableInTv()
         subs_auto_select_language.setOnClickListener { textView ->
             val langMap = arrayListOf(
-                SubtitleHelper.Language639("None", "None", "", "", "", "", ""),
+                SubtitleHelper.Language639(
+                    textView.context.getString(R.string.none),
+                    textView.context.getString(R.string.none),
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                ),
             )
             langMap.addAll(SubtitleHelper.languages)
 
             val lang639_1 = langMap.map { it.ISO_639_1 }
             activity?.showDialog(
                 langMap.map { it.languageName },
-                lang639_1.indexOf(textView.context.getAutoSelectLanguageISO639_1()),
+                lang639_1.indexOf(getAutoSelectLanguageISO639_1()),
                 (textView as TextView).text.toString(),
                 true,
                 dismissCallback
             ) { index ->
-                textView.context.setKey(SUBTITLE_AUTO_SELECT_KEY, lang639_1[index])
+                setKey(SUBTITLE_AUTO_SELECT_KEY, lang639_1[index])
             }
         }
 
-        subs_auto_select_language.setOnLongClickListener { textView ->
-            textView.context.setKey(SUBTITLE_AUTO_SELECT_KEY, "en")
+        subs_auto_select_language.setOnLongClickListener {
+            setKey(SUBTITLE_AUTO_SELECT_KEY, "en")
             showToast(activity, R.string.subs_default_reset_toast, Toast.LENGTH_SHORT)
             return@setOnLongClickListener true
         }
 
+        subs_download_languages.setFocusableInTv()
         subs_download_languages.setOnClickListener { textView ->
             val langMap = SubtitleHelper.languages
             val lang639_1 = langMap.map { it.ISO_639_1 }
-            val keys = textView.context.getDownloadSubsLanguageISO639_1()
+            val keys = getDownloadSubsLanguageISO639_1()
             val keyMap = keys.map { lang639_1.indexOf(it) }.filter { it >= 0 }
 
             activity?.showMultiDialog(
@@ -408,12 +454,12 @@ class SubtitlesFragment : Fragment() {
                 (textView as TextView).text.toString(),
                 dismissCallback
             ) { indexList ->
-                textView.context.setKey(SUBTITLE_DOWNLOAD_KEY, indexList.map { lang639_1[it] }.toList())
+                setKey(SUBTITLE_DOWNLOAD_KEY, indexList.map { lang639_1[it] }.toList())
             }
         }
 
-        subs_download_languages.setOnLongClickListener { textView ->
-            textView.context.setKey(SUBTITLE_DOWNLOAD_KEY, listOf("en"))
+        subs_download_languages.setOnLongClickListener {
+            setKey(SUBTITLE_DOWNLOAD_KEY, listOf("en"))
 
             showToast(activity, R.string.subs_default_reset_toast, Toast.LENGTH_SHORT)
             return@setOnLongClickListener true
@@ -437,7 +483,8 @@ class SubtitlesFragment : Fragment() {
                         getPixels(TypedValue.COMPLEX_UNIT_SP, 25.0f).toFloat(),
                         Cue.TEXT_SIZE_TYPE_ABSOLUTE
                     )
-                    .setText(subtitle_text.context.getString(R.string.subtitles_example_text)).build()
+                    .setText(subtitle_text.context.getString(R.string.subtitles_example_text))
+                    .build()
             )
         )
     }
