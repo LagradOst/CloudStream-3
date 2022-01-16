@@ -3,7 +3,7 @@ package com.lagradost.cloudstream3.extractors
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.app
 
-class Uqload1 : SBPlay() {
+class Uqload1 : Uqload() {
     override val mainUrl = "https://uqload.com"
 }
 
