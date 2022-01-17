@@ -56,7 +56,7 @@ const val DOUBLE_TAB_MINIMUM_TIME_BETWEEN = 200L    // this also affects the UI 
 const val DOUBLE_TAB_PAUSE_PERCENTAGE = 0.15        // in both directions
 
 // All the UI Logic for the player
-open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
+open class FullScreenPlayer : AbstractPlayerFragment() {
     // state of player UI
     protected var isShowing = false
     protected var isLocked = false
@@ -414,7 +414,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
 
     private fun updateLockUI() {
         player_lock?.setIconResource(if (isLocked) R.drawable.video_locked else R.drawable.video_unlocked)
-        if (!player_holder.getTag().equals("television")) {
+        if (layout == R.layout.fragment_player) {
             val color = if (isLocked) context?.colorFromAttribute(R.attr.colorPrimary)
             else Color.WHITE
             if (color != null) {
@@ -822,8 +822,11 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         return true
     }
 
-    private fun handleKeyEvent(event: KeyEvent): Boolean {
-        event.keyCode.let { keyCode ->
+    private fun handleKeyEvent(event: KeyEvent, hasNavigated: Boolean): Boolean {
+        if (hasNavigated) {
+            autoHide()
+        } else {
+            event.keyCode.let { keyCode ->
                 when (event.action) {
                     KeyEvent.ACTION_DOWN -> {
                         when (keyCode) {
@@ -844,7 +847,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
                                 if (!isShowing && !isLocked) {
                                     player.seekTime(-10000L)
                                     return true
-                                } else if (player_pause_play.isFocused){
+                                } else if (player_pause_play?.isFocused == true) {
                                     player.seekTime(-30000L)
                                     return true
                                 }
@@ -853,37 +856,37 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
                                 if (!isShowing && !isLocked) {
                                     player.seekTime(10000L)
                                     return true
-                                } else if (player_pause_play.isFocused){
+                                } else if (player_pause_play?.isFocused == true) {
                                     player.seekTime(30000L)
                                     return true
                                 }
-
                             }
                         }
                     }
                 }
 
-            when (keyCode) {
-                // don't allow dpad move when hidden
+                when (keyCode) {
+                    // don't allow dpad move when hidden
 
-                KeyEvent.KEYCODE_DPAD_DOWN,
-                KeyEvent.KEYCODE_DPAD_UP,
-                KeyEvent.KEYCODE_DPAD_DOWN_LEFT,
-                KeyEvent.KEYCODE_DPAD_DOWN_RIGHT,
-                KeyEvent.KEYCODE_DPAD_UP_LEFT,
-                KeyEvent.KEYCODE_DPAD_UP_RIGHT -> {
-                    if (!isShowing) {
-                        return true
-                    } else {
-                        autoHide()
+                    KeyEvent.KEYCODE_DPAD_DOWN,
+                    KeyEvent.KEYCODE_DPAD_UP,
+                    KeyEvent.KEYCODE_DPAD_DOWN_LEFT,
+                    KeyEvent.KEYCODE_DPAD_DOWN_RIGHT,
+                    KeyEvent.KEYCODE_DPAD_UP_LEFT,
+                    KeyEvent.KEYCODE_DPAD_UP_RIGHT -> {
+                        if (!isShowing) {
+                            return true
+                        } else {
+                            autoHide()
+                        }
                     }
-                }
 
-                // netflix capture back and hide ~monke
-                KeyEvent.KEYCODE_BACK -> {
-                    if (isShowing) {
-                        onClickChange()
-                        return true
+                    // netflix capture back and hide ~monke
+                    KeyEvent.KEYCODE_BACK -> {
+                        if (isShowing) {
+                            onClickChange()
+                            return true
+                        }
                     }
                 }
             }
@@ -961,12 +964,11 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         }
 
         // handle tv controls directly based on player state
-        keyEventListener = { keyEvent ->
-            if (keyEvent != null) {
-                handleKeyEvent(keyEvent)
-            } else {
-                false
-            }
+        keyEventListener = { eventNav ->
+            val (event, hasNavigated) = eventNav
+            if (event != null)
+                handleKeyEvent(event, hasNavigated)
+            else false
         }
 
         try {
