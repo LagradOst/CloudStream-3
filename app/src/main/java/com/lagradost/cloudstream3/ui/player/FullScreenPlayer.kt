@@ -352,6 +352,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         }
         activity?.hideSystemUI()
         animateLayoutChanges()
+        player_pause_play.requestFocus()
     }
 
     private fun toggleLock() {
@@ -413,13 +414,15 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
 
     private fun updateLockUI() {
         player_lock?.setIconResource(if (isLocked) R.drawable.video_locked else R.drawable.video_unlocked)
-        val color = if (isLocked) context?.colorFromAttribute(R.attr.colorPrimary)
-        else Color.WHITE
-        if (color != null) {
-            player_lock?.setTextColor(color)
-            player_lock?.iconTint = ColorStateList.valueOf(color)
-            player_lock?.rippleColor =
-                ColorStateList.valueOf(Color.argb(50, color.red, color.green, color.blue))
+        if (!player_holder.getTag().equals("television")) {
+            val color = if (isLocked) context?.colorFromAttribute(R.attr.colorPrimary)
+            else Color.WHITE
+            if (color != null) {
+                player_lock?.setTextColor(color)
+                player_lock?.iconTint = ColorStateList.valueOf(color)
+                player_lock?.rippleColor =
+                    ColorStateList.valueOf(Color.argb(50, color.red, color.green, color.blue))
+            }
         }
     }
 
@@ -821,32 +824,50 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
 
     private fun handleKeyEvent(event: KeyEvent): Boolean {
         event.keyCode.let { keyCode ->
-            when (event.action) {
-                KeyEvent.ACTION_DOWN -> {
-                    when (keyCode) {
-                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_DPAD_UP -> {
-                            if (!isShowing) {
-                                onClickChange()
-                                return true
+                when (event.action) {
+                    KeyEvent.ACTION_DOWN -> {
+                        when (keyCode) {
+                            KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                if (!isShowing) {
+                                    if (!isLocked) player.handleEvent(CSPlayerEvent.PlayPauseToggle)
+                                    onClickChange()
+                                    return true
+                                }
+                            }
+                            KeyEvent.KEYCODE_DPAD_UP -> {
+                                if (!isShowing) {
+                                    onClickChange()
+                                    return true
+                                }
+                            }
+                            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                if (!isShowing && !isLocked) {
+                                    player.seekTime(-10000L)
+                                    return true
+                                } else if (player_pause_play.isFocused){
+                                    player.seekTime(-30000L)
+                                    return true
+                                }
+                            }
+                            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                if (!isShowing && !isLocked) {
+                                    player.seekTime(10000L)
+                                    return true
+                                } else if (player_pause_play.isFocused){
+                                    player.seekTime(30000L)
+                                    return true
+                                }
+
                             }
                         }
                     }
-
-                    //println("Keycode: $keyCode")
-                    //showToast(
-                    //    this,
-                    //    "Got Keycode $keyCode | ${KeyEvent.keyCodeToString(keyCode)} \n ${event?.action}",
-                    //    Toast.LENGTH_LONG
-                    //)
                 }
-            }
 
             when (keyCode) {
                 // don't allow dpad move when hidden
-                KeyEvent.KEYCODE_DPAD_LEFT,
+
                 KeyEvent.KEYCODE_DPAD_DOWN,
                 KeyEvent.KEYCODE_DPAD_UP,
-                KeyEvent.KEYCODE_DPAD_RIGHT,
                 KeyEvent.KEYCODE_DPAD_DOWN_LEFT,
                 KeyEvent.KEYCODE_DPAD_DOWN_RIGHT,
                 KeyEvent.KEYCODE_DPAD_UP_LEFT,
