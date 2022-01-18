@@ -1,9 +1,7 @@
 package com.lagradost.cloudstream3.animeproviders
 
 import com.lagradost.cloudstream3.*
-import org.jsoup.Jsoup
 import java.util.*
-import android.util.Base64
 import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -44,7 +42,7 @@ class MonoschinosProvider:MainAPI() {
 
         val items = ArrayList<HomePageList>()
 
-        items.add(HomePageList("Capítulos actualizados", Jsoup.parse(app.get(mainUrl, timeout = 120).text).select(".col-6").map{
+        items.add(HomePageList("Capítulos actualizados", app.get(mainUrl, timeout = 120).document.select(".col-6").map{
             val title = it.selectFirst("p.animetitles").text()
             val poster = it.selectFirst(".animeimghv").attr("data-src")
             val epRegex = Regex("episodio-(\\d+)")
@@ -65,9 +63,7 @@ class MonoschinosProvider:MainAPI() {
 
         for (i in urls) {
             try {
-
-                val soup = Jsoup.parse(app.get(i.first, timeout = 120).text)
-                val home = soup.select(".col-6").map {
+                val home = app.get(i.first, timeout = 120).document.select(".col-6").map {
                     val title = it.selectFirst(".seristitles").text()
                     val poster = it.selectFirst("img.animemainimg").attr("src")
                     AnimeSearchResponse(
@@ -92,7 +88,7 @@ class MonoschinosProvider:MainAPI() {
     }
 
     override suspend fun search(query: String): ArrayList<SearchResponse> {
-        val search = Jsoup.parse(app.get("$mainUrl/buscar?q=$query", timeout = 120).text).select(".col-6").map {
+        val search = app.get("$mainUrl/buscar?q=$query", timeout = 120).document.select(".col-6").map {
             val title = it.selectFirst(".seristitles").text()
             val href = fixUrl(it.selectFirst("a").attr("href"))
             val image = it.selectFirst("img.animemainimg").attr("src")
@@ -109,7 +105,7 @@ class MonoschinosProvider:MainAPI() {
         return ArrayList(search)
     }
     override suspend fun load(url: String): LoadResponse {
-        val doc = Jsoup.parse(app.get(url, timeout = 120).text)
+        val doc = app.get(url, timeout = 120).document
         val poster = doc.selectFirst(".chapterpic img").attr("src")
         val title = doc.selectFirst(".chapterdetails h1").text()
         val type = doc.selectFirst(".activecrumb a").text()
@@ -145,10 +141,10 @@ class MonoschinosProvider:MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Jsoup.parse(app.get(data).text).select("div.playother p").forEach {
+        app.get(data).document.select("div.playother p").forEach {
             val encodedurl = it.select("p").attr("data-player")
-            val urlDecoded = Base64.decode(encodedurl, Base64.DEFAULT)
-            val url = String(urlDecoded).replace("https://monoschinos2.com/reproductor?url=", "")
+            val urlDecoded = base64Decode(encodedurl)
+            val url = (urlDecoded).replace("https://monoschinos2.com/reproductor?url=", "")
             if (url.startsWith("https://www.fembed.com")) {
                 val extractor = FEmbed()
                 extractor.getUrl(url).forEach { link ->

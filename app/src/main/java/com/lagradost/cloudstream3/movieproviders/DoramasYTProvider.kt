@@ -1,9 +1,7 @@
 package com.lagradost.cloudstream3.animeproviders
 
 import com.lagradost.cloudstream3.*
-import org.jsoup.Jsoup
 import java.util.*
-import android.util.Base64
 import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -44,7 +42,7 @@ class DoramasYTProvider:MainAPI() {
 
         val items = ArrayList<HomePageList>()
 
-        items.add(HomePageList("Capítulos actualizados", Jsoup.parse(app.get(mainUrl, timeout = 120).text).select(".col-6").map{
+        items.add(HomePageList("Capítulos actualizados", app.get(mainUrl, timeout = 120).document.select(".col-6").map{
             val title = it.selectFirst("p").text()
             val poster = it.selectFirst(".chapter img").attr("src")
             val epRegex = Regex("episodio-(\\d+)")
@@ -65,8 +63,8 @@ class DoramasYTProvider:MainAPI() {
 
         for (i in urls) {
             try {
-                val soup = Jsoup.parse(app.get(i.first, timeout = 120).text)
-                val home = soup.select(".col-6").map {
+
+                val home = app.get(i.first, timeout = 120).document.select(".col-6").map {
                     val title = it.selectFirst(".animedtls p").text()
                     val poster = it.selectFirst(".anithumb img").attr("src")
                     AnimeSearchResponse(
@@ -91,7 +89,7 @@ class DoramasYTProvider:MainAPI() {
     }
 
     override suspend fun search(query: String): ArrayList<SearchResponse> {
-        val search = Jsoup.parse(app.get("$mainUrl/buscar?q=$query", timeout = 120).text).select(".col-6").map {
+        val search = app.get("$mainUrl/buscar?q=$query", timeout = 120).document.select(".col-6").map {
             val title = it.selectFirst(".animedtls p").text()
             val href = it.selectFirst("a").attr("href")
             val image = it.selectFirst(".animes img").attr("src")
@@ -108,7 +106,7 @@ class DoramasYTProvider:MainAPI() {
         return ArrayList(search)
     }
     override suspend fun load(url: String): LoadResponse {
-        val doc = Jsoup.parse(app.get(url, timeout = 120).text)
+        val doc = app.get(url, timeout = 120).document
         val poster = doc.selectFirst("div.flimimg img.img1").attr("src")
         val title = doc.selectFirst("h1").text()
         val type = doc.selectFirst("h4").text()
@@ -122,17 +120,15 @@ class DoramasYTProvider:MainAPI() {
         val episodes = doc.select(".heromain .col-item").map {
             val name = it.selectFirst(".dtlsflim p").text()
             val link = it.selectFirst("a").attr("href")
-            // val epThumb = it.selectFirst(".flimimg img.img1").attr("src") faster loading time?
-            AnimeEpisode(link, name, posterUrl = null)
+            val epThumb = it.selectFirst(".flimimg img.img1").attr("src")
+            AnimeEpisode(link, name, posterUrl = epThumb)
         }
         return newAnimeLoadResponse(title, url, getType(type)) {
             posterUrl = poster
-            this.year = null
             addEpisodes(DubStatus.Subbed, episodes)
             showStatus = status
             plot = description
             tags = genres
-            rating = null
         }
     }
     override suspend fun loadLinks(
@@ -141,10 +137,10 @@ class DoramasYTProvider:MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Jsoup.parse(app.get(data).text).select("div.playother p").forEach {
+        app.get(data).document.select("div.playother p").forEach {
             val encodedurl = it.select("p").attr("data-player")
-            val urlDecoded = Base64.decode(encodedurl, Base64.DEFAULT)
-            val url = String(urlDecoded).replace("https://doramasyt.com/reproductor?url=", "")
+            val urlDecoded = base64Decode(encodedurl)
+            val url = (urlDecoded).replace("https://doramasyt.com/reproductor?url=", "")
             if (url.startsWith("https://www.fembed.com")) {
                 val extractor = FEmbed()
                 extractor.getUrl(url).forEach { link ->
