@@ -58,7 +58,8 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/player_video_holder"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:padding="16dp">
 
         <FrameLayout
             android:id="@+id/player_top_holder"
@@ -74,7 +75,7 @@
                 android:layout_marginEnd="32dp"
                 android:gravity="end"
                 android:textColor="@color/white"
-                android:textSize="24sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
                 tools:text="Hello world" />
 
@@ -83,7 +84,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="80dp"
-                android:layout_marginTop="50dp"
+                android:layout_marginTop="40dp"
                 android:layout_marginEnd="32dp"
                 android:gravity="end"
                 android:textColor="@color/white"
@@ -125,29 +126,29 @@
                     android:layout_gravity="center"
                     android:background="@drawable/video_tap_button_always_white"
                     android:clickable="true"
-                    android:focusable="true"
-                    android:contentDescription="@string/go_back_img_des" />
+                    android:contentDescription="@string/go_back_img_des"
+                    android:focusable="true" />
             </FrameLayout>
         </FrameLayout>
 
         <!--use for thinner app:trackThickness="3dp" com.google.android.material.progressindicator.CircularProgressIndicator-->
         <ProgressBar
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            android:id="@+id/player_buffering"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
 
-            android:focusable="false"
             android:clickable="false"
+            android:focusable="false"
             android:focusableInTouchMode="false"
 
             android:indeterminate="true"
             android:visibility="gone"
-            tools:visibility="visible"
-            android:id="@+id/player_buffering"
-            android:layout_gravity="center"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:visibility="visible" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -164,59 +165,62 @@
             <ImageButton
                 android:id="@id/exo_prev"
                 style="@style/ExoMediaButton.Previous"
-                app:tint="?attr/colorPrimaryDark"
                 android:tintMode="src_in"
+                app:tint="?attr/colorPrimaryDark"
                 tools:ignore="ContentDescription" />
 
 
             <ImageButton
                 android:id="@id/exo_repeat_toggle"
                 style="@style/ExoMediaButton"
-                app:tint="?attr/colorPrimaryDark"
                 android:tintMode="src_in"
+                app:tint="?attr/colorPrimaryDark"
                 tools:ignore="ContentDescription" />
 
 
             <ImageButton
                 android:id="@id/exo_next"
                 style="@style/ExoMediaButton.Next"
-                app:tint="?attr/colorPrimaryDark"
                 android:tintMode="src_in"
+                app:tint="?attr/colorPrimaryDark"
                 tools:ignore="ContentDescription" />
 
             <ImageButton
                 android:id="@id/exo_vr"
                 style="@style/ExoMediaButton.VR"
-                app:tint="?attr/colorPrimaryDark"
                 android:tintMode="src_in"
+                app:tint="?attr/colorPrimaryDark"
                 tools:ignore="ContentDescription" />
 
             <ImageButton
                 android:id="@id/exo_play"
-                app:tint="?attr/colorPrimaryDark"
-                android:tintMode="src_in"
-                tools:ignore="ContentDescription"
+                android:layout_width="0dp"
                 android:layout_height="0dp"
-                android:layout_width="0dp" />
+                android:tintMode="src_in"
+                app:tint="?attr/colorPrimaryDark"
+                tools:ignore="ContentDescription" />
 
             <ImageButton
                 android:id="@id/exo_pause"
-                app:tint="?attr/colorPrimaryDark"
-                android:tintMode="src_in"
-                tools:ignore="ContentDescription"
+                android:layout_width="0dp"
                 android:layout_height="0dp"
-                android:layout_width="0dp" />
+                android:tintMode="src_in"
+                app:tint="?attr/colorPrimaryDark"
+                tools:ignore="ContentDescription" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/bottom_player_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginStart="64dp"
+            android:layout_marginEnd="64dp"
             android:layout_marginBottom="10dp"
             android:gravity="center_vertical"
             android:orientation="vertical"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
 
             <LinearLayout
                 android:id="@+id/player_video_bar"
@@ -226,8 +230,8 @@
 
                 <ImageView
                     android:id="@+id/player_pause_play"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
                     android:layout_gravity="center"
                     android:layout_marginStart="20dp"
                     android:background="@drawable/video_tap_button"
@@ -237,7 +241,7 @@
                     android:nextFocusDown="@id/player_lock"
 
                     android:src="@drawable/netflix_pause"
-                    app:tint="@color/white"
+                    app:tint="@color/player_button_tv"
                     tools:ignore="ContentDescription" />
 
                 <TextView
@@ -259,12 +263,12 @@
                     android:id="@id/exo_progress"
                     android:layout_width="0dp"
                     android:layout_height="30dp"
-                    android:layout_weight="1"
                     android:layout_gravity="center"
-                    app:bar_height="2dp"
-                    app:played_color="?attr/colorPrimary"
+                    android:layout_weight="1"
                     android:focusable="false"
                     android:focusableInTouchMode="false"
+                    app:bar_height="2dp"
+                    app:played_color="?attr/colorPrimary"
                     app:scrubber_color="?attr/colorPrimary"
                     app:scrubber_dragged_size="26dp"
                     app:scrubber_enabled_size="24dp"
@@ -295,7 +299,7 @@
 
                 <LinearLayout
                     android:layout_width="wrap_content"
-                    android:layout_height="60dp"
+                    android:layout_height="wrap_content"
                     android:gravity="center"
                     android:paddingTop="10dp"
                     android:paddingBottom="10dp">

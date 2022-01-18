@@ -433,7 +433,7 @@
         <item name="textColor">@color/player_on_button_tv</item>
         <item name="android:textColor">@color/player_on_button_tv</item>
         <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">30dp</item>
+        <item name="android:layout_height">25dp</item>
         <item name="iconSize">16dp</item>
         <item name="android:gravity">center</item>
         <item name="android:layout_gravity">center</item>
@@ -441,8 +441,8 @@
         <item name="textAllCaps">false</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textSize">10sp</item>
-        <item name="android:layout_marginStart">10dp</item>
-        <item name="android:layout_marginEnd">10dp</item>
+        <item name="android:layout_marginStart">4dp</item>
+        <item name="android:layout_marginEnd">4dp</item>
         <item name="android:insetBottom">0dp</item>
         <item name="android:insetTop">0dp</item>
     </style>
