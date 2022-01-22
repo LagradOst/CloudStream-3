@@ -41,6 +41,12 @@ import java.net.URL
 import java.net.URLDecoder
 
 object AppUtils {
+    fun String.findBetween(a:String,b:String):String?{
+        val start = this.indexOf(a)
+        val end = if(start!=-1) this.indexOf(b,start) else return null
+        return if(end!=-1) this.subSequence(start,end).removePrefix(a).removeSuffix(b).toString() else null
+    }
+
     fun getVideoContentUri(context: Context, videoFilePath: String): Uri? {
         val cursor = context.contentResolver.query(
             MediaStore.Video.Media.EXTERNAL_CONTENT_URI, arrayOf(MediaStore.Video.Media._ID),
