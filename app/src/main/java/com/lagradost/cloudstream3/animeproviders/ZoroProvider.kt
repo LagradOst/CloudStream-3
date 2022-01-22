@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.movieproviders.SflixProvider
 import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.toExtractorLink
 import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.toSubtitleFile
-import com.lagradost.cloudstream3.network.WebViewResolver
+import com.lagradost.cloudstream3.utils.AppUtils.findBetween
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
@@ -258,16 +258,8 @@ class ZoroProvider : MainAPI() {
     }
 
     private fun getM3u8FromRapidCloud(url: String): String {
-        return app.get(
-            "$url&autoPlay=1&oa=0",
-            headers = mapOf(
-                "Referer" to "https://zoro.to/",
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0"
-            ),
-            interceptor = WebViewResolver(
-                Regex("""/getSources""")
-            )
-        ).text
+        val jsonLink = "https://rapid-cloud.ru/ajax/embed-6/getSources?id=${ url.findBetween("/embed-6/", "?z=")!! }"
+        return app.get(jsonLink).text
     }
 
     private data class RapidCloudResponse(
