@@ -75,7 +75,7 @@
     <string name="no_data">Nessun dato</string>
     <string name="episode_more_options_des">Più impostazioni</string>
     <string name="next_episode">Prossimo episodio</string>
-    <string name="result_plot" translatable="false">@string/sinossi</string>
+    <string name="result_plot" translatable="false">@string/synopsis</string>
     <string name="result_tags">Genere</string>
     <string name="result_share">Condividi</string>
     <string name="result_open_in_browser">Apri nel browser</string>
@@ -205,103 +205,102 @@
     <string name="benene">Dai una banene agli sviluppatori</string>
     <string name="benene_des">Dai una banene</string>
 
-    <string name="app_language">Lingua app</string>-------------------------------------------------------------------------------------------------------------
+    <string name="app_language">Lingua app</string>
 
-    <string name="no_chomecast_support_toast">This provider has no Chromecast support</string>
-    <string name="no_links_found_toast">No Links Found</string>
-    <string name="copy_link_toast">Link copied to clipboard</string>
-    <string name="play_episode_toast">Play Episode</string>
-    <string name="subs_default_reset_toast">Reset to default value</string>
-    <string name="acra_report_toast">Sorry, the application crashed. An anonymous bug report will be sent to the
-        developers
+    <string name="no_chomecast_support_toast">Questo provider non ha il supporto per Chromecast</string>
+    <string name="no_links_found_toast">Nessun link trovato</string>
+    <string name="copy_link_toast">Link copiato negli appunti</string>
+    <string name="play_episode_toast">Riproduci episodio</string>
+    <string name="subs_default_reset_toast">Ripristina il valore predefinito</string>
+    <string name="acra_report_toast">Spiacente, l'applicazione è andata in crash. Una segnalazione anonima di bug sarà inviata agli sviluppatori
     </string>
 
-    <string name="season">Season</string>
-    <string name="no_season">No Season</string>
-    <string name="episode">Episode</string>
-    <string name="episodes">Episodes</string>
+    <string name="season">Stagione</string>
+    <string name="no_season">Nessuna stagione</string>
+    <string name="episode">Episodio</string>
+    <string name="episodes">Episodi</string>
     <string name="season_short">S</string>
     <string name="episode_short">E</string>
-    <string name="no_episodes_found">No Episodes found</string>
+    <string name="no_episodes_found">Nessun episodio trovato</string>
 
-    <string name="delete_file">Delete File</string>
-    <string name="delete">Delete</string>
+    <string name="delete_file">Elimina file</string>
+    <string name="delete">Elimina</string>
     <string name="cancel" translatable="false">@string/sort_cancel</string>
-    <string name="pause">Pause</string>
-    <string name="resume">Resume</string>
+    <string name="pause">Pausa</string>
+    <string name="resume">Riprendi</string>
     <string name="go_back_30">-30</string>
     <string name="go_forward_30">+30</string>
-    <string name="delete_message" formatted="true">This will permanently delete %s\nAre you sure?</string>
+    <string name="delete_message" formatted="true">Staip per eliminare permanentemente %s\nSei sicuro?</string>
 
-    <string name="status_ongoing">Ongoing</string>
-    <string name="status_completed">Completed</string>
-    <string name="status">Status</string>
-    <string name="year">Year</string>
-    <string name="rating">Rating</string>
-    <string name="duration">Duration</string>
-    <string name="site">Site</string>
-    <string name="synopsis">Synopsis</string>
+    <string name="status_ongoing">In corso</string>
+    <string name="status_completed">Completato</string>
+    <string name="status">Stato</string>
+    <string name="year">Anno</string>
+    <string name="rating">Valutazione</string>
+    <string name="duration">Durata</string>
+    <string name="site">Sito</string>
+    <string name="synopsis">Sinossi</string>
 
-    <string name="queued">queued</string>
-    <string name="no_subtitles">No Subtitles</string>
+    <string name="queued">In coda</string>
+    <string name="no_subtitles">Nessun sottotiolo</string>
     <string name="default_subtitles">Default</string>
 
-    <string name="free_storage">Free</string>
-    <string name="used_storage">Used</string>
+    <string name="free_storage">Libero</string>
+    <string name="used_storage">Usato</string>
     <string name="app_storage">App</string>
 
     <!--plural-->
-    <string name="movies">Movies</string>
-    <string name="tv_series">TV Series</string>
-    <string name="cartoons">Cartoons</string>
+    <string name="movies">Film</string>
+    <string name="tv_series">Serie TV</string>
+    <string name="cartoons">Cartoni</string>
     <string name="anime">Anime</string>
-    <string name="torrent">Torrents</string>
-    <string name="documentaries">Documentaries</string>
+    <string name="torrent">Torrent</string>
+    <string name="documentaries">Documentari</string>
 
     <!--singular-->
-    <string name="movies_singular">Movie</string>
-    <string name="tv_series_singular">Series</string>
-    <string name="cartoons_singular">Cartoon</string>
+    <string name="movies_singular">Film</string>
+    <string name="tv_series_singular">Serie TV</string>
+    <string name="cartoons_singular">Cartoni</string>
     <string name="anime_singular">@string/anime</string>
     <string name="torrent_singular">Torrent</string>
-    <string name="documentaries_singular">Documentary</string>
+    <string name="documentaries_singular">Documentari</string>
 
     <string name="source_error">Source error</string>
     <string name="remote_error">Remote error</string>
     <string name="render_error">Renderer error</string>
     <string name="unexpected_error">Unexpected player error</string>
-    <string name="storage_error">Download error, check storage permissions</string>
+    <string name="storage_error">Errore download, controlla i permessi di archiviazione</string>
 
-    <string name="episode_action_chomecast_episode">Chromecast Episode</string>
-    <string name="episode_action_chomecast_mirror">Chromecast Mirror</string>
-    <string name="episode_action_play_in_app">Play In App</string>
-    <string name="episode_action_play_in_vlc">Play In VLC</string>
-    <string name="episode_action_play_in_browser">Play in browser</string>
-    <string name="episode_action_copy_link">Copy Link</string>
-    <string name="episode_action_auto_download">Auto Download</string>
+    <string name="episode_action_chomecast_episode">Episodio Chromecast</string>
+    <string name="episode_action_chomecast_mirror">Mirror Chromecast</string>
+    <string name="episode_action_play_in_app">Riproduci in app</string>
+    <string name="episode_action_play_in_vlc">Riproduci in VLC</string>
+    <string name="episode_action_play_in_browser">Riproduci nel browser</string>
+    <string name="episode_action_copy_link">Copia link</string>
+    <string name="episode_action_auto_download">Download automatico</string>
     <string name="episode_action_download_mirror">Download Mirror</string>
-    <string name="episode_action_reload_links">Reload Links</string>
+    <string name="episode_action_reload_links">Aggiorna link</string>
 
-    <string name="no_update_found">No Update Found</string>
-    <string name="check_for_update">Check for Update</string>
+    <string name="no_update_found">Nessun aggiornamento trovato</string>
+    <string name="check_for_update">Controlla aggiornamenti</string>
 
-    <string name="video_lock">Lock</string>
-    <string name="video_aspect_ratio_resize">Resize</string>
-    <string name="video_source">Source</string>
-    <string name="video_skip_op">Skip OP</string>
+    <string name="video_lock">Blocca</string>
+    <string name="video_aspect_ratio_resize">Ridimensiona</string>
+    <string name="video_source">Sorgente</string>
+    <string name="video_skip_op">Salta intro</string>
 
-    <string name="dont_show_again">Don\'t show again</string>
-    <string name="update">Update</string>
-    <string name="watch_quality_pref">Preferred watch quality</string>
-    <string name="dns_pref">DNS over HTTPS</string>
-    <string name="dns_pref_summary">Useful for bypassing ISP blocks</string>
+    <string name="dont_show_again">Non mostrare di nuovo</string>
+    <string name="update">Aggiorna</string>
+    <string name="watch_quality_pref">Risoluzione preferita</string>
+    <string name="dns_pref">DNS su HTTPS</string>
+    <string name="dns_pref_summary">Utile per bypassare i blocchi ISP</string>
 
-    <string name="download_path_pref">Download path</string>
+    <string name="download_path_pref">Scarica path</string>
 
-    <string name="display_subbed_dubbed_settings">Display Dubbed/Subbed Anime</string>
+    <string name="display_subbed_dubbed_settings">Mostra anime doppiati/sottotitolati</string>
 
-    <string name="resize_fit">Fit to screen</string>
-    <string name="resize_fill">Stretch</string>
+    <string name="resize_fit">Adatta allo schermo</string>
+    <string name="resize_fill">Allunga</string>
     <string name="resize_zoom">Zoom</string>
 
     <string name="legal_notice">Disclaimer</string>
@@ -322,17 +321,17 @@
         responsibility of user to avoid any actions that might violate the laws governing his/her locality. Use
         CloudStream 3 at your own risk.
     </string>
-    <string name="general">General</string>
-    <string name="provider_lang_settings">Provider Languages</string>
-    <string name="app_layout">App Layout</string>
-    <string name="preferred_media_settings">Preferred Media</string>
+    <string name="general">Generale</string>
+    <string name="provider_lang_settings">Lingua provider</string>
+    <string name="app_layout">Disposizione app</string>
+    <string name="preferred_media_settings">Media preferito</string>
 
     <string name="automatic">Auto</string>
-    <string name="tv_layout">TV Layout</string>
-    <string name="phone_layout">Phone Layout</string>
+    <string name="tv_layout">Disposizione TV</string>
+    <string name="phone_layout">Disposizione telefono</string>
 
-    <string name="primary_color_settings">Primary Color</string>
-    <string name="app_theme_settings">App Theme</string>
+    <string name="primary_color_settings">Colore primario</string>
+    <string name="app_theme_settings">Tema app</string>
 
     <!-- account stuff -->
     <string name="anilist_key" translatable="false">anilist_key</string>
@@ -349,21 +348,21 @@
     <string name="account">account</string>
     <string name="logout">Logout</string>
     <string name="login">Login</string>
-    <string name="switch_account">Switch account</string>
-    <string name="add_account">Add account</string>
-    <string name="add_sync">Add tracking</string>
-    <string name="added_sync_format" formatted="true">Added %s</string>
+    <string name="switch_account">Cambia account</string>
+    <string name="add_account">Aggiungi account</string>
+    <string name="add_sync">Aggiungi tracking</string>
+    <string name="added_sync_format" formatted="true">Aggiunto %s</string>
     <!-- ============ -->
-    <string name="none">None</string>
-    <string name="normal">Normal</string>
-    <string name="all">All</string>
+    <string name="none">Nessuno</string>
+    <string name="normal">Normale</string>
+    <string name="all">Tutto</string>
     <string name="max">Max</string>
     <string name="min">Min</string>
     <string name="subtitles_none" translatable="false">@string/none</string>
-    <string name="subtitles_outline">Outline</string>
-    <string name="subtitles_depressed">Depressed</string>
-    <string name="subtitles_shadow">Shadow</string>
-    <string name="subtitles_raised">Raised</string>
+    <string name="subtitles_outline">Contorno</string>
+    <string name="subtitles_depressed">Depresso</string>
+    <string name="subtitles_shadow">Ombra</string>
+    <string name="subtitles_raised">Sollevato</string>
     <!--
     Example text (pangram) can optionally be translated; if you do, include all the letters in the alphabet,
     see: 
@@ -372,8 +371,8 @@
     -->
     <string name="subtitles_example_text">The quick brown fox jumps over the lazy dog</string>
 
-    <string name="tab_recommended">Recommended</string>
-    <string name="player_loaded_subtitles" formatted="true">Loaded %s</string>
-    <string name="player_load_subtitles">Load from file</string>
+    <string name="tab_recommended">Consiglaito</string>
+    <string name="player_loaded_subtitles" formatted="true">Caricato %s</string>
+    <string name="player_load_subtitles">Carica da file</string>
     <string name="downloaded_file">Downloaded file</string>
 </resources>
