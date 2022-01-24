@@ -22,6 +22,8 @@ import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.mvvm.observe
 import com.lagradost.cloudstream3.ui.player.PlayerSubtitleHelper.Companion.toSubtitleMimeType
 import com.lagradost.cloudstream3.ui.result.ResultEpisode
+import com.lagradost.cloudstream3.ui.result.ResultFragment
+import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
 import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
@@ -279,7 +281,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                     sourceDialog.dismissSafe(activity)
                 }
             }
-        } catch (e : Exception) {
+        } catch (e: Exception) {
             logError(e)
         }
     }
@@ -324,6 +326,11 @@ class GeneratorPlayer : FullScreenPlayer() {
         }
 
         loadLink(links[newIndex], true)
+    }
+
+    override fun onDestroy() {
+        ResultFragment.updateUI()
+        super.onDestroy()
     }
 
     override fun playerPositionChanged(posDur: Pair<Long, Long>) {
@@ -485,6 +492,10 @@ class GeneratorPlayer : FullScreenPlayer() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        // this is used instead of layout-television to follow the settings and some TV devices are not classified as TV for some reason
+        layout =
+            if (context?.isTvSettings() == true) R.layout.fragment_player_tv else R.layout.fragment_player
+
         viewModel = ViewModelProvider(this)[PlayerGeneratorViewModel::class.java]
         viewModel.attachGenerator(lastUsedGenerator)
         return super.onCreateView(inflater, container, savedInstanceState)
