@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.movieproviders
 
+import android.util.Log
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
@@ -138,21 +139,9 @@ class PinoyHDXyzProvider : MainAPI() {
             }
         }
 
-        var extraLinks = body?.select("div.tabcontent.hide")?.text()
-        if (!extraLinks.isNullOrEmpty()) {
-            try {
-                extraLinks = extraLinks.substring(extraLinks.indexOf("_x_Polus1"))
-                extraLinks = extraLinks.trim().substring("_x_Polus1".length)
-                extraLinks = extraLinks.substring(0, extraLinks.indexOf("<script>"))
-                extraLinks.split("_x_Polus").forEach { item ->
-                    if (item.contains("https://")) {
-                        val lnkurl = item.substring(item.indexOf("https://")).trim()
-                        listOfLinks.add(lnkurl)
-                        //Log.i(this.name, "Result => (lnkurl) $lnkurl")
-                    }
-                }
-            } catch (e: Exception) { }
-        }
+        val extraLinks = body?.select("div.tabcontent.hide")?.text()
+        //Log.i(this.name, "Result => (extraLinks hide) $extraLinks")
+        listOfLinks.addAll(fetchUrls(extraLinks))
 
         // Parse episodes if series
         if (tvtype == TvType.TvSeries) {
