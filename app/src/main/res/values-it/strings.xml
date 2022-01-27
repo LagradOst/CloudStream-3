@@ -1,38 +1,5 @@
 <!--https://newbedev.com/concatenate-multiple-strings-in-xml-->
 <resources>
-    <!-- KEYS DON'T TRANSLATE -->
-    <string name="search_providers_list_key" translatable="false">search_providers_list</string>
-    <string name="locale_key" translatable="false">app_locale</string>
-    <string name="search_types_list_key" translatable="false">search_type_list</string>
-    <string name="grid_format_key" translatable="false">grid_format</string>
-    <string name="auto_update_key" translatable="false">auto_update</string>
-    <string name="prerelease_update_key" translatable="false">prerelease_update</string>
-    <string name="manual_check_update_key" translatable="false">manual_check_update</string>
-    <string name="fast_forward_button_time_key" translatable="false">fast_forward_button_time</string>
-    <string name="benene_count" translatable="false">benene_count</string>
-    <string name="subtitle_settings_key" translatable="false">subtitle_settings_key</string>
-    <string name="quality_pref_key" translatable="false">quality_pref_key</string>
-    <string name="prerelease_commit_hash" translatable="false">unknown_prerelease</string>
-    <string name="use_system_brightness_key" translatable="false">use_system_brightness_key</string>
-    <string name="swipe_enabled_key" translatable="false">swipe_enabled_key</string>
-    <string name="playback_speed_enabled_key" translatable="false">playback_speed_enabled_key</string>
-    <string name="player_resize_enabled_key" translatable="false">player_resize_enabled_key</string>
-    <string name="pip_enabled_key" translatable="false">pip_enabled_key</string>
-    <string name="double_tap_enabled_key" translatable="false">double_tap_enabled_key</string>
-    <string name="double_tap_pause_enabled_key" translatable="false">double_tap_pause_enabled_key</string>
-    <string name="swipe_vertical_enabled_key" translatable="false">swipe_vertical_enabled_key</string>
-    <string name="display_sub_key" translatable="false">display_sub_key</string>
-    <string name="show_fillers_key" translatable="false">show_fillers_key</string>
-    <string name="provider_lang_key" translatable="false">provider_lang_key</string>
-    <string name="dns_key" translatable="false">dns_key</string>
-    <string name="download_path_key" translatable="false">download_path_key</string>
-    <string name="app_name_download_path" translatable="false">Cloudstream</string>
-    <string name="app_layout_key" translatable="false">app_layout_key</string>
-    <string name="primary_color_key" translatable="false">primary_color_key</string>
-    <string name="prefer_media_type_key" translatable="false">prefer_media_type_key</string>
-    <string name="app_theme_key" translatable="false">app_theme_key</string>
-
-
     <!-- FORMAT MIGHT TRANSLATE, WILL CAUSE CRASH IF APPLIED WRONG -->
     <string name="extra_info_format" translatable="false" formatted="true">%d %s | %sMB</string>
     <string name="storage_size_format" translatable="false" formatted="true">%s • %sGB</string>
@@ -52,9 +19,7 @@
     <string name="episode_poster_img_des">Episode Poster</string>
     <string name="home_main_poster_img_des">Main Poster</string>
     <string name="home_next_random_img_des">Next Random</string>
-    <string name="episode_play_img_des" translatable="false">@string/play_episode</string>
     <string name="go_back_img_des">Go back</string>
-    <string name="change_providers_img_des" translatable="false">@string/home_change_provider_img_des</string>
     <string name="home_change_provider_img_des">Change Provider</string>
     <string name="preview_background_img_des">Preview Background</string>
 
@@ -71,16 +36,15 @@
     <string name="title_downloads">Scaricati</string>
     <string name="title_settings">Impostazioni</string>
 
-    <string name="search_hint">Cerca...</string>
+    <string name="search_hint">Cerca…</string>
     <string name="no_data">Nessun dato</string>
     <string name="episode_more_options_des">Più impostazioni</string>
     <string name="next_episode">Prossimo episodio</string>
-    <string name="result_plot" translatable="false">@string/synopsis</string>
     <string name="result_tags">Genere</string>
     <string name="result_share">Condividi</string>
     <string name="result_open_in_browser">Apri nel browser</string>
     <string name="skip_loading">Salta caricamento</string>
-    <string name="loading_chromecast">Caricando...</string>
+    <string name="loading_chromecast">Caricando…</string>
 
     <string name="type_watching">Guardando</string>
     <string name="type_on_hold">In attesa</string>
@@ -94,7 +58,7 @@
     <string name="play_torrent_button">Stream Torrent</string>
     <string name="pick_source">Fonti</string>
     <string name="pick_subtitle">Sottotitoli</string>
-    <string name="reload_error">Riprova connesisone...<string>
+    <string name="reload_error">Riprova connesisone…</string>
     <string name="go_back">Indietro</string>
     <string name="play_episode">Riproduci episodio</string>
     <!--<string name="need_storage">Per permettere il download</string>-->
@@ -194,8 +158,8 @@
     <string name="bug_report_settings_off">Invia i dati solo in caso di crash</string>
     <string name="bug_report_settings_on">Non inviare alcun dato</string>
     <string name="show_fillers_settings">Mostra episodio filler per anime</string>
-    <string name="updates_settings">Mostra gli aggiornamenti dell'app</string>
-    <string name="updates_settings_des">Cerca automaticamente nuovi aggiornamenti all'avvio</string>
+    <string name="updates_settings">Mostra gli aggiornamenti dell\'app</string>
+    <string name="updates_settings_des">Cerca automaticamente nuovi aggiornamenti all\'avvio</string>
     <string name="uprereleases_settings">Aggiornamento alle prerelease</string>
     <string name="uprereleases_settings_des">Cerca per aggiornamenti alle prerelease invice di cercare solo le release complete</string>
     <string name="github">Github</string>
@@ -212,7 +176,7 @@
     <string name="copy_link_toast">Link copiato negli appunti</string>
     <string name="play_episode_toast">Riproduci episodio</string>
     <string name="subs_default_reset_toast">Ripristina il valore predefinito</string>
-    <string name="acra_report_toast">Spiacente, l'applicazione è andata in crash. Una segnalazione anonima di bug sarà inviata agli sviluppatori
+    <string name="acra_report_toast">Spiacente, l\'applicazione è andata in crash. Una segnalazione anonima di bug sarà inviata agli sviluppatori
     </string>
 
     <string name="season">Stagione</string>
