@@ -658,7 +658,7 @@ fun MainAPI.newTvSeriesLoadResponse(
     return builder
 }
 
-fun MainAPI.fetchUrls(text: String?): List<String> {
+fun fetchUrls(text: String?): List<String> {
     if (text.isNullOrEmpty()) {
         return listOf()
     }
