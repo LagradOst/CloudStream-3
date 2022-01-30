@@ -99,7 +99,11 @@ class CinecalidadProvider:MainAPI() {
         val poster: String? = soup.selectFirst(".alignnone").attr("data-src")
         val episodes = soup.select("div.se-c div.se-a ul.episodios li").map { li ->
             val href = li.selectFirst("a").attr("href")
-            val epThumb = li.selectFirst("div.imagen img").attr("src")
+            val epThumb = try {
+                li.selectFirst("div.imagen img").attr("data-src")
+            } catch (e: Exception) {
+                li.selectFirst("div.imagen img").attr("src")
+            }
             val name = li.selectFirst(".episodiotitle a").text()
             TvSeriesEpisode(
                 name,
