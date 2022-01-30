@@ -99,11 +99,8 @@ class CinecalidadProvider:MainAPI() {
         val poster: String? = soup.selectFirst(".alignnone").attr("data-src")
         val episodes = soup.select("div.se-c div.se-a ul.episodios li").map { li ->
             val href = li.selectFirst("a").attr("href")
-            val epThumb = try {
-                li.selectFirst("div.imagen img").attr("data-src")
-            } catch (e: Exception) {
-                li.selectFirst("div.imagen img").attr("src")
-            }
+            val epThumb = li.selectFirst("div.imagen img").attr("data-src") ?: li.selectFirst("div.imagen img").attr("src")
+
             val name = li.selectFirst(".episodiotitle a").text()
             TvSeriesEpisode(
                 name,
@@ -148,23 +145,22 @@ class CinecalidadProvider:MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get(data).document.select(".dooplay_player_option").forEach {
+        app.get(data).document.select(".dooplay_player_option").apmap {
             val url = it.attr("data-option")
             if (url.startsWith("https://evoload.io")) {
                 val extractor = Evoload()
-                extractor.getUrl(url).forEach { link ->
+                extractor.getSafeUrl(url)?.forEach { link ->
                     callback.invoke(link)
                 }
             } else {
                 loadExtractor(url, mainUrl, callback)
             }
         }
-        if ((app.get(data).text.contains("en castellano"))) app.get("$data?ref=es").document.select(".dooplay_player_option").forEach {
+        if ((app.get(data).text.contains("en castellano"))) app.get("$data?ref=es").document.select(".dooplay_player_option").apmap {
             val url = it.attr("data-option")
             if (url.startsWith("https://evoload.io")) {
                 val extractor = Evoload()
-                extractor.getUrl(url).forEach { link ->
-                    link.name += " Castellano"
+                extractor.getSafeUrl(url)?.forEach { link ->
                     callback.invoke(link)
                 }
             } else {

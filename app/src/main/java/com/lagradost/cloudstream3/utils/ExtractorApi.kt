@@ -11,7 +11,7 @@ import org.jsoup.Jsoup
 
 data class ExtractorLink(
     val source: String,
-    var name: String,
+    val name: String,
     override val url: String,
     override val referer: String,
     val quality: Int,
