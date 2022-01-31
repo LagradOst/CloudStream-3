@@ -163,16 +163,13 @@ class DramaSeeProvider : MainAPI() {
                 val url = fixUrl(item.trim())
                 //Log.i(this.name, "Result => (url) ${url}")
                 when {
-                    url.startsWith("https://asianembed.io") -> {
-                        AsianEmbedHelper.getUrls(url, callback)
-                    }
-                    url.startsWith("https://asianload.io") -> {
+                    url.startsWith("https://asianembed.io") || url.startsWith("https://asianload.io") -> {
                         AsianEmbedHelper.getUrls(url, callback)
                     }
                     url.startsWith("https://embedsito.com") -> {
                         val extractor = XStreamCdn()
                         extractor.domainUrl = "embedsito.com"
-                        extractor.getUrl(url).forEach { link ->
+                        extractor.getSafeUrl(url)?.apmap { link ->
                             callback.invoke(link)
                         }
                     }
