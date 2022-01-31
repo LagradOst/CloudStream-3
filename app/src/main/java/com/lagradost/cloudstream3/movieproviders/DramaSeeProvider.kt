@@ -169,9 +169,7 @@ class DramaSeeProvider : MainAPI() {
                     url.startsWith("https://embedsito.com") -> {
                         val extractor = XStreamCdn()
                         extractor.domainUrl = "embedsito.com"
-                        extractor.getSafeUrl(url)?.apmap { link ->
-                            callback.invoke(link)
-                        }
+                        extractor.getSafeUrl(url)?.forEach(callback)
                     }
                     else -> {
                         loadExtractor(url, mainUrl, callback)
