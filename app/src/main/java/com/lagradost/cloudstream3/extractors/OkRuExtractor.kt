@@ -3,10 +3,6 @@ package com.lagradost.cloudstream3.extractors
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.app
 
-class Okru1 : OkRu() {
-    override val mainUrl = "https://ok.ru"
-}
-
 open class OkRu : ExtractorApi() {
     override val name = "Okru"
     override val mainUrl = "http://ok.ru"

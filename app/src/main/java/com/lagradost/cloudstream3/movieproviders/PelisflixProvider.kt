@@ -198,7 +198,6 @@ class PelisflixProvider:MainAPI() {
                         "Accept" to "ext/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
                         "Accept-Language" to "en-US,en;q=0.5",
                         "Content-Type" to "application/x-www-form-urlencoded",
-                        "Content-Length" to "88",
                         "Origin" to "null",
                         "DNT" to "1",
                         "Connection" to "keep-alive",

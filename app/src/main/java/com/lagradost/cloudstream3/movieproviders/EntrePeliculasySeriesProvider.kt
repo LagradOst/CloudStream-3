@@ -152,37 +152,36 @@ class EntrepeliculasyseriesProvider:MainAPI() {
         app.get(data).document.select(".video ul.dropdown-menu li").apmap {
             val servers = it.attr("data-link")
             val doc = app.get(servers).document
-             doc.select("input").apmap {
-                 val postkey = it.attr("value")
-                  app.post("https://entrepeliculasyseries.nu/r.php",
-                     headers = mapOf("Host" to "entrepeliculasyseries.nu",
-                         "User-Agent" to USER_AGENT,
-                         "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                         "Accept-Language" to "en-US,en;q=0.5",
-                         "Content-Type" to "application/x-www-form-urlencoded",
-                         "Content-Length" to "90",
-                         "Origin" to "https://entrepeliculasyseries.nu",
-                         "DNT" to "1",
-                         "Connection" to "keep-alive",
-                         "Referer" to servers,
-                         "Upgrade-Insecure-Requests" to "1",
-                         "Sec-Fetch-Dest" to "document",
-                         "Sec-Fetch-Mode" to "navigate",
-                         "Sec-Fetch-Site" to "same-origin",
-                         "Sec-Fetch-User" to "?1",),
-                     //params = mapOf(Pair("h", postkey)),
-                     data =  mapOf(Pair("h", postkey)),
-                     allowRedirects = false
-                 ).response.headers.values("location").apmap {
-                     for (extractor in extractorApis) {
-                         if (it.startsWith(extractor.mainUrl)) {
-                             extractor.getSafeUrl(it, data)?.apmap {
-                                 callback(it)
-                             }
-                         }
-                     }
-                 }
-             }
+            doc.select("input").apmap {
+                val postkey = it.attr("value")
+                app.post("https://entrepeliculasyseries.nu/r.php",
+                    headers = mapOf("Host" to "entrepeliculasyseries.nu",
+                        "User-Agent" to USER_AGENT,
+                        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                        "Accept-Language" to "en-US,en;q=0.5",
+                        "Content-Type" to "application/x-www-form-urlencoded",
+                        "Origin" to "https://entrepeliculasyseries.nu",
+                        "DNT" to "1",
+                        "Connection" to "keep-alive",
+                        "Referer" to servers,
+                        "Upgrade-Insecure-Requests" to "1",
+                        "Sec-Fetch-Dest" to "document",
+                        "Sec-Fetch-Mode" to "navigate",
+                        "Sec-Fetch-Site" to "same-origin",
+                        "Sec-Fetch-User" to "?1",),
+                    //params = mapOf(Pair("h", postkey)),
+                    data =  mapOf(Pair("h", postkey)),
+                    allowRedirects = false
+                ).response.headers.values("location").apmap {
+                    for (extractor in extractorApis) {
+                        if (it.startsWith(extractor.mainUrl)) {
+                            extractor.getSafeUrl(it, data)?.apmap {
+                                callback(it)
+                            }
+                        }
+                    }
+                }
+            }
         }
         return true
     }
