@@ -1,8 +1,9 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.*
 import java.util.*
 
@@ -42,7 +43,7 @@ class CuevanaProvider:MainAPI() {
 
                 items.add(HomePageList(i.second, home))
             } catch (e: Exception) {
-                e.printStackTrace()
+                logError(e)
             }
         }
 
@@ -79,7 +80,7 @@ class CuevanaProvider:MainAPI() {
                     null
                 )
             }
-        }
+        }.toList()
     }
     override suspend fun load(url: String): LoadResponse? {
         val soup = app.get(url, timeout = 120).document
@@ -163,16 +164,10 @@ class CuevanaProvider:MainAPI() {
                         "Sec-Fetch-Mode" to "cors",
                         "Sec-Fetch-Site" to "same-origin",),
                         data = mapOf(Pair("h",key))).text
-                    val json = mapper.readValue<Femcuevana>(url)
+                    val json = parseJson<Femcuevana>(url)
                     val link = json.url
                     if (link.contains("fembed")) {
-                        for (extractor in extractorApis) {
-                            if (link.startsWith(extractor.mainUrl)) {
-                                extractor.getSafeUrl(link, data)?.apmap { final ->
-                                    callback(final)
-                                }
-                            }
-                        }
+                        loadExtractor(link, data, callback)
                     }
                 }
             }
@@ -217,13 +212,7 @@ class CuevanaProvider:MainAPI() {
                                         "Sec-Fetch-Site" to "same-origin",),
                                     data = mapOf(Pair("url",gotolink))
                                 ).response.headers.values("location").apmap { golink ->
-                                    for (extractor in extractorApis) {
-                                        if (golink.startsWith(extractor.mainUrl)) {
-                                            extractor.getSafeUrl(golink, data)?.apmap { final ->
-                                                callback(final)
-                                            }
-                                        }
-                                    }
+                                    loadExtractor(golink, data, callback)
                                 }
                             }
                         }
@@ -249,13 +238,7 @@ class CuevanaProvider:MainAPI() {
                                         "Sec-Fetch-User" to "?1",),
                                     data = mapOf(Pair("h",inlink))
                                 ).response.headers.values("location").apmap { link ->
-                                    for (extractor in extractorApis) {
-                                        if (link.startsWith(extractor.mainUrl)) {
-                                            extractor.getSafeUrl(link, data)?.apmap { final ->
-                                                callback(final)
-                                            }
-                                        }
-                                    }
+                                    loadExtractor(link, data, callback)
                                 }
                             }
                         }

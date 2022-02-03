@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.*
 import kotlin.collections.ArrayList
 
@@ -41,16 +42,16 @@ class SeriesflixProvider:MainAPI() {
 
                 items.add(HomePageList(i.second, home))
             } catch (e: Exception) {
-                e.printStackTrace()
+                logError(e)
             }
         }
         if (items.size <= 0) throw ErrorLoadingException()
         return HomePageResponse(items)
     }
-    override suspend fun search(query: String): ArrayList<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=$query"
         val doc = app.get(url).document
-        val search = doc.select("article.TPost.B").map {
+        return doc.select("article.TPost.B").map {
             val href = it.selectFirst("a").attr("href")
             val poster = it.selectFirst("figure img").attr("src")
             val name = it.selectFirst("h2.title").text()
@@ -75,8 +76,7 @@ class SeriesflixProvider:MainAPI() {
                     null
                 )
             }
-        }
-        return ArrayList(search)
+        }.toList()
     }
 
 
@@ -112,7 +112,7 @@ class SeriesflixProvider:MainAPI() {
         if (type == TvType.TvSeries) {
             val list = ArrayList<Pair<Int, String>>()
 
-            document.select("main > section.SeasonBx > div > div.Title > a").apmap { element ->
+            document.select("main > section.SeasonBx > div > div.Title > a").forEach { element ->
                 val season = element.selectFirst("> span")?.text()?.toIntOrNull()
                 val href = element.attr("href")
                 if (season != null && season > 0 && !href.isNullOrBlank()) {
@@ -127,7 +127,7 @@ class SeriesflixProvider:MainAPI() {
                 val seasonDocument = app.get(season.second).document
                 val episodes = seasonDocument.select("table > tbody > tr")
                 if (episodes.isNotEmpty()) {
-                    episodes.apmap { episode ->
+                    episodes.forEach { episode ->
                         val epNum = episode.selectFirst("> td > span.Num")?.text()?.toIntOrNull()
                         val epthumb = episode.selectFirst("img")?.attr("src")
                         val aName = episode.selectFirst("> td.MvTbTtl > a")
@@ -182,7 +182,7 @@ class SeriesflixProvider:MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get(data).document.select("ul.ListOptions li").apmap {
+        app.get(data).document.select("ul.ListOptions li").forEach {
             val movieID = it.attr("data-id")
             val serverID = it.attr("data-key")
             val type = if (data.contains("movies")) 1 else 2
@@ -212,16 +212,9 @@ class SeriesflixProvider:MainAPI() {
                     allowRedirects = false
                 ).response.headers.values("location").apmap {link ->
                     val url1 = link.replace("#bu","")
-                    for (extractor in extractorApis) {
-                        if (url1.startsWith(extractor.mainUrl)) {
-                            extractor.getSafeUrl(url1, data)?.apmap {
-                                callback(it)
-                            }
-                        }
-                    }
+                    loadExtractor(url1, data, callback)
                 }
             }
-
         }
         return true
     }

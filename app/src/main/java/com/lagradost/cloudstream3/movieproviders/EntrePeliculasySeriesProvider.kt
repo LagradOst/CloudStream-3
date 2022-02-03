@@ -1,14 +1,13 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.*
 import java.util.*
 
 class EntrepeliculasyseriesProvider:MainAPI() {
-    override val mainUrl: String
-        get() = "https://entrepeliculasyseries.nu"
-    override val name: String
-        get() = "EntrePeliculasySeries"
+    override val mainUrl = "https://entrepeliculasyseries.nu"
+    override val name = "EntrePeliculasySeries"
     override val lang = "es"
     override val hasMainPage = true
     override val hasChromecastSupport = true
@@ -46,7 +45,7 @@ class EntrepeliculasyseriesProvider:MainAPI() {
 
                 items.add(HomePageList(i.second, home))
             } catch (e: Exception) {
-                e.printStackTrace()
+                logError(e)
             }
         }
 
@@ -84,7 +83,7 @@ class EntrepeliculasyseriesProvider:MainAPI() {
                     null
                 )
             }
-        }
+        }.toList()
     }
 
 
@@ -95,14 +94,7 @@ class EntrepeliculasyseriesProvider:MainAPI() {
         val description = soup.selectFirst("p.text-content:nth-child(3)")?.text()?.trim()
         val poster: String? = soup.selectFirst("article.TPost img.lazy").attr("data-src")
         val episodes = soup.select(".TPostMv article").map { li ->
-            val href = try {
-                li.select("a").attr("href")
-            } catch (e: Exception) {
-                li.select(".C a").attr("href")
-            } catch (e: Exception) {
-                li.select("article a").attr("href")
-            }
-
+            val href = (li.select("a") ?: li.select(".C a") ?: li.select("article a")).attr("href")
             val epThumb = li.selectFirst("div.Image img").attr("data-src")
             val name = li.selectFirst("h2.Title").text()
             TvSeriesEpisode(
@@ -173,13 +165,7 @@ class EntrepeliculasyseriesProvider:MainAPI() {
                     data =  mapOf(Pair("h", postkey)),
                     allowRedirects = false
                 ).response.headers.values("location").apmap {
-                    for (extractor in extractorApis) {
-                        if (it.startsWith(extractor.mainUrl)) {
-                            extractor.getSafeUrl(it, data)?.apmap {
-                                callback(it)
-                            }
-                        }
-                    }
+                    loadExtractor(it, data, callback)
                 }
             }
         }
