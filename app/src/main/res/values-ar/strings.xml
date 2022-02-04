@@ -106,7 +106,7 @@
     <string name="vpn_might_be_needed">قد تكون هناك حاجة إلى شبكة ظاهرية خاصة لكي يعمل هذا المزود بشكل صحيح</string>
     <string name="vpn_torrent">هذا المزود هو تورنت ، يوصى باستخدام  شبكة ظاهرية خاصة</string>
 	
-    <string name="provider_info_meta">سيظهر إعلان مدته خمسة عشر ثانية إذا لم يتم توفير الفيديو في الموقع.</string>
+    <string name="provider_info_meta">.سيظهر إعلان مدته خمسة عشر ثانية إذا لم يتم توفير الفيديو في الموقع</string>
 	
     <string name="torrent_plot">الوصف</string>
     <string name="normal_no_plot">لم يتم العثور على وصف</string>
