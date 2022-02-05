@@ -28,7 +28,7 @@ open class Tomatomatela : ExtractorApi() {
             ExtractorLink(
                 name,
                 name,
-                "",
+                json.file,
                 "",
                 Qualities.Unknown.value,
                 isM3u8 = false
