@@ -29,45 +29,49 @@ class PinoyMoviesEsProvider : MainAPI() {
         val all = mutableListOf<HomePageList>()
         for (item in rows) {
             val title = item.first
-            val inner = mainbody.select("div${sep}${item.second} > article")
-            if (inner != null) {
-                val elements: List<SearchResponse> = inner.map {
-                    // Get inner div from article
-                    var urlTitle = it?.select("div.data.dfeatur")
-                    if (urlTitle.isNullOrEmpty()) {
-                        urlTitle = it?.select("div.data")
-                    }
-                    // Fetch details
-                    val link = urlTitle?.select("a")?.attr("href") ?: ""
-                    val image = it?.select("div.poster > img")?.attr("data-src")
-
-                    // Get Title and Year
-                    val name = urlTitle?.select("h3")?.text() ?: ""
-                    var year = urlTitle?.select("span")?.text()?.toIntOrNull()
-
-                    if (year == null) {
-                        // Get year from name
-                        val rex = Regex("\\((\\d+)")
-                        year = rex.find(name)?.value?.replace("(", "")?.toIntOrNull()
-                    }
-
-                    MovieSearchResponse(
-                        name,
-                        link,
-                        this.name,
-                        TvType.Movie,
-                        image,
-                        year,
-                        null,
-                    )
-                }.filter { a -> a.url.isNotEmpty() }
-                        .filter { b -> b.name.isNotEmpty() }
-                        .distinctBy { c -> c.url }
-                if (!elements.isNullOrEmpty()) {
-                    all.add(HomePageList(
-                            title, elements
-                    ))
+            val elements = mainbody.select("div${sep}${item.second} > article")?.mapNotNull {
+                // Get inner div from article
+                var urlTitle = it?.select("div.data.dfeatur")
+                if (urlTitle.isNullOrEmpty()) {
+                    urlTitle = it?.select("div.data")
                 }
+                if (urlTitle.isNullOrEmpty()) { return@mapNotNull null }
+                // Fetch details
+                val link = fixUrlNull(urlTitle.select("a")?.attr("href"))
+                if (link.isNullOrBlank()) { return@mapNotNull null }
+
+                val image = it?.select("div.poster > img")?.attr("data-src")
+
+                // Get Title and Year
+                val name = urlTitle.select("h3")?.text()
+                    ?: urlTitle.select("h2")?.text()
+                    ?: urlTitle.select("h1")?.text()
+                if (name.isNullOrBlank()) { return@mapNotNull null }
+
+                var year = urlTitle.select("span")?.text()?.toIntOrNull()
+
+                if (year == null) {
+                    // Get year from name
+                    val rex = Regex("\\((\\d+)")
+                    year = rex.find(name)?.value?.replace("(", "")?.toIntOrNull()
+                }
+
+                MovieSearchResponse(
+                    name = name,
+                    url = link,
+                    apiName = this.name,
+                    type = TvType.Movie,
+                    posterUrl = image,
+                    year = year
+                )
+            }?.distinctBy { c -> c.url } ?: listOf()
+            //Add to list of homepages
+            if (!elements.isNullOrEmpty()) {
+                all.add(
+                    HomePageList(
+                        title, elements
+                    )
+                )
             }
         }
         return all
@@ -159,7 +163,7 @@ class PinoyMoviesEsProvider : MainAPI() {
         val listOfLinks: MutableList<String> = mutableListOf()
         val postlist = body?.select("div#playeroptions > ul > li")?.mapNotNull {
             it?.attr("data-post") ?: return@mapNotNull null
-        }?.filter { it.isNotEmpty() }?.distinct() ?: listOf()
+        }?.filter { it.isNotBlank() }?.distinct() ?: listOf()
 
         postlist.apmap { datapost ->
             //Log.i(this.name, "Result => (datapost) ${datapost}")

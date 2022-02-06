@@ -24,38 +24,31 @@ class PinoyHDXyzProvider : MainAPI() {
 
         mainbody?.select("div.section-cotent.col-md-12.bordert")?.forEach { row ->
             val title = row?.select("div.title-section.tt")?.text() ?: "<Row>"
-            val inner = row?.select("li.img_frame.preview-tumb7")
-            if (inner != null) {
-                val elements: List<SearchResponse> = inner.map {
-                    // Get inner div from article
-                    val innerBody = it?.select("a")?.firstOrNull()
-                    // Fetch details
-                    val name = it?.text() ?: ""
-                    val link = innerBody?.attr("href") ?: ""
-                    val imgsrc = innerBody?.select("img")?.attr("src")
-                    val image = when (!imgsrc.isNullOrEmpty()) {
-                        true -> "${mainUrl}${imgsrc}"
-                        false -> null
-                    }
-                    //Log.i(this.name, "Result => (innerBody, image) ${innerBody} / ${image}")
-                    // Get Year from Link
-                    val rex = Regex("_(\\d+)_")
-                    val yearRes = rex.find(link)?.value ?: ""
-                    val year = yearRes.replace("_", "").toIntOrNull()
-                    //Log.i(this.name, "Result => (yearRes, year) ${yearRes} / ${year}")
-                    MovieSearchResponse(
-                        name,
-                        link,
-                        this.name,
-                        TvType.Movie,
-                        image,
-                        year,
-                        null,
-                    )
-                }.filter { a -> a.url.isNotEmpty() }
-                        .filter { b -> b.name.isNotEmpty() }
-                        .distinctBy { c -> c.url }
-                // Add
+            val elements = row?.select("li.img_frame.preview-tumb7")?.mapNotNull {
+                // Get inner div from article
+                val innerBody = it?.selectFirst("a") ?: return@mapNotNull null
+                // Fetch details
+                val name = it.text()
+                if (name.isNullOrBlank()) { return@mapNotNull null }
+
+                val link = innerBody.attr("href") ?: return@mapNotNull null
+                val image = fixUrlNull(innerBody.select("img")?.attr("src"))
+                //Log.i(this.name, "Result => (innerBody, image) ${innerBody} / ${image}")
+                // Get Year from Link
+                val rex = Regex("_(\\d+)_")
+                val year = rex.find(link)?.value?.replace("_", "")?.toIntOrNull()
+                //Log.i(this.name, "Result => (yearRes, year) ${yearRes} / ${year}")
+                MovieSearchResponse(
+                    name = name,
+                    url = link,
+                    apiName = this.name,
+                    type = TvType.Movie,
+                    posterUrl = image,
+                    year = year
+                )
+            }?.distinctBy { c -> c.url } ?: listOf()
+            // Add to Homepage
+            if (elements.isNotEmpty()) {
                 all.add(
                     HomePageList(
                         title, elements
@@ -79,12 +72,12 @@ class PinoyHDXyzProvider : MainAPI() {
             val image = null // site provides no image on search page
 
             MovieSearchResponse(
-                title,
-                link,
-                this.name,
-                TvType.Movie,
-                image,
-                year
+                name = title,
+                url = link,
+                apiName = this.name,
+                type = TvType.Movie,
+                posterUrl = image,
+                year = year
             )
         }?.distinctBy { c -> c.url } ?: listOf()
     }
@@ -113,7 +106,7 @@ class PinoyHDXyzProvider : MainAPI() {
                 }
                 "year" -> {
                     var yearRes = td[1].toString()
-                    year = if (yearRes.isNotEmpty()) {
+                    year = if (yearRes.isNotBlank()) {
                         if (yearRes.contains("var year =")) {
                             yearRes = yearRes.substring(yearRes.indexOf("var year =") + "var year =".length)
                             //Log.i(this.name, "Result => (yearRes) $yearRes")
@@ -126,7 +119,7 @@ class PinoyHDXyzProvider : MainAPI() {
                 "genre" -> {
                     tags = td[1].select("a")?.mapNotNull { tag ->
                         tag?.text()?.trim() ?: return@mapNotNull null
-                    }?.filter { a -> a.isNotEmpty() }
+                    }?.filter { a -> a.isNotBlank() }
                 }
             }
         }
@@ -229,7 +222,7 @@ class PinoyHDXyzProvider : MainAPI() {
         var count = 0
         mapper.readValue<List<String>>(data).forEach { item ->
             val url = item.trim()
-            if (url.isNotEmpty()) {
+            if (url.isNotBlank()) {
                 if (loadExtractor(url, mainUrl, callback)) {
                     count++
                 }
