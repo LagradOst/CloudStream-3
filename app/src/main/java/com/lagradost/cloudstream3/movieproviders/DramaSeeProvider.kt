@@ -117,7 +117,7 @@ class DramaSeeProvider : MainAPI() {
             val count = innerA.select("span.episode")?.text()?.toIntOrNull() ?: 0
             val epLink = fixUrlNull(innerA.attr("href")) ?: return@forEach
             //Log.i(this.name, "Result => (epLink) ${epLink}")
-            if (epLink.isNotEmpty()) {
+            if (epLink.isNotBlank()) {
                 // Fetch video links
                 val epVidLinkEl = app.get(epLink, referer = mainUrl).document
                 val ajaxUrl = epVidLinkEl.select("div#js-player")?.attr("embed")
@@ -127,7 +127,7 @@ class DramaSeeProvider : MainAPI() {
                     val listOfLinks = mutableListOf<String>()
                     innerPage.select("div.player.active > main > div")?.forEach { em ->
                         val href = fixUrlNull(em.attr("src")) ?: ""
-                        if (href.isNotEmpty()) {
+                        if (href.isNotBlank()) {
                             listOfLinks.add(href)
                         }
                     }

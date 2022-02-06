@@ -137,7 +137,7 @@ class KdramaHoodProvider : MainAPI() {
             //Log.i(this.name, "Result => (innerA) ${innerA}")
             val epLink = fixUrlNull(innerA.attr("href")) ?: return@mapNotNull null
             //Log.i(this.name, "Result => (epLink) ${epLink}")
-            if (epLink.isNotEmpty()) {
+            if (epLink.isNotBlank()) {
                 // Fetch video links
                 val epVidLinkEl = app.get(epLink, referer = mainUrl).document
                 val epLinksContent = epVidLinkEl.selectFirst("div.player_nav > script")?.html()
@@ -149,7 +149,7 @@ class KdramaHoodProvider : MainAPI() {
                     Jsoup.parse(epLinksContent)?.select("div")?.forEach { em ->
                         val href = em?.html()?.trim()?.removePrefix("'") ?: return@forEach
                         //Log.i(this.name, "Result => (ep#$count link) $href")
-                        if (href.isNotEmpty()) {
+                        if (href.isNotBlank()) {
                             listOfLinks.add(fixUrl(href))
                         }
                     }
@@ -200,7 +200,7 @@ class KdramaHoodProvider : MainAPI() {
     ): Boolean {
         var count = 0
         mapper.readValue<List<String>>(data).apmap { item ->
-            if (item.isNotEmpty()) {
+            if (item.isNotBlank()) {
                 count++
                 var url = item.trim()
                 if (url.startsWith("//")) {
