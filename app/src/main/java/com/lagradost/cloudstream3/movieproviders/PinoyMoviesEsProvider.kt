@@ -136,6 +136,24 @@ class PinoyMoviesEsProvider : MainAPI() {
 
         val descript = body?.select("div#info > div.wp-content")?.text()
         val poster = body?.select("div.poster > img")?.attr("src")
+        val tags = data?.select("div.sgeneros > a")?.mapNotNull { tag ->
+            tag?.text() ?: return@mapNotNull null
+        }?.toList()
+        val recList = body?.select("div#single_relacionados > article")?.mapNotNull {
+            val a = it.select("a") ?: return@mapNotNull null
+            val aUrl = a.attr("href") ?: return@mapNotNull null
+            val aImg = a.select("img")?.attr("data-src")
+            val aName = a.select("img")?.attr("alt") ?: return@mapNotNull null
+            val aYear = aName.trim().takeLast(5).removeSuffix(")").toIntOrNull()
+            MovieSearchResponse(
+                url = aUrl,
+                name = aName,
+                type = TvType.Movie,
+                posterUrl = aImg,
+                year = aYear,
+                apiName = this.name
+            )
+        }
 
         // Video links
         val listOfLinks: MutableList<String> = mutableListOf()
@@ -159,7 +177,18 @@ class PinoyMoviesEsProvider : MainAPI() {
                 listOfLinks.add(embedData.embed_url)
             }
         }
-        return MovieLoadResponse(title, url, this.name, TvType.Movie, listOfLinks.toJson(), poster, year, descript, null, null)
+        return MovieLoadResponse(
+            name = title,
+            url = url,
+            apiName = this.name,
+            type = TvType.Movie,
+            dataUrl = listOfLinks.toJson(),
+            posterUrl = poster,
+            year = year,
+            plot = descript,
+            tags = tags,
+            recommendations = recList
+        )
     }
 
     override suspend fun loadLinks(
@@ -170,19 +199,22 @@ class PinoyMoviesEsProvider : MainAPI() {
     ): Boolean {
         // parse movie servers
         var count = 0
-        mapper.readValue<List<String>>(data).apmap { link ->
-            count++
+        mapper.readValue<List<String>>(data).forEach { link ->
             //Log.i(this.name, "Result => (link) $link")
             if (link.startsWith("https://vstreamhub.com")) {
                 VstreamhubHelper.getUrls(link, callback)
+                count++
             } else if (link.contains("fembed.com")) {
                 val extractor = FEmbed()
                 extractor.domainUrl = "diasfem.com"
                 extractor.getUrl(data).forEach {
                     callback.invoke(it)
+                    count++
                 }
             } else {
-                loadExtractor(link, mainUrl, callback)
+                if (loadExtractor(link, mainUrl, callback)) {
+                    count++
+                }
             }
         }
         return count > 0
