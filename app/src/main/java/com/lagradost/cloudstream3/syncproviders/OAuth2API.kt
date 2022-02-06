@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3.syncproviders
 
-import android.content.Context
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi
 import com.lagradost.cloudstream3.syncproviders.providers.MALApi
 import java.util.concurrent.TimeUnit
@@ -10,11 +9,14 @@ interface OAuth2API {
     val name: String
     val redirectUrl: String
 
-    fun handleRedirect(context: Context, url: String)
-    fun authenticate(context: Context)
+    // don't change this as all keys depend on it
+    val idPrefix : String
 
-    fun loginInfo(context: Context): LoginInfo?
-    fun logOut(context: Context)
+    fun handleRedirect(url: String)
+    fun authenticate()
+
+    fun loginInfo(): LoginInfo?
+    fun logOut()
 
     class LoginInfo(
         val profilePicture: String?,

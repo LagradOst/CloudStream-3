@@ -7,22 +7,19 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.getQualityFromName
 
-class WatchSB : ExtractorApi() {
-    override val name: String
-        get() = "WatchSB"
-    override val mainUrl: String
-        get() = "https://watchsb.com"
-    override val requiresReferer: Boolean
-        get() = false
+open class WatchSB : ExtractorApi() {
+    override val name = "WatchSB"
+    override val mainUrl = "https://watchsb.com"
+    override val requiresReferer = false
 
-    override fun getUrl(url: String, referer: String?): List<ExtractorLink> {
+    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink> {
         val response = app.get(
             url, interceptor = WebViewResolver(
                 Regex("""master\.m3u8""")
             )
         )
 
-        val extractedLinksList = M3u8Helper().m3u8Generation(
+        return M3u8Helper().m3u8Generation(
             M3u8Helper.M3u8Stream(
                 response.url,
                 headers = response.headers.toMap()
@@ -39,7 +36,5 @@ class WatchSB : ExtractorApi() {
                     true
                 )
             }
-
-        return extractedLinksList
     }
 }

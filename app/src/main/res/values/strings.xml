@@ -12,6 +12,7 @@
     <string name="benene_count" translatable="false">benene_count</string>
     <string name="subtitle_settings_key" translatable="false">subtitle_settings_key</string>
     <string name="quality_pref_key" translatable="false">quality_pref_key</string>
+    <string name="video_cache_key" translatable="false">video_cache_key</string>
     <string name="prerelease_commit_hash" translatable="false">unknown_prerelease</string>
     <string name="use_system_brightness_key" translatable="false">use_system_brightness_key</string>
     <string name="swipe_enabled_key" translatable="false">swipe_enabled_key</string>
@@ -19,6 +20,7 @@
     <string name="player_resize_enabled_key" translatable="false">player_resize_enabled_key</string>
     <string name="pip_enabled_key" translatable="false">pip_enabled_key</string>
     <string name="double_tap_enabled_key" translatable="false">double_tap_enabled_key</string>
+    <string name="double_tap_pause_enabled_key" translatable="false">double_tap_pause_enabled_key</string>
     <string name="swipe_vertical_enabled_key" translatable="false">swipe_vertical_enabled_key</string>
     <string name="display_sub_key" translatable="false">display_sub_key</string>
     <string name="show_fillers_key" translatable="false">show_fillers_key</string>
@@ -41,7 +43,10 @@
     <string name="rew_text_format" translatable="false" formatted="true">-%d</string>
     <string name="ffw_text_regular_format" translatable="false" formatted="true">%d</string>
     <string name="rew_text_regular_format" translatable="false" formatted="true">%d</string>
-    <string name="app_dub_sub_episode_text_format">%s Ep %d</string>
+    <string name="rating_format" translatable="false" formatted="true">%.1f/10.0</string>
+    <string name="year_format" translatable="false" formatted="true">%d</string>
+    <string name="app_dub_sub_episode_text_format" formatted="true">%s Ep %d</string>
+    <string name="cast_format" formatted="true">Cast: %s</string>
 
     <!-- IS NOT NEEDED TO TRANSLATE AS THEY ARE ONLY USED FOR SCREEN READERS AND WONT SHOW UP TO NORMAL USERS -->
     <string name="result_poster_img_des">Poster</string>
@@ -59,7 +64,8 @@
     <string name="player_speed_text_format" formatted="true">Speed (%.2fx)</string>
     <string name="rated_format" formatted="true">Rated: %.1f</string>
     <string name="new_update_format" formatted="true">New update found!\n%s -> %s</string>
-    <string name="filler_format" formatted="true">(Filler) %s</string>
+    <string name="filler" formatted="true">Filler</string>
+    <string name="duration_format" formatted="true">%d min</string>
 
     <string name="app_name">CloudStream</string>
     <string name="title_home">Home</string>
@@ -91,7 +97,7 @@
     <string name="pick_source">Sources</string>
     <string name="pick_subtitle">Subtitles</string>
     <string name="reload_error">Retry connection…</string>
-    <string name="result_go_back">Go Back</string>
+    <string name="go_back">Go Back</string>
     <string name="play_episode">Play Episode</string>
     <!--<string name="need_storage">Allow to download episodes</string>-->
 
@@ -152,11 +158,12 @@
 
     <string name="action_remove_watching">Remove</string>
     <string name="action_open_watching">More Info</string>
+    <string name="action_open_play">@string/home_play </string>
 
     <string name="vpn_might_be_needed">A VPN might be needed for this provider to work correctly</string>
     <string name="vpn_torrent">This provider is a torrent, a VPN is recommended</string>
 
-    <string name="provider_info_meta">Metadata is not provided by site, video loading might fail.</string>
+    <string name="provider_info_meta">Metadata is not provided by site, video loading will fail if it does not exist on site.</string>
 
     <string name="torrent_plot">Description</string>
     <string name="normal_no_plot">No Plot Found</string>
@@ -175,8 +182,10 @@
     <string name="swipe_to_change_settings">Swipe to change settings</string>
     <string name="swipe_to_change_settings_des">Swipe on the left or right side to change brightness or volume</string>
     <string name="double_tap_to_seek_settings">Double tap to seek</string>
+    <string name="double_tap_to_pause_settings">Double tap to pause</string>
     <string name="double_tap_to_seek_settings_des">Tap twice on the right or left side to seek forwards or backwards
     </string>
+    <string name="double_tap_to_pause_settings_des">Tap in the middle to pause</string>
     <string name="use_system_brightness_settings">Use system brightness</string>
     <string name="use_system_brightness_settings_des">Use system brightness in the app player instead of a dark
         overlay
@@ -217,13 +226,18 @@
     <string name="episodes">Episodes</string>
     <string name="season_short">S</string>
     <string name="episode_short">E</string>
+    <string name="no_episodes_found">No Episodes found</string>
 
     <string name="delete_file">Delete File</string>
     <string name="delete">Delete</string>
     <string name="cancel" translatable="false">@string/sort_cancel</string>
     <string name="pause">Pause</string>
     <string name="resume">Resume</string>
-    <string name="delete_message">This will permanently delete %s\nAre you sure?</string>
+    <string name="go_back_30">-30</string>
+    <string name="go_forward_30">+30</string>
+    <string name="delete_message" formatted="true">This will permanently delete %s\nAre you sure?</string>
+    <string name="resume_time_left" formatted="true">%dm\nremaining</string>
+
 
     <string name="status_ongoing">Ongoing</string>
     <string name="status_completed">Completed</string>
@@ -249,12 +263,14 @@
     <string name="anime">Anime</string>
     <string name="torrent">Torrents</string>
     <string name="documentaries">Documentaries</string>
+    <string name="ova">OVA</string>
 
     <!--singular-->
     <string name="movies_singular">Movie</string>
     <string name="tv_series_singular">Series</string>
     <string name="cartoons_singular">Cartoon</string>
     <string name="anime_singular">@string/anime</string>
+    <string name="ova_singular">@string/ova</string>
     <string name="torrent_singular">Torrent</string>
     <string name="documentaries_singular">Documentary</string>
 
@@ -285,6 +301,7 @@
     <string name="dont_show_again">Don\'t show again</string>
     <string name="update">Update</string>
     <string name="watch_quality_pref">Preferred watch quality</string>
+    <string name="video_cache_settings">Video cache size</string>
     <string name="dns_pref">DNS over HTTPS</string>
     <string name="dns_pref_summary">Useful for bypassing ISP blocks</string>
 
@@ -337,12 +354,14 @@
     <string name="kitsu_account_settings" translatable="false">Kitsu</string>
     <string name="trakt_account_settings" translatable="false">Trakt</string>
     -->
-    <string name="login_format">%s %s</string>
+    <string name="login_format" formatted="true">%s %s</string>
     <string name="account">account</string>
     <string name="logout">Logout</string>
     <string name="login">Login</string>
     <string name="switch_account">Switch account</string>
     <string name="add_account">Add account</string>
+    <string name="add_sync">Add tracking</string>
+    <string name="added_sync_format" formatted="true">Added %s</string>
     <!-- ============ -->
     <string name="none">None</string>
     <string name="normal">Normal</string>
@@ -361,4 +380,14 @@
 	https://en.wikipedia.org/wiki/The_quick_brown_fox_jumps_over_the_lazy_dog
     -->
     <string name="subtitles_example_text">The quick brown fox jumps over the lazy dog</string>
+
+    <string name="recommended">Recommended</string>
+    <string name="player_loaded_subtitles" formatted="true">Loaded %s</string>
+    <string name="player_load_subtitles">Load from file</string>
+    <string name="downloaded_file">Downloaded file</string>
+    <string name="actor_main">Main</string>
+    <string name="actor_supporting">Supporting</string>
+    <string name="actor_background">Background</string>
+
+    <string name="home_source">Source</string>
 </resources>

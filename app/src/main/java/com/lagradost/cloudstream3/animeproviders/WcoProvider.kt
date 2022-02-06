@@ -12,7 +12,7 @@ import java.util.*
 class WcoProvider : MainAPI() {
     companion object {
         fun getType(t: String): TvType {
-            return if (t.contains("OVA") || t.contains("Special")) TvType.ONA
+            return if (t.contains("OVA") || t.contains("Special")) TvType.OVA
             else if (t.contains("Movie")) TvType.AnimeMovie
             else TvType.Anime
         }
@@ -26,10 +26,10 @@ class WcoProvider : MainAPI() {
     override val supportedTypes = setOf(
         TvType.AnimeMovie,
         TvType.Anime,
-        TvType.ONA
+        TvType.OVA
     )
 
-    override fun getMainPage(): HomePageResponse {
+    override suspend fun getMainPage(): HomePageResponse {
         val urls = listOf(
             Pair("$mainUrl/ajax/list/recently_updated?type=tv", "Recently Updated Anime"),
             Pair("$mainUrl/ajax/list/recently_updated?type=movie", "Recently Updated Movies"),
@@ -52,8 +52,11 @@ class WcoProvider : MainAPI() {
                     val nameHeader = filmDetail.selectFirst("> h3.film-name > a")
                     val title = nameHeader.text().replace(" (Dub)", "")
                     val href =
-                        nameHeader.attr("href").replace("/watch/", "/anime/").replace("-episode-.*".toRegex(), "/")
-                    val isDub = filmPoster.selectFirst("> div.film-poster-quality")?.text()?.contains("DUB") ?: false
+                        nameHeader.attr("href").replace("/watch/", "/anime/")
+                            .replace("-episode-.*".toRegex(), "/")
+                    val isDub =
+                        filmPoster.selectFirst("> div.film-poster-quality")?.text()?.contains("DUB")
+                            ?: false
                     val poster = filmPoster.selectFirst("> img").attr("data-src")
                     val set: EnumSet<DubStatus> =
                         EnumSet.of(if (isDub) DubStatus.Dubbed else DubStatus.Subbed)
@@ -84,8 +87,11 @@ class WcoProvider : MainAPI() {
             val img = fixUrl(i.selectFirst("img").attr("data-src"))
             val title = i.selectFirst("img").attr("title")
             val isDub = !i.select(".pick.film-poster-quality").isEmpty()
-            val year = i.selectFirst(".film-detail.film-detail-fix > div > span:nth-child(1)").text().toIntOrNull()
-            val type = i.selectFirst(".film-detail.film-detail-fix > div > span:nth-child(3)").text()
+            val year =
+                i.selectFirst(".film-detail.film-detail-fix > div > span:nth-child(1)").text()
+                    .toIntOrNull()
+            val type =
+                i.selectFirst(".film-detail.film-detail-fix > div > span:nth-child(3)").text()
 
             returnValue.add(
                 if (getType(type) == TvType.AnimeMovie) {
@@ -108,7 +114,7 @@ class WcoProvider : MainAPI() {
         return returnValue
     }
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search"
         val response =
             app.get(url, params = mapOf("keyword" to query))
@@ -128,7 +134,7 @@ class WcoProvider : MainAPI() {
         return returnValue
     }
 
-    override fun quickSearch(query: String): List<SearchResponse> {
+    override suspend fun quickSearch(query: String): List<SearchResponse> {
         val returnValue: ArrayList<SearchResponse> = ArrayList()
 
         val response = JSONObject(
@@ -170,12 +176,13 @@ class WcoProvider : MainAPI() {
         return returnValue
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val response = app.get(url, timeout = 120).text
         val document = Jsoup.parse(response)
 
-        val japaneseTitle = document.selectFirst("div.elements div.row > div:nth-child(1) > div.row-line:nth-child(1)")
-            ?.text()?.trim()?.replace("Other names:", "")?.trim()
+        val japaneseTitle =
+            document.selectFirst("div.elements div.row > div:nth-child(1) > div.row-line:nth-child(1)")
+                ?.text()?.trim()?.replace("Other names:", "")?.trim()
 
         val canonicalTitle = document.selectFirst("meta[name=\"title\"]")
             ?.attr("content")?.split("| W")?.get(0).toString()
@@ -187,22 +194,25 @@ class WcoProvider : MainAPI() {
             AnimeEpisode(it.attr("href"))
         } ?: ArrayList())
 
-        val statusElem = document.selectFirst("div.elements div.row > div:nth-child(1) > div.row-line:nth-child(2)")
+        val statusElem =
+            document.selectFirst("div.elements div.row > div:nth-child(1) > div.row-line:nth-child(2)")
         val status = when (statusElem?.text()?.replace("Status:", "")?.trim()) {
             "Ongoing" -> ShowStatus.Ongoing
             "Completed" -> ShowStatus.Completed
             else -> null
         }
         val yearText =
-            document.selectFirst("div.elements div.row > div:nth-child(2) > div.row-line:nth-child(4)")?.text()
+            document.selectFirst("div.elements div.row > div:nth-child(2) > div.row-line:nth-child(4)")
+                ?.text()
         val year = yearText?.replace("Date release:", "")?.trim()?.split("-")?.get(0)?.toIntOrNull()
 
         val poster = document.selectFirst(".film-poster-img")?.attr("src")
         val type = document.selectFirst("span.item.mr-1 > a")?.text()?.trim()
 
         val synopsis = document.selectFirst(".description > p")?.text()?.trim()
-        val genre = document.select("div.elements div.row > div:nth-child(1) > div.row-line:nth-child(5) > a")
-            .map { it?.text()?.trim().toString() }
+        val genre =
+            document.select("div.elements div.row > div:nth-child(1) > div.row-line:nth-child(5) > a")
+                .map { it?.text()?.trim().toString() }
 
         return newAnimeLoadResponse(canonicalTitle, url, getType(type ?: "")) {
             japName = japaneseTitle
@@ -216,7 +226,7 @@ class WcoProvider : MainAPI() {
         }
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -231,9 +241,7 @@ class WcoProvider : MainAPI() {
         }
 
         for (server in servers) {
-            WcoStream().getSafeUrl(server["link"].toString(), "")?.forEach {
-                callback.invoke(it)
-            }
+            WcoStream().getSafeUrl(server["link"].toString(), "")?.forEach(callback)
         }
         return true
     }

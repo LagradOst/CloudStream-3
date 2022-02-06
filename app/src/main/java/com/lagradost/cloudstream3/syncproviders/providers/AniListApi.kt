@@ -1,11 +1,14 @@
 package com.lagradost.cloudstream3.syncproviders.providers
 
-import android.content.Context
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
+import com.lagradost.cloudstream3.AcraApplication.Companion.getKeys
+import com.lagradost.cloudstream3.AcraApplication.Companion.openBrowser
+import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
@@ -15,12 +18,9 @@ import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.appString
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.maxStale
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.unixTime
 import com.lagradost.cloudstream3.syncproviders.SyncAPI
-import com.lagradost.cloudstream3.utils.AppUtils.openBrowser
 import com.lagradost.cloudstream3.utils.AppUtils.splitQuery
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
-import com.lagradost.cloudstream3.utils.DataStore.getKey
-import com.lagradost.cloudstream3.utils.DataStore.getKeys
-import com.lagradost.cloudstream3.utils.DataStore.setKey
 import com.lagradost.cloudstream3.utils.DataStore.toKotlinObject
 import java.net.URL
 import java.util.*
@@ -33,9 +33,9 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
     override val mainUrl = "https://anilist.co"
     override val icon = R.drawable.ic_anilist_icon
 
-    override fun loginInfo(context: Context): OAuth2API.LoginInfo? {
+    override fun loginInfo(): OAuth2API.LoginInfo? {
         // context.getUser(true)?.
-        context.getKey<AniListUser>(accountId, ANILIST_USER_KEY)?.let { user ->
+        getKey<AniListUser>(accountId, ANILIST_USER_KEY)?.let { user ->
             return OAuth2API.LoginInfo(
                 profilePicture = user.picture,
                 name = user.name,
@@ -45,16 +45,16 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         return null
     }
 
-    override fun logOut(context: Context) {
-        context.removeAccountKeys()
+    override fun logOut() {
+        removeAccountKeys()
     }
 
-    override fun authenticate(context: Context) {
+    override fun authenticate() {
         val request = "https://anilist.co/api/v2/oauth/authorize?client_id=$key&response_type=token"
-        context.openBrowser(request)
+        openBrowser(request)
     }
 
-    override fun handleRedirect(context: Context, url: String) {
+    override fun handleRedirect(url: String) {
         try {
             val sanitizer =
                 splitQuery(URL(url.replace(appString, "https").replace("/#", "?"))) // FIX ERROR
@@ -63,19 +63,19 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
 
             val endTime = unixTime + expiresIn.toLong()
 
-            context.switchToNewAccount()
-            context.setKey(accountId, ANILIST_UNIXTIME_KEY, endTime)
-            context.setKey(accountId, ANILIST_TOKEN_KEY, token)
-            context.setKey(ANILIST_SHOULD_UPDATE_LIST, true)
+            switchToNewAccount()
+            setKey(accountId, ANILIST_UNIXTIME_KEY, endTime)
+            setKey(accountId, ANILIST_TOKEN_KEY, token)
+            setKey(ANILIST_SHOULD_UPDATE_LIST, true)
             ioSafe {
-                context.getUser()
+                getUser()
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    override fun search(context: Context, name: String): List<SyncAPI.SyncSearchResult>? {
+    override suspend fun search(name: String): List<SyncAPI.SyncSearchResult>? {
         val data = searchShows(name) ?: return null
         return data.data.Page.media.map {
             SyncAPI.SyncSearchResult(
@@ -88,7 +88,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         }
     }
 
-    override fun getResult(context: Context, id: String): SyncAPI.SyncResult? {
+    override suspend fun getResult(id: String): SyncAPI.SyncResult? {
         val internalId = id.toIntOrNull() ?: return null
         val season = getSeason(internalId)?.data?.Media ?: return null
 
@@ -104,9 +104,9 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         )
     }
 
-    override fun getStatus(context: Context, id: String): SyncAPI.SyncStatus? {
+    override suspend fun getStatus(id: String): SyncAPI.SyncStatus? {
         val internalId = id.toIntOrNull() ?: return null
-        val data = context.getDataAboutId(internalId) ?: return null
+        val data = getDataAboutId(internalId) ?: return null
 
         return SyncAPI.SyncStatus(
             score = data.score,
@@ -116,20 +116,21 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         )
     }
 
-    override fun score(context: Context, id: String, status: SyncAPI.SyncStatus): Boolean {
-        return context.postDataAboutId(
+    override suspend fun score(id: String, status: SyncAPI.SyncStatus): Boolean {
+        return postDataAboutId(
             id.toIntOrNull() ?: return false,
             fromIntToAnimeStatus(status.status),
             status.score,
             status.watchedEpisodes
-        )
+        ) ?: return false
     }
 
     companion object {
         private val mapper = JsonMapper.builder().addModule(KotlinModule())
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).build()!!
 
-        private val aniListStatusString = arrayOf("CURRENT", "COMPLETED", "PAUSED", "DROPPED", "PLANNING", "REPEATING")
+        private val aniListStatusString =
+            arrayOf("CURRENT", "COMPLETED", "PAUSED", "DROPPED", "PLANNING", "REPEATING")
 
         const val ANILIST_UNIXTIME_KEY: String = "anilist_unixtime" // When token expires
         const val ANILIST_TOKEN_KEY: String = "anilist_token" // anilist token for api
@@ -138,10 +139,11 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         const val ANILIST_SHOULD_UPDATE_LIST: String = "anilist_should_update_list"
 
         private fun fixName(name: String): String {
-            return name.lowercase(Locale.ROOT).replace(" ", "").replace("[^a-zA-Z0-9]".toRegex(), "")
+            return name.lowercase(Locale.ROOT).replace(" ", "")
+                .replace("[^a-zA-Z0-9]".toRegex(), "")
         }
 
-        private fun searchShows(name: String): GetSearchRoot? {
+        private suspend fun searchShows(name: String): GetSearchRoot? {
             try {
                 val query = """
                 query (${"$"}id: Int, ${"$"}page: Int, ${"$"}search: String, ${"$"}type: MediaType) {
@@ -201,13 +203,12 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
                 val data =
                     mapOf(
                         "query" to query,
-                        "variables" to mapper.writeValueAsString(
-                            mapOf(
-                                "search" to name,
-                                "page" to 1,
-                                "type" to "ANIME"
-                            )
-                        )
+                        "variables" to
+                                mapOf(
+                                    "search" to name,
+                                    "page" to 1,
+                                    "type" to "ANIME"
+                                ).toJson()
                     )
 
                 val res = app.post(
@@ -224,7 +225,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         }
 
         // Should use https://gist.github.com/purplepinapples/5dc60f15f2837bf1cea71b089cfeaa0a
-        fun getShowId(malId: String?, name: String, year: Int?): GetSearchMedia? {
+        suspend fun getShowId(malId: String?, name: String, year: Int?): GetSearchMedia? {
             // Strips these from the name
             val blackList = listOf(
                 "TV Dubbed",
@@ -236,7 +237,12 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
                 "(\\d+)" // year
             )
             val blackListRegex =
-                Regex(""" (${blackList.joinToString(separator = "|").replace("(", "\\(").replace(")", "\\)")})""")
+                Regex(
+                    """ (${
+                        blackList.joinToString(separator = "|").replace("(", "\\(")
+                            .replace(")", "\\)")
+                    })"""
+                )
             //println("NAME $name NEW NAME ${name.replace(blackListRegex, "")}")
             val shows = searchShows(name.replace(blackListRegex, ""))
 
@@ -287,7 +293,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         }
 
 
-        private fun getSeason(id: Int): SeasonResponse? {
+        private suspend fun getSeason(id: Int): SeasonResponse? {
             val q: String = """
                query (${'$'}id: Int = $id) {
                    Media (id: ${'$'}id, type: ANIME) {
@@ -331,21 +337,21 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         }
     }
 
-    fun Context.initGetUser() {
+    fun initGetUser() {
         if (getKey<String>(accountId, ANILIST_TOKEN_KEY, null) == null) return
         ioSafe {
             getUser()
         }
     }
 
-    private fun Context.checkToken(): Boolean {
+    private fun checkToken(): Boolean {
         return unixTime > getKey(
             accountId,
             ANILIST_UNIXTIME_KEY, 0L
         )!!
     }
 
-    fun Context.getDataAboutId(id: Int): AniListTitleHolder? {
+    suspend fun getDataAboutId(id: Int): AniListTitleHolder? {
         val q =
             """query (${'$'}id: Int = $id) { # Define which variables will be used in the query (id)
                 Media (id: ${'$'}id, type: ANIME) { # Insert our variables into the query arguments (id) (type: ANIME is hard-coded in the query)
@@ -404,7 +410,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         }
     }
 
-    private fun Context.postApi(url: String, q: String, cache: Boolean = false): String {
+    private suspend fun postApi(url: String, q: String, cache: Boolean = false): String {
         return try {
             if (!checkToken()) {
                 // println("VARS_ " + vars)
@@ -504,11 +510,11 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         @JsonProperty("MediaListCollection") val MediaListCollection: MediaListCollection
     )
 
-    fun Context.getAnilistListCached(): Array<Lists>? {
+    fun getAnilistListCached(): Array<Lists>? {
         return getKey(ANILIST_CACHED_LIST) as? Array<Lists>
     }
 
-    fun Context.getAnilistAnimeListSmart(): Array<Lists>? {
+    suspend fun getAnilistAnimeListSmart(): Array<Lists>? {
         if (getKey<String>(
                 accountId,
                 ANILIST_TOKEN_KEY,
@@ -529,11 +535,11 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         }
     }
 
-    private fun Context.getFullAnilistList(): FullAnilistList? {
+    private suspend fun getFullAnilistList(): FullAnilistList? {
         try {
             var userID: Int? = null
             /** WARNING ASSUMES ONE USER! **/
-            getKeys(ANILIST_USER_KEY).forEach { key ->
+            getKeys(ANILIST_USER_KEY)?.forEach { key ->
                 getKey<AniListUser>(key, null)?.let {
                     userID = it.id
                 }
@@ -591,7 +597,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         }
     }
 
-    fun Context.toggleLike(id: Int): Boolean {
+    suspend fun toggleLike(id: Int): Boolean {
         val q = """mutation (${'$'}animeId: Int = $id) {
 				ToggleFavourite (animeId: ${'$'}animeId) {
 					anime {
@@ -608,7 +614,12 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         return data != ""
     }
 
-    private fun Context.postDataAboutId(id: Int, type: AniListStatusType, score: Int?, progress: Int?): Boolean {
+    private suspend fun postDataAboutId(
+        id: Int,
+        type: AniListStatusType,
+        score: Int?,
+        progress: Int?
+    ): Boolean {
         try {
             val q =
                 """mutation (${'$'}id: Int = $id, ${'$'}status: MediaListStatus = ${
@@ -632,7 +643,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         }
     }
 
-    private fun Context.getUser(setSettings: Boolean = true): AniListUser? {
+    private suspend fun getUser(setSettings: Boolean = true): AniListUser? {
         val q = """
 				{
   					Viewer {
@@ -675,9 +686,9 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         }
     }
 
-    fun getAllSeasons(id: Int): List<SeasonResponse?> {
+    suspend fun getAllSeasons(id: Int): List<SeasonResponse?> {
         val seasons = mutableListOf<SeasonResponse?>()
-        fun getSeasonRecursive(id: Int) {
+        suspend fun getSeasonRecursive(id: Int) {
             val season = getSeason(id)
             if (season != null) {
                 seasons.add(season)

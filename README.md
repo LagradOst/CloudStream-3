@@ -1,6 +1,9 @@
 # CloudStream-3
 
+<!-- ![Maintenance](https://img.shields.io/maintenance/yes/2022?color=blue&style=for-the-badge) -->
 ![GitHub release](https://img.shields.io/github/v/release/LagradOst/cloudstream-3?sort=semver&style=for-the-badge)
+![Downloads](https://img.shields.io/github/downloads/lagradost/CloudStream-3/total?color=blue&style=for-the-badge)
+![Build](https://img.shields.io/github/workflow/status/lagradost/CloudStream-3/Pre-release?style=for-the-badge)
 [![Discord](https://img.shields.io/discord/737724143126052974?style=for-the-badge)](https://discord.gg/5Hus6fM)
 
 
@@ -22,22 +25,24 @@ https://github.com/LagradOst/CloudStream-3/releases
 
 ***The list of supported languages:***
 * 🇱🇧 Arabic
-* 🇬🇧 English
 * 🇳🇱 Dutch
+* 🇬🇧 English
 * 🇫🇷 French
-* 🇬🇷 Greek
-* 🇸🇪 Swedish
-* 🇵🇭 Tagalog
-* 🇵🇱 Polish
-* 🇮🇳 Hindi
-* 🇮🇳 Malayalam
-* 🇪🇸 Spanish
-* 🇳🇴 Norsk
 * 🇩🇪 German
-* 🇹🇷 Turkish
+* 🇬🇷 Greek
+* 🇮🇳 Hindi
+* 🇮🇹 Italian
 * 🇲🇰 Macedonian
+* 🇮🇳 Malayalam
+* 🇳🇴 Norsk
+* 🇵🇱 Polish
 * 🇧🇷 Portuguese (Brazil)
 * 🇷🇴 Romanian
+* 🇪🇸 Spanish
+* 🇸🇪 Swedish
+* 🇵🇭 Tagalog
+* 🇹🇷 Turkish
+* 🇻🇳 Vietnamese
 
 ***Disclaimer:***
 
@@ -55,22 +60,34 @@ It merely scrapes 3rd-party websites that are publicly accessable via any regula
 ***Sites used:***
 <!-- Do not remove those two comments -->
 <!--SITE LIST START-->
+- [pelisplus.icu](https://pelisplus.icu) 
+- [pelismart.com](https://pelismart.com) 
 - [gogoanime.wiki](https://gogoanime.wiki) 
 - [allanime.site](https://allanime.site) 
 - [animeflick.net](https://animeflick.net) 
+- [m.animeflv.net](https://m.animeflv.net) 
 - [tenshi.moe](https://tenshi.moe) 
 - [wcostream.cc](https://wcostream.cc) 
 - [bestdubbedanime.com](https://bestdubbedanime.com) 
-- [hdm.to](https://hdm.to) 
+- [doramasyt.com](https://doramasyt.com) 
 - [ihavenotv.com](https://ihavenotv.com) 
 - [vmovee.watch](https://www.vmovee.watch) 
 - [wcostream.com](https://www.wcostream.com) 
 - [allmoviesforyou.net](https://allmoviesforyou.net) 
+- [monoschinos2.com](https://monoschinos2.com) 
 - [vidembed.cc](https://vidembed.cc) 
 - [vf-film.me](https://vf-film.me) 
 - [vf-serie.org](https://vf-serie.org) 
 - [asianembed.io](https://asianembed.io) 
-- [trailers.to](https://trailers.to) 
+- [filman.cc](https://filman.cc) 
 - [zoro.to](https://zoro.to) 
+- [pinoymoviepedia.ru](https://pinoymoviepedia.ru) 
+- [pinoy-hd.xyz](https://www.pinoy-hd.xyz) 
+- [pinoymovies.es](https://pinoymovies.es) 
+- [trailers.to](https://trailers.to) 
+- [dramasee.net](https://dramasee.net) 
+- [watchasian.sh](https://watchasian.sh) 
+- [kdramahood.com](https://kdramahood.com) 
+- [akwam.io](https://akwam.io) 
 - [asiaflix.app](https://asiaflix.app) 
 <!--SITE LIST END-->

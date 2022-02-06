@@ -3,6 +3,8 @@ package com.lagradost.cloudstream3.movieproviders
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.jsoup.Jsoup
@@ -24,13 +26,16 @@ class MeloMovieProvider : MainAPI() {
         //"mppa" for tags
     )
 
-    data class MeloMovieLink(val name: String, val link: String)
+    data class MeloMovieLink(
+        @JsonProperty("name") val name: String,
+        @JsonProperty("link") val link: String
+    )
 
-    override fun quickSearch(query: String): List<SearchResponse> {
+    override suspend fun quickSearch(query: String): List<SearchResponse> {
         return search(query)
     }
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/movie/search/?name=$query"
         val returnValue: ArrayList<SearchResponse> = ArrayList()
         val response = app.get(url).text
@@ -93,23 +98,32 @@ class MeloMovieProvider : MainAPI() {
                 MeloMovieLink("", "")
             }
         }.filter { it.link != "" && it.name != "" }
-        return mapper.writeValueAsString(parsed)
+        return parsed.toJson()
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val links = mapper.readValue<List<MeloMovieLink>>(data)
+        val links = parseJson<List<MeloMovieLink>>(data)
         for (link in links) {
-            callback.invoke(ExtractorLink(this.name, link.name, link.link, "", getQualityFromName(link.name), false))
+            callback.invoke(
+                ExtractorLink(
+                    this.name,
+                    link.name,
+                    link.link,
+                    "",
+                    getQualityFromName(link.name),
+                    false
+                )
+            )
         }
         return true
     }
 
-    override fun load(url: String): LoadResponse? {
+    override suspend fun load(url: String): LoadResponse? {
         val response = app.get(url).text
 
         //backdrop = imgurl
@@ -123,11 +137,13 @@ class MeloMovieProvider : MainAPI() {
         val type = findUsingRegex("var posttype = ([0-9]*)")?.toInt() ?: return null
         val titleInfo = document.selectFirst("div.movie_detail_title > div > div > h1")
         val title = titleInfo.ownText()
-        val year = titleInfo.selectFirst("> a")?.text()?.replace("(", "")?.replace(")", "")?.toIntOrNull()
+        val year =
+            titleInfo.selectFirst("> a")?.text()?.replace("(", "")?.replace(")", "")?.toIntOrNull()
         val plot = document.selectFirst("div.col-lg-12 > p").text()
 
         if (type == 1) { // MOVIE
-            val serialize = document.selectFirst("table.accordion__list") ?: throw ErrorLoadingException("No links found")
+            val serialize = document.selectFirst("table.accordion__list")
+                ?: throw ErrorLoadingException("No links found")
             return MovieLoadResponse(
                 title,
                 url,
@@ -141,15 +157,19 @@ class MeloMovieProvider : MainAPI() {
             )
         } else if (type == 2) {
             val episodes = ArrayList<TvSeriesEpisode>()
-            val seasons = document.select("div.accordion__card") ?: throw ErrorLoadingException("No episodes found")
+            val seasons = document.select("div.accordion__card")
+                ?: throw ErrorLoadingException("No episodes found")
             for (s in seasons) {
                 val season =
-                    s.selectFirst("> div.card-header > button > span").text().replace("Season: ", "").toIntOrNull()
+                    s.selectFirst("> div.card-header > button > span").text()
+                        .replace("Season: ", "").toIntOrNull()
                 val localEpisodes = s.select("> div.collapse > div > div > div.accordion__card")
                 for (e in localEpisodes) {
                     val episode =
-                        e.selectFirst("> div.card-header > button > span").text().replace("Episode: ", "").toIntOrNull()
-                    val links = e.selectFirst("> div.collapse > div > table.accordion__list") ?: continue
+                        e.selectFirst("> div.card-header > button > span").text()
+                            .replace("Episode: ", "").toIntOrNull()
+                    val links =
+                        e.selectFirst("> div.collapse > div > table.accordion__list") ?: continue
                     val data = serializeData(links)
                     episodes.add(TvSeriesEpisode(null, season, episode, data))
                 }

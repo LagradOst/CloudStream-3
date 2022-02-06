@@ -24,10 +24,27 @@
             android:usesCleartextTraffic="true"
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
-            android:theme="@style/AppTheme" android:fullBackupContent="@xml/backup_descriptor" tools:targetApi="m">
+            android:theme="@style/AppTheme"
+            android:fullBackupContent="@xml/backup_descriptor"
+            tools:targetApi="m">
         <meta-data
                 android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
                 android:value="com.lagradost.cloudstream3.utils.CastOptionsProvider"/>
+
+        <activity android:name=".ui.player.DownloadedPlayerActivity"
+                android:screenOrientation="userLandscape"
+                android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation"
+                android:resizeableActivity="true"
+                android:supportsPictureInPicture="true"
+                android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:scheme="content"/>
+                <data android:mimeType="video/*"/>
+            </intent-filter>
+        </activity>
+
         <activity
                 android:exported="true"
                 android:name=".MainActivity"
@@ -48,25 +65,45 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
 
-                <data android:scheme="https" android:host="gogoanime.vc" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="pelisplus.icu" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="pelisplushd.net" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="pelismart.com" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="gogoanime.wiki" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="allanime.site" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="animeflick.net" android:pathPrefix="/"/>
-                <data android:scheme="https" android:host="kawaiifu.com" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="m.animeflv.net" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="tenshi.moe" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="wcostream.cc" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="bestdubbedanime.com" android:pathPrefix="/"/>
-                <data android:scheme="https" android:host="hdm.to" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="doramasyt.com" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="cinecalidad.lol" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="cuevana3.io" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="entrepeliculasyseries.nu" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="pelisflix.li" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="seriesflix.video" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="ihavenotv.com" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="www.vmovee.watch" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="www.wcostream.com" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="allmoviesforyou.net" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="monoschinos2.com" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="vidembed.cc" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="vf-film.me" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="vf-serie.org" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="french-stream.re" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="asianembed.io" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="sflix.to" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="dopebox.to" android:pathPrefix="/"/>
-                <data android:scheme="https" android:host="trailers.to" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="filman.cc" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="zoro.to" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="pinoymoviepedia.ru" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="www.pinoy-hd.xyz" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="pinoymovies.es" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="trailers.to" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="dramasee.net" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="watchasian.sh" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="kdramahood.com" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="akwam.io" android:pathPrefix="/"/>
+                <data android:scheme="https" android:host="animepahe.com" android:pathPrefix="/"/>
                 <data android:scheme="https" android:host="asiaflix.app" android:pathPrefix="/"/>
             </intent-filter>
             <intent-filter>

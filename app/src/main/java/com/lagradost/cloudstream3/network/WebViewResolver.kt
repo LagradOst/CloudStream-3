@@ -15,17 +15,31 @@ import okhttp3.Response
 import java.net.URI
 import java.util.concurrent.TimeUnit
 
-class WebViewResolver(val interceptUrl: Regex) : Interceptor {
+/**
+ * When used as Interceptor additionalUrls cannot be returned, use WebViewResolver(...).resolveUsingWebView(...)
+ * @param interceptUrl will stop the WebView when reaching this url.
+ * @param additionalUrls this will make resolveUsingWebView also return all other requests matching the list of Regex.
+ * */
+class WebViewResolver(val interceptUrl: Regex, val additionalUrls: List<Regex> = emptyList()) :
+    Interceptor {
+
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         return runBlocking {
-            val fixedRequest = resolveUsingWebView(request)
+            val fixedRequest = resolveUsingWebView(request).first
             return@runBlocking chain.proceed(fixedRequest ?: request)
         }
     }
 
+    /**
+     * @param requestCallBack asynchronously return matched requests by either interceptUrl or additionalUrls.
+     * @return the final request (by interceptUrl) and all the collected urls (by additionalUrls).
+     * */
     @SuppressLint("SetJavaScriptEnabled")
-    suspend fun resolveUsingWebView(request: Request): Request? {
+    suspend fun resolveUsingWebView(
+        request: Request,
+        requestCallBack: (Request) -> Unit = {}
+    ): Pair<Request?, List<Request>> {
         val url = request.url.toString()
         val headers = request.headers
         println("Initial web-view request: $url")
@@ -41,55 +55,88 @@ class WebViewResolver(val interceptUrl: Regex) : Interceptor {
         }
 
         var fixedRequest: Request? = null
+        val extraRequestList = mutableListOf<Request>()
 
         main {
             // Useful for debugging
 //            WebView.setWebContentsDebuggingEnabled(true)
             webView = WebView(
-                AcraApplication.context ?: throw RuntimeException("No base context in WebViewResolver")
+                AcraApplication.context
+                    ?: throw RuntimeException("No base context in WebViewResolver")
             ).apply {
                 // Bare minimum to bypass captcha
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.userAgentString = USER_AGENT
+                // Blocks unnecessary images, remove if captcha fucks.
+                settings.blockNetworkImage = true
             }
 
             webView?.webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(
                     view: WebView,
                     request: WebResourceRequest
-                ): WebResourceResponse? {
+                ): WebResourceResponse? = runBlocking {
                     val webViewUrl = request.url.toString()
 //                    println("Loading WebView URL: $webViewUrl")
 
                     if (interceptUrl.containsMatchIn(webViewUrl)) {
-                        fixedRequest = getRequestCreator(
-                            webViewUrl,
-                            request.requestHeaders,
-                            null,
-                            mapOf(),
-                            mapOf(),
-                            10,
-                            TimeUnit.MINUTES
-                        )
-
+                        fixedRequest = request.toRequest().also(requestCallBack)
                         println("Web-view request finished: $webViewUrl")
                         destroyWebView()
-                        return null
+                        return@runBlocking null
+                    }
+
+                    if (additionalUrls.any { it.containsMatchIn(webViewUrl) }) {
+                        extraRequestList.add(request.toRequest().also(requestCallBack))
                     }
 
                     // Suppress image requests as we don't display them anywhere
                     // Less data, low chance of causing issues.
-                    val blacklistedFiles = listOf(".jpg", ".png", ".webp", ".jpeg", ".webm", ".mp4")
+                    // blockNetworkImage also does this job but i will keep it for the future.
+                    val blacklistedFiles = listOf(
+                        ".jpg",
+                        ".png",
+                        ".webp",
+                        ".mpg",
+                        ".mpeg",
+                        ".jpeg",
+                        ".webm",
+                        ".mp4",
+                        ".mp3",
+                        ".gifv",
+                        ".flv",
+                        ".asf",
+                        ".mov",
+                        ".mng",
+                        ".mkv",
+                        ".ogg",
+                        ".avi",
+                        ".wav",
+                        ".woff2",
+                        ".woff",
+                        ".ttf",
+                        ".css",
+                        ".vtt",
+                        ".srt",
+                        ".ts",
+                        ".gif",
+                    )
 
                     /** NOTE!  request.requestHeaders is not perfect!
                      *  They don't contain all the headers the browser actually gives.
                      *  Overriding with okhttp might fuck up otherwise working requests,
                      *  e.g the recaptcha request.
                      * **/
-                    return try {
+
+                    /** NOTE!  request.requestHeaders is not perfect!
+                     *  They don't contain all the headers the browser actually gives.
+                     *  Overriding with okhttp might fuck up otherwise working requests,
+                     *  e.g the recaptcha request.
+                     * **/
+                    return@runBlocking try {
                         when {
-                            blacklistedFiles.any { URI(webViewUrl).path.endsWith(it) } || webViewUrl.endsWith(
+                            blacklistedFiles.any { URI(webViewUrl).path.contains(it) } || webViewUrl.endsWith(
                                 "/favicon.ico"
                             ) -> WebResourceResponse(
                                 "image/png",
@@ -97,7 +144,10 @@ class WebViewResolver(val interceptUrl: Regex) : Interceptor {
                                 null
                             )
 
-                            webViewUrl.contains("recaptcha") -> super.shouldInterceptRequest(view, request)
+                            webViewUrl.contains("recaptcha") -> super.shouldInterceptRequest(
+                                view,
+                                request
+                            )
 
                             request.method == "GET" -> app.get(
                                 webViewUrl,
@@ -108,14 +158,18 @@ class WebViewResolver(val interceptUrl: Regex) : Interceptor {
                                 webViewUrl,
                                 headers = request.requestHeaders
                             ).response.toWebResourceResponse()
-                            else -> return super.shouldInterceptRequest(view, request)
+                            else -> return@runBlocking super.shouldInterceptRequest(view, request)
                         }
                     } catch (e: Exception) {
                         null
                     }
                 }
 
-                override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
+                override fun onReceivedSslError(
+                    view: WebView?,
+                    handler: SslErrorHandler?,
+                    error: SslError?
+                ) {
                     handler?.proceed() // Ignore ssl issues
                 }
             }
@@ -130,14 +184,41 @@ class WebViewResolver(val interceptUrl: Regex) : Interceptor {
 
         // A bit sloppy, but couldn't find a better way
         while (loop < totalTime / delayTime) {
-            if (fixedRequest != null) return fixedRequest
+            if (fixedRequest != null) return fixedRequest to extraRequestList
             delay(delayTime)
             loop += 1
         }
 
         println("Web-view timeout after ${totalTime / 1000}s")
         destroyWebView()
-        return null
+        return null to extraRequestList
+    }
+
+    fun WebResourceRequest.toRequest(): Request {
+        val webViewUrl = this.url.toString()
+
+        return when (this.method) {
+            "POST" -> postRequestCreator(
+                webViewUrl,
+                this.requestHeaders,
+                null,
+                emptyMap(),
+                emptyMap(),
+                emptyMap(),
+                10,
+                TimeUnit.MINUTES
+            )
+//            "GET",
+            else -> getRequestCreator(
+                webViewUrl,
+                this.requestHeaders,
+                null,
+                emptyMap(),
+                emptyMap(),
+                10,
+                TimeUnit.MINUTES
+            )
+        }
     }
 
     fun Response.toWebResourceResponse(): WebResourceResponse {

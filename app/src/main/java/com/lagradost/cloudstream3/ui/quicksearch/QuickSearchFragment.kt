@@ -19,11 +19,8 @@ import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.observe
 import com.lagradost.cloudstream3.ui.home.HomeFragment.Companion.loadHomepageList
 import com.lagradost.cloudstream3.ui.home.ParentItemAdapter
-import com.lagradost.cloudstream3.ui.search.SEARCH_ACTION_LOAD
-import com.lagradost.cloudstream3.ui.search.SearchAdapter
+import com.lagradost.cloudstream3.ui.search.*
 import com.lagradost.cloudstream3.ui.search.SearchFragment.Companion.filterSearchResponse
-import com.lagradost.cloudstream3.ui.search.SearchHelper
-import com.lagradost.cloudstream3.ui.search.SearchViewModel
 import com.lagradost.cloudstream3.utils.UIHelper
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
@@ -34,12 +31,26 @@ import java.util.concurrent.locks.ReentrantLock
 
 class QuickSearchFragment(var isMainApis: Boolean = false) : Fragment() {
     companion object {
-        fun push(activity: Activity?, mainApi: Boolean = true, autoSearch: String? = null) {
+        fun pushSearch(activity: Activity?, autoSearch: String? = null) {
             activity.navigate(R.id.global_to_navigation_quick_search, Bundle().apply {
-                putBoolean("mainapi", mainApi)
+                putBoolean("mainapi", true)
                 putString("autosearch", autoSearch)
             })
         }
+
+        fun pushSync(
+            activity: Activity?,
+            autoSearch: String? = null,
+            callback: (SearchClickCallback) -> Unit
+        ) {
+            clickCallback = callback
+            activity.navigate(R.id.global_to_navigation_quick_search, Bundle().apply {
+                putBoolean("mainapi", false)
+                putString("autosearch", autoSearch)
+            })
+        }
+
+        var clickCallback: ((SearchClickCallback) -> Unit)? = null
     }
 
     private val searchViewModel: SearchViewModel by activityViewModels()
@@ -56,6 +67,11 @@ class QuickSearchFragment(var isMainApis: Boolean = false) : Fragment() {
         return inflater.inflate(R.layout.quick_search, container, false)
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        clickCallback = null
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         context?.fixPaddingStatusbar(quick_search_root)
@@ -70,14 +86,13 @@ class QuickSearchFragment(var isMainApis: Boolean = false) : Fragment() {
                 // https://stackoverflow.com/questions/6866238/concurrent-modification-exception-adding-to-an-arraylist
                 listLock.lock()
                 (quick_search_master_recycler?.adapter as ParentItemAdapter?)?.apply {
-                    items = list.map { ongoing ->
+                    updateList(list.map { ongoing ->
                         val ongoingList = HomePageList(
                             ongoing.apiName,
                             if (ongoing.data is Resource.Success) ongoing.data.value.filterSearchResponse() else ArrayList()
                         )
                         ongoingList
-                    }
-                    notifyDataSetChanged()
+                    })
                 }
             } catch (e: Exception) {
                 logError(e)
@@ -86,36 +101,38 @@ class QuickSearchFragment(var isMainApis: Boolean = false) : Fragment() {
             }
         }
 
-        val masterAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder> = ParentItemAdapter(listOf(), { callback ->
-            when (callback.action) {
-                SEARCH_ACTION_LOAD -> {
-                    if (isMainApis) {
-                        // this is due to result page only holding 1 thing
-                        activity?.popCurrentPage()
-                        activity?.popCurrentPage()
+        val masterAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder> =
+            ParentItemAdapter(mutableListOf(), { callback ->
+                when (callback.action) {
+                    SEARCH_ACTION_LOAD -> {
+                        if (isMainApis) {
+                            activity?.popCurrentPage()
 
-                        SearchHelper.handleSearchClickCallback(activity, callback)
-                    } else {
-                        //TODO MAL RESPONSE
+                            SearchHelper.handleSearchClickCallback(activity, callback)
+                        } else {
+                            clickCallback?.invoke(callback)
+                        }
                     }
+                    else -> SearchHelper.handleSearchClickCallback(activity, callback)
                 }
-                else -> SearchHelper.handleSearchClickCallback(activity, callback)
-            }
-        }, { item ->
-            activity?.loadHomepageList(item)
-        })
+            }, { item ->
+                activity?.loadHomepageList(item)
+            })
 
-        val searchExitIcon = quick_search.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
-        val searchMagIcon = quick_search.findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon)
+        val searchExitIcon =
+            quick_search.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
+        val searchMagIcon =
+            quick_search.findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon)
 
         searchMagIcon.scaleX = 0.65f
         searchMagIcon.scaleY = 0.65f
         quick_search.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
-                context?.let { ctx ->
-                    searchViewModel.searchAndCancel(query = query, context = ctx, isMainApis = isMainApis, ignoreSettings = true)
-                }
-
+                searchViewModel.searchAndCancel(
+                    query = query,
+                    isMainApis = isMainApis,
+                    ignoreSettings = true
+                )
                 quick_search?.let {
                     UIHelper.hideKeyboard(it)
                 }
@@ -135,10 +152,7 @@ class QuickSearchFragment(var isMainApis: Boolean = false) : Fragment() {
                 is Resource.Success -> {
                     it.value.let { data ->
                         if (data.isNotEmpty()) {
-                            (cardSpace?.adapter as SearchAdapter?)?.apply {
-                                cardList = data.toList()
-                                notifyDataSetChanged()
-                            }
+                            (search_autofit_results?.adapter as SearchAdapter?)?.updateList(data)
                         }
                     }
                     searchExitIcon.alpha = 1f
