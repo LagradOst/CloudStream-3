@@ -115,6 +115,10 @@ class AnimekisaProvider : MainAPI() {
         }
     }
 
+    data class Sources (
+        @JsonProperty("file") val file: String
+    )
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -138,16 +142,44 @@ class AnimekisaProvider : MainAPI() {
                 )
                     .map { stream ->
                         val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
-                        callback( ExtractorLink(
+                       listOf( callback( ExtractorLink(
                             servername,
                             "$servername $qualityString",
                             stream.streamUrl,
                             data,
                             getQualityFromName(stream.quality.toString()),
                             true
-                        ))
+                        )))
                     }
             }
+        //When the extracted vidstream link above won't work
+        app.get(data).document.select("div#servers-list ul.nav li a:contains(VidStream)").apmap {
+            val server = it.attr("data-embed")
+            val getserver = app.get(server, referer = data).text
+            val key = getserver.substringAfter("window.skey = '").substringBefore("'")
+            val linkwkey = (server.replace("/e/","/info/")+"&skey=$key")
+            val normallink = app.get(linkwkey, referer = data).text
+            val extractedlink = normallink.substringAfter("},{\"file\":\"").substringBefore("\"}]")
+                .replace("\\/", "/")
+               if (extractedlink.isNotBlank()) M3u8Helper().m3u8Generation(
+                    M3u8Helper.M3u8Stream(
+                        extractedlink,
+                        headers = app.get(extractedlink).headers.toMap(),
+                    ), true
+                )
+                    .map { stream ->
+                        val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
+                        callback( ExtractorLink(
+                            "Vidstream 2",
+                            "Vidstream 2 $qualityString",
+                            stream.streamUrl,
+                            data,
+                            getQualityFromName(stream.quality.toString()),
+                            true
+                        ))
+
+         }
+        }
         return true
     }
 }
