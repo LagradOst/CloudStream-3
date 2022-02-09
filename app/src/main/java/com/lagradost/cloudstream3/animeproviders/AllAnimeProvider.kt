@@ -3,6 +3,8 @@ package com.lagradost.cloudstream3.animeproviders
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
+import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -85,7 +87,7 @@ class AllAnimeProvider : MainAPI() {
         @JsonProperty("data") val data: Data
     )
 
-    override fun search(query: String): ArrayList<SearchResponse> {
+    override suspend fun search(query: String): ArrayList<SearchResponse> {
         val link =
             """$mainUrl/graphql?variables=%7B%22search%22%3A%7B%22allowAdult%22%3Afalse%2C%22query%22%3A%22$query%22%7D%2C%22limit%22%3A26%2C%22page%22%3A1%2C%22translationType%22%3A%22sub%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%229343797cc3d9e3f444e2d3b7db9a84d759b816a4d84512ea72d079f85bb96e98%22%7D%7D"""
         var res = app.get(link).text
@@ -123,7 +125,7 @@ class AllAnimeProvider : MainAPI() {
     )
 
 
-    override fun load(url: String): LoadResponse? {
+    override suspend fun load(url: String): LoadResponse? {
         val rhino = Context.enter()
         rhino.initStandardObjects()
         rhino.optimizationLevel = -1
@@ -163,12 +165,35 @@ class AllAnimeProvider : MainAPI() {
             }) else null)
         }
 
+        val characters = soup.select("div.character > div.card-character-box")?.mapNotNull {
+            val img = it?.selectFirst("img")?.attr("src") ?: return@mapNotNull null
+            val name = it.selectFirst("div > a")?.ownText() ?: return@mapNotNull null
+            val role = when (it.selectFirst("div > .text-secondary")?.text()?.trim()) {
+                "Main" -> ActorRole.Main
+                "Supporting" -> ActorRole.Supporting
+                "Background" -> ActorRole.Background
+                else -> null
+            }
+            Pair(Actor(name, img), role)
+        }
+
+        // bruh, they use graphql
+        //val recommendations = soup.select("#suggesction > div > div.p > .swipercard")?.mapNotNull {
+        //    val recTitle = it?.selectFirst(".showname > a") ?: return@mapNotNull null
+        //    val recName = recTitle.text() ?: return@mapNotNull null
+        //    val href = fixUrlNull(recTitle.attr("href")) ?: return@mapNotNull null
+        //    val img = it.selectFirst(".image > img").attr("src") ?: return@mapNotNull null
+        //    AnimeSearchResponse(recName, href, this.name, TvType.Anime, img)
+        //}
+
         return newAnimeLoadResponse(title, url, TvType.Anime) {
             posterUrl = poster
             year = showData.airedStart?.year
 
             addEpisodes(DubStatus.Subbed, episodes.first)
             addEpisodes(DubStatus.Dubbed, episodes.second)
+            addActors(characters)
+            //this.recommendations = recommendations
 
             showStatus = getStatus(showData.status.toString())
 
@@ -223,85 +248,94 @@ class AllAnimeProvider : MainAPI() {
         @JsonProperty("episodeIframeHead") val episodeIframeHead: String
     )
 
-    private fun getM3u8Qualities(m3u8Link: String, referer: String, qualityName: String): ArrayList<ExtractorLink> {
-        return ArrayList(hlsHelper.m3u8Generation(M3u8Helper.M3u8Stream(m3u8Link, null), true).map { stream ->
-            val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
-            ExtractorLink(
-                this.name,
-                "${this.name} - $qualityName $qualityString",
-                stream.streamUrl,
-                referer,
-                getQualityFromName(stream.quality.toString()),
-                true,
-                stream.headers
-            )
-        })
+    private fun getM3u8Qualities(
+        m3u8Link: String,
+        referer: String,
+        qualityName: String
+    ): ArrayList<ExtractorLink> {
+        return ArrayList(
+            hlsHelper.m3u8Generation(M3u8Helper.M3u8Stream(m3u8Link, null), true).map { stream ->
+                val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
+                ExtractorLink(
+                    this.name,
+                    "${this.name} - $qualityName $qualityString",
+                    stream.streamUrl,
+                    referer,
+                    getQualityFromName(stream.quality.toString()),
+                    true,
+                    stream.headers
+                )
+            })
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        var apiEndPoint = mapper.readValue<ApiEndPoint>(app.get("$mainUrl/getVersion").text).episodeIframeHead
-        if (apiEndPoint.endsWith("/")) apiEndPoint = apiEndPoint.slice(0 until apiEndPoint.length - 1)
+        var apiEndPoint =
+            mapper.readValue<ApiEndPoint>(app.get("$mainUrl/getVersion").text).episodeIframeHead
+        if (apiEndPoint.endsWith("/")) apiEndPoint =
+            apiEndPoint.slice(0 until apiEndPoint.length - 1)
 
         val html = app.get(data).text
 
         val sources = Regex("""sourceUrl[:=]"(.+?)"""").findAll(html).toList()
             .map { URLDecoder.decode(it.destructured.component1().sanitize(), "UTF-8") }
-        sources.forEach {
-            var link = it
-            if (URI(link).isAbsolute || link.startsWith("//")) {
-                if (link.startsWith("//")) link = "https:$it"
+        sources.apmap {
+            safeApiCall {
+                var link = it.replace(" ", "%20")
+                if (URI(link).isAbsolute || link.startsWith("//")) {
+                    if (link.startsWith("//")) link = "https:$it"
 
-                if (Regex("""streaming\.php\?""").matches(link)) {
-                    // for now ignore
-                } else if (!embedIsBlacklisted(link)) {
-                    if (URI(link).path.contains(".m3u")) {
-                        getM3u8Qualities(link, data, URI(link).host).forEach(callback)
-                    } else {
-                        callback(
-                            ExtractorLink(
-                                "AllAnime - " + URI(link).host,
-                                "",
-                                link,
-                                data,
-                                getQualityFromName("1080"),
-                                false
-                            )
-                        )
-                    }
-                }
-            } else {
-                link = apiEndPoint + URI(link).path + ".json?" + URI(link).query
-                val response = app.get(link)
-
-                if (response.code < 400) {
-                    val links = mapper.readValue<AllAnimeVideoApiResponse>(response.text).links
-                    links.forEach { server ->
-                        if (server.hls != null && server.hls) {
-                            getM3u8Qualities(
-                                server.link,
-                                "$apiEndPoint/player?uri=" + (if (URI(server.link).host.isNotEmpty()) server.link else apiEndPoint + URI(
-                                    server.link
-                                ).path),
-                                server.resolutionStr
-                            ).forEach(callback)
+                    if (Regex("""streaming\.php\?""").matches(link)) {
+                        // for now ignore
+                    } else if (!embedIsBlacklisted(link)) {
+                        if (URI(link).path.contains(".m3u")) {
+                            getM3u8Qualities(link, data, URI(link).host).forEach(callback)
                         } else {
                             callback(
                                 ExtractorLink(
-                                    "AllAnime - " + URI(server.link).host,
-                                    server.resolutionStr,
-                                    server.link,
-                                    "$apiEndPoint/player?uri=" + (if (URI(server.link).host.isNotEmpty()) server.link else apiEndPoint + URI(
-                                        server.link
-                                    ).path),
+                                    "AllAnime - " + URI(link).host,
+                                    "",
+                                    link,
+                                    data,
                                     getQualityFromName("1080"),
                                     false
                                 )
                             )
+                        }
+                    }
+                } else {
+                    link = apiEndPoint + URI(link).path + ".json?" + URI(link).query
+                    val response = app.get(link)
+
+                    if (response.code < 400) {
+                        val links = mapper.readValue<AllAnimeVideoApiResponse>(response.text).links
+                        links.forEach { server ->
+                            if (server.hls != null && server.hls) {
+                                getM3u8Qualities(
+                                    server.link,
+                                    "$apiEndPoint/player?uri=" + (if (URI(server.link).host.isNotEmpty()) server.link else apiEndPoint + URI(
+                                        server.link
+                                    ).path),
+                                    server.resolutionStr
+                                ).forEach(callback)
+                            } else {
+                                callback(
+                                    ExtractorLink(
+                                        "AllAnime - " + URI(server.link).host,
+                                        server.resolutionStr,
+                                        server.link,
+                                        "$apiEndPoint/player?uri=" + (if (URI(server.link).host.isNotEmpty()) server.link else apiEndPoint + URI(
+                                            server.link
+                                        ).path),
+                                        getQualityFromName("1080"),
+                                        false
+                                    )
+                                )
+                            }
                         }
                     }
                 }

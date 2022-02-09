@@ -33,6 +33,7 @@ import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.OAuth2accoun
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.appString
 import com.lagradost.cloudstream3.ui.APIRepository
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_NAVIGATE_TO
+import com.lagradost.cloudstream3.ui.result.ResultFragment
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
 import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
 import com.lagradost.cloudstream3.utils.AppUtils.loadCache
@@ -42,12 +43,13 @@ import com.lagradost.cloudstream3.utils.DataStore.removeKey
 import com.lagradost.cloudstream3.utils.DataStoreHelper.setViewPos
 import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
 import com.lagradost.cloudstream3.utils.UIHelper.checkWrite
+import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import com.lagradost.cloudstream3.utils.UIHelper.getResourceColor
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.requestRW
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.fragment_result.*
+import kotlinx.android.synthetic.main.fragment_result_swipe.*
 import java.io.File
 import kotlin.concurrent.thread
 
@@ -194,6 +196,8 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
     }
 
     override fun onBackPressed() {
+        this.window?.navigationBarColor =
+            this.colorFromAttribute(R.attr.primaryGrayBackground)
         this.updateLocale()
         backEvent.invoke(true)
         super.onBackPressed()
@@ -219,6 +223,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
                     setViewPos(id, pos, dur)
                 }
                 removeKey(VLC_LAST_ID_KEY)
+                ResultFragment.updateUI()
             }
         }
         super.onActivityResult(requestCode, resultCode, data)

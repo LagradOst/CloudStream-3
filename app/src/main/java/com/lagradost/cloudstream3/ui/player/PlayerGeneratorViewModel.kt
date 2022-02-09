@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.ui.player
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -9,9 +10,14 @@ import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorUri
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class PlayerGeneratorViewModel : ViewModel() {
+    companion object {
+        val TAG = "PlayViewGen"
+    }
+
     private var generator: IGenerator? = null
 
     private val _currentLinks = MutableLiveData<Set<Pair<ExtractorLink?, ExtractorUri?>>>(setOf())
@@ -33,6 +39,7 @@ class PlayerGeneratorViewModel : ViewModel() {
     }
 
     fun loadLinksPrev() {
+        Log.i(TAG, "loadLinksPrev")
         if (generator?.hasPrev() == true) {
             generator?.prev()
             loadLinks()
@@ -40,6 +47,7 @@ class PlayerGeneratorViewModel : ViewModel() {
     }
 
     fun loadLinksNext() {
+        Log.i(TAG, "loadLinksNext")
         if (generator?.hasNext() == true) {
             generator?.next()
             loadLinks()
@@ -50,12 +58,20 @@ class PlayerGeneratorViewModel : ViewModel() {
         return generator?.hasNext()
     }
 
-    fun preLoadNextLinks() = viewModelScope.launch {
-        normalSafeApiCall {
+    fun preLoadNextLinks() {
+        Log.i(TAG, "preLoadNextLinks")
+        currentJob?.cancel()
+        currentJob = viewModelScope.launch {
             if (generator?.hasCache == true && generator?.hasNext() == true) {
-                generator?.next()
-                generator?.generateLinks(clearCache = false, isCasting = false, {}, {})
-                generator?.prev()
+                safeApiCall {
+                    generator?.generateLinks(
+                        clearCache = false,
+                        isCasting = false,
+                        {},
+                        {},
+                        offset = 1
+                    )
+                }
             }
         }
     }
@@ -67,10 +83,7 @@ class PlayerGeneratorViewModel : ViewModel() {
     fun getNextMeta(): Any? {
         return normalSafeApiCall {
             if (generator?.hasNext() == false) return@normalSafeApiCall null
-            generator?.next()
-            val next = generator?.getCurrent()
-            generator?.prev()
-            next
+            generator?.getCurrent(offset = 1)
         }
     }
 
@@ -86,24 +99,35 @@ class PlayerGeneratorViewModel : ViewModel() {
         _currentSubs.postValue(subs)
     }
 
-    fun loadLinks(clearCache: Boolean = false, isCasting: Boolean = false) = viewModelScope.launch {
-        val currentLinks = mutableSetOf<Pair<ExtractorLink?, ExtractorUri?>>()
-        val currentSubs = mutableSetOf<SubtitleData>()
+    private var currentJob: Job? = null
 
-        _loadingLinks.postValue(Resource.Loading())
-        val loadingState = safeApiCall {
-            generator?.generateLinks(clearCache = clearCache, isCasting = isCasting, {
-                currentLinks.add(it)
-                _currentLinks.postValue(currentLinks)
-            }, {
-                currentSubs.add(it)
-               // _currentSubs.postValue(currentSubs) // this causes ConcurrentModificationException, so fuck it
-            })
+    fun loadLinks(clearCache: Boolean = false, isCasting: Boolean = false) {
+        Log.i(TAG, "loadLinks")
+        currentJob?.cancel()
+        currentJob = viewModelScope.launch {
+            val currentLinks = mutableSetOf<Pair<ExtractorLink?, ExtractorUri?>>()
+            val currentSubs = mutableSetOf<SubtitleData>()
+
+            // clear old data
+            _currentSubs.postValue(currentSubs)
+            _currentLinks.postValue(currentLinks)
+
+            // load more data
+            _loadingLinks.postValue(Resource.Loading())
+            val loadingState = safeApiCall {
+                generator?.generateLinks(clearCache = clearCache, isCasting = isCasting, {
+                    currentLinks.add(it)
+                    _currentLinks.postValue(currentLinks)
+                }, {
+                    currentSubs.add(it)
+                    // _currentSubs.postValue(currentSubs) // this causes ConcurrentModificationException, so fuck it
+                })
+            }
+
+            _loadingLinks.postValue(loadingState)
+
+            _currentLinks.postValue(currentLinks)
+            _currentSubs.postValue(currentSubs)
         }
-
-        _loadingLinks.postValue(loadingState)
-
-        _currentLinks.postValue(currentLinks)
-        _currentSubs.postValue(currentSubs)
     }
 }

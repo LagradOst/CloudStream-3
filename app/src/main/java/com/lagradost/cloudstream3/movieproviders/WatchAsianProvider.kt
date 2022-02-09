@@ -1,9 +1,9 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import android.util.Log
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.*
+import com.lagradost.cloudstream3.extractors.XStreamCdn
+import com.lagradost.cloudstream3.extractors.helper.AsianEmbedHelper
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -17,7 +17,7 @@ class WatchAsianProvider : MainAPI() {
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.TvSeries, TvType.Movie)
 
-    override fun getMainPage(): HomePageResponse {
+    override suspend fun getMainPage(): HomePageResponse {
         val headers = mapOf("X-Requested-By" to mainUrl)
         val doc = app.get(mainUrl, headers = headers).document
         val rowPair = mutableListOf<Pair<String, String>>()
@@ -65,7 +65,7 @@ class WatchAsianProvider : MainAPI() {
         )
     }
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search?type=movies&keyword=$query"
         val document = app.get(url).document.getElementsByTag("body")
                 .select("div.block.tab-container > div > ul > li") ?: return listOf()
@@ -90,7 +90,7 @@ class WatchAsianProvider : MainAPI() {
         }.distinctBy { a -> a.url }
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val body = app.get(url).document
         // Declare vars
         val isDramaDetail = url.contains("/drama-detail/")
@@ -98,6 +98,7 @@ class WatchAsianProvider : MainAPI() {
         var title = ""
         var descript : String? = null
         var year : Int? = null
+        var tags : List<String>? = null
         if (isDramaDetail) {
             val main = body.select("div.details")
             val inner = main?.select("div.info")
@@ -105,20 +106,33 @@ class WatchAsianProvider : MainAPI() {
             poster = fixUrlNull(main?.select("div.img > img")?.attr("src")) ?: ""
             //Log.i(this.name, "Result => (imgLinkCode) ${imgLinkCode}")
             title = inner?.select("h1")?.firstOrNull()?.text() ?: ""
-            year = if (title.length > 5) {
-                title.replace(")", "").replace("(", "").substring(title.length - 5)
-                    .trim().trimEnd(')').toIntOrNull()
-            } else {
-                null
-            }
             //Log.i(this.name, "Result => (year) ${title.substring(title.length - 5)}")
             descript = inner?.text()
+
+            inner?.select("p")?.forEach { p ->
+                val caption = p?.selectFirst("span")?.text()?.trim()?.lowercase()?.removeSuffix(":")?.trim() ?: return@forEach
+                when (caption) {
+                    "genre" -> {
+                        tags = p.select("a")?.mapNotNull { it?.text()?.trim() }
+                    }
+                    "released" -> {
+                        year = p.select("a")?.text()?.trim()?.toIntOrNull()
+                    }
+                }
+            }
         } else {
             poster = body.select("meta[itemprop=\"image\"]")?.attr("content") ?: ""
             title = body.selectFirst("div.block.watch-drama")?.selectFirst("h1")
                 ?.text() ?: ""
             year = null
             descript = body.select("meta[name=\"description\"]")?.attr("content")
+        }
+        //Fallback year from title
+        if (year == null) {
+            year = if (title.length > 5) {
+                title.replace(")", "").replace("(", "").substring(title.length - 5)
+                    .trim().trimEnd(')').toIntOrNull()
+            } else { null }
         }
 
         // Episodes Links
@@ -144,51 +158,68 @@ class WatchAsianProvider : MainAPI() {
         //If there's only 1 episode, consider it a movie.
         if (episodeList.size == 1) {
             //Clean title
-            title = title.removeSuffix("Episode 1")
+            title = title.trim().removeSuffix("Episode 1")
             val streamlink = getServerLinks(episodeList[0].data)
             //Log.i(this.name, "Result => (streamlink) $streamlink")
-            return MovieLoadResponse(title, url, this.name, TvType.Movie, streamlink, poster, year, descript, null, null)
+            return MovieLoadResponse(
+                name = title,
+                url = url,
+                apiName = this.name,
+                type = TvType.Movie,
+                dataUrl = streamlink,
+                posterUrl = poster,
+                year = year,
+                plot = descript,
+                tags = tags
+            )
         }
         return TvSeriesLoadResponse(
-            title,
-            url,
-            this.name,
-            TvType.TvSeries,
-            episodeList,
-            poster,
-            year,
-            descript,
-            null,
-            null,
-            null
+            name = title,
+            url = url,
+            apiName = this.name,
+            type = TvType.TvSeries,
+            episodes = episodeList.reversed(),
+            posterUrl = poster,
+            year = year,
+            plot = descript,
+            tags = tags
         )
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if (data == "about:blank") return false
-        if (data == "[]") return false
-        if (data.isEmpty()) return false
         val links = if (data.startsWith(mainUrl)) {
             getServerLinks(data)
         } else { data }
-        mapper.readValue<List<String>>(links)
-            .forEach { item ->
-                var url = item.trim()
-                if (url.startsWith("//")) {
-                    url = "https:$url"
+        var count = 0
+        mapper.readValue<List<String>>(links).apmap { item ->
+            count++
+            val url = fixUrl(item.trim())
+            //Log.i(this.name, "Result => (url) $url")
+            when {
+                url.startsWith("https://asianembed.io") || url.startsWith("https://asianload.io") -> {
+                    AsianEmbedHelper.getUrls(url, callback)
                 }
-                //Log.i(this.name, "Result => (url) $url")
-                loadExtractor(url, mainUrl, callback)
+                url.startsWith("https://embedsito.com") -> {
+                    val extractor = XStreamCdn()
+                    extractor.domainUrl = "embedsito.com"
+                    extractor.getSafeUrl(url)?.apmap { link ->
+                        callback.invoke(link)
+                    }
+                }
+                else -> {
+                    loadExtractor(url, mainUrl, callback)
+                }
             }
-        return true
+        }
+        return count > 0
     }
 
-    private fun getServerLinks(url: String) : String {
+    private suspend fun getServerLinks(url: String) : String {
         val moviedoc = app.get(url, referer = mainUrl).document
         return moviedoc.select("div.anime_muti_link > ul > li")
             ?.mapNotNull {

@@ -1,11 +1,11 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import android.util.Log
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.FEmbed
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
-import org.jsoup.Jsoup
 import java.lang.Exception
 
 class PinoyMoviePediaProvider : MainAPI() {
@@ -17,10 +17,9 @@ class PinoyMoviePediaProvider : MainAPI() {
     override val hasMainPage = true
     override val hasQuickSearch = false
 
-    override fun getMainPage(): HomePageResponse {
+    override suspend fun getMainPage(): HomePageResponse {
         val all = ArrayList<HomePageList>()
-        val html = app.get(mainUrl).text
-        val document = Jsoup.parse(html)
+        val document = app.get(mainUrl).document
         val mainbody = document.getElementsByTag("body")
         // All rows will be hardcoded bc of the nature of the site
         val rows: List<Pair<String, String>> = listOf(
@@ -33,193 +32,206 @@ class PinoyMoviePediaProvider : MainAPI() {
             Pair("Family", "genre_family")
             //Pair("Adult +18", "genre_pinay-sexy-movies")
         )
-        for (item in rows) {
+        rows.forEach { item ->
             val title = item.first
             val inner = mainbody?.select("div#${item.second} > article")
-            if (inner != null) {
-                val elements: List<SearchResponse> = inner.map {
-                    // Get inner div from article
-                    val urlTitle = it?.select("div.data")
-                    // Fetch details
-                    val link = urlTitle?.select("a")?.attr("href") ?: ""
-                    val name = urlTitle?.text() ?: ""
-                    val image = it?.select("div.poster > img")?.attr("src")
-                    // Get Year from Title
-                    val rex = Regex("\\((\\d+)")
-                    val yearRes = rex.find(name)?.value ?: ""
-                    val year = yearRes.replace("(", "").toIntOrNull()
 
-                    val tvType = TvType.Movie
-                    MovieSearchResponse(
-                        name,
-                        link,
-                        this.name,
-                        tvType,
-                        image,
-                        year,
-                        null,
-                    )
-                }.filter { a -> a.url.isNotEmpty() }
-                        .filter { b -> b.name.isNotEmpty() }
-                        .distinctBy { c -> c.url }
-                // Add
-                all.add(
-                    HomePageList(
-                        title, elements
-                    )
-                )
-            }
-        }
-        return HomePageResponse(all)
-    }
+            val elements: List<SearchResponse> = inner?.mapNotNull {
+                if (it == null) { return@mapNotNull null }
 
-    override fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/?s=${query}"
-        val html = app.get(url).text
-        val document = Jsoup.parse(html).select("div.search-page")?.firstOrNull()
-            ?.select("div.result-item")
-        if (document != null) {
-            return document.map {
-                val inner = it.select("article")
-                val details = inner.select("div.details")
-                val href = details?.select("div.title > a")?.attr("href") ?: ""
+                // Get inner div from article
+                val urlTitle = it.select("div.data") ?: return@mapNotNull null
+                // Fetch details
+                val link = fixUrlNull(urlTitle.select("a")?.attr("href")) ?: return@mapNotNull null
+                val image = it.select("div.poster > img")?.attr("src")
 
-                val title = details?.select("div.title")?.text() ?: ""
-                val link: String = when (href != "") {
-                    true -> fixUrl(href)
-                    false -> ""
+                // Get Title and Year
+                val titleYear = it.select("div.data.dfeatur")
+                var name = titleYear?.select("h3")?.text() ?: ""
+                var year = titleYear?.select("span")?.text()?.toIntOrNull()
+
+                if (name.isEmpty()) {
+                    name = urlTitle.select("h3")?.text() ?: ""
+                    year = titleYear?.select("span")?.text()?.takeLast(4)?.toIntOrNull()
                 }
-                val year = details?.select("div.meta > span.year")?.text()?.toIntOrNull()
-                val image = inner.select("div.image > div > a > img")?.attr("src")
+                if (year == null) {
+                    // Get year from name
+                    val rex = Regex("\\((\\d+)")
+                    year = rex.find(name)?.value?.replace("(", "")?.toIntOrNull()
+                }
 
+                val tvType = TvType.Movie
                 MovieSearchResponse(
-                    title,
+                    name,
                     link,
                     this.name,
-                    TvType.Movie,
+                    tvType,
                     image,
-                    year
+                    year,
+                    null,
                 )
-            }.filter { a -> a.url.isNotEmpty() }
-                    .filter { b -> b.name.isNotEmpty() }
-                    .distinctBy { c -> c.url }
+            }?.distinctBy { c -> c.url } ?: listOf()
+            // Add
+            all.add(
+                HomePageList(
+                    title, elements
+                )
+            )
         }
-        return listOf()
+        return HomePageResponse(all.filter { a -> a.list.isNotEmpty() })
     }
 
-    override fun load(url: String): LoadResponse {
-        val response = app.get(url).text
-        val doc = Jsoup.parse(response)
+    override suspend fun search(query: String): List<SearchResponse> {
+        val url = "$mainUrl/?s=${query}"
+        val document = app.get(url).document.selectFirst("div.search-page")
+            ?.select("div.result-item")
+
+        return document?.mapNotNull {
+            val inner = it.select("article") ?: return@mapNotNull null
+            val details = inner.select("div.details") ?: return@mapNotNull null
+            val link = fixUrlNull(details.select("div.title > a")?.attr("href")) ?: return@mapNotNull null
+
+            val title = details.select("div.title")?.text() ?: ""
+            val year = details.select("div.meta > span.year")?.text()?.toIntOrNull()
+            val image = inner.select("div.image > div > a > img")?.attr("src")
+
+            MovieSearchResponse(
+                title,
+                link,
+                this.name,
+                TvType.Movie,
+                image,
+                year
+            )
+        }?.distinctBy { c -> c.url } ?: listOf()
+    }
+
+    override suspend fun load(url: String): LoadResponse {
+        val doc = app.get(url).document
         val body = doc.getElementsByTag("body")
         val inner = body?.select("div.sheader")
         // Identify if movie or series
-        val isTvSeries = doc?.select("title")?.text()?.lowercase()?.contains("full episode -") ?: false
+        val isTvSeries = doc.select("title")?.text()?.lowercase()?.contains("full episode -") ?: false
 
         // Video details
+        val data = inner?.select("div.data")
         val poster = inner?.select("div.poster > img")?.attr("src")
-        val title = inner?.select("div.data > h1")?.firstOrNull()?.text() ?: ""
-        val descript = body?.select("div#info > div.wp-content")?.text()
+        val title = data?.select("h1")?.firstOrNull()?.text()?.trim() ?: ""
+        val descript = body?.select("div#info > div.wp-content p")?.firstOrNull()?.text()
         val rex = Regex("\\((\\d+)")
         val yearRes = rex.find(title)?.value ?: ""
         //Log.i(this.name, "Result => (yearRes) ${yearRes}")
         val year = yearRes.replace("(", "").toIntOrNull()
+        val tags = data?.select("div.sgeneros > a")?.mapNotNull { tag ->
+            tag?.text()?.trim() ?: return@mapNotNull null
+        }?.toList()
+        val recList = body?.select("div#single_relacionados > article")?.mapNotNull {
+            val a = it.select("a") ?: return@mapNotNull null
+            val aUrl = a.attr("href") ?: return@mapNotNull null
+            val aImg = a.select("img")?.attr("src")
+            val aName = a.select("img")?.attr("alt") ?: return@mapNotNull null
+            val aYear = try {
+                aName.trim().takeLast(5).removeSuffix(")").toIntOrNull()
+            } catch (e: Exception) { null }
+
+            MovieSearchResponse(
+                url = aUrl,
+                name = aName,
+                type = TvType.Movie,
+                posterUrl = aImg,
+                year = aYear,
+                apiName = this.name
+            )
+        }
 
         // Video links
-        val linksContainer = body?.select("div#playcontainer")
-        val streamlinks = linksContainer?.toString() ?: ""
-        //Log.i(this.name, "Result => (streamlinks) ${streamlinks}")
+        val playcontainer = body?.select("div#playcontainer")
+        val listOfLinks: MutableList<String> = mutableListOf()
+        playcontainer?.select("iframe")?.forEach { item ->
+            val lnk = item?.attr("src")?.trim() ?: ""
+            //Log.i(this.name, "Result => (lnk) $lnk")
+            if (lnk.isNotBlank()) {
+                listOfLinks.add(lnk)
+            }
+        }
 
         // Parse episodes if series
         if (isTvSeries) {
             val episodeList = ArrayList<TvSeriesEpisode>()
-            val epList = body?.select("div#playeroptions > ul > li")
+            val epLinks = playcontainer?.select("div > div > div.source-box")
             //Log.i(this.name, "Result => (epList) ${epList}")
-            val epLinks = linksContainer?.select("div > div > div.source-box")
-            //Log.i(this.name, "Result => (epLinks) ${epLinks}")
-            if (epList != null) {
-                for (ep in epList) {
-                    val epTitle = ep.select("span.title")?.text() ?: ""
-                    if (epTitle.isNotEmpty()) {
-                        val epNum = epTitle.lowercase().replace("episode", "").trim().toIntOrNull()
-                        //Log.i(this.name, "Result => (epNum) ${epNum}")
-                        val href = when (epNum != null && epLinks != null) {
-                            true -> epLinks.select("div#source-player-${epNum}")
-                                ?.select("iframe")?.attr("src") ?: ""
-                            false -> ""
-                        }
-                        //Log.i(this.name, "Result => (epLinks href) ${href}")
-                        episodeList.add(
-                            TvSeriesEpisode(
-                                "Episode $epNum",
-                                null,
-                                epNum,
-                                href,
-                                poster,
-                                null
-                            )
-                        )
+            body?.select("div#playeroptions > ul > li")?.forEach { ep ->
+                val epTitle = ep.select("span.title")?.text()
+                if (!epTitle.isNullOrEmpty()) {
+                    val epNum = epTitle.lowercase().replace("episode", "").trim().toIntOrNull()
+                    //Log.i(this.name, "Result => (epNum) ${epNum}")
+                    val href = when (epNum != null && !epLinks.isNullOrEmpty()) {
+                        true -> epLinks.select("div#source-player-$epNum")
+                            ?.select("iframe")?.attr("src") ?: ""
+                        false -> ""
                     }
+                    val streamEpLink = listOf(href.trim()).toJson()
+                    //Log.i(this.name, "Result => (streamEpLink $epNum) $streamEpLink")
+                    episodeList.add(
+                        TvSeriesEpisode(
+                            name = null,
+                            season = null,
+                            episode = epNum,
+                            data = streamEpLink,
+                            posterUrl = poster,
+                            date = null
+                        )
+                    )
                 }
-                return TvSeriesLoadResponse(
-                    title,
-                    url,
-                    this.name,
-                    TvType.TvSeries,
-                    episodeList,
-                    poster,
-                    year,
-                    descript,
-                    null,
-                    null,
-                    null
-                )
             }
+            return TvSeriesLoadResponse(
+                name = title,
+                url = url,
+                apiName = this.name,
+                type = TvType.TvSeries,
+                episodes = episodeList,
+                posterUrl = poster,
+                year = year,
+                plot = descript,
+                tags = tags,
+                recommendations = recList
+            )
         }
-        return MovieLoadResponse(title, url, this.name, TvType.Movie, streamlinks, poster, year, descript, null, null)
+        val streamlinks = listOfLinks.distinct().toJson()
+        return MovieLoadResponse(
+            name = title,
+            url = url,
+            apiName = this.name,
+            type = TvType.Movie,
+            dataUrl = streamlinks,
+            posterUrl = poster,
+            year = year,
+            plot = descript,
+            tags = tags,
+            recommendations = recList
+        )
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if (data == "about:blank") return false
-        if (data.isEmpty()) return false
-        val sources = mutableListOf<ExtractorLink>()
-
         // parse movie servers
-        if (data.contains("playcontainer")) {
-            Jsoup.parse(data).select("div")?.map { item ->
-                val url = item.select("iframe")?.attr("src")
-                if (!url.isNullOrEmpty()) {
-                    //Log.i(this.name, "Result => (url) ${url}")
-                    loadExtractor(url, url, callback)
+        var count = 0
+        mapper.readValue<List<String>>(data).apmap { link ->
+            count++
+            if (link.contains("fembed.com")) {
+                val extractor = FEmbed()
+                extractor.domainUrl = "diasfem.com"
+                extractor.getUrl(data).forEach {
+                    callback.invoke(it)
                 }
-            }
-        } else {
-            // parse single link
-            try {
-                if (data.contains("fembed.com")) {
-                    val extractor = FEmbed()
-                    extractor.domainUrl = "diasfem.com"
-                    val src = extractor.getUrl(data)
-                    if (src.isNotEmpty()) {
-                        sources.addAll(src)
-                    }
-                }
-            } catch (e: Exception) {
-                Log.i(this.name, "Result => (exception) $e")
+            } else {
+                loadExtractor(link, mainUrl, callback)
             }
         }
-        // Invoke sources
-        if (sources.isNotEmpty()) {
-            for (source in sources) {
-                callback.invoke(source)
-                //Log.i(this.name, "Result => (source) ${source.url}")
-                return true
-            }
-        }
-        return false
+        return count > 0
     }
 }

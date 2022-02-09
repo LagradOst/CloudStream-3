@@ -22,7 +22,7 @@ class WatchCartoonOnlineProvider : MainAPI() {
         TvType.TvSeries
     )
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "https://www.wcostream.com/search"
 
         var response =
@@ -97,14 +97,14 @@ class WatchCartoonOnlineProvider : MainAPI() {
         return returnValue
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val isMovie = !url.contains("/anime/")
         val response = app.get(url).text
         val document = Jsoup.parse(response)
 
         return if (!isMovie) {
             val title = document.selectFirst("td.vsbaslik > h2").text()
-            val poster = fixUrl(document.selectFirst("div#cat-img-desc > div > img").attr("src"))
+            val poster = fixUrlNull(document.selectFirst("div#cat-img-desc > div > img")?.attr("src"))
             val plot = document.selectFirst("div.iltext").text()
             val genres = document.select("div#cat-genre > div.wcobtn > a").map { it.text() }
             val episodes = document.select("div#catlist-listview > ul > li > a").reversed().map {
@@ -183,7 +183,7 @@ class WatchCartoonOnlineProvider : MainAPI() {
         val server: String,
     )
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,

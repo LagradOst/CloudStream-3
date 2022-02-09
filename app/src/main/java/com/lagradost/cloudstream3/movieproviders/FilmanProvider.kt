@@ -18,7 +18,7 @@ class FilmanProvider : MainAPI() {
         TvType.TvSeries
     )
 
-    override fun getMainPage(): HomePageResponse {
+    override suspend fun getMainPage(): HomePageResponse {
         val response = app.get(mainUrl).text
         val document = Jsoup.parse(response)
         val lists = document.select(".item-list,.series-list")
@@ -54,7 +54,7 @@ class FilmanProvider : MainAPI() {
         return HomePageResponse(categories)
     }
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/wyszukiwarka?phrase=$query"
         val response = app.get(url).text
         val document = Jsoup.parse(response)
@@ -69,7 +69,17 @@ class FilmanProvider : MainAPI() {
                 val img = i.selectFirst("> img").attr("src").replace("/thumb/", "/big/")
                 val name = i.selectFirst(".title").text()
                 if (type === TvType.TvSeries) {
-                    returnValue.add(TvSeriesSearchResponse(name, href, this.name, type, img, null, null))
+                    returnValue.add(
+                        TvSeriesSearchResponse(
+                            name,
+                            href,
+                            this.name,
+                            type,
+                            img,
+                            null,
+                            null
+                        )
+                    )
                 } else {
                     returnValue.add(MovieSearchResponse(name, href, this.name, type, img, null))
                 }
@@ -79,7 +89,7 @@ class FilmanProvider : MainAPI() {
         return getVideos(TvType.Movie, movies) + getVideos(TvType.TvSeries, series)
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         var title = document.select("span[itemprop=title]").text()
@@ -98,37 +108,45 @@ class FilmanProvider : MainAPI() {
             val regex = Regex("""\[s(\d{1,3})e(\d{1,3})]""").find(e)
             if (regex != null) {
                 val eid = regex.groups
-                episodes.add(TvSeriesEpisode(
-                    e.split("]")[1].trim(),
-                    eid[1]?.value?.toInt(),
-                    eid[2]?.value?.toInt(),
-                    episode.attr("href"),
-                ))
+                episodes.add(
+                    TvSeriesEpisode(
+                        e.split("]")[1].trim(),
+                        eid[1]?.value?.toInt(),
+                        eid[2]?.value?.toInt(),
+                        episode.attr("href"),
+                    )
+                )
             }
         }
-        return TvSeriesLoadResponse(title, url, name, TvType.TvSeries, episodes, posterUrl, year, plot)
+        episodes.sortBy { (it.season?.times(10000) ?: 0) + (it.episode ?: 0) }
+        return TvSeriesLoadResponse(
+            title,
+            url,
+            name,
+            TvType.TvSeries,
+            episodes,
+            posterUrl,
+            year,
+            plot
+        )
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if(data.isEmpty()) {
-            return false
-        }
         val document = if (data.startsWith("http"))
-            Jsoup.parse(app.get(data).text).select("#links").first()
-            else Jsoup.parse(data)
+            app.get(data).document.select("#links").first()
+        else Jsoup.parse(data)
 
-        val items = document.select(".link-to-video")
-        for (i in items) {
-            val decoded = base64Decode(i.select("a").attr("data-iframe"))
+        document.select(".link-to-video")?.apmap { item ->
+            val decoded = base64Decode(item.select("a").attr("data-iframe"))
             val link = mapper.readValue<LinkElement>(decoded).src
             loadExtractor(link, null, callback)
         }
-       return true
+        return true
     }
 }
 

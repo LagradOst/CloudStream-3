@@ -1,10 +1,8 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import org.jsoup.Jsoup
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.extractorApis
 
 
 class FrenchStreamProvider : MainAPI() {
@@ -15,7 +13,7 @@ class FrenchStreamProvider : MainAPI() {
     override val lang = "fr"
     override val supportedTypes = setOf(TvType.AnimeMovie, TvType.TvSeries, TvType.Movie)
 
-    override fun search(query: String): ArrayList<SearchResponse> {
+    override suspend fun search(query: String): ArrayList<SearchResponse> {
         val link = "$mainUrl/?do=search&subaction=search&story=$query"
         val soup = app.post(link).document
 
@@ -24,7 +22,11 @@ class FrenchStreamProvider : MainAPI() {
             val poster = li.selectFirst("img")?.attr("src")
             val title = li.selectFirst("> a.short-poster").text().toString().replace(". ", "")
             val year = li.selectFirst(".date")?.text()?.split("-")?.get(0)?.toIntOrNull()
-            if (title.contains("saison", ignoreCase = true)) {  // if saison in title ==> it's a TV serie
+            if (title.contains(
+                    "saison",
+                    ignoreCase = true
+                )
+            ) {  // if saison in title ==> it's a TV serie
                 TvSeriesSearchResponse(
                     title,
                     href,
@@ -47,7 +49,7 @@ class FrenchStreamProvider : MainAPI() {
         })
     }
 
-    override fun load(url: String): LoadResponse? {
+    override suspend fun load(url: String): LoadResponse {
         val soup = app.get(url).document
 
         val title = soup.selectFirst("h1#s-title").text().toString()
@@ -55,17 +57,17 @@ class FrenchStreamProvider : MainAPI() {
         val description =
             soup.selectFirst("div.fdesc").text().toString()
                 .split("streaming", ignoreCase = true)[1].replace(" :  ", "")
-        var poster: String? = soup.selectFirst("div.fposter > img").attr("src").toString()
+        var poster = fixUrlNull(soup.selectFirst("div.fposter > img")?.attr("src"))
         val listEpisode = soup.selectFirst("div.elink")
 
         if (isMovie) {
-            val trailer = soup.selectFirst("div.fleft > span > a").attr("href").toString()
-            val date = soup.select("ul.flist-col > li")[2].text().toIntOrNull()
-            val ratingAverage = soup.select("div.fr-count > div").text().toIntOrNull()
-            val tags = soup.select("ul.flist-col > li")[1]
-            val tagsList = tags.select("a")
-                .map {   // all the tags like action, thriller ...; unused variable
-                    it.text()
+            val trailer = soup.selectFirst("div.fleft > span > a")?.attr("href")
+            val date = soup.select("ul.flist-col > li")?.getOrNull(2)?.text()?.toIntOrNull()
+            val ratingAverage = soup.select("div.fr-count > div")?.text()?.toIntOrNull()
+            val tags = soup.select("ul.flist-col > li")?.getOrNull(1)
+            val tagsList = tags?.select("a")
+                ?.mapNotNull {   // all the tags like action, thriller ...; unused variable
+                    it?.text()
                 }
             return MovieLoadResponse(
                 title,
@@ -134,7 +136,7 @@ class FrenchStreamProvider : MainAPI() {
         }
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -183,10 +185,10 @@ class FrenchStreamProvider : MainAPI() {
                 val serversvo =  // Original version servers
                     soup.select("div#episode$translated > div.selink > ul.btnss $div> li")
                         .mapNotNull { li ->
-                            val serverurl = fixUrl(li.selectFirst("a").attr("href"))
-                            if (serverurl != "") {
+                            val serverUrl = fixUrlNull(li.selectFirst("a")?.attr("href"))
+                            if (!serverUrl.isNullOrEmpty()) {
                                 if (li.text().replace("&nbsp;", "").replace(" ", "") != "") {
-                                    Pair(li.text().replace(" ", ""), fixUrl(serverurl))
+                                    Pair(li.text().replace(" ", ""), fixUrl(serverUrl))
                                 } else {
                                     null
                                 }
@@ -196,22 +198,22 @@ class FrenchStreamProvider : MainAPI() {
                         }
                 serversvf + serversvo
             } else {  // it's a movie
-                val soup = app.get(fixUrl(data)).document
                 val movieServers =
-                    soup.select("nav#primary_nav_wrap > ul > li > ul > li > a").mapNotNull { a ->
-                        val serverurl = fixUrl(a.attr("href"))
-                        val parent = a.parents()[2]
-                        val element = parent.selectFirst("a").text().plus(" ")
-                        if (a.text().replace("&nbsp;", "").trim() != "") {
-                            Pair(element.plus(a.text()), fixUrl(serverurl))
-                        } else {
-                            null
+                    app.get(fixUrl(data)).document.select("nav#primary_nav_wrap > ul > li > ul > li > a")
+                        .mapNotNull { a ->
+                            val serverurl = fixUrlNull(a.attr("href")) ?: return@mapNotNull null
+                            val parent = a.parents()[2]
+                            val element = parent.selectFirst("a").text().plus(" ")
+                            if (a.text().replace("&nbsp;", "").trim() != "") {
+                                Pair(element.plus(a.text()), fixUrl(serverurl))
+                            } else {
+                                null
+                            }
                         }
-                    }
                 movieServers
             }
 
-        servers.forEach {
+        servers.apmap {
             for (extractor in extractorApis) {
                 if (it.first.contains(extractor.name, ignoreCase = true)) {
 //                    val name = it.first
@@ -226,7 +228,7 @@ class FrenchStreamProvider : MainAPI() {
     }
 
 
-    override fun getMainPage(): HomePageResponse? {
+    override suspend fun getMainPage(): HomePageResponse? {
         val document = app.get(mainUrl).document
         val docs = document.select("div.sect")
         val returnList = docs.mapNotNull {

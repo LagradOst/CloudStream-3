@@ -12,7 +12,6 @@ import org.jsoup.nodes.Document
 import java.net.URI
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.collections.ArrayList
 
 class TenshiProvider : MainAPI() {
     companion object {
@@ -20,7 +19,7 @@ class TenshiProvider : MainAPI() {
         //var cookie: Map<String, String> = mapOf()
 
         fun getType(t: String): TvType {
-            return if (t.contains("OVA") || t.contains("Special")) TvType.ONA
+            return if (t.contains("OVA") || t.contains("Special")) TvType.OVA
             else if (t.contains("Movie")) TvType.AnimeMovie
             else TvType.Anime
         }
@@ -30,7 +29,7 @@ class TenshiProvider : MainAPI() {
     override val name = "Tenshi.moe"
     override val hasQuickSearch = false
     override val hasMainPage = true
-    override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.ONA)
+    override val supportedTypes = setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
     private var ddosGuardKiller = DdosGuardKiller(true)
 
     /*private fun loadToken(): Boolean {
@@ -45,7 +44,7 @@ class TenshiProvider : MainAPI() {
         }
     }*/
 
-    override fun getMainPage(): HomePageResponse {
+    override suspend fun getMainPage(): HomePageResponse {
         val items = ArrayList<HomePageList>()
         val soup = app.get(mainUrl, interceptor = ddosGuardKiller).document
         for (section in soup.select("#content > section")) {
@@ -152,7 +151,7 @@ class TenshiProvider : MainAPI() {
 //        @JsonProperty("cen") var cen : String
 //    )
 
-//    override fun quickSearch(query: String): ArrayList<SearchResponse>? {
+//    override suspend fun quickSearch(query: String): ArrayList<SearchResponse>? {
 //        if (!autoLoadToken()) return quickSearch(query)
 //        val url = "$mainUrl/anime/search"
 //        val response = khttp.post(
@@ -192,7 +191,7 @@ class TenshiProvider : MainAPI() {
 //        return returnValue
 //    }
 
-    override fun search(query: String): ArrayList<SearchResponse> {
+    override suspend fun search(query: String): ArrayList<SearchResponse> {
         val url = "$mainUrl/anime"
         var document = app.get(
             url,
@@ -220,7 +219,7 @@ class TenshiProvider : MainAPI() {
         return ArrayList(returnValue)
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         var document = app.get(
             url,
             cookies = mapOf("loop-view" to "thumb"),
@@ -256,10 +255,18 @@ class TenshiProvider : MainAPI() {
             )
         })
 
+        val similarAnime = document.select("ul.anime-loop > li > a")?.mapNotNull { element ->
+            val href = element.attr("href") ?: return@mapNotNull null
+            val title =
+                element.selectFirst("> .overlay > .thumb-title")?.text() ?: return@mapNotNull null
+            val img = element.selectFirst("> img")?.attr("src")
+            AnimeSearchResponse(title, href, this.name, TvType.Anime, img)
+        }
 
         val type = document.selectFirst("a[href*=\"$mainUrl/type/\"]")?.text()?.trim()
 
         return newAnimeLoadResponse(canonicalTitle, url, getType(type ?: "")) {
+            recommendations = similarAnime
             posterUrl = document.selectFirst("img.cover-image")?.attr("src")
             plot = document.selectFirst(".entry-description > .card-body")?.text()?.trim()
             tags =
@@ -292,7 +299,7 @@ class TenshiProvider : MainAPI() {
     }
 
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,

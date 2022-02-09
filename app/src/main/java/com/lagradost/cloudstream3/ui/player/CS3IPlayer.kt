@@ -10,6 +10,7 @@ import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
 import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
 import com.google.android.exoplayer2.source.MergingMediaSource
 import com.google.android.exoplayer2.source.SingleSampleMediaSource
+import com.google.android.exoplayer2.text.TextRenderer
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.ui.SubtitleView
@@ -32,12 +33,13 @@ import javax.net.ssl.SSLSession
 
 const val TAG = "CS3ExoPlayer"
 
-class CS3IPlayer : IPlayer {
+/** Cache */
+
+class CS3IPlayer() : IPlayer {
     private var isPlaying = false
     private var exoPlayer: ExoPlayer? = null
+    var cacheSize = 300L * 1024L * 1024L // 300 mb
 
-    /** Cache */
-    private val cacheSize = 300L * 1024L * 1024L // 300 mb TODO MAKE SETTING
     private val seekActionTime = 30000L
 
     private var ignoreSSL: Boolean = true
@@ -216,10 +218,11 @@ class CS3IPlayer : IPlayer {
         }
     }
 
-    private fun releasePlayer() {
+    private fun releasePlayer(saveTime: Boolean = true) {
         Log.i(TAG, "releasePlayer")
 
-        updatedTime()
+        if (saveTime)
+            updatedTime()
 
         exoPlayer?.release()
         simpleCache?.release()
@@ -259,6 +262,7 @@ class CS3IPlayer : IPlayer {
 
     companion object {
         private fun createOnlineSource(link: ExtractorLink): DataSource.Factory {
+            // Because Trailers.to seems to fail with http/1.1 the normal one uses.
             return DefaultHttpDataSource.Factory().apply {
                 setUserAgent(USER_AGENT)
                 val headers = mapOf(
@@ -281,7 +285,7 @@ class CS3IPlayer : IPlayer {
             return DefaultDataSourceFactory(this, USER_AGENT)
         }
 
-        private fun getSubSources(
+        /*private fun getSubSources(
             onlineSourceFactory: DataSource.Factory?,
             offlineSourceFactory: DataSource.Factory?,
             subHelper: PlayerSubtitleHelper,
@@ -320,7 +324,7 @@ class CS3IPlayer : IPlayer {
             }
             println("SUBSRC: ${subSources.size} activeSubtitles : ${activeSubtitles.size} of ${subHelper.getAllSubtitles().size} ")
             return Pair(subSources, activeSubtitles)
-        }
+        }*/
 
         private fun getCache(context: Context, cacheSize: Long): SimpleCache? {
             return try {
@@ -377,6 +381,21 @@ class CS3IPlayer : IPlayer {
         ): ExoPlayer {
             val exoPlayerBuilder =
                 ExoPlayer.Builder(context)
+                    .setRenderersFactory { eventHandler, videoRendererEventListener, audioRendererEventListener, textRendererOutput, metadataRendererOutput ->
+                        DefaultRenderersFactory(context).createRenderers(
+                            eventHandler,
+                            videoRendererEventListener,
+                            audioRendererEventListener,
+                            textRendererOutput,
+                            metadataRendererOutput
+                        ).map {
+                            if (it is TextRenderer) TextRenderer(
+                                textRendererOutput,
+                                eventHandler.looper,
+                                CustomSubtitleDecoderFactory()
+                            ) else it
+                        }.toTypedArray()
+                    }
                     .setTrackSelector(trackSelector ?: getTrackSelector(context))
 
             val videoMediaSource =
@@ -548,6 +567,16 @@ class CS3IPlayer : IPlayer {
                     updatedTime()
                     if (!hasUsedFirstRender) { // this insures that we only call this once per player load
                         Log.i(TAG, "Rendered first frame")
+
+                        val invalid = exoPlayer?.duration?.let { duration ->
+                            duration < 20000L
+                        } ?: false
+                        if (invalid) {
+                            releasePlayer(saveTime = false)
+                            playerError?.invoke(InvalidFileException("Too short playback"))
+                            return
+                        }
+
                         setPreferredSubtitles(currentSubtitles)
                         hasUsedFirstRender = true
                         val format = exoPlayer?.videoFormat
@@ -586,17 +615,59 @@ class CS3IPlayer : IPlayer {
 
             val mediaItem = getMediaItem(MimeTypes.VIDEO_MP4, data.uri)
             val offlineSourceFactory = context.createOfflineSource()
+
             val (subSources, activeSubtitles) = getSubSources(
                 offlineSourceFactory,
                 offlineSourceFactory,
-                subtitleHelper
+                subtitleHelper,
             )
+
             subtitleHelper.setActiveSubtitles(activeSubtitles.toSet())
             loadExo(context, mediaItem, subSources)
         } catch (e: Exception) {
             Log.e(TAG, "loadOfflinePlayer error", e)
             playerError?.invoke(e)
         }
+    }
+
+    private fun getSubSources(
+        onlineSourceFactory: DataSource.Factory?,
+        offlineSourceFactory: DataSource.Factory?,
+        subHelper: PlayerSubtitleHelper,
+    ): Pair<List<SingleSampleMediaSource>, List<SubtitleData>> {
+        val activeSubtitles = ArrayList<SubtitleData>()
+        val subSources = subHelper.getAllSubtitles().mapNotNull { sub ->
+            val subConfig = MediaItem.SubtitleConfiguration.Builder(Uri.parse(sub.url))
+                .setMimeType(sub.mimeType)
+                .setLanguage("_${sub.name}")
+                .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+                .build()
+            when (sub.origin) {
+                SubtitleOrigin.DOWNLOADED_FILE -> {
+                    if (offlineSourceFactory != null) {
+                        activeSubtitles.add(sub)
+                        SingleSampleMediaSource.Factory(offlineSourceFactory)
+                            .createMediaSource(subConfig, C.TIME_UNSET)
+                    } else {
+                        null
+                    }
+                }
+                SubtitleOrigin.URL -> {
+                    if (onlineSourceFactory != null) {
+                        activeSubtitles.add(sub)
+                        SingleSampleMediaSource.Factory(onlineSourceFactory)
+                            .createMediaSource(subConfig, C.TIME_UNSET)
+                    } else {
+                        null
+                    }
+                }
+                SubtitleOrigin.OPEN_SUBTITLES -> {
+                    // TODO
+                    throw NotImplementedError()
+                }
+            }
+        }
+        return Pair(subSources, activeSubtitles)
     }
 
     private fun loadOnlinePlayer(context: Context, link: ExtractorLink) {
@@ -626,10 +697,11 @@ class CS3IPlayer : IPlayer {
             val offlineSourceFactory = context.createOfflineSource()
 
             val (subSources, activeSubtitles) = getSubSources(
-                onlineSourceFactory,
                 offlineSourceFactory,
+                onlineSourceFactory,
                 subtitleHelper
             )
+
             subtitleHelper.setActiveSubtitles(activeSubtitles.toSet())
 
             if (simpleCache == null)

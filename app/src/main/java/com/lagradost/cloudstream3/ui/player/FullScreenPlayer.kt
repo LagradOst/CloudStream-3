@@ -56,7 +56,7 @@ const val DOUBLE_TAB_MINIMUM_TIME_BETWEEN = 200L    // this also affects the UI 
 const val DOUBLE_TAB_PAUSE_PERCENTAGE = 0.15        // in both directions
 
 // All the UI Logic for the player
-open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
+open class FullScreenPlayer : AbstractPlayerFragment() {
     // state of player UI
     protected var isShowing = false
     protected var isLocked = false
@@ -122,15 +122,16 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
     /** Returns false if the touch is on the status bar or navigation bar*/
     private fun isValidTouch(rawX: Float, rawY: Float): Boolean {
         val statusHeight = statusBarHeight ?: 0
-        val navHeight = navigationBarHeight ?: 0
-        return rawY > statusHeight && rawX < screenWidth - navHeight
+        // val navHeight = navigationBarHeight ?: 0
+        // nav height is removed because screenWidth already takes into account that
+        return rawY > statusHeight && rawX < screenWidth //- navHeight
     }
 
     private fun animateLayoutChanges() {
         if (isShowing) {
             updateUIVisibility()
         } else {
-            player_holder.postDelayed({ updateUIVisibility() }, 200)
+            player_holder?.postDelayed({ updateUIVisibility() }, 200)
         }
 
         val titleMove = if (isShowing) 0f else -50.toPx.toFloat()
@@ -226,7 +227,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
     private fun setPlayBackSpeed(speed: Float) {
         try {
             setKey(PLAYBACK_SPEED_KEY, speed)
-            playback_speed_btt?.text =
+            player_speed_btt?.text =
                 getString(R.string.player_speed_text_format).format(speed)
                     .replace(".0x", "x")
         } catch (e: Exception) {
@@ -351,6 +352,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         }
         activity?.hideSystemUI()
         animateLayoutChanges()
+        player_pause_play?.requestFocus()
     }
 
     private fun toggleLock() {
@@ -404,6 +406,8 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         player_pause_play?.isGone = isGone
         //player_buffering?.isGone = isGone
         player_top_holder?.isGone = isGone
+        player_video_title?.isGone = isGone
+        player_video_title_rez?.isGone = isGone
         player_center_menu?.isGone = isGone
         player_lock?.isGone = !isShowing
         //player_media_route_button?.isClickable = !isGone
@@ -412,13 +416,15 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
 
     private fun updateLockUI() {
         player_lock?.setIconResource(if (isLocked) R.drawable.video_locked else R.drawable.video_unlocked)
-        val color = if (isLocked) context?.colorFromAttribute(R.attr.colorPrimary)
-        else Color.WHITE
-        if (color != null) {
-            player_lock?.setTextColor(color)
-            player_lock?.iconTint = ColorStateList.valueOf(color)
-            player_lock?.rippleColor =
-                ColorStateList.valueOf(Color.argb(50, color.red, color.green, color.blue))
+        if (layout == R.layout.fragment_player) {
+            val color = if (isLocked) context?.colorFromAttribute(R.attr.colorPrimary)
+            else Color.WHITE
+            if (color != null) {
+                player_lock?.setTextColor(color)
+                player_lock?.iconTint = ColorStateList.valueOf(color)
+                player_lock?.rippleColor =
+                    ColorStateList.valueOf(Color.argb(50, color.red, color.green, color.blue))
+            }
         }
     }
 
@@ -818,50 +824,71 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         return true
     }
 
-    private fun handleKeyEvent(event: KeyEvent): Boolean {
-        event.keyCode.let { keyCode ->
-            when (event.action) {
-                KeyEvent.ACTION_DOWN -> {
-                    when (keyCode) {
-                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_DPAD_UP -> {
-                            if (!isShowing) {
-                                onClickChange()
-                                return true
+    private fun handleKeyEvent(event: KeyEvent, hasNavigated: Boolean): Boolean {
+        if (hasNavigated) {
+            autoHide()
+        } else {
+            event.keyCode.let { keyCode ->
+                when (event.action) {
+                    KeyEvent.ACTION_DOWN -> {
+                        when (keyCode) {
+                            KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                if (!isShowing) {
+                                    if (!isLocked) player.handleEvent(CSPlayerEvent.PlayPauseToggle)
+                                    onClickChange()
+                                    return true
+                                }
+                            }
+                            KeyEvent.KEYCODE_DPAD_UP -> {
+                                if (!isShowing) {
+                                    onClickChange()
+                                    return true
+                                }
+                            }
+                            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                if (!isShowing && !isLocked) {
+                                    player.seekTime(-10000L)
+                                    return true
+                                } else if (player_pause_play?.isFocused == true) {
+                                    player.seekTime(-30000L)
+                                    return true
+                                }
+                            }
+                            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                if (!isShowing && !isLocked) {
+                                    player.seekTime(10000L)
+                                    return true
+                                } else if (player_pause_play?.isFocused == true) {
+                                    player.seekTime(30000L)
+                                    return true
+                                }
                             }
                         }
                     }
-
-                    //println("Keycode: $keyCode")
-                    //showToast(
-                    //    this,
-                    //    "Got Keycode $keyCode | ${KeyEvent.keyCodeToString(keyCode)} \n ${event?.action}",
-                    //    Toast.LENGTH_LONG
-                    //)
                 }
-            }
 
-            when (keyCode) {
-                // don't allow dpad move when hidden
-                KeyEvent.KEYCODE_DPAD_LEFT,
-                KeyEvent.KEYCODE_DPAD_DOWN,
-                KeyEvent.KEYCODE_DPAD_UP,
-                KeyEvent.KEYCODE_DPAD_RIGHT,
-                KeyEvent.KEYCODE_DPAD_DOWN_LEFT,
-                KeyEvent.KEYCODE_DPAD_DOWN_RIGHT,
-                KeyEvent.KEYCODE_DPAD_UP_LEFT,
-                KeyEvent.KEYCODE_DPAD_UP_RIGHT -> {
-                    if (!isShowing) {
-                        return true
-                    } else {
-                        autoHide()
+                when (keyCode) {
+                    // don't allow dpad move when hidden
+
+                    KeyEvent.KEYCODE_DPAD_DOWN,
+                    KeyEvent.KEYCODE_DPAD_UP,
+                    KeyEvent.KEYCODE_DPAD_DOWN_LEFT,
+                    KeyEvent.KEYCODE_DPAD_DOWN_RIGHT,
+                    KeyEvent.KEYCODE_DPAD_UP_LEFT,
+                    KeyEvent.KEYCODE_DPAD_UP_RIGHT -> {
+                        if (!isShowing) {
+                            return true
+                        } else {
+                            autoHide()
+                        }
                     }
-                }
 
-                // netflix capture back and hide ~monke
-                KeyEvent.KEYCODE_BACK -> {
-                    if (isShowing) {
-                        onClickChange()
-                        return true
+                    // netflix capture back and hide ~monke
+                    KeyEvent.KEYCODE_BACK -> {
+                        if (isShowing) {
+                            onClickChange()
+                            return true
+                        }
                     }
                 }
             }
@@ -939,17 +966,17 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         }
 
         // handle tv controls directly based on player state
-        keyEventListener = { keyEvent ->
-            if (keyEvent != null) {
-                handleKeyEvent(keyEvent)
-            } else {
-                false
-            }
+        keyEventListener = { eventNav ->
+            val (event, hasNavigated) = eventNav
+            if (event != null)
+                handleKeyEvent(event, hasNavigated)
+            else false
         }
 
         try {
-            val settingsManager = PreferenceManager.getDefaultSharedPreferences(activity)
             context?.let { ctx ->
+                val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
+
                 navigationBarHeight = ctx.getNavigationBarHeight()
                 statusBarHeight = ctx.getStatusBarHeight()
 
@@ -989,7 +1016,8 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
                 //    settingsManager.getBoolean(ctx.getString(R.string.use_system_brightness_key), false)
             }
 
-            playback_speed_btt?.isVisible = playBackSpeedEnabled
+            player_speed_btt?.isVisible = playBackSpeedEnabled
+            player_resize_btt?.isVisible = playerResizeEnabled
         } catch (e: Exception) {
             logError(e)
         }
@@ -1005,7 +1033,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
             nextResize()
         }
 
-        playback_speed_btt?.setOnClickListener {
+        player_speed_btt?.setOnClickListener {
             autoHide()
             showSpeedDialog()
         }
@@ -1048,6 +1076,21 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
             return@setOnTouchListener handleMotionEvent(callView, event)
         }
 
+        exo_progress?.setOnTouchListener { _, event ->
+            // this makes the bar not disappear when sliding
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    currentTapIndex++
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    currentTapIndex++
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_BUTTON_RELEASE -> {
+                    autoHide()
+                }
+            }
+            return@setOnTouchListener false
+        }
         // init UI
         try {
             uiReset()

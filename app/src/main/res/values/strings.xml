@@ -12,6 +12,7 @@
     <string name="benene_count" translatable="false">benene_count</string>
     <string name="subtitle_settings_key" translatable="false">subtitle_settings_key</string>
     <string name="quality_pref_key" translatable="false">quality_pref_key</string>
+    <string name="video_cache_key" translatable="false">video_cache_key</string>
     <string name="prerelease_commit_hash" translatable="false">unknown_prerelease</string>
     <string name="use_system_brightness_key" translatable="false">use_system_brightness_key</string>
     <string name="swipe_enabled_key" translatable="false">swipe_enabled_key</string>
@@ -45,6 +46,7 @@
     <string name="rating_format" translatable="false" formatted="true">%.1f/10.0</string>
     <string name="year_format" translatable="false" formatted="true">%d</string>
     <string name="app_dub_sub_episode_text_format" formatted="true">%s Ep %d</string>
+    <string name="cast_format" formatted="true">Cast: %s</string>
 
     <!-- IS NOT NEEDED TO TRANSLATE AS THEY ARE ONLY USED FOR SCREEN READERS AND WONT SHOW UP TO NORMAL USERS -->
     <string name="result_poster_img_des">Poster</string>
@@ -156,6 +158,7 @@
 
     <string name="action_remove_watching">Remove</string>
     <string name="action_open_watching">More Info</string>
+    <string name="action_open_play">@string/home_play </string>
 
     <string name="vpn_might_be_needed">A VPN might be needed for this provider to work correctly</string>
     <string name="vpn_torrent">This provider is a torrent, a VPN is recommended</string>
@@ -223,6 +226,7 @@
     <string name="episodes">Episodes</string>
     <string name="season_short">S</string>
     <string name="episode_short">E</string>
+    <string name="no_episodes_found">No Episodes found</string>
 
     <string name="delete_file">Delete File</string>
     <string name="delete">Delete</string>
@@ -232,6 +236,8 @@
     <string name="go_back_30">-30</string>
     <string name="go_forward_30">+30</string>
     <string name="delete_message" formatted="true">This will permanently delete %s\nAre you sure?</string>
+    <string name="resume_time_left" formatted="true">%dm\nremaining</string>
+
 
     <string name="status_ongoing">Ongoing</string>
     <string name="status_completed">Completed</string>
@@ -257,12 +263,14 @@
     <string name="anime">Anime</string>
     <string name="torrent">Torrents</string>
     <string name="documentaries">Documentaries</string>
+    <string name="ova">OVA</string>
 
     <!--singular-->
     <string name="movies_singular">Movie</string>
     <string name="tv_series_singular">Series</string>
     <string name="cartoons_singular">Cartoon</string>
     <string name="anime_singular">@string/anime</string>
+    <string name="ova_singular">@string/ova</string>
     <string name="torrent_singular">Torrent</string>
     <string name="documentaries_singular">Documentary</string>
 
@@ -293,6 +301,7 @@
     <string name="dont_show_again">Don\'t show again</string>
     <string name="update">Update</string>
     <string name="watch_quality_pref">Preferred watch quality</string>
+    <string name="video_cache_settings">Video cache size</string>
     <string name="dns_pref">DNS over HTTPS</string>
     <string name="dns_pref_summary">Useful for bypassing ISP blocks</string>
 
@@ -372,8 +381,13 @@
     -->
     <string name="subtitles_example_text">The quick brown fox jumps over the lazy dog</string>
 
-    <string name="tab_recommended">Recommended</string>
+    <string name="recommended">Recommended</string>
     <string name="player_loaded_subtitles" formatted="true">Loaded %s</string>
     <string name="player_load_subtitles">Load from file</string>
     <string name="downloaded_file">Downloaded file</string>
+    <string name="actor_main">Main</string>
+    <string name="actor_supporting">Supporting</string>
+    <string name="actor_background">Background</string>
+
+    <string name="home_source">Source</string>
 </resources>

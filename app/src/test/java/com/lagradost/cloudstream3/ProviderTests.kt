@@ -3,6 +3,7 @@ package com.lagradost.cloudstream3
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert
 import org.junit.Test
 
@@ -13,7 +14,7 @@ class ProviderTests {
         return allApis.filter { !it.usesWebView }
     }
 
-    private fun loadLinks(api: MainAPI, url: String?): Boolean {
+    private suspend fun loadLinks(api: MainAPI, url: String?): Boolean {
         Assert.assertNotNull("Api ${api.name} has invalid url on episode", url)
         if (url == null) return true
         var linksLoaded = 0
@@ -23,7 +24,10 @@ class ProviderTests {
                     "Api ${api.name} returns link with invalid Quality",
                     Qualities.values().map { it.value }.contains(link.quality)
                 )
-                Assert.assertTrue("Api ${api.name} returns link with invalid url", link.url.length > 4)
+                Assert.assertTrue(
+                    "Api ${api.name} returns link with invalid url",
+                    link.url.length > 4
+                )
                 linksLoaded++
             }
             if (success) {
@@ -39,7 +43,7 @@ class ProviderTests {
         return true
     }
 
-    private fun testSingleProviderApi(api: MainAPI): Boolean {
+    private suspend fun testSingleProviderApi(api: MainAPI): Boolean {
         val searchQueries = listOf("over", "iron", "guy")
         var correctResponses = 0
         var searchResult: List<SearchResponse>? = null
@@ -69,9 +73,17 @@ class ProviderTests {
         try {
             var validResults = false
             for (result in searchResult) {
-                Assert.assertEquals("Invalid apiName on response on ${api.name}", result.apiName, api.name)
+                Assert.assertEquals(
+                    "Invalid apiName on response on ${api.name}",
+                    result.apiName,
+                    api.name
+                )
                 val load = api.load(result.url) ?: continue
-                Assert.assertEquals("Invalid apiName on load on ${api.name}", load.apiName, result.apiName)
+                Assert.assertEquals(
+                    "Invalid apiName on load on ${api.name}",
+                    load.apiName,
+                    result.apiName
+                )
                 Assert.assertTrue(
                     "Api ${api.name} on load does not contain any of the supportedTypes",
                     api.supportedTypes.contains(load.type)
@@ -137,33 +149,41 @@ class ProviderTests {
         for (api in getAllProviders()) {
             Assert.assertTrue("Api does not contain a mainUrl", api.mainUrl != "NONE")
             Assert.assertTrue("Api does not contain a name", api.name != "NONE")
-            Assert.assertTrue("Api ${api.name} does not contain a valid language code", isoNames.contains(api.lang))
-            Assert.assertTrue("Api ${api.name} does not contain any supported types", api.supportedTypes.isNotEmpty())
+            Assert.assertTrue(
+                "Api ${api.name} does not contain a valid language code",
+                isoNames.contains(api.lang)
+            )
+            Assert.assertTrue(
+                "Api ${api.name} does not contain any supported types",
+                api.supportedTypes.isNotEmpty()
+            )
         }
     }
 
     @Test
     fun providerCorrectHomepage() {
-        getAllProviders().pmap { api ->
-            if (api.hasMainPage) {
-                try {
-                    val homepage = api.getMainPage()
-                    when {
-                        homepage == null -> {
-                            Assert.fail("Homepage provider ${api.name} did not correctly load homepage!")
+        runBlocking {
+            getAllProviders().apmap { api ->
+                if (api.hasMainPage) {
+                    try {
+                        val homepage = api.getMainPage()
+                        when {
+                            homepage == null -> {
+                                Assert.fail("Homepage provider ${api.name} did not correctly load homepage!")
+                            }
+                            homepage.items.isEmpty() -> {
+                                Assert.fail("Homepage provider ${api.name} does not contain any items!")
+                            }
+                            homepage.items.any { it.list.isEmpty() } -> {
+                                Assert.fail("Homepage provider ${api.name} does not have any items on result!")
+                            }
                         }
-                        homepage.items.isEmpty() -> {
-                            Assert.fail("Homepage provider ${api.name} does not contain any items!")
+                    } catch (e: Exception) {
+                        if (e.cause is NotImplementedError) {
+                            Assert.fail("Provider marked as hasMainPage, while in reality is has not been implemented")
                         }
-                        homepage.items.any { it.list.isEmpty() } -> {
-                            Assert.fail("Homepage provider ${api.name} does not have any items on result!")
-                        }
+                        logError(e)
                     }
-                } catch (e: Exception) {
-                    if (e.cause is NotImplementedError) {
-                        Assert.fail("Provider marked as hasMainPage, while in reality is has not been implemented")
-                    }
-                    logError(e)
                 }
             }
         }
@@ -175,10 +195,10 @@ class ProviderTests {
 //    }
 
     @Test
-    fun providerCorrect() {
-        val invalidProvider = ArrayList<Pair<MainAPI,Exception?>>()
+    suspend fun providerCorrect() {
+        val invalidProvider = ArrayList<Pair<MainAPI, Exception?>>()
         val providers = getAllProviders()
-        providers.pmap { api ->
+        providers.apmap { api ->
             try {
                 println("Trying $api")
                 if (testSingleProviderApi(api)) {
@@ -189,7 +209,7 @@ class ProviderTests {
                 }
             } catch (e: Exception) {
                 logError(e)
-                invalidProvider.add(Pair(api,e))
+                invalidProvider.add(Pair(api, e))
             }
         }
 
