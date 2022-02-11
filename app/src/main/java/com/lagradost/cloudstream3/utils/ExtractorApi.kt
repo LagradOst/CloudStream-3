@@ -16,7 +16,9 @@ data class ExtractorLink(
     override val referer: String,
     val quality: Int,
     val isM3u8: Boolean = false,
-    override val headers: Map<String, String> = mapOf()
+    override val headers: Map<String, String> = mapOf(),
+    /** Used for getExtractorVerifierJob() */
+    val extractorData: String? = null
 ) : VideoDownloadManager.IDownloadableMinimum
 
 data class ExtractorUri(
@@ -95,6 +97,7 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     Mp4Upload(),
     StreamTape(),
     MixDrop(),
+    Mcloud(),
     XStreamCdn(),
     StreamSB(),
     Streamhub(),
