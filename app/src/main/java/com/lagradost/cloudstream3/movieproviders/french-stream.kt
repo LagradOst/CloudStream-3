@@ -86,8 +86,8 @@ class FrenchStreamProvider : MainAPI() {
             )
         } else  // a tv serie
         {
-            println(listEpisode)
-            println("listeEpisode:")
+            //println(listEpisode)
+            //println("listeEpisode:")
             val episode_list = if ("<a" !in (listEpisode[0]).toString()) {  // check if VF is empty
                 listEpisode[1]  // no vf, return vostfr
             }
@@ -95,7 +95,7 @@ class FrenchStreamProvider : MainAPI() {
                 listEpisode[0] // no vostfr, return vf
             }
 
-            println(url)
+            //println(url)
 
             val episodes = episode_list.select("a").map { a ->
                 val epNum = a.text().split("Episode")[1].trim().toIntOrNull()
@@ -180,8 +180,6 @@ class FrenchStreamProvider : MainAPI() {
                     } else {
                         ""
                     }
-                println("looking for:")
-                println("div#$wantedEpisode > div.selink > ul.btnss $div> li")
                 val serversvf =// French version servers
                     soup.select("div#$wantedEpisode > div.selink > ul.btnss $div> li")
                         .mapNotNull { li ->  // list of all french version servers
@@ -199,7 +197,6 @@ class FrenchStreamProvider : MainAPI() {
                         }
 
                 val translated = translate(split[1], serversvf.isNotEmpty())
-                println("div#$translated > div.selink > ul.btnss $div> li")
                 val serversvo =  // Original version servers
                     soup.select("div#$translated > div.selink > ul.btnss $div> li")
                         .mapNotNull { li ->
