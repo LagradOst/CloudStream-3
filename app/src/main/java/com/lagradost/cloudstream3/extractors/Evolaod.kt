@@ -28,8 +28,8 @@ open class Evoload : ExtractorApi() {
             }
         val cleaned_url = url.substring(2, url.length)
 
-        println(lang)
-        println(cleaned_url)
+        //println(lang)
+        //println(cleaned_url)
 
         val id = cleaned_url.replace("https://evoload.io/e/", "")  // wanted media id
         val csrv_token = app.get("https://csrv.evosrv.com/captcha?m412548=").text  // whatever that is
