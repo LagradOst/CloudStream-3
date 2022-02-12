@@ -277,6 +277,7 @@
 
     <string name="recommended">موصى به</string>
     <string name="player_load_subtitles">تحميل من ملف</string>
+    <string name="downloaded_file">الملف الذي تم تنزيله</string>
     <string name="actor_main">رئيسي</string>
     <string name="actor_supporting">مساعد</string>
     <string name="actor_background">خلفية</string>
