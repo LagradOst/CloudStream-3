@@ -2,10 +2,11 @@ package com.lagradost.cloudstream3.movieproviders
 
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.*
 import com.lagradost.cloudstream3.extractors.helper.AsianEmbedHelper
+import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -23,8 +24,7 @@ class KdramaHoodProvider : MainAPI() {
 
     private data class ResponseDatas(
         @JsonProperty("label") val label: String,
-        @JsonProperty("file") val file: String,
-        @JsonProperty("kind") val kind: String?
+        @JsonProperty("file") val file: String
     )
 
     override suspend fun getMainPage(): HomePageResponse {
@@ -218,7 +218,7 @@ class KdramaHoodProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         var count = 0
-        mapper.readValue<List<String>>(data).apmap { item ->
+        parseJson<List<String>>(data).apmap { item ->
             if (item.isNotBlank()) {
                 count++
                 if (item.startsWith(mainUrl)) {
@@ -227,7 +227,7 @@ class KdramaHoodProvider : MainAPI() {
                     //Find video files
                     try {
                         "(?<=sources: )([\\s\\S]*?)(?<=])".toRegex().find(text)?.value?.let { vid ->
-                            mapper.readValue<List<ResponseDatas>>(vid).forEach { src ->
+                            parseJson<List<ResponseDatas>>(vid).forEach { src ->
                                 //Log.i(this.name, "Result => (src) ${src.toJson()}")
                                 callback(
                                     ExtractorLink(
@@ -240,8 +240,8 @@ class KdramaHoodProvider : MainAPI() {
                                 )
                             }
                         }
-                    } catch (e: java.lang.Exception) {
-                        Log.i(this.name, "Result => (video file) $e}")
+                    } catch (e: Exception) {
+                        logError(e)
                     }
                     //Find subtitles
                     try {
@@ -249,7 +249,7 @@ class KdramaHoodProvider : MainAPI() {
                             val subtext = sub.replace("file:", "\"file\":")
                                 .replace("label:", "\"label\":")
                                 .replace("kind:", "\"kind\":")
-                            mapper.readValue<List<ResponseDatas>>(subtext).forEach { src ->
+                            parseJson<List<ResponseDatas>>(subtext).forEach { src ->
                                 //Log.i(this.name, "Result => (sub) ${src.toJson()}")
                                 subtitleCallback(
                                     SubtitleFile(
@@ -259,8 +259,8 @@ class KdramaHoodProvider : MainAPI() {
                                 )
                             }
                         }
-                    } catch (e: java.lang.Exception) {
-                        Log.i(this.name, "Result => (subtitle) $e}")
+                    } catch (e: Exception) {
+                        logError(e)
                     }
 
                 } else {
