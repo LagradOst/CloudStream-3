@@ -82,7 +82,7 @@ open class StreamSB : ExtractorApi() {
     )
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val id = url.substringAfter("embed-").substringAfter("/e/").substringBefore(".html")
+        val id = url.substringAfter("embed-").substringAfter("/e/").substringBefore("?").substringBefore(".html")
         println(id)
         val bytes = id.toByteArray()
         val bytesToHex = bytesToHex(bytes)
@@ -124,7 +124,7 @@ open class StreamSB : ExtractorApi() {
                     "Sec-Fetch-Site" to "cross-site",),
             ), true
         )
-            .apmap { stream ->
+            .map { stream ->
                 val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
                 ExtractorLink(
                     name,

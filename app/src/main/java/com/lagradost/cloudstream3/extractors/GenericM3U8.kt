@@ -10,12 +10,12 @@ import com.lagradost.cloudstream3.utils.getQualityFromName
 
 
 
-class ZplayerV2 : Genericm3u8Extractor() {
+class ZplayerV2 : GenericM3U8() {
     override val name = "Zplayer V2"
     override val mainUrl = "https://v2.zplayer.live"
 }
 
-open class Genericm3u8Extractor : ExtractorApi() {
+open class GenericM3U8 : ExtractorApi() {
     override val name = "Upstream"
     override val mainUrl = "https://upstream.to"
     override val requiresReferer = false
@@ -33,7 +33,7 @@ open class Genericm3u8Extractor : ExtractorApi() {
                 headers = response.headers.toMap()
             ), true
         )
-            .apmap { stream ->
+            .map { stream ->
                 val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
                 sources.add( ExtractorLink(
                     name,

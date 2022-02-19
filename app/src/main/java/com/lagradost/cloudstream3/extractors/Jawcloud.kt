@@ -20,7 +20,7 @@ open class Jawcloud : ExtractorApi() {
                 headers = app.get(url).headers.toMap()
             ), true
         )
-            .apmap { stream ->
+            .map { stream ->
                 val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
                 sources.add(  ExtractorLink(
                     name,
