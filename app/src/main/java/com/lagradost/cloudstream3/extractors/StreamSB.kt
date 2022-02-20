@@ -44,8 +44,8 @@ class StreamSB9 : StreamSB() {
     override val mainUrl = "https://sbplay.one"
 }
 
-//Stolen from https://github.com/jmir1/aniyomi-extensions/blob/master/src/en/genoanime/src/eu/kanade/tachiyomi/animeextension/en/genoanime/extractors/StreamSBExtractor.kt
-
+// This is a modified version of https://github.com/jmir1/aniyomi-extensions/blob/master/src/en/genoanime/src/eu/kanade/tachiyomi/animeextension/en/genoanime/extractors/StreamSBExtractor.kt
+// The following code is under the Apache License 2.0 https://github.com/jmir1/aniyomi-extensions/blob/master/LICENSE 
 open class StreamSB : ExtractorApi() {
     override val name = "StreamSB"
     override val mainUrl = "https://watchsb.com"
@@ -86,7 +86,6 @@ open class StreamSB : ExtractorApi() {
         val id = regexID.findAll(url).map {
             it.value.replace(Regex("(embed-|\\/e\\/)"),"")
         }.first()
-        println(id)
         val bytes = id.toByteArray()
         val bytesToHex = bytesToHex(bytes)
         val master = "$mainUrl/sources40/566d337678566f743674494a7c7c${bytesToHex}7c7c346b6767586d6934774855537c7c73747265616d7362/6565417268755339773461447c7c346133383438333436313335376136323337373433383634376337633465366534393338373136643732373736343735373237613763376334363733353737303533366236333463353333363534366137633763373337343732363536313664373336327c7c6b586c3163614468645a47617c7c73747265616d7362"
