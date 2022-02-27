@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.movieproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
@@ -209,6 +210,7 @@ class BflixProvider(providerUrl: String, providerName: String) : MainAPI() {
             soup.selectFirst(".info .poster img").attr("src")
         }
 
+        val tags = soup.select("div.info .meta div:contains(Genre) a").map { it.text() }
         val episodes = if (tvType == TvType.TvSeries) Jsoup.parse(
             parseJson<Response>(
                 app.get(
@@ -254,8 +256,8 @@ class BflixProvider(providerUrl: String, providerName: String) : MainAPI() {
                     null,
                     null,
                     null,
-                    null,
-                    recommendations = recommendations
+                    tags,
+                    recommendations = recommendations,
                 )
             }
             TvType.Movie -> {
@@ -270,7 +272,7 @@ class BflixProvider(providerUrl: String, providerName: String) : MainAPI() {
                     description,
                     null,
                     null,
-                    null,
+                    tags,
                     recommendations = recommendations
                 )
             }
@@ -336,7 +338,7 @@ class BflixProvider(providerUrl: String, providerName: String) : MainAPI() {
                         url, data, callback
                     )
                 }
-                //Apparently each server works, I haven't found any diference
+                //Apparently any server works, I haven't found any diference
                 val sublink = app.get("$mainUrl/ajax/episode/subtitles/${jsonservers.vidstream}").text
                 val jsonsub = parseJson<List<Subtitles>>(sublink)
                 jsonsub.forEach { subtitle ->
