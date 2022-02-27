@@ -56,7 +56,7 @@ class BflixProvider(providerUrl: String, providerName: String) : MainAPI() {
 
     private fun getVrf(id: String): String? {
         val reversed = ue(encode(id) + "0000000").slice(0..5).reversed()
-        return reversed + ue(je(reversed, encode(id) ?: return null)).replace(
+        return reversed + ue(je(reversed, encode(id)?.replace("+","%20") ?: return null)).replace(
             """=+$""".toRegex(),
             ""
         )
@@ -156,7 +156,7 @@ class BflixProvider(providerUrl: String, providerName: String) : MainAPI() {
     private fun decode(input: String): String? = java.net.URLDecoder.decode(input, "utf-8")
 
     override suspend fun search(query: String): List<SearchResponse>? {
-        val encodedquery = encode(getVrf(query) ?: return null)
+        val encodedquery = getVrf(query)?.let { encode(it) } ?: return null
         val url = "$mainUrl/search?keyword=$query&vrf=$encodedquery"
         val html = app.get(url).text
         val document = Jsoup.parse(html)
