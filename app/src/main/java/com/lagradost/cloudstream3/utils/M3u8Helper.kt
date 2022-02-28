@@ -14,7 +14,7 @@ class M3u8Helper {
     private val ENCRYPTION_URL_IV_REGEX = Regex("#EXT-X-KEY:METHOD=([^,]+),URI=\"([^\"]+)\"(?:,IV=(.*))?")
     private val QUALITY_REGEX =
         Regex("""#EXT-X-STREAM-INF:(?:(?:.*?(?:RESOLUTION=\d+x(\d+)).*?\s+(.*))|(?:.*?\s+(.*)))""")
-    private val TS_EXTENSION_REGEX = Regex("""(.*\.ts.*)""")
+    private val TS_EXTENSION_REGEX = Regex("""(.*\.ts.*|.*\.jpg.*)""") //.jpg here 'case vizcloud uses .jpg instead of .ts
 
     fun absoluteExtensionDetermination(url: String): String? {
         val split = url.split("/")
@@ -172,6 +172,7 @@ class M3u8Helper {
 
             val allTs = TS_EXTENSION_REGEX.findAll(m3u8Response)
             val allTsList = allTs.toList()
+            println(allTsList)
             val totalTs = allTsList.size
             if (totalTs == 0) {
                 return listOf(HlsDownloadData(byteArrayOf(), 1, 1, true)).iterator()
