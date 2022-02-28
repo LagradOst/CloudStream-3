@@ -66,22 +66,25 @@ open class WcoStream : ExtractorApi() {
                             link480,
                             link360,
                             linkauto).apmap { serverurl ->
-                            val quality = if (serverurl.contains("H4")) "1080p"
-                            else if (serverurl.contains("H3")) "720p"
-                            else if (serverurl.contains("H2")) "480p"
-                            else if (serverurl.contains("H1")) "360p"
-                            else "Auto"
-                            sources.add(
-                                ExtractorLink(
-                                    "VidStream",
-                                    "VidStream $quality",
-                                    serverurl,
-                                    "",
-                                    getQualityFromName(quality),
-                                    true,
-                                    headers = mapOf("Referer" to url)
+                            val testurl = app.get(serverurl, headers = mapOf("Referer" to url)).text
+                            if (testurl.contains("EXTM3")) {
+                                val quality = if (serverurl.contains("H4")) "1080p"
+                                else if (serverurl.contains("H3")) "720p"
+                                else if (serverurl.contains("H2")) "480p"
+                                else if (serverurl.contains("H1")) "360p"
+                                else "Auto"
+                                sources.add(
+                                    ExtractorLink(
+                                        "VidStream",
+                                        "VidStream $quality",
+                                        serverurl,
+                                        "",
+                                        getQualityFromName(quality),
+                                        true,
+                                        headers = mapOf("Referer" to url)
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                 }

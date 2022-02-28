@@ -317,10 +317,12 @@ class BflixProvider(providerUrl: String, providerName: String) : MainAPI() {
         )
             .select("html body #episodes").map {
                 val tvType = if (data.contains("movie/")) TvType.Movie else TvType.TvSeries
-                val cleandata = data.replace(mainUrl,"").replace("/1-full","")
+                val cleandata = data.replace(mainUrl,"")
                 val servers = if (tvType == TvType.Movie) it.select(".episode a").attr("data-ep")
                 else
                     it.select(".episode a[href=$cleandata]").attr("data-ep")
+                        ?: it.select(".episode a[href=${cleandata.replace("/1-full","")}]").attr("data-ep")
+                println(servers)
                 val jsonservers = parseJson<Servers?>(servers) ?: return@map
                 listOfNotNull(
                     jsonservers.vidstream,

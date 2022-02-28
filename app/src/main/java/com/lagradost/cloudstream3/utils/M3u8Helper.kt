@@ -172,7 +172,6 @@ class M3u8Helper {
 
             val allTs = TS_EXTENSION_REGEX.findAll(m3u8Response)
             val allTsList = allTs.toList()
-            println(allTsList)
             val totalTs = allTsList.size
             if (totalTs == 0) {
                 return listOf(HlsDownloadData(byteArrayOf(), 1, 1, true)).iterator()
