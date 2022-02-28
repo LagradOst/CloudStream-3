@@ -78,10 +78,9 @@ open class WcoStream : ExtractorApi() {
                                         "VidStream",
                                         "VidStream $quality",
                                         serverurl,
-                                        "",
+                                        url,
                                         getQualityFromName(quality),
                                         true,
-                                        headers = mapOf("Referer" to url)
                                     )
                                 )
                             }
