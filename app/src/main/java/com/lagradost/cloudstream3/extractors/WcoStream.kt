@@ -51,6 +51,25 @@ open class WcoStream : ExtractorApi() {
 
         if (mapped.success) {
             mapped.media.sources.forEach {
+                if (mainUrl == "https://vizcloud2.ru") {
+                    if (it.file.contains("vizcloud2.ru"))
+                        hlsHelper.m3u8Generation(M3u8Helper.M3u8Stream(it.file.replace("#.mp4",""), null), true)
+                            .forEach { stream ->
+                                val qualityString =
+                                    if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
+                                sources.add(
+                                    ExtractorLink(
+                                        name,
+                                        "$name $qualityString",
+                                        stream.streamUrl,
+                                        "",
+                                        getQualityFromName(stream.quality.toString()),
+                                        true
+                                    )
+                                )
+                            }
+                }
+                if (mainUrl == "https://vidstream.pro" || mainUrl == "https://vidstreamz.online") {
                 if (it.file.contains("m3u8")) {
                     hlsHelper.m3u8Generation(M3u8Helper.M3u8Stream(it.file, null), true)
                         .forEach { stream ->
@@ -78,6 +97,7 @@ open class WcoStream : ExtractorApi() {
                             false
                         )
                     )
+                }
                 }
             }
         }
