@@ -1,9 +1,8 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.*
 import java.util.*
 
@@ -24,9 +23,27 @@ class CuevanaProvider:MainAPI() {
             Pair(mainUrl, "Recientemente actualizadas"),
             Pair("$mainUrl/estrenos/", "Estrenos"),
         )
-        for (i in urls) {
+        items.add(
+            HomePageList(
+                "Series",
+                app.get("$mainUrl/serie", timeout = 120).document.select("section.home-series li").map {
+                    val title = it.selectFirst("h2.Title").text()
+                    val poster = it.selectFirst("img.lazy").attr("data-src")
+                    val url = it.selectFirst("a").attr("href")
+                    TvSeriesSearchResponse(
+                        title,
+                        url,
+                        this.name,
+                        TvType.Anime,
+                        poster,
+                        null,
+                        null,
+                    )
+                })
+        )
+        for ((url, name) in urls) {
             try {
-                val soup = app.get(i.first).document
+                val soup = app.get(url).document
                 val home = soup.select("section li.xxx.TPostMv").map {
                     val title = it.selectFirst("h2.Title").text()
                     val link = it.selectFirst("a").attr("href")
@@ -41,9 +58,9 @@ class CuevanaProvider:MainAPI() {
                     )
                 }
 
-                items.add(HomePageList(i.second, home))
+                items.add(HomePageList(name, home))
             } catch (e: Exception) {
-                logError(e)
+                e.printStackTrace()
             }
         }
 
@@ -80,7 +97,7 @@ class CuevanaProvider:MainAPI() {
                     null
                 )
             }
-        }.toList()
+        }
     }
     override suspend fun load(url: String): LoadResponse? {
         val soup = app.get(url, timeout = 120).document
@@ -89,18 +106,24 @@ class CuevanaProvider:MainAPI() {
         val poster: String? = soup.selectFirst(".movtv-info div.Image img").attr("data-src")
         val year1 = soup.selectFirst("footer p.meta").toString()
         val yearRegex = Regex("(\\d+)<\\/span>")
-        val year =  yearRegex.findAll(year1).map {
+        val yearf =  yearRegex.findAll(year1).map {
             it.value.replace("</span>","")
-        }.toList().first().toIntOrNull()
+        }.toList()
+        val year = if (yearf.isEmpty()) null else yearf.first().toIntOrNull()
         val episodes = soup.select(".all-episodes li.TPostMv article").map { li ->
             val href = li.select("a").attr("href")
             val epThumb =
                 li.selectFirst("div.Image img").attr("data-src") ?: li.selectFirst("img.lazy").attr("data-srcc")
-            val name = li.selectFirst("h2.Title").text()
+            val seasonid = li.selectFirst("span.Year").text().let { str ->
+                str.split("x").mapNotNull { subStr -> subStr.toIntOrNull() }
+            }
+            val isValid = seasonid.size == 2
+            val episode = if (isValid) seasonid.getOrNull(1) else null
+            val season = if (isValid) seasonid.getOrNull(0) else null
             TvSeriesEpisode(
-                name,
-                null,
-                null,
+                "Capítulo $episode",
+                season,
+                episode,
                 href,
                 fixUrl(epThumb)
             )
@@ -164,10 +187,16 @@ class CuevanaProvider:MainAPI() {
                         "Sec-Fetch-Mode" to "cors",
                         "Sec-Fetch-Site" to "same-origin",),
                         data = mapOf(Pair("h",key))).text
-                    val json = parseJson<Femcuevana>(url)
+                    val json = mapper.readValue<Femcuevana>(url)
                     val link = json.url
                     if (link.contains("fembed")) {
-                        loadExtractor(link, data, callback)
+                        for (extractor in extractorApis) {
+                            if (link.startsWith(extractor.mainUrl)) {
+                                extractor.getSafeUrl(link, data)?.apmap { final ->
+                                    callback(final)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -212,7 +241,13 @@ class CuevanaProvider:MainAPI() {
                                         "Sec-Fetch-Site" to "same-origin",),
                                     data = mapOf(Pair("url",gotolink))
                                 ).response.headers.values("location").apmap { golink ->
-                                    loadExtractor(golink, data, callback)
+                                    for (extractor in extractorApis) {
+                                        if (golink.startsWith(extractor.mainUrl)) {
+                                            extractor.getSafeUrl(golink, data)?.apmap { final ->
+                                                callback(final)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -238,7 +273,13 @@ class CuevanaProvider:MainAPI() {
                                         "Sec-Fetch-User" to "?1",),
                                     data = mapOf(Pair("h",inlink))
                                 ).response.headers.values("location").apmap { link ->
-                                    loadExtractor(link, data, callback)
+                                    for (extractor in extractorApis) {
+                                        if (link.startsWith(extractor.mainUrl)) {
+                                            extractor.getSafeUrl(link, data)?.apmap { final ->
+                                                callback(final)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
