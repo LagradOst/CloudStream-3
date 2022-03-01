@@ -15,10 +15,8 @@ class AnimeflvnetProvider:MainAPI() {
             else TvType.Anime
         }
     }
-    override val mainUrl: String
-        get() = "https://www3.animeflv.net"
-    override val name: String
-        get() = "Animeflv.net"
+    override val mainUrl = "https://www3.animeflv.net"
+    override val name = "Animeflv.net"
     override val lang = "es"
     override val hasMainPage = true
     override val hasChromecastSupport = true
