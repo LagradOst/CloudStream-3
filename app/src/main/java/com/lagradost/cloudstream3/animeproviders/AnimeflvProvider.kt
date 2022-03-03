@@ -93,7 +93,7 @@ class AnimeflvnetProvider:MainAPI() {
         @JsonProperty("slug") val slug: String
     )
 
-    override suspend fun search(query: String): ArrayList<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val response = app.post("https://www3.animeflv.net/api/animes/search",
             data = mapOf(Pair("value",query))
         ).text
