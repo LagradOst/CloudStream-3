@@ -102,12 +102,13 @@ class EntrepeliculasyseriesProvider:MainAPI() {
             val isValid = seasonid.size == 2
             val episode = if (isValid) seasonid.getOrNull(1) else null
             val season = if (isValid) seasonid.getOrNull(0) else null
+            val epname = if (episode == null) null else "Capítulo $episode"
             TvSeriesEpisode(
-                "Capítulo $episode",
+                epname,
                 season,
                 episode,
                 href,
-                epThumb
+                fixUrl(epThumb)
             )
         }
         return when (val tvType = if (url.contains("/pelicula/")) TvType.Movie else TvType.TvSeries) {

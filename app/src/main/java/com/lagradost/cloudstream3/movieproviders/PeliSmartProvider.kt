@@ -3,6 +3,7 @@ package com.lagradost.cloudstream3.movieproviders
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.extractorApis
+import com.lagradost.cloudstream3.utils.loadExtractor
 import kotlin.collections.ArrayList
 
 class PeliSmartProvider: MainAPI() {
@@ -161,13 +162,7 @@ class PeliSmartProvider: MainAPI() {
                 .replace("https://pelismarthd.com/p/2.php?v=","https://streamtape.com/e/")
                 .replace("https://pelismarthd.com/p/4.php?v=","https://dood.to/e/")
         }.toList().apmap {
-            for (extractor in extractorApis) {
-                if (it.startsWith(extractor.mainUrl)) {
-                    extractor.getSafeUrl(it, data)?.apmap {
-                        callback(it)
-                    }
-                }
-            }
+            loadExtractor(it, data, callback)
         }
         return true
     }

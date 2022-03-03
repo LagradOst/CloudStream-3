@@ -80,7 +80,10 @@ open class StreamSB : ExtractorApi() {
     )
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val id = url.substringAfter("embed-").substringAfter("/e/").substringBefore(".html")
+        val regexID = Regex("(embed-[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+|\\/e\\/[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
+        val id = regexID.findAll(url).map {
+            it.value.replace(Regex("(embed-|\\/e\\/)"),"")
+        }.first()
         val bytes = id.toByteArray()
         val bytesToHex = bytesToHex(bytes)
         val master = "$mainUrl/sources41/566d337678566f743674494a7c7c${bytesToHex}7c7c346b6767586d6934774855537c7c73747265616d7362/6565417268755339773461447c7c346133383438333436313335376136323337373433383634376337633465366534393338373136643732373736343735373237613763376334363733353737303533366236333463353333363534366137633763373337343732363536313664373336327c7c6b586c3163614468645a47617c7c73747265616d7362"
@@ -105,11 +108,12 @@ open class StreamSB : ExtractorApi() {
         ).text
         val mapped = urltext.let { parseJson<Main>(it) }
         val testurl = app.get(mapped.streamData.file, headers = headers).text
+        val urlmain = mapped.streamData.file.substringBefore("/hls/")
         if (urltext.contains("m3u8") && testurl.contains("EXTM3U")) return  M3u8Helper().m3u8Generation(
             M3u8Helper.M3u8Stream(
                 mapped.streamData.file,
                 headers = mapOf(
-                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0",
+                    "User-Agent" to USER_AGENT,
                     "Accept" to "*/*",
                     "Accept-Language" to "en-US,en;q=0.5",
                     "Accept-Encoding" to "gzip, deflate, br",
@@ -122,12 +126,13 @@ open class StreamSB : ExtractorApi() {
                     "Sec-Fetch-Site" to "cross-site",),
             ), true
         )
-            .apmap { stream ->
+            .map { stream ->
+                val cleanstreamurl = stream.streamUrl.replace(Regex("https://.*/hls/"), "$urlmain/hls/")
                 val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
                 ExtractorLink(
                     name,
                     "$name $qualityString",
-                    stream.streamUrl,
+                    cleanstreamurl,
                     url,
                     getQualityFromName(stream.quality.toString()),
                     true

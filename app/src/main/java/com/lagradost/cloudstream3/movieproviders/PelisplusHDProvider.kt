@@ -92,7 +92,7 @@ class PelisplusHDProvider:MainAPI() {
                     null
                 )
             }
-        }.toList()
+        }
     }
 
     override suspend fun load(url: String): LoadResponse? {
@@ -135,7 +135,7 @@ class PelisplusHDProvider:MainAPI() {
                     poster,
                     year,
                     description,
-                    ShowStatus.Ongoing,
+                    null,
                     null,
                     null,
                     tags,
@@ -167,13 +167,7 @@ class PelisplusHDProvider:MainAPI() {
     ): Boolean {
         app.get(data).document.select("div.player > script").apmap { script ->
             fetchUrls(script.data().replace("https://pelisplushd.net/fembed.php?url=","https://www.fembed.com/v/")).map {
-                for (extractor in extractorApis) {
-                    if (it.startsWith(extractor.mainUrl)) {
-                        extractor.getSafeUrl(it, data)?.apmap {
-                            callback(it)
-                        }
-                    }
-                }
+                loadExtractor(it, data, callback)
             }
         }
         return true

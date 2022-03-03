@@ -3,6 +3,7 @@ package com.lagradost.cloudstream3.movieproviders
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.Cinestart
+import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.*
 import java.util.*
 
@@ -48,7 +49,7 @@ class CinecalidadProvider:MainAPI() {
 
                 items.add(HomePageList(name, home))
             } catch (e: Exception) {
-                e.printStackTrace()
+                logError(e)
             }
         }
 
