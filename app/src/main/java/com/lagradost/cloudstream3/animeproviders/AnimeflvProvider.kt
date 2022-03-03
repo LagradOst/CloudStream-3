@@ -98,12 +98,10 @@ class AnimeflvnetProvider:MainAPI() {
             data = mapOf(Pair("value",query))
         ).text
         val json = parseJson<List<SearchObject>>(response)
-        val search = ArrayList<AnimeSearchResponse>()
-        json.map { searchr ->
+       return json.map { searchr ->
             val title = searchr.title
             val href = "$mainUrl/anime/${searchr.slug}"
             val image = "$mainUrl/uploads/animes/covers/${searchr.id}.jpg"
-            search.add(
                 AnimeSearchResponse(
                     title,
                     href,
@@ -113,9 +111,7 @@ class AnimeflvnetProvider:MainAPI() {
                     null,
                     if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(DubStatus.Subbed),
                 )
-            )
         }
-        return ArrayList(search)
     }
 
     override suspend fun load(url: String): LoadResponse {
