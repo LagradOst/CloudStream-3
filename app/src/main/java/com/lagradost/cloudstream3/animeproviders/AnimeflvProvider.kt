@@ -5,7 +5,6 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import java.util.*
-import kotlin.collections.ArrayList
 
 class AnimeflvnetProvider:MainAPI() {
     companion object {
@@ -98,12 +97,10 @@ class AnimeflvnetProvider:MainAPI() {
             data = mapOf(Pair("value",query))
         ).text
         val json = parseJson<List<SearchObject>>(response)
-        val search = ArrayList<AnimeSearchResponse>()
-        json.map { searchr ->
+       return json.map { searchr ->
             val title = searchr.title
             val href = "$mainUrl/anime/${searchr.slug}"
             val image = "$mainUrl/uploads/animes/covers/${searchr.id}.jpg"
-            search.add(
                 AnimeSearchResponse(
                     title,
                     href,
@@ -113,9 +110,7 @@ class AnimeflvnetProvider:MainAPI() {
                     null,
                     if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(DubStatus.Subbed),
                 )
-            )
         }
-        return ArrayList(search)
     }
 
     override suspend fun load(url: String): LoadResponse {
