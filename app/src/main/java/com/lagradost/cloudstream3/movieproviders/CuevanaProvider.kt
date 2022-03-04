@@ -108,10 +108,8 @@ class CuevanaProvider:MainAPI() {
         val poster: String? = soup.selectFirst(".movtv-info div.Image img").attr("data-src")
         val year1 = soup.selectFirst("footer p.meta").toString()
         val yearRegex = Regex("<span>(\\d+)</span>")
-        val yearf =  yearRegex.findAll(year1).map {
-            it.value.replace(Regex("<span>|</span>"),"")
-        }.toList()
-        val year = if (yearf.isEmpty()) null else yearf.firstOrNull()?.toIntOrNull()
+        val yearf =  yearRegex.find(year1)?.destructured?.component1()?.replace(Regex("<span>|</span>"),"")
+        val year = if (yearf.isNullOrBlank()) null else yearf.toIntOrNull()
         val episodes = soup.select(".all-episodes li.TPostMv article").map { li ->
             val href = li.select("a").attr("href")
             val epThumb =
@@ -122,9 +120,8 @@ class CuevanaProvider:MainAPI() {
             val isValid = seasonid.size == 2
             val episode = if (isValid) seasonid.getOrNull(1) else null
             val season = if (isValid) seasonid.getOrNull(0) else null
-            val epname = if (episode == null) null else "Capítulo $episode"
             TvSeriesEpisode(
-                epname,
+                null,
                 season,
                 episode,
                 href,
@@ -248,7 +245,7 @@ class CuevanaProvider:MainAPI() {
                             }.toList().apmap { gotolink ->
                                 app.post("https://api.cuevana3.io/ir/redirect_ddh.php", allowRedirects = false,
                                     headers = mapOf("Host" to "api.cuevana3.io",
-                                        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0",
+                                        "User-Agent" to USER_AGENT,
                                         "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
                                         "Accept-Language" to "en-US,en;q=0.5",
                                         "Content-Type" to "application/x-www-form-urlencoded",

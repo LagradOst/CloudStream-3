@@ -139,7 +139,7 @@ class AnimeflvnetProvider:MainAPI() {
                     val link = url.replace("/anime/","/ver/")+"-$epNum"
                     episodes.add( AnimeEpisode(
                         link,
-                        "Capítulo $epNum",
+                        null,
                         posterUrl = epthumb,
                         episode = epNum.toIntOrNull()
                     )
@@ -167,7 +167,7 @@ class AnimeflvnetProvider:MainAPI() {
                 fetchUrls(videos).map {
                     it.replace("https://embedsb.com/e/","https://watchsb.com/e/")
                         .replace("https://ok.ru","http://ok.ru")
-                }.toList().apmap {
+                }.apmap {
                     loadExtractor(it, data, callback)
                 }
             }

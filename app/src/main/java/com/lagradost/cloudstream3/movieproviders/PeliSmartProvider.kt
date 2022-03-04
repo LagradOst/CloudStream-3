@@ -93,30 +93,24 @@ class PeliSmartProvider: MainAPI() {
         val title = soup.selectFirst(".wpb_wrapper h1").text()
         val description = soup.selectFirst("div.wpb_wrapper p")?.text()?.trim()
         val poster: String? = soup.selectFirst(".vc_single_image-img").attr("src")
-        val episodes = ArrayList<TvSeriesEpisode>()
-        soup.select("div.vc_tta-panel-body div a").map { li ->
+        val episodes = soup.select("div.vc_tta-panel-body div a").map { li ->
             val href = li.selectFirst("a").attr("href")
             val preregex = Regex("(\\d+)\\. ")
             val name = li.selectFirst("a").text().replace(preregex,"")
             val regextest = Regex("(temporada-(\\d+)-capitulo-(\\d+)|temporada-(\\d+)-episodio-(\\d+))")
-            regextest.findAll(href).map {
-                it.value.replace(Regex("(temporada-|-)"),"")
-            }.toList().map { eps ->
-                val seasonid = eps.let { str ->
-                    str.split("episodio","capitulo").mapNotNull { subStr -> subStr.toIntOrNull() }
-                }
-                val isValid = seasonid.size == 2
-                val episode = if (isValid) seasonid.getOrNull(1) else null
-                val season = if (isValid) seasonid.getOrNull(0) else null
-                episodes.add(
-                    TvSeriesEpisode(
-                        name,
-                        season,
-                        episode,
-                        href,
-                    )
-                )
+            val test = regextest.find(href)?.destructured?.component1()?.replace(Regex("(temporada-|-)"),"")
+            val seasonid = test.let { str ->
+                str?.split("episodio","capitulo")?.mapNotNull { subStr -> subStr.toIntOrNull() }
             }
+            val isValid = seasonid?.size == 2
+            val episode = if (isValid) seasonid?.getOrNull(1) else null
+            val season = if (isValid) seasonid?.getOrNull(0) else null
+                TvSeriesEpisode(
+                    name,
+                    season,
+                    episode,
+                    href,
+                )
         }
         return when (val tvType = if (episodes.isEmpty()) TvType.Movie else TvType.TvSeries) {
             TvType.TvSeries -> {
@@ -153,17 +147,15 @@ class PeliSmartProvider: MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val soup = app.get(data).text
-        val linkRegex = Regex("""(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*))""")
-        val link1 = linkRegex.findAll(soup).map {
-            it.value.replace("https://pelismart.com/p/1.php?v=","https://evoload.io/e/")
-                .replace("https://pelismart.com/p/2.php?v=","https://streamtape.com/e/")
-                .replace("https://pelismart.com/p/4.php?v=","https://dood.to/e/")
-                .replace("https://pelismarthd.com/p/1.php?v=","https://evoload.io/e/")
-                .replace("https://pelismarthd.com/p/2.php?v=","https://streamtape.com/e/")
-                .replace("https://pelismarthd.com/p/4.php?v=","https://dood.to/e/")
-        }.toList().apmap {
-            loadExtractor(it, data, callback)
-        }
+         fetchUrls(soup).apmap {
+             val urlc = it.replace("https://pelismart.com/p/1.php?v=","https://evoload.io/e/")
+             .replace("https://pelismart.com/p/2.php?v=","https://streamtape.com/e/")
+             .replace("https://pelismart.com/p/4.php?v=","https://dood.to/e/")
+             .replace("https://pelismarthd.com/p/1.php?v=","https://evoload.io/e/")
+             .replace("https://pelismarthd.com/p/2.php?v=","https://streamtape.com/e/")
+             .replace("https://pelismarthd.com/p/4.php?v=","https://dood.to/e/")
+             loadExtractor(urlc, data, callback)
+         }
         return true
     }
 }

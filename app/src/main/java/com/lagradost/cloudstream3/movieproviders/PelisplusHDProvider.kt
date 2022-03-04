@@ -165,8 +165,8 @@ class PelisplusHDProvider:MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get(data).document.select("div.player > script").apmap { script ->
-            fetchUrls(script.data().replace("https://pelisplushd.net/fembed.php?url=","https://www.fembed.com/v/")).map {
+        app.get(data).document.select("div.player > script").map { script ->
+            fetchUrls(script.data().replace("https://pelisplushd.net/fembed.php?url=","https://www.fembed.com/v/")).apmap {
                 loadExtractor(it, data, callback)
             }
         }

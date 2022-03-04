@@ -153,7 +153,6 @@ class CinecalidadProvider:MainAPI() {
 
         val datam = app.get(data)
         val doc = datam.document
-        println(data)
         val datatext = datam.text
 
         doc.select(".dooplay_player_option").apmap {
@@ -174,7 +173,7 @@ class CinecalidadProvider:MainAPI() {
                     app.get(it,
                         headers = mapOf(
                             "Host" to "cinecalidad.lol",
-                            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0",
+                            "User-Agent" to USER_AGENT,
                             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
                             "Accept-Language" to "en-US,en;q=0.5",
                             "DNT" to "1",
@@ -213,7 +212,7 @@ class CinecalidadProvider:MainAPI() {
                     app.get(it,
                         headers = mapOf(
                             "Host" to "cinecalidad.lol",
-                            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0",
+                            "User-Agent" to USER_AGENT,
                             "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
                             "Accept-Language" to "en-US,en;q=0.5",
                             "DNT" to "1",
@@ -243,14 +242,12 @@ class CinecalidadProvider:MainAPI() {
                 if (validsub.contains("Subtítulo") || validsub.contains("Forzados")) {
                     val langregex = Regex("(Subtítulo.*\$|Forzados.*\$)")
                     val langdoc = linksub.selectFirst("div.titulo h3").text()
-                    val reallang = langregex.findAll(langdoc).map {
-                        it.value
-                    }.toList().first()
+                    val reallang = langregex.find(langdoc)?.destructured?.component1()
                     linksub.select("a.link").apmap {
                         val sublink = if (data.contains("serie") || data.contains("episodio")) "${data}${it.attr("href")}"
                         else it.attr("href")
                         subtitleCallback(
-                            SubtitleFile(reallang, sublink )
+                            SubtitleFile(reallang!!, sublink)
                         )
                     }
                 }

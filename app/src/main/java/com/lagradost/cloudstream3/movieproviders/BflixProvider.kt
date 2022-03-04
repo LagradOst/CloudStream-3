@@ -253,12 +253,9 @@ class BflixProvider(providerUrl: String, providerName: String) : MainAPI() {
         val durationregex = Regex("((\\d+) min)")
         val yearegex = Regex("<span>(\\d+)<\\/span>")
         val duration = if (durationdoc.contains("na min")) null
-        else durationregex.findAll(durationdoc).map {
-            it.value.replace(" min","")
-        }.first().toIntOrNull()
-        val year = if (mainUrl == "https://bflix.ru") { yearegex.findAll(durationdoc).map {
-            it.value.replace(Regex("<span>|<\\/span>"),"")
-        }.first().toIntOrNull() } else null
+        else durationregex.find(durationdoc)?.destructured?.component1()?.replace(" min","")?.toIntOrNull()
+        val year = if (mainUrl == "https://bflix.ru") { yearegex.find(durationdoc)?.destructured?.component1()
+            ?.replace(Regex("<span>|<\\/span>"),"") } else null
         return when (tvType) {
             TvType.TvSeries -> {
                 TvSeriesLoadResponse(
@@ -268,7 +265,7 @@ class BflixProvider(providerUrl: String, providerName: String) : MainAPI() {
                     tvType,
                     episodes!!,
                     poster,
-                    year,
+                    year?.toIntOrNull(),
                     description,
                     null,
                     null,
@@ -286,7 +283,7 @@ class BflixProvider(providerUrl: String, providerName: String) : MainAPI() {
                     tvType,
                     url,
                     poster,
-                    year,
+                    year?.toIntOrNull(),
                     description,
                     null,
                     rating,

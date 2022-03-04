@@ -44,6 +44,8 @@ class StreamSB9 : StreamSB() {
     override val mainUrl = "https://sbplay.one"
 }
 
+// This is a modified version of https://github.com/jmir1/aniyomi-extensions/blob/master/src/en/genoanime/src/eu/kanade/tachiyomi/animeextension/en/genoanime/extractors/StreamSBExtractor.kt
+// The following code is under the Apache License 2.0 https://github.com/jmir1/aniyomi-extensions/blob/master/LICENSE
 open class StreamSB : ExtractorApi() {
     override val name = "StreamSB"
     override val mainUrl = "https://watchsb.com"
