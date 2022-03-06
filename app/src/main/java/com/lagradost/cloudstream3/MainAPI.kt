@@ -84,6 +84,7 @@ object APIHolder {
         WatchAsianProvider(),
         KdramaHoodProvider(),
         AkwamProvider(),
+        MyCimaProvider(),
         AnimePaheProvider(),
         NineAnimeProvider(),
     )
