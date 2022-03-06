@@ -35,7 +35,7 @@ class AnimePaheProvider : MainAPI() {
             }
         }
 
-        val YTSM = "ysmm = '([^']+)".toRegex()
+        val YTSM = Regex("ysmm = '([^']+)")
 
         val KWIK_PARAMS_RE = Regex("""\("(\w+)",\d+,"(\w+)",(\d+),(\d+),\d+\)""")
         val KWIK_D_URL = Regex("action=\"([^\"]+)\"")
@@ -140,14 +140,14 @@ class AnimePaheProvider : MainAPI() {
     }
 
 
-    override suspend fun search(query: String): ArrayList<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/api?m=search&l=8&q=$query"
         val headers = mapOf("referer" to "$mainUrl/")
 
         val req = app.get(url, headers = headers).text
         val data = req.let { mapper.readValue<AnimePaheSearch>(it) }
 
-        return ArrayList(data.data.map {
+        return data.data.map {
             AnimeSearchResponse(
                 it.title,
                 "https://pahe.win/a/${it.id}?slug=${it.title}",
@@ -160,7 +160,7 @@ class AnimePaheProvider : MainAPI() {
                 null,
                 it.episodes
             )
-        })
+        }
     }
 
     private data class AnimeData(
@@ -264,11 +264,11 @@ class AnimePaheProvider : MainAPI() {
             }
 
             val episodes = generateListOfEpisodes(url)
-            val year = """<strong>Aired:</strong>[^,]*, (\d+)""".toRegex()
+            val year = Regex("""<strong>Aired:</strong>[^,]*, (\d+)""")
                 .find(html)!!.destructured.component1()
                 .toIntOrNull()
             val status =
-                when ("""<strong>Status:</strong>[^a]*a href=["']/anime/(.*?)["']""".toRegex()
+                when (Regex("""<strong>Status:</strong>[^a]*a href=["']/anime/(.*?)["']""")
                     .find(html)!!.destructured.component1()) {
                     "airing" -> ShowStatus.Ongoing
                     "completed" -> ShowStatus.Completed

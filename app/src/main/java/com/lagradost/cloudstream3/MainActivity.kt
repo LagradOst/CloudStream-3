@@ -6,10 +6,17 @@ import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.KeyEvent
+import android.view.Menu
+import android.view.MenuItem
 import android.view.WindowManager
+import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceManager
@@ -34,14 +41,17 @@ import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.appString
 import com.lagradost.cloudstream3.ui.APIRepository
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_NAVIGATE_TO
 import com.lagradost.cloudstream3.ui.result.ResultFragment
+import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isEmulatorSettings
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
 import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
 import com.lagradost.cloudstream3.utils.AppUtils.loadCache
 import com.lagradost.cloudstream3.utils.AppUtils.loadResult
+import com.lagradost.cloudstream3.utils.BackupUtils.setUpBackup
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.removeKey
 import com.lagradost.cloudstream3.utils.DataStoreHelper.setViewPos
 import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
+import com.lagradost.cloudstream3.utils.UIHelper.changeStatusBarState
 import com.lagradost.cloudstream3.utils.UIHelper.checkWrite
 import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import com.lagradost.cloudstream3.utils.UIHelper.getResourceColor
@@ -268,6 +278,31 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         }
     }
 
+    private fun NavDestination.matchDestination(@IdRes destId: Int): Boolean =
+        hierarchy.any { it.id == destId }
+
+    private fun onNavDestinationSelected(item: MenuItem, navController: NavController): Boolean {
+        val builder = NavOptions.Builder().setLaunchSingleTop(true).setRestoreState(true)
+            .setEnterAnim(R.anim.enter_anim)
+            .setExitAnim(R.anim.exit_anim)
+            .setPopEnterAnim(R.anim.pop_enter)
+            .setPopExitAnim(R.anim.pop_exit)
+        if (item.order and Menu.CATEGORY_SECONDARY == 0) {
+            builder.setPopUpTo(
+                navController.graph.findStartDestination().id,
+                inclusive = false,
+                saveState = true
+            )
+        }
+        val options = builder.build()
+        return try {
+            navController.navigate(item.itemId, null, options)
+            navController.currentDestination?.matchDestination(item.itemId) == true
+        } catch (e: IllegalArgumentException) {
+            false
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // init accounts
         for (api in OAuth2accountApis) {
@@ -293,8 +328,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             setContentView(R.layout.activity_main)
         }
 
-        //  val navView: BottomNavigationView = findViewById(R.id.nav_view)
+        changeStatusBarState(isEmulatorSettings())
 
+        //  val navView: BottomNavigationView = findViewById(R.id.nav_view)
+        setUpBackup()
 
         CommonActivity.init(this)
 
@@ -311,9 +348,23 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         nav_view?.setupWithNavController(navController)
         val navRail = findViewById<NavigationRailView?>(R.id.nav_rail_view)
         navRail?.setupWithNavController(navController)
+
+        navRail?.setOnItemSelectedListener { item ->
+            onNavDestinationSelected(
+                item,
+                navController
+            )
+        }
+        nav_view?.setOnItemSelectedListener { item ->
+            onNavDestinationSelected(
+                item,
+                navController
+            )
+        }
         navController.addOnDestinationChangedListener { _, destination, _ ->
             updateNavBar(destination)
         }
+
         loadCache()
 
         /*nav_view.setOnNavigationItemSelectedListener { item ->

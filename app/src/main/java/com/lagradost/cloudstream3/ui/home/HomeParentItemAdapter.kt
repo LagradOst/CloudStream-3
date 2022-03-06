@@ -43,11 +43,23 @@ class ParentItemAdapter(
     }
 
     fun updateList(newList: List<HomePageList>) {
+        // this moves all bad results to the bottom
+        val endList = mutableListOf<HomePageList>()
+        val newFilteredList = mutableListOf<HomePageList>()
+        for (item in newList) {
+            if(item.list.isEmpty()) {
+                endList.add(item)
+            } else {
+                newFilteredList.add(item)
+            }
+        }
+        newFilteredList.addAll(endList)
+
         val diffResult = DiffUtil.calculateDiff(
-            SearchDiffCallback(this.items, newList))
+            SearchDiffCallback(this.items, newFilteredList))
 
         items.clear()
-        items.addAll(newList)
+        items.addAll(newFilteredList)
 
         diffResult.dispatchUpdatesTo(this)
     }
@@ -65,12 +77,12 @@ class ParentItemAdapter(
         fun bind(info: HomePageList) {
             title.text = info.name
             recyclerView.adapter = HomeChildItemAdapter(
-                info.list,
+                info.list.toMutableList(),
                 clickCallback = clickCallback,
                 nextFocusUp = recyclerView.nextFocusUpId,
                 nextFocusDown = recyclerView.nextFocusDownId
             )
-            (recyclerView.adapter as HomeChildItemAdapter).notifyDataSetChanged()
+            //(recyclerView.adapter as HomeChildItemAdapter).notifyDataSetChanged()
 
             moreInfo.setOnClickListener {
                 moreInfoClickCallback.invoke(info)

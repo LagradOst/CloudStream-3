@@ -39,6 +39,7 @@ import com.lagradost.cloudstream3.ui.result.START_ACTION_RESUME_LATEST
 import com.lagradost.cloudstream3.ui.search.*
 import com.lagradost.cloudstream3.ui.search.SearchFragment.Companion.filterSearchResponse
 import com.lagradost.cloudstream3.ui.search.SearchHelper.handleSearchClickCallback
+import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTrueTvSettings
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
 import com.lagradost.cloudstream3.utils.AppUtils.loadSearchResult
 import com.lagradost.cloudstream3.utils.DataStore.getKey
@@ -124,7 +125,7 @@ class HomeFragment : Fragment() {
 
             val spanListener = { span: Int ->
                 recycle.spanCount = span
-                (recycle.adapter as SearchAdapter).notifyDataSetChanged()
+                //(recycle.adapter as SearchAdapter).notifyDataSetChanged()
             }
 
             configEvent += spanListener
@@ -133,7 +134,7 @@ class HomeFragment : Fragment() {
                 configEvent -= spanListener
             }
 
-            (recycle.adapter as SearchAdapter).notifyDataSetChanged()
+            //(recycle.adapter as SearchAdapter).notifyDataSetChanged()
 
             bottomSheetDialogBuilder.show()
         }
@@ -399,7 +400,7 @@ class HomeFragment : Fragment() {
                 val randomSize = items.size
                 home_main_poster_recyclerview?.adapter =
                     HomeChildItemAdapter(
-                        items,
+                        items.toMutableList(),
                         R.layout.home_result_big_grid,
                         nextFocusUp = home_main_poster_recyclerview.nextFocusUpId,
                         nextFocusDown = home_main_poster_recyclerview.nextFocusDownId
@@ -438,7 +439,7 @@ class HomeFragment : Fragment() {
                     val d = data.value
 
                     currentHomePage = d
-                    (home_master_recycler?.adapter as ParentItemAdapter?)?.updateList(
+                    (home_master_recycler?.adapter as? ParentItemAdapter?)?.updateList(
                         d?.items?.mapNotNull {
                             try {
                                 HomePageList(it.name, it.list.filterSearchResponse())
@@ -483,6 +484,7 @@ class HomeFragment : Fragment() {
                     home_loaded?.isVisible = false
                 }
                 is Resource.Loading -> {
+                    (home_master_recycler?.adapter as? ParentItemAdapter?)?.updateList(listOf())
                     home_loading_shimmer?.startShimmer()
                     home_loading?.isVisible = true
                     home_loading_error?.isVisible = false
@@ -556,13 +558,12 @@ class HomeFragment : Fragment() {
             home_bookmarked_parent_item_title?.text = getString(availableWatchStatusTypes.first.stringRes)*/
         }
 
-        observe(homeViewModel.bookmarks) { pair ->
-            home_bookmarked_holder.isVisible = pair.first
+        observe(homeViewModel.bookmarks) { (isVis, bookmarks) ->
+            home_bookmarked_holder.isVisible = isVis
 
-            val bookmarks = pair.second
-            (home_bookmarked_child_recyclerview?.adapter as HomeChildItemAdapter?)?.cardList =
+            (home_bookmarked_child_recyclerview?.adapter as? HomeChildItemAdapter?)?.updateList(
                 bookmarks
-            home_bookmarked_child_recyclerview?.adapter?.notifyDataSetChanged()
+            )
 
             home_bookmarked_child_more_info?.setOnClickListener {
                 activity?.loadHomepageList(
@@ -576,9 +577,15 @@ class HomeFragment : Fragment() {
 
         observe(homeViewModel.resumeWatching) { resumeWatching ->
             home_watch_holder?.isVisible = resumeWatching.isNotEmpty()
-            (home_watch_child_recyclerview?.adapter as HomeChildItemAdapter?)?.cardList =
+            (home_watch_child_recyclerview?.adapter as? HomeChildItemAdapter?)?.updateList(
                 resumeWatching
-            home_watch_child_recyclerview?.adapter?.notifyDataSetChanged()
+            )
+
+            //if (context?.isTvSettings() == true) {
+            //    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            //        context?.addProgramsToContinueWatching(resumeWatching.mapNotNull { it as? DataStoreHelper.ResumeWatchingResult })
+            //    }
+            //}
 
             home_watch_child_more_info?.setOnClickListener {
                 activity?.loadHomepageList(
@@ -794,11 +801,13 @@ class HomeFragment : Fragment() {
             if (ctx.isTvSettings()) {
                 home_api_fab?.isVisible = false
                 home_change_api?.isVisible = true
-                home_change_api_loading?.isVisible = true
-                home_change_api_loading?.isFocusable = true
-                home_change_api_loading?.isFocusableInTouchMode = true
-                home_change_api?.isFocusable = true
-                home_change_api?.isFocusableInTouchMode = true
+                if(ctx.isTrueTvSettings()) {
+                    home_change_api_loading?.isVisible = true
+                    home_change_api_loading?.isFocusable = true
+                    home_change_api_loading?.isFocusableInTouchMode = true
+                    home_change_api?.isFocusable = true
+                    home_change_api?.isFocusableInTouchMode = true
+                }
                 // home_bookmark_select?.isFocusable = true
                 // home_bookmark_select?.isFocusableInTouchMode = true
             } else {

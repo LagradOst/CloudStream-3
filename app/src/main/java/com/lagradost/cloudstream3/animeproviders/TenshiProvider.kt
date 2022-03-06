@@ -191,7 +191,7 @@ class TenshiProvider : MainAPI() {
 //        return returnValue
 //    }
 
-    override suspend fun search(query: String): ArrayList<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/anime"
         var document = app.get(
             url,
@@ -203,10 +203,10 @@ class TenshiProvider : MainAPI() {
         val returnValue = parseSearchPage(document).toMutableList()
 
         while (!document.select("""a.page-link[rel="next"]""").isEmpty()) {
-            val link = document.select("""a.page-link[rel="next"]""")
-            if (link != null && !link.isEmpty()) {
+            val link = document.selectFirst("""a.page-link[rel="next"]""")?.attr("href")
+            if (!link.isNullOrBlank()) {
                 document = app.get(
-                    link[0].attr("href"),
+                    link,
                     cookies = mapOf("loop-view" to "thumb"),
                     interceptor = ddosGuardKiller
                 ).document
@@ -216,7 +216,7 @@ class TenshiProvider : MainAPI() {
             }
         }
 
-        return ArrayList(returnValue)
+        return returnValue
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -245,9 +245,10 @@ class TenshiProvider : MainAPI() {
         }
 
         val episodes = ArrayList(episodeNodes.map {
+            val title = it.selectFirst(".episode-title")?.text()?.trim()
             AnimeEpisode(
                 it.attr("href"),
-                it.selectFirst(".episode-title")?.text()?.trim(),
+                if(title == "No Title") null else title,
                 it.selectFirst("img")?.attr("src"),
                 dateParser(it?.selectFirst(".episode-date")?.text()?.trim()),
                 null,
@@ -284,7 +285,7 @@ class TenshiProvider : MainAPI() {
                 document.selectFirst("span.value > span[title=\"Japanese\"]")?.parent()?.text()
                     ?.trim()
 
-            val pattern = "(\\d{4})".toRegex()
+            val pattern = Regex("(\\d{4})")
             val yearText = document.selectFirst("li.release-date .value").text()
             year = pattern.find(yearText)?.groupValues?.get(1)?.toIntOrNull()
 
@@ -342,7 +343,7 @@ class TenshiProvider : MainAPI() {
                         headers = getHeaders(
                             mapOf(),
                             null,
-                            ddosGuardKiller?.savedCookiesMap?.get(URI(this.mainUrl).host) ?: mapOf()
+                            ddosGuardKiller.savedCookiesMap.get(URI(this.mainUrl).host) ?: mapOf()
                         ).toMap()
                     )
                 })

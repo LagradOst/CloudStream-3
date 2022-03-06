@@ -40,6 +40,7 @@ class CS3IPlayer : IPlayer {
     private var isPlaying = false
     private var exoPlayer: ExoPlayer? = null
     var cacheSize = 300L * 1024L * 1024L // 300 mb
+    private val simpleCacheSize : Long get() = cacheSize / 2 // idk chosen at random kinda
 
     private val seekActionTime = 30000L
 
@@ -74,6 +75,7 @@ class CS3IPlayer : IPlayer {
     private var updateIsPlaying: ((Pair<CSPlayerLoading, CSPlayerLoading>) -> Unit)? = null
     private var requestAutoFocus: (() -> Unit)? = null
     private var playerError: ((Exception) -> Unit)? = null
+    private var subtitlesUpdates: (() -> Unit)? = null
 
     /** width x height */
     private var playerDimensionsLoaded: ((Pair<Int, Int>) -> Unit)? = null
@@ -100,7 +102,8 @@ class CS3IPlayer : IPlayer {
         requestedListeningPercentages: List<Int>?,
         playerPositionChanged: ((Pair<Long, Long>) -> Unit)?,
         nextEpisode: (() -> Unit)?,
-        prevEpisode: (() -> Unit)?
+        prevEpisode: (() -> Unit)?,
+        subtitlesUpdates: (() -> Unit)?,
     ) {
         this.playerUpdated = playerUpdated
         this.updateIsPlaying = updateIsPlaying
@@ -111,6 +114,7 @@ class CS3IPlayer : IPlayer {
         this.playerPositionChanged = playerPositionChanged
         this.nextEpisode = nextEpisode
         this.prevEpisode = prevEpisode
+        this.subtitlesUpdates = subtitlesUpdates
     }
 
     // I know, this is not a perfect solution, however it works for fixing subs
@@ -120,14 +124,13 @@ class CS3IPlayer : IPlayer {
                 Handler(it).post {
                     try {
                         seekTime(1L)
-                    } catch (e : Exception) {
+                    } catch (e: Exception) {
                         logError(e)
                     }
                 }
-            } catch (e : Exception) {
+            } catch (e: Exception) {
                 logError(e)
             }
-
         }
     }
 
@@ -141,13 +144,14 @@ class CS3IPlayer : IPlayer {
         link: ExtractorLink?,
         data: ExtractorUri?,
         startPosition: Long?,
-        subtitles: Set<SubtitleData>
+        subtitles: Set<SubtitleData>,
+        subtitle: SubtitleData?
     ) {
         Log.i(TAG, "loadPlayer")
         if (sameEpisode) {
             saveData()
         } else {
-            currentSubtitles = null
+            currentSubtitles = subtitle
             playbackPosition = 0
         }
 
@@ -216,6 +220,17 @@ class CS3IPlayer : IPlayer {
         } ?: false
     }
 
+    var currentSubtitleOffset: Long = 0
+
+    override fun setSubtitleOffset(offset: Long) {
+        currentSubtitleOffset = offset
+        currentTextRenderer?.setRenderOffsetMs(offset)
+    }
+
+    override fun getSubtitleOffset(): Long {
+        return currentSubtitleOffset//currentTextRenderer?.getRenderOffsetMs() ?: currentSubtitleOffset
+    }
+
     override fun getCurrentPreferredSubtitle(): SubtitleData? {
         return subtitleHelper.getAllSubtitles().firstOrNull { sub ->
             exoPlayerSelectedTracks.any {
@@ -252,6 +267,7 @@ class CS3IPlayer : IPlayer {
 
         exoPlayer?.release()
         simpleCache?.release()
+        currentTextRenderer = null
 
         exoPlayer = null
         simpleCache = null
@@ -287,7 +303,7 @@ class CS3IPlayer : IPlayer {
     }
 
     companion object {
-        var requestSubtitleUpdate : (() -> Unit)? = null
+        var requestSubtitleUpdate: (() -> Unit)? = null
 
         private fun createOnlineSource(link: ExtractorLink): DataSource.Factory {
             // Because Trailers.to seems to fail with http/1.1 the normal one uses.
@@ -396,7 +412,7 @@ class CS3IPlayer : IPlayer {
             return trackSelector
         }
 
-        var currentTextRenderer: TextRenderer? = null
+        var currentTextRenderer: CustomTextRenderer? = null
 
         private fun buildExoPlayer(
             context: Context,
@@ -405,6 +421,8 @@ class CS3IPlayer : IPlayer {
             currentWindow: Int,
             playbackPosition: Long,
             playBackSpeed: Float,
+            subtitleOffset: Long,
+            cacheSize: Long,
             playWhenReady: Boolean = true,
             cacheFactory: CacheDataSource.Factory? = null,
             trackSelector: TrackSelector? = null,
@@ -420,7 +438,8 @@ class CS3IPlayer : IPlayer {
                             metadataRendererOutput
                         ).map {
                             if (it is TextRenderer) {
-                                currentTextRenderer = TextRenderer(
+                                currentTextRenderer = CustomTextRenderer(
+                                    subtitleOffset,
                                     textRendererOutput,
                                     eventHandler.looper,
                                     CustomSubtitleDecoderFactory()
@@ -430,6 +449,25 @@ class CS3IPlayer : IPlayer {
                         }.toTypedArray()
                     }
                     .setTrackSelector(trackSelector ?: getTrackSelector(context))
+                    .setLoadControl(
+                        DefaultLoadControl.Builder()
+                            .setTargetBufferBytes(
+                                if(cacheSize <= 0) {
+                                    DefaultLoadControl.DEFAULT_TARGET_BUFFER_BYTES
+                                } else {
+                                    if (cacheSize > Int.MAX_VALUE) Int.MAX_VALUE else cacheSize.toInt()
+                                }
+                            )
+                            .setBufferDurationsMs(
+                                DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+                                maxOf(
+                                    DefaultLoadControl.DEFAULT_MAX_BUFFER_MS,
+                                    ((cacheSize * 75L) / 32768L).toInt()
+                                ), // 500mb = 20min
+                                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+                            ).build()
+                    )
 
             val videoMediaSource =
                 (if (cacheFactory == null) DefaultMediaSourceFactory(context) else DefaultMediaSourceFactory(
@@ -449,6 +487,7 @@ class CS3IPlayer : IPlayer {
                 )
                 setHandleAudioBecomingNoisy(true)
                 setPlaybackSpeed(playBackSpeed)
+
             }
         }
     }
@@ -534,8 +573,10 @@ class CS3IPlayer : IPlayer {
                 currentWindow,
                 playbackPosition,
                 playBackSpeed,
+                cacheSize = cacheSize,
                 playWhenReady = isPlaying, // this keep the current state of the player
-                cacheFactory = cacheFactory
+                cacheFactory = cacheFactory,
+                subtitleOffset = currentSubtitleOffset
             )
 
             requestSubtitleUpdate = ::reloadSubs
@@ -559,6 +600,7 @@ class CS3IPlayer : IPlayer {
                 override fun onTracksInfoChanged(tracksInfo: TracksInfo) {
                     exoPlayerSelectedTracks =
                         tracksInfo.trackGroupInfos.mapNotNull { it.trackGroup.getFormat(0).language?.let { lang -> lang to it.isSelected } }
+                    subtitlesUpdates?.invoke()
                     super.onTracksInfoChanged(tracksInfo)
                 }
 
@@ -599,10 +641,7 @@ class CS3IPlayer : IPlayer {
                 }
 
                 //override fun onCues(cues: MutableList<Cue>) {
-                //    cues.firstOrNull()?.text?.let {
-                //        println("CUE: $it")
-                //    }
-                //    super.onCues(cues)
+                //    super.onCues(cues.map { cue -> cue.buildUpon().setText("Hello world").setSize(Cue.DIMEN_UNSET).build() })
                 //}
 
                 override fun onRenderedFirstFrame() {
@@ -660,8 +699,8 @@ class CS3IPlayer : IPlayer {
             val offlineSourceFactory = context.createOfflineSource()
 
             val (subSources, activeSubtitles) = getSubSources(
-                offlineSourceFactory,
-                offlineSourceFactory,
+                onlineSourceFactory = offlineSourceFactory,
+                offlineSourceFactory = offlineSourceFactory,
                 subtitleHelper,
             )
 
@@ -740,15 +779,15 @@ class CS3IPlayer : IPlayer {
             val offlineSourceFactory = context.createOfflineSource()
 
             val (subSources, activeSubtitles) = getSubSources(
-                offlineSourceFactory,
-                onlineSourceFactory,
+                onlineSourceFactory = onlineSourceFactory,
+                offlineSourceFactory = offlineSourceFactory,
                 subtitleHelper
             )
 
             subtitleHelper.setActiveSubtitles(activeSubtitles.toSet())
 
             if (simpleCache == null)
-                simpleCache = getCache(context, cacheSize)
+                simpleCache = getCache(context, simpleCacheSize)
 
             val cacheFactory = CacheDataSource.Factory().apply {
                 simpleCache?.let { setCache(it) }

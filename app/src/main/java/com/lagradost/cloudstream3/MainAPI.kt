@@ -2,6 +2,8 @@ package com.lagradost.cloudstream3
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.Uri
+import android.util.Base64.encodeToString
 import androidx.annotation.WorkerThread
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.databind.DeserializationFeature
@@ -36,7 +38,6 @@ object APIHolder {
         AllAnimeProvider(),
         AnimekisaProvider(),
         //ShiroProvider(), // v2 fucked me
-        //AnimePaheProvider(), //ddos guard
         AnimeFlickProvider(),
         AnimeflvnetProvider(),
 
@@ -65,9 +66,10 @@ object APIHolder {
 
         AsianLoadProvider(),
 
-        SflixProvider("https://sflix.to", "Sflix"),
-        SflixProvider("https://dopebox.to", "Dopebox"),
-        SflixProvider("https://solarmovie.pe", "Solarmovie"),
+        BflixProvider("https://bflix.ru","Bflix"),
+        BflixProvider("https://fmovies.to","Fmovies.to"),
+        BflixProvider("https://sflix.pro","Sflix.pro"),
+
 
         //TmdbProvider(),
 
@@ -83,6 +85,7 @@ object APIHolder {
         KdramaHoodProvider(),
         AkwamProvider(),
         AnimePaheProvider(),
+        NineAnimeProvider(),
     )
 
     val restrictedApis = arrayListOf(
@@ -95,6 +98,10 @@ object APIHolder {
     private val backwardsCompatibleProviders = arrayListOf(
         KawaiifuProvider(), // removed due to cloudflare
         HDMProvider(),// removed due to cloudflare
+
+        SflixProvider("https://sflix.to", "Sflix"),
+        SflixProvider("https://dopebox.to", "Dopebox"),
+        SflixProvider("https://solarmovie.pe", "Solarmovie"),
     )
 
     fun getApiFromName(apiName: String?): MainAPI {
@@ -120,6 +127,58 @@ object APIHolder {
 
     fun LoadResponse.getId(): Int {
         return url.replace(getApiFromName(apiName).mainUrl, "").replace("/", "").hashCode()
+    }
+
+
+    /**
+     * Gets the website captcha token
+     * discovered originally by https://github.com/ahmedgamal17
+     * optimized by https://github.com/justfoolingaround
+     *
+     * @param url the main url, likely the same website you found the key from.
+     * @param key used to fill https://www.google.com/recaptcha/api.js?render=....
+     *
+     * @param referer the referer for the google.com/recaptcha/api.js... request, optional.
+     * */
+
+    // Try document.select("script[src*=https://www.google.com/recaptcha/api.js?render=]").attr("src").substringAfter("render=")
+    // To get the key
+    suspend fun getCaptchaToken(url: String, key: String, referer: String? = null): String? {
+        val uri = Uri.parse(url)
+        val domain = encodeToString(
+            (uri.scheme + "://" + uri.host + ":443").encodeToByteArray(),
+            0
+        ).replace("\n", "").replace("=",".")
+
+        val vToken =
+            app.get(
+                "https://www.google.com/recaptcha/api.js?render=$key",
+                referer = referer,
+                cacheTime = 0
+            )
+                .text
+                .substringAfter("releases/")
+                .substringBefore("/")
+        val recapToken =
+            app.get("https://www.google.com/recaptcha/api2/anchor?ar=1&hl=en&size=invisible&cb=cs3&k=$key&co=$domain&v=$vToken")
+                .document
+                .selectFirst("#recaptcha-token")?.attr("value")
+        if (recapToken != null) {
+            return app.post(
+                "https://www.google.com/recaptcha/api2/reload?k=$key",
+                data = mapOf(
+                    "v" to vToken,
+                    "k" to key,
+                    "c" to recapToken,
+                    "co" to domain,
+                    "sa" to "",
+                    "reason" to "q"
+                ), cacheTime = 0
+            ).text
+                .substringAfter("rresp\",\"")
+                .substringBefore("\"")
+        }
+        return null
     }
 
     fun Context.getApiSettings(): HashSet<String> {
@@ -251,14 +310,17 @@ abstract class MainAPI {
     suspend open fun getMainPage(): HomePageResponse? {
         throw NotImplementedError()
     }
+
     @WorkerThread
     suspend open fun search(query: String): List<SearchResponse>? {
         throw NotImplementedError()
     }
+
     @WorkerThread
     suspend open fun quickSearch(query: String): List<SearchResponse>? {
         throw NotImplementedError()
     }
+
     @WorkerThread
     /**
      * Based on data from search() or getMainPage() it generates a LoadResponse,
@@ -464,7 +526,7 @@ data class Actor(
 data class ActorData(
     val actor: Actor,
     val role: ActorRole? = null,
-    val roleString : String? = null,
+    val roleString: String? = null,
     val voiceActor: Actor? = null,
 )
 
@@ -554,7 +616,7 @@ interface LoadResponse {
         }
 
         fun LoadResponse.setDuration(input: String?) {
-            val cleanInput = input?.trim()?.replace(" ","") ?: return
+            val cleanInput = input?.trim()?.replace(" ", "") ?: return
             Regex("([0-9]*)h.*?([0-9]*)m").find(cleanInput)?.groupValues?.let { values ->
                 if (values.size == 3) {
                     val hours = values[1].toIntOrNull()

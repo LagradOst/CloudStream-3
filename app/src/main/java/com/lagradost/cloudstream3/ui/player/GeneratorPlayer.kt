@@ -12,6 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
+import com.google.android.exoplayer2.util.MimeTypes
 import com.google.android.material.button.MaterialButton
 import com.hippo.unifile.UniFile
 import com.lagradost.cloudstream3.*
@@ -122,6 +123,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                     if (isNextEpisode) 0L else getPos()
                 },
                 currentSubs,
+                (if(sameEpisode) currentSelectedSubtitles else null) ?: getAutoSelectSubtitle(currentSubs, settings = true, downloads = true),
             )
         }
     }
@@ -141,15 +143,23 @@ class GeneratorPlayer : FullScreenPlayer() {
     }
 
     private fun openSubPicker() {
-        subsPathPicker.launch(
-            arrayOf(
-                "text/vtt",
-                "application/x-subrip",
-                "text/plain",
-                "text/str",
-                "application/octet-stream"
+        try {
+            subsPathPicker.launch(
+                arrayOf(
+                    "text/plain",
+                    "text/str",
+                    "application/octet-stream",
+                    MimeTypes.TEXT_UNKNOWN,
+                    MimeTypes.TEXT_VTT,
+                    MimeTypes.TEXT_SSA,
+                    MimeTypes.APPLICATION_TTML,
+                    MimeTypes.APPLICATION_MP4VTT,
+                    MimeTypes.APPLICATION_SUBRIP,
+                )
             )
-        )
+        } catch (e: Exception) {
+            logError(e)
+        }
     }
 
     // Open file picker
@@ -424,16 +434,37 @@ class GeneratorPlayer : FullScreenPlayer() {
         }
     }
 
-    private fun autoSelectFromSettings() {
-        // auto select subtitle based of settings
-        val langCode = preferredAutoSelectSubtitles
-        if (!langCode.isNullOrEmpty() && player.getCurrentPreferredSubtitle() == null) {
-            val lang = SubtitleHelper.fromTwoLettersToLanguage(langCode) ?: return
+    private fun getAutoSelectSubtitle(
+        subtitles: Set<SubtitleData>,
+        settings: Boolean,
+        downloads: Boolean
+    ): SubtitleData? {
+        val langCode = preferredAutoSelectSubtitles ?: return null
+        val lang = SubtitleHelper.fromTwoLettersToLanguage(langCode) ?: return null
 
-            currentSubs.firstOrNull { sub ->
+        if (settings)
+            subtitles.firstOrNull { sub ->
                 sub.name.startsWith(lang)
                         || sub.name.trim() == langCode
             }?.let { sub ->
+                return sub
+            }
+        if (downloads) {
+            return subtitles.firstOrNull { sub ->
+                (sub.origin == SubtitleOrigin.DOWNLOADED_FILE || sub.name == context?.getString(
+                    R.string.default_subtitles
+                ))
+            }
+        }
+        return null
+    }
+
+    private fun autoSelectFromSettings() {
+        // auto select subtitle based of settings
+        val langCode = preferredAutoSelectSubtitles
+
+        if (!langCode.isNullOrEmpty() && player.getCurrentPreferredSubtitle() == null) {
+            getAutoSelectSubtitle(currentSubs, settings = true, downloads = false)?.let { sub ->
                 context?.let { ctx ->
                     if (setSubtitles(sub)) {
                         player.reloadPlayer(ctx)
@@ -446,11 +477,7 @@ class GeneratorPlayer : FullScreenPlayer() {
 
     private fun autoSelectFromDownloads() {
         if (player.getCurrentPreferredSubtitle() == null) {
-            currentSubs.firstOrNull { sub ->
-                (sub.origin == SubtitleOrigin.DOWNLOADED_FILE || sub.name == context?.getString(
-                    R.string.default_subtitles
-                ))
-            }?.let { sub ->
+            getAutoSelectSubtitle(currentSubs, settings = false, downloads = true)?.let { sub ->
                 context?.let { ctx ->
                     if (setSubtitles(sub)) {
                         player.reloadPlayer(ctx)
@@ -471,21 +498,24 @@ class GeneratorPlayer : FullScreenPlayer() {
     @SuppressLint("SetTextI18n")
     fun setTitle() {
         var headerName: String? = null
+        var subName: String? = null
         var episode: Int? = null
         var season: Int? = null
         var tvType: TvType? = null
 
-        var isFiller : Boolean? = null
+        var isFiller: Boolean? = null
         when (val meta = currentMeta) {
             is ResultEpisode -> {
                 isFiller = meta.isFiller
                 headerName = meta.headerName
+                subName = meta.name
                 episode = meta.episode
                 season = meta.season
                 tvType = meta.tvType
             }
             is ExtractorUri -> {
                 headerName = meta.headerName
+                subName = meta.name
                 episode = meta.episode
                 season = meta.season
                 tvType = meta.tvType
@@ -495,13 +525,13 @@ class GeneratorPlayer : FullScreenPlayer() {
         player_episode_filler_holder?.isVisible = isFiller ?: false
 
         player_video_title?.text = if (headerName != null) {
-            headerName +
+            (headerName +
                     if (tvType.isEpisodeBased() && episode != null)
                         if (season == null)
                             " - ${getString(R.string.episode)} $episode"
                         else
                             " \"${getString(R.string.season_short)}${season}:${getString(R.string.episode_short)}${episode}\""
-                    else ""
+                    else "") + if (subName.isNullOrBlank() || subName == headerName) "" else " - $subName"
         } else {
             ""
         }
