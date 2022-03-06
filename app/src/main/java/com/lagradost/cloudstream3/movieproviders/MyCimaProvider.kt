@@ -15,6 +15,10 @@ class MyCimaProvider : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.TvSeries, TvType.Movie)
 
+    private fun String.getImageURL(): String? {
+        return Regex("""--im(age|g):url\((.*?)\);""").find(this)?.groupValues?.getOrNull(2)
+    }
+
     private fun String.getIntFromText(): Int? {
         return Regex("""\d+""").find(this)?.groupValues?.firstOrNull()?.toIntOrNull()
     }
@@ -22,8 +26,7 @@ class MyCimaProvider : MainAPI() {
     private fun Element.toSearchResponse(): SearchResponse? {
         val url = select("div.Thumb--GridItem a")?.attr("href") ?: return null
         val posterUrl = select("span.BG--GridItem")?.attr("data-lazy-style")
-            ?.replace("""--image:url\(""".toRegex(), "")
-            ?.replace("""\);""".toRegex(), "")
+            ?.getImageURL()
         val year = select("div.GridItem span.year")?.text()
         val title = select("div.Thumb--GridItem strong").text()
             .replace("$year", "")
@@ -70,9 +73,8 @@ class MyCimaProvider : MainAPI() {
                     it.toSearchResponse()?.let { it1 -> result.add(it1) }
                 }
         }
-        return result.distinct().toList()
+        return result.distinct().sortedBy { it.name }
     }
-
 
     data class MoreEPS (
         val output: String
@@ -82,9 +84,9 @@ class MyCimaProvider : MainAPI() {
         val doc = app.get(url).document
         val isMovie = doc.select("ol li:nth-child(3)").text().contains("افلام")
         val posterUrl =
-            doc.select("mycima.separated--top")?.attr("data-lazy-style")?.replace("""--img:url\(""".toRegex(), "")?.replace("""\);""".toRegex(), "")
+            doc.select("mycima.separated--top")?.attr("data-lazy-style")?.getImageURL()
                 ?.ifEmpty { doc.select("meta[itemprop=\"thumbnailUrl\"]")?.attr("content") }
-                ?.ifEmpty { doc.select("mycima.separated--top")?.attr("style")?.replace("""--img:url\(""".toRegex(), "")?.replace("""\);""".toRegex(), "") }
+                ?.ifEmpty { doc.select("mycima.separated--top")?.attr("style")?.getImageURL() }
         val year = doc.select("div.Title--Content--Single-begin h1 a.unline")?.text()?.getIntFromText()
         val title = doc.select("div.Title--Content--Single-begin h1").text()
             .replace("($year)", "")
@@ -105,8 +107,7 @@ class MyCimaProvider : MainAPI() {
         val actors = doc.select("div.List--Teamwork > ul.Inner--List--Teamwork > li")?.mapNotNull {
             val name = it?.selectFirst("a > div.ActorName > span")?.text() ?: return@mapNotNull null
             val image = it.attr("style")
-                ?.replace("""--image:url\(""".toRegex(), "")
-                ?.replace("""\);""".toRegex(), "")
+                ?.getImageURL()
                 ?: return@mapNotNull null
             Actor(name, image)
         }
@@ -129,7 +130,7 @@ class MyCimaProvider : MainAPI() {
             val episodes = ArrayList<TvSeriesEpisode>()
             val seasons = doc.select("div.List--Seasons--Episodes a").map {
                 it.attr("href")
-            }.toList()
+            }
                 if(seasons.isNotEmpty()) {
                     seasons.apmap { surl ->
                         if(surl.contains("%d9%85%d8%af%d8%a8%d9%84%d8%ac")) return@apmap
@@ -147,7 +148,7 @@ class MyCimaProvider : MainAPI() {
                                         val ajaxURL = "$mainUrl/AjaxCenter/MoreEpisodes/${moreButton.attr("data-term")}/$it"
                                         val jsonResponse = app.get(ajaxURL)
                                         val json = parseJson<MoreEPS>(jsonResponse.text)
-                                        val document = Jsoup.parse(json.output?.replace("""\\""".toRegex(), ""))
+                                        val document = Jsoup.parse(json.output?.replace("""\""", ""))
                                         document.select("a").map { episodes.add(TvSeriesEpisode(it.text(), season, it.text().getIntFromText(), it.attr("href"), null, null)) }
                                 }
                             } else return@apmap
