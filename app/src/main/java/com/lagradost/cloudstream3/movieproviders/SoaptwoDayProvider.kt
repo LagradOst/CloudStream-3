@@ -132,7 +132,7 @@ class SoaptwoDayProvider:MainAPI() {
         @JsonProperty("episodeId") val episodeId: Int?,
         @JsonProperty("default") val default: Int?,
         @JsonProperty("IsShow") val IsShow: Int?,
-        @JsonProperty("name") val name: String?,
+        @JsonProperty("name") val name: String,
         @JsonProperty("path") val path: String?,
         @JsonProperty("downlink") val downlink: String?,
         @JsonProperty("source_file_name") val sourceFileName: String?,
@@ -146,15 +146,15 @@ class SoaptwoDayProvider:MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val doc = app.get(data).document
-        val idplayer = doc.selectFirst("#divU").text()
-        val idplayer2 = doc.selectFirst("#divP").text()
+        val idplayer = doc.selectFirst("#divU")?.text()
+        val idplayer2 = doc.selectFirst("#divP")?.text()
         val movieid = doc.selectFirst("div.row input#hId").attr("value")
-        val test = try {
+        val tvType = try {
             doc.selectFirst(".col-md-5 > div:nth-child(1) > div:nth-child(1) > img").attr("src") ?: ""
         } catch (e: Exception) {
             ""
         }
-        val ajaxlink = if (test.contains("movie")) "$mainUrl/home/index/GetMInfoAjax" else "$mainUrl/home/index/GetEInfoAjax"
+        val ajaxlink = if (tvType.contains("movie")) "$mainUrl/home/index/GetMInfoAjax" else "$mainUrl/home/index/GetEInfoAjax"
         listOf(
             idplayer,
             idplayer2,
@@ -184,9 +184,9 @@ class SoaptwoDayProvider:MainAPI() {
             listOf(
                 json.stream,
                 json.streambackup
-            ).mapNotNull { stream ->
-                val cleanstreamurl = stream?.replace("\\/","/")?.replace("\\\\\\","")
-                if (cleanstreamurl?.isNotBlank() == true) {
+            ).filterNotNull().apmap { stream ->
+                val cleanstreamurl = stream.replace("\\/","/").replace("\\\\\\","")
+                if (cleanstreamurl.isNotBlank()) {
                     callback(ExtractorLink(
                         "Soap2Day",
                         "Soap2Day",
@@ -206,7 +206,7 @@ class SoaptwoDayProvider:MainAPI() {
                     if (subs != null) {
                         if (subs.isNotBlank()) {
                             subtitleCallback(
-                                SubtitleFile(subtitle.name!!, subs)
+                                SubtitleFile(subtitle.name, subs)
                             )
                         }
                     }
