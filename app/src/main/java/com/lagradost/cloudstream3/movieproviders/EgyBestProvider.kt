@@ -39,17 +39,17 @@ class EgyBestProvider : MainAPI() {
     }
 
     override suspend fun getMainPage(): HomePageResponse {
-        // Title, Url
-        val moviesUrl = listOf(
-            "Movies" to "$mainUrl/movies/?page="+(0..25).random(),
-            "Series" to "$mainUrl/tv/?page="+(0..25).random()
+        // url, title
+        val pagesUrl = listOf(
+            Pair("$mainUrl/movies/?page="+(0..25).random(), "Movies"),
+            Pair("$mainUrl/tv/?page="+(0..25).random(), "Series"),
         )
-        val pages = moviesUrl.apmap {
-            val doc = app.get(it.second).document
+        val pages = pagesUrl.apmap { (url, name)
+            val doc = app.get(url).document
             val list = doc.select("div.movies a").not("a.auto.load.btn.b").mapNotNull { element ->
                 element.toSearchResponse()
             }
-            HomePageList(it.first, list)
+            HomePageList(name, list)
         }.sortedBy { it.name }
         return HomePageResponse(pages)
     }
