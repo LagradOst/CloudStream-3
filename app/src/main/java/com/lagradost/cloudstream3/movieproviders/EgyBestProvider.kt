@@ -2,9 +2,9 @@ package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import org.json.JSONArray
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.nodes.Element
-import org.json.JSONTokener
 
 class EgyBestProvider : MainAPI() {
     override val lang = "ar"
@@ -25,12 +25,13 @@ class EgyBestProvider : MainAPI() {
             .replace("\\(.*\\)".toRegex(), "")
         val year = select("span.title").text()
             .replace(".*\\(|\\)".toRegex(), "")
+        val tvType = if (url.contains("/movie/")) TvType.Movie else TvType.TvSeries
         // If you need to differentiate use the url.
         return MovieSearchResponse(
             title,
             url,
             this@EgyBestProvider.name,
-            TvType.TvSeries,
+            tvType,
             posterUrl,
             year.toIntOrNull(),
             null,
@@ -121,7 +122,10 @@ class EgyBestProvider : MainAPI() {
             }
         }
     }
-
+    data class Sources (
+        @JsonProperty("quality") val quality: Int?,
+        @JsonProperty("link") val link: String
+    )
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -129,20 +133,20 @@ class EgyBestProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val requestJSON = app.get("https://zawmedia-api.herokuapp.com/egybest?url=$data").text
-        val jsonArray = JSONTokener(requestJSON).nextValue() as JSONArray
-        for (i in 0 until jsonArray.length()) {
-            val quality = jsonArray.getJSONObject(i).getString("quality")
-            val link = jsonArray.getJSONObject(i).getString("link")
-            callback.invoke(
-                ExtractorLink(
-                    this.name,
-                    this.name + " ${quality}p",
-                    link,
-                    this.mainUrl,
-                    2,
-                    true
+        val jsonArray = parseJson<List<Sources>>(requestJSON)
+        for (i in jsonArray) {
+            val quality = i.quality
+            val link = i.link
+                callback.invoke(
+                    ExtractorLink(
+                        this.name,
+                        this.name + " ${quality}p",
+                        link,
+                        this.mainUrl,
+                        2,
+                        true
+                    )
                 )
-            )
         }
         return true
     }
