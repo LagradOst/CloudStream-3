@@ -53,7 +53,7 @@ class TwoEmbedProvider : TmdbProvider() {
                 .attr("src").substringAfter("render=")
 
         val servers =  document.select(".dropdown-menu a[data-id]").map { it.attr("data-id") }
-        servers.forEach { serverID ->
+        servers.apmap { serverID ->
             val token = getCaptchaToken(embedUrl, captchaKey)
             val ajax = app.get("$mainUrl/ajax/embed/play?id=$serverID&_token=$token", referer = embedUrl).text
             val mappedservers = parseJson<EmbedJson>(ajax)
