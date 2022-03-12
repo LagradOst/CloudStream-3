@@ -44,7 +44,7 @@ class EgyBestProvider : MainAPI() {
             Pair("$mainUrl/movies/?page="+(0..25).random(), "Movies"),
             Pair("$mainUrl/tv/?page="+(0..25).random(), "Series"),
         )
-        val pages = pagesUrl.apmap { (url, name)
+        val pages = pagesUrl.apmap { (url, name) ->
             val doc = app.get(url).document
             val list = doc.select("div.movies a").not("a.auto.load.btn.b").mapNotNull { element ->
                 element.toSearchResponse()
