@@ -41,11 +41,11 @@ class TwoEmbedProvider : TmdbProvider() {
         ) else listOf(mappedData.tmdbID.toString(), "tmdb")
         val isMovie = mappedData.episode == null && mappedData.season == null
         val embedUrl = if (isMovie) {
-            "https://www.2embed.ru/embed/$site/movie?id=$id"
+            "$mainUrl/embed/$site/movie?id=$id"
 
         } else {
             val suffix = "$id&s=${mappedData.season ?: 1}&e=${mappedData.episode ?: 1}"
-            "https://www.2embed.ru/embed/$site/tv?id=$suffix"
+            "$mainUrl/embed/$site/tv?id=$suffix"
         }
         val document = app.get(embedUrl).document
         val captchaKey =
@@ -53,10 +53,9 @@ class TwoEmbedProvider : TmdbProvider() {
                 .attr("src").substringAfter("render=")
 
         val servers =  document.select(".dropdown-menu a[data-id]").map { it.attr("data-id") }
-        servers.apmap { serverID ->
+        servers.forEach { serverID ->
             val token = getCaptchaToken(embedUrl, captchaKey)
-            val ajax = app.get("$mainUrl/ajax/embed/play?id=$serverID&_token=$token", headers =
-            mapOf("Referer" to embedUrl)).text
+            val ajax = app.get("$mainUrl/ajax/embed/play?id=$serverID&_token=$token", referer = embedUrl).text
             val mappedservers = parseJson<EmbedJson>(ajax)
             val iframeLink = mappedservers.link
             if (iframeLink.contains("rabbitstream")) {
