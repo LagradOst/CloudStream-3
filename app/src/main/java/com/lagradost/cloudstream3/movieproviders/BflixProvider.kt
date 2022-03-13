@@ -7,9 +7,19 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 
-class BflixProvider(providerUrl: String, providerName: String) : MainAPI() {
-    override val mainUrl = providerUrl
-    override val name = providerName
+class BflixProviderClone1(): BflixProvider() {
+    override var mainUrl = "https://fmovies.to"
+    override var name = "Fmovies.to"
+}
+
+class BflixProviderClone2(): BflixProvider() {
+    override var mainUrl = "https://sflix.pro"
+    override var name = "Sflix.pro"
+}
+
+open class BflixProvider() : MainAPI() {
+    override var mainUrl = "https://bflix.ru"
+    override var name = "Bflix"
     override val hasMainPage = true
     override val hasChromecastSupport = true
     override val hasDownloadSupport = true

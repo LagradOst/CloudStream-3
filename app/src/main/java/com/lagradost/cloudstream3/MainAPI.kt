@@ -31,21 +31,12 @@ object APIHolder {
 
     private const val defProvider = 0
 
-    val apis = arrayListOf(
+    var apis = mutableListOf(
+        // Movie providers
         PelisplusProvider(),
         PelisplusHDProvider(),
         PeliSmartProvider(),
-        GogoanimeProvider(),
-        AllAnimeProvider(),
-        AnimekisaProvider(),
-        //ShiroProvider(), // v2 fucked me
-        AnimeFlickProvider(),
-        AnimeflvnetProvider(),
-
-        TenshiProvider(),
-        WcoProvider(),
-        // MeloMovieProvider(), // Captcha for links
-        DubbedAnimeProvider(),
+        MeloMovieProvider(), // Captcha for links
         DoramasYTProvider(),
         CinecalidadProvider(),
         CuevanaProvider(),
@@ -53,31 +44,18 @@ object APIHolder {
         PelisflixProvider(),
         SeriesflixProvider(),
         IHaveNoTvProvider(), // Documentaries provider
-        //LookMovieProvider(), // RECAPTCHA (Please allow up to 5 seconds...)
+        LookMovieProvider(), // RECAPTCHA (Please allow up to 5 seconds...)
         VMoveeProvider(),
-        WatchCartoonOnlineProvider(),
         AllMoviesForYouProvider(),
-        ApiMDBProvider(),
-
-        MonoschinosProvider(),
-
         VidEmbedProvider(),
         VfFilmProvider(),
         VfSerieProvider(),
         FrenchStreamProvider(),
-
         AsianLoadProvider(),
-
-        BflixProvider("https://bflix.ru","Bflix"),
-        BflixProvider("https://fmovies.to","Fmovies.to"),
-        BflixProvider("https://sflix.pro","Sflix.pro"),
-
-
-        //TmdbProvider(),
-
+        BflixProvider(),
+        BflixProviderClone1(),
+        BflixProviderClone2(),
         FilmanProvider(),
-
-        ZoroProvider(),
         PinoyMoviePediaProvider(),
         PinoyHDXyzProvider(),
         PinoyMoviesEsProvider(),
@@ -89,12 +67,31 @@ object APIHolder {
         AkwamProvider(),
         MyCimaProvider(),
         EgyBestProvider(),
+        SoaptwoDayProvider(),
+        HDMProvider(),// removed due to cloudflare
+
+        // Metadata providers
+        //TmdbProvider(),
+        CrossTmdbProvider(),
+        ApiMDBProvider(),
+
+        // Anime providers
+        WatchCartoonOnlineProvider(),
+        GogoanimeProvider(),
+        AllAnimeProvider(),
+        AnimekisaProvider(),
+        //ShiroProvider(), // v2 fucked me
+        AnimeFlickProvider(),
+        AnimeflvnetProvider(),
+        TenshiProvider(),
+        WcoProvider(),
         AnimePaheProvider(),
         NineAnimeProvider(),
         AnimeWorldProvider(),
-        SoaptwoDayProvider(),
-
-        CrossTmdbProvider(),
+        ZoroProvider(),
+        DubbedAnimeProvider(),
+        MonoschinosProvider(),
+        KawaiifuProvider(), // removed due to cloudflare
     )
 
     val restrictedApis = arrayListOf(
@@ -105,9 +102,6 @@ object APIHolder {
     )
 
     private val backwardsCompatibleProviders = arrayListOf(
-        KawaiifuProvider(), // removed due to cloudflare
-        HDMProvider(),// removed due to cloudflare
-
         SflixProvider("https://sflix.to", "Sflix"),
         SflixProvider("https://dopebox.to", "Dopebox"),
         SflixProvider("https://solarmovie.pe", "Solarmovie"),
@@ -284,8 +278,8 @@ object APIHolder {
 
 /**Every provider will **not** have try catch built in, so handle exceptions when calling these functions*/
 abstract class MainAPI {
-    open val name = "NONE"
-    open val mainUrl = "NONE"
+    open var name = "NONE"
+    open var mainUrl = "NONE"
 
     //open val uniqueId : Int by lazy { this.name.hashCode() } // in case of duplicate providers you can have a shared id
 
@@ -542,7 +536,7 @@ data class ActorData(
 )
 
 data class AnimeSearchResponse(
-    override val name: String,
+    override var name: String,
     override val url: String,
     override val apiName: String,
     override val type: TvType,
@@ -558,7 +552,7 @@ data class AnimeSearchResponse(
 ) : SearchResponse
 
 data class TorrentSearchResponse(
-    override val name: String,
+    override var name: String,
     override val url: String,
     override val apiName: String,
     override val type: TvType,
@@ -568,7 +562,7 @@ data class TorrentSearchResponse(
 ) : SearchResponse
 
 data class MovieSearchResponse(
-    override val name: String,
+    override var name: String,
     override val url: String,
     override val apiName: String,
     override val type: TvType,
@@ -579,7 +573,7 @@ data class MovieSearchResponse(
 ) : SearchResponse
 
 data class TvSeriesSearchResponse(
-    override val name: String,
+    override var name: String,
     override val url: String,
     override val apiName: String,
     override val type: TvType,

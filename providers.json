@@ -134,6 +134,16 @@
         "url": "https://kdramahood.com",
         "status": 1
     },
+    "LookMovieProvider": {
+        "name": "LookMovie",
+        "url": "https://lookmovie.io",
+        "status": 0
+    },
+    "MeloMovieProvider": {
+        "name": "MeloMovie",
+        "url": "https://melomovie.com",
+        "status": 0
+    },
     "MonoschinosProvider": {
         "name": "Monoschinos",
         "url": "https://monoschinos2.com",

@@ -9,8 +9,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import java.util.*
 
 class CuevanaProvider:MainAPI() {
-    override val mainUrl = "https://cuevana3.io"
-    override val name = "Cuevana"
+    override var mainUrl = "https://cuevana3.io"
+    override var name = "Cuevana"
     override val lang = "es"
     override val hasMainPage = true
     override val hasChromecastSupport = true

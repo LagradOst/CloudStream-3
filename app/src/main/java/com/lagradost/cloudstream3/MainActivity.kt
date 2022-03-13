@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
 import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
@@ -20,6 +21,7 @@ import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceManager
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.android.gms.cast.framework.*
 import com.google.android.material.navigationrail.NavigationRailView
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
@@ -46,6 +48,7 @@ import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSet
 import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
 import com.lagradost.cloudstream3.utils.AppUtils.loadCache
 import com.lagradost.cloudstream3.utils.AppUtils.loadResult
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.BackupUtils.setUpBackup
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.removeKey
@@ -60,6 +63,9 @@ import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.requestRW
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_result_swipe.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.concurrent.thread
 
@@ -79,6 +85,11 @@ const val VLC_LAST_ID_KEY = "vlc_last_open_id"
 // Short name for requests client to make it nicer to use
 var app = Requests()
 
+private data class ProvidersInfoJson(
+    @JsonProperty("name") var name: String,
+    @JsonProperty("url") var url: String,
+    @JsonProperty("status") var status: Int,
+)
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
     override fun onColorSelected(dialogId: Int, color: Int) {
@@ -458,6 +469,31 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             createISO()
         }*/
 
+        //Note: Load json from github repo, and update providers info using values fetched from it.
+        try {
+            runBlocking {
+                withContext(Dispatchers.IO) {
+                    val jsonString = app.get("https://raw.githubusercontent.com/LagradOst/CloudStream-3/json/providers.json").text
+                    //Log.i("Debug", "Result => json: $jsonString")
+                    val providersJsonMap = parseJson<Map<String, ProvidersInfoJson>>(jsonString)
+                    val listToRemove = providersJsonMap.filter { it.value.status != 1 }.map { it.key }
+                    apis = apis.filter { !listToRemove.contains(it.javaClass.simpleName) } .toMutableList()
+
+                    for (api in apis) {
+                        val providerFromJson = providersJsonMap.get(api.javaClass.simpleName)
+                        if (providerFromJson != null) {
+                            api.mainUrl = providerFromJson.url
+                            api.name = providerFromJson.name
+                            Log.i("Debug", "Result => api: ${api.name} => ${api.mainUrl}")
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            logError(e)
+        }
+
         var providersString = "Current providers are:\n"
         var providersAndroidManifestString = "Current androidmanifest should be:\n"
         for (api in apis) {
@@ -478,7 +514,6 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             }\" android:pathPrefix=\"/\"/>\n"
         }
         println(providersString)
-
 
         println(providersAndroidManifestString)
 
