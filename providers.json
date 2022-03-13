@@ -49,6 +49,16 @@
         "url": "https://bflix.ru",
         "status": 1
     },
+    "BflixProviderClone1": {
+        "name": "Fmovies.to",
+        "url": "https://fmovies.to",
+        "status": 1
+    },
+    "BflixProviderClone2": {
+        "name": "Sflix.pro",
+        "url": "https://sflix.pro",
+        "status": 1
+    },
     "CinecalidadProvider": {
         "name": "Cinecalidad",
         "url": "https://cinecalidad.lol",
