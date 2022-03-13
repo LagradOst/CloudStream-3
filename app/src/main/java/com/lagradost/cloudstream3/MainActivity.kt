@@ -473,7 +473,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         try {
             runBlocking {
                 withContext(Dispatchers.IO) {
-                    val jsonString = app.get("https://raw.githubusercontent.com/LagradOst/CloudStream-3/json/providers.json").text
+                    val jsonString = app.get("https://raw.githubusercontent.com/LagradOst/CloudStream-3/master/providers.json").text
                     //Log.i("Debug", "Result => json: $jsonString")
                     val providersJsonMap = parseJson<Map<String, ProvidersInfoJson>>(jsonString)
                     val listToRemove = providersJsonMap.filter { it.value.status != 1 }.map { it.key }
