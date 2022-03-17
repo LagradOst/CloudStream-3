@@ -31,6 +31,7 @@ open class PelisplusProviderTemplate : MainAPI() {
 
     // Searching returns a SearchResponse, which can be one of the following: AnimeSearchResponse, MovieSearchResponse, TorrentSearchResponse, TvSeriesSearchResponse
     // Each of the classes requires some different data, but always has some critical things like name, poster and url.
+
     override suspend fun search(query: String): ArrayList<SearchResponse> {
         // Simply looking at devtools network is enough to spot a request like:
         // https://vidembed.cc/search.html?keyword=neverland where neverland is the query, can be written as below.
@@ -44,7 +45,7 @@ open class PelisplusProviderTemplate : MainAPI() {
             val poster = fixUrl(li.selectFirst("img").attr("src"))
 
             // .text() selects all the text in the element, be careful about doing this while too high up in the html hierarchy
-            val title = li.selectFirst(".name").text().replace(Regex("([Tt]emporada (\\d+)|[Cc]apítulo (\\d+))|[Tt]emporada"),"").trim()
+            val title = cleanName(li.selectFirst(".name").text())
             // Use get(0) and toIntOrNull() to prevent any possible crashes, [0] or toInt() will error the search on unexpected values.
             val year = li.selectFirst(".date")?.text()?.split("-")?.get(0)?.toIntOrNull()
 
@@ -69,7 +70,7 @@ open class PelisplusProviderTemplate : MainAPI() {
         val html = app.get(url).text
         val soup = Jsoup.parse(html)
 
-        val title = soup.selectFirst("h1,h2,h3").text().replace(Regex("([Tt]emporada (\\d+)|[Cc]apítulo (\\d+))"),"").trim()
+        val title = cleanName(soup.selectFirst("h1,h2,h3").text())
         val description = soup.selectFirst(".post-entry")?.text()?.trim()
         val poster = soup.selectFirst("head meta[property=og:image]").attr("content")
 
@@ -148,11 +149,11 @@ open class PelisplusProviderTemplate : MainAPI() {
             val document = Jsoup.parse(response)
             document.select("div.main-inner")?.forEach { inner ->
                 // Always trim your text unless you want the risk of spaces at the start or end.
-                val title = inner.select(".widget-title").text().replace(Regex("([Tt]emporada (\\d+)|[Cc]apítulo (\\d+))"),"").trim()
+                val title = cleanName(inner.select(".widget-title").text())
                 val elements = inner.select(".video-block").map {
                     val link = fixUrl(it.select("a").attr("href"))
                     val image = it.select(".picture > img").attr("src").replace("//img", "https://img")
-                    val name = it.select("div.name").text().trim().replace(Regex("""[Tt]emporada \d+|[Cc]apítulo \d+"""), "")
+                    val name = cleanName(it.select("div.name").text())
                     val isSeries = (name.contains("Temporada") || name.contains("Capítulo"))
 
                     if (isSeries) {
@@ -189,6 +190,10 @@ open class PelisplusProviderTemplate : MainAPI() {
         }
         return HomePageResponse(homePageList)
     }
+
+
+    private fun cleanName(input: String): String = input.replace(Regex("([Tt]emporada (\\d+)|[Cc]apítulo (\\d+))|[Tt]emporada|[Cc]apítulo"),"").trim()
+
 
     private suspend fun getPelisStream(
         link: String,
