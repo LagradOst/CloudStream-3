@@ -83,6 +83,10 @@ class EgyBestProvider : MainAPI() {
         }?.select("a")?.map { it.text() }
 
         return if (isMovie) {
+            val recommendations = doc.select(".movies_small .movie")?.mapNotNull { element ->
+                element.toSearchResponse()
+            }
+
             newMovieLoadResponse(
                 title,
                 url,
@@ -91,6 +95,7 @@ class EgyBestProvider : MainAPI() {
             ) {
                 this.posterUrl = posterUrl
                 this.year = year
+                this.recommendations = recommendations
                 this.plot = synopsis
                 this.tags = tags
             }
