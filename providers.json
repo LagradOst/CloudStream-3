@@ -1,7 +1,7 @@
 {
     "AkwamProvider": {
         "name": "Akwam",
-        "url": "https://akwam.io",
+        "url": "https://akwam.to",
         "status": 1
     },
     "AllAnimeProvider": {
@@ -76,7 +76,7 @@
     },
     "CuevanaProvider": {
         "name": "Cuevana",
-        "url": "https://cuevana3.io",
+        "url": "https://cuevana3.me",
         "status": 1
     },
     "DoramasYTProvider": {
