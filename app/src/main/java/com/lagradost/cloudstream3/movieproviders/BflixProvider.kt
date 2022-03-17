@@ -7,11 +7,11 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 
-class BflixProviderClone1 : BflixProvider() {
+class FmoviesToProvider : BflixProvider() {
     override var mainUrl = "https://fmovies.to"
     override var name = "Fmovies.to"
 }
-class BflixProviderClone2 : BflixProvider() {
+class SflixProProvider : BflixProvider() {
     override var mainUrl = "https://sflix.pro"
     override var name = "Sflix.pro"
 }
