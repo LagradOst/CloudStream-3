@@ -82,6 +82,14 @@ class EgyBestProvider : MainAPI() {
             it.text().contains("النوع")
         }?.select("a")?.map { it.text() }
 
+        val actors = doc.select("div.cast_list .cast_item")?.mapNotNull {
+            val name = it.selectFirst("div > a > img")?.attr("alt") ?: return@mapNotNull null
+            val image = it.selectFirst("div > a > img")?.attr("src") ?: return@mapNotNull null
+            val roleString = it.selectFirst("div > span").text()
+            val mainActor = Actor(name, image)
+            ActorData(actor = mainActor, roleString = roleString)
+        }
+
         return if (isMovie) {
             val recommendations = doc.select(".movies_small .movie")?.mapNotNull { element ->
                 element.toSearchResponse()
@@ -98,6 +106,7 @@ class EgyBestProvider : MainAPI() {
                 this.recommendations = recommendations
                 this.plot = synopsis
                 this.tags = tags
+                this.actors = actors
             }
         } else {
             val episodes = ArrayList<TvSeriesEpisode>()
@@ -125,6 +134,7 @@ class EgyBestProvider : MainAPI() {
                 this.tags = tags
                 this.year = year
                 this.plot = synopsis
+                this.actors = actors
             }
         }
     }
