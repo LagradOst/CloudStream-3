@@ -21,11 +21,11 @@ import org.jsoup.nodes.Element
 import java.net.URI
 import kotlin.system.measureTimeMillis
 
-class SflixProviderClone1 : SflixProvider() {
+class DopeboxProvider : SflixProvider() {
     override var mainUrl = "https://dopebox.to"
     override var name = "Dopebox"
 }
-class SflixProviderClone2 : SflixProvider() {
+class SolarmovieProvider : SflixProvider() {
     override var mainUrl = "https://solarmovie.pe"
     override var name = "Solarmovie"
 }
