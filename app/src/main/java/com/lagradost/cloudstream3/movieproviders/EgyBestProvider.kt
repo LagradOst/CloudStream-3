@@ -21,11 +21,11 @@ class EgyBestProvider : MainAPI() {
     private fun Element.toSearchResponse(): SearchResponse? {
         val url = this.attr("href") ?: return null
         val posterUrl = select("img")?.attr("src")
-        val title = select("span.title").text()
-            .replace("\\(.*\\)".toRegex(), "")
-        val year = select("span.title").text()
-            .replace(".*\\(|\\)".toRegex(), "")
-        val tvType = if (url.contains("/movie/")) TvType.Movie else TvType.TvSeries
+        var title = select("span.title").text()
+        val year = title.getYearFromTitle()
+        val isMovie = Regex(".*/movie/.*|.*/masrahiya/.*").matches(url)
+        val tvType = if (isMovie) TvType.Movie else TvType.TvSeries
+        title = if (year !== null) title else title.split(" (")[0].trim()
         // If you need to differentiate use the url.
         return MovieSearchResponse(
             title,
@@ -33,24 +33,21 @@ class EgyBestProvider : MainAPI() {
             this@EgyBestProvider.name,
             tvType,
             posterUrl,
-            year.toIntOrNull(),
+            year,
             null,
         )
     }
 
     override suspend fun getMainPage(): HomePageResponse {
         // url, title
-        val pagesUrl = listOf(
-            Pair("$mainUrl/movies/?page="+(0..25).random(), "Movies"),
-            Pair("$mainUrl/tv/?page="+(0..25).random(), "Series"),
-        )
-        val pages = pagesUrl.apmap { (url, name) ->
-            val doc = app.get(url).document
-            val list = doc.select("div.movies a").not("a.auto.load.btn.b").mapNotNull { element ->
+        val doc = app.get(mainUrl).document
+        val pages = doc.select("#mainLoad div.mbox").apmap {
+            val name = it.select(".bdb.pda > strong").text()
+            val list = it.select(".movie").mapNotNull { element ->
                 element.toSearchResponse()
             }
             HomePageList(name, list)
-        }.sortedBy { it.name }
+        }
         return HomePageResponse(pages)
     }
 
@@ -66,9 +63,13 @@ class EgyBestProvider : MainAPI() {
         return result.distinct().sortedBy { it.name }
     }
 
+    private fun String.getYearFromTitle(): Int? {
+        return Regex("""\(\d{4}\)""").find(this)?.groupValues?.firstOrNull()?.toIntOrNull()
+    }
+
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url).document
-        val isMovie = url.contains("/movie/")
+        val isMovie = Regex(".*/movie/.*|.*/masrahiya/.*").matches(url)
         val posterUrl = doc.select("div.movie_img a img")?.attr("src")
         val year = doc.select("div.movie_title h1 a")?.text()?.toIntOrNull()
         val title = doc.select("div.movie_title h1 span[itemprop=\"name\"]").text()
