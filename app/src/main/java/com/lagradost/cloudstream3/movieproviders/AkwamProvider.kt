@@ -189,9 +189,10 @@ class AkwamProvider : MainAPI() {
 
         val links = doc.select("div.tab-content.quality").map {
             val quality = getQualityFromId(it.attr("id").getIntFromText())
-            it.select("a.link-download").map { linkElement ->
-                "$mainUrl/download${linkElement.attr("href").split("/link")[1]}${data.split("/movie|/show/episode|/episode".toRegex())[1]}" to quality
-                // Only uses the download links, primarily to prevent unnecessary duplicate requests.
+            it.select(".col-lg-6 > a:contains(تحميل)").map { linkElement ->
+                if(linkElement.attr("href").contains("/download/")) { linkElement.attr("href") to quality } else {
+                    "$mainUrl/download${linkElement.attr("href").split("/link")[1]}${data.split("/movie|/episode|/show/episode".toRegex())[1]}" to quality // just in case if they add the shorts urls again
+                }
             }
         }.flatten()
 
