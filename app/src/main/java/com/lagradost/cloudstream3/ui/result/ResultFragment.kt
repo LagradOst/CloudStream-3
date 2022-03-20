@@ -1376,8 +1376,12 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                                         val sourceDialog = sourceBuilder.create()
                                         sourceDialog.show()
 
-                                        val iv = sourceDialog.findViewById<ImageView?>(R.id.imgPoster)
-                                        iv?.setImageBitmap(bitmap)
+                                        sourceDialog.findViewById<ImageView?>(R.id.imgPoster)?.apply {
+                                            setImageBitmap(bitmap)
+                                            setOnClickListener {
+                                                sourceDialog.dismissSafe()
+                                            }
+                                        }
                                     }
                                 } catch (e: Exception) {
                                     logError(e)
