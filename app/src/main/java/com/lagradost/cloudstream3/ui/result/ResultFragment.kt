@@ -1368,7 +1368,6 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                             result_poster_holder?.setOnClickListener {
                                 try {
                                     context?.let { ctx ->
-                                        //TODO: UI setting for either 960x1280 or 960x1600
                                         val bitmap = result_poster.drawable.toBitmap()
                                         val sourceBuilder = AlertDialog.Builder(ctx)
                                         sourceBuilder.setView(R.layout.result_poster)
