@@ -1372,7 +1372,7 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                                     val bitmap = result_poster.drawable.toBitmap(960, 1280)
                                     val settingsDialog = activity?.let { it1 -> Dialog(it1) }
 
-                                    val inflater = layoutInflater
+                                    val inflater = LayoutInflater.from(context)
                                     val newView = inflater.inflate(R.layout.result_poster, null) as View
 
                                     settingsDialog?.setContentView(newView)
