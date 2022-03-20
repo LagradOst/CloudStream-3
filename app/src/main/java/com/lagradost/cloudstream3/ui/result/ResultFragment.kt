@@ -13,6 +13,7 @@ import android.content.res.Configuration
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.GONE
@@ -92,6 +93,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.setImageBlur
 import com.lagradost.cloudstream3.utils.VideoDownloadManager.sanitizeFilename
 import kotlinx.android.synthetic.main.fragment_result.*
 import kotlinx.android.synthetic.main.fragment_result_swipe.*
+import kotlinx.android.synthetic.main.result_poster.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
@@ -1368,18 +1370,18 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                             //Full screen view of Poster image
                             result_poster_holder?.setOnClickListener {
                                 try {
-                                    //TODO: UI setting for either 960x1280 or 960x1600
-                                    val bitmap = result_poster.drawable.toBitmap(960, 1280)
-                                    val settingsDialog = activity?.let { it1 -> Dialog(it1) }
+                                    if (context != null) {
+                                        //TODO: UI setting for either 960x1280 or 960x1600
+                                        val bitmap = result_poster.drawable.toBitmap(960, 1600)
+                                        val sourceBuilder = AlertDialog.Builder(context!!, R.style.AlertDialogCustomBlack)
+                                        sourceBuilder.setView(R.layout.result_poster)
 
-                                    val inflater = LayoutInflater.from(context)
-                                    val newView = inflater.inflate(R.layout.result_poster, null) as View
+                                        val sourceDialog = sourceBuilder.create()
+                                        sourceDialog.show()
 
-                                    settingsDialog?.setContentView(newView)
-
-                                    val iv = newView.findViewById<View>(R.id.imgPoster) as ImageView
-                                    iv.setImageBitmap(bitmap)
-                                    settingsDialog?.show()
+                                        val iv = sourceDialog.findViewById<ImageView?>(R.id.imgPoster)
+                                        iv?.setImageBitmap(bitmap)
+                                    }
                                 } catch (e: Exception) {
                                     logError(e)
                                 }
