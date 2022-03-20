@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.ui.result
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.Dialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context.CLIPBOARD_SERVICE
@@ -17,11 +18,13 @@ import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
@@ -1358,9 +1361,29 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
 
                         result_meta_site?.text = d.apiName
 
-                        if (!d.posterUrl.isNullOrEmpty()) {
-                            result_poster?.setImage(d.posterUrl)
-                            result_poster_blur?.setImageBlur(d.posterUrl, 10, 3)
+                        val posterImageLink = d.posterUrl
+                        if (!posterImageLink.isNullOrEmpty()) {
+                            result_poster?.setImage(posterImageLink)
+                            result_poster_blur?.setImageBlur(posterImageLink, 10, 3)
+                            //Full screen view of Poster image
+                            result_poster_holder?.setOnClickListener {
+                                try {
+                                    //TODO: UI setting for either 960x1280 or 960x1600
+                                    val bitmap = result_poster.drawable.toBitmap(960, 1280)
+                                    val settingsDialog = activity?.let { it1 -> Dialog(it1) }
+
+                                    val inflater = layoutInflater
+                                    val newView = inflater.inflate(R.layout.result_poster, null) as View
+
+                                    settingsDialog?.setContentView(newView)
+
+                                    val iv = newView.findViewById<View>(R.id.imgPoster) as ImageView
+                                    iv.setImageBitmap(bitmap)
+                                    settingsDialog?.show()
+                                } catch (e: Exception) {
+                                    logError(e)
+                                }
+                            }
                         } else {
                             result_poster?.setImageResource(R.drawable.default_cover)
                             result_poster_blur?.setImageResource(R.drawable.default_cover)
