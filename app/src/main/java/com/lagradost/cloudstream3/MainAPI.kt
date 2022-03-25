@@ -76,6 +76,8 @@ object APIHolder {
             SoaptwoDayProvider(),
             HDMProvider(),// disabled due to cloudflare
             TheFlixToProvider(),
+            EstrenosDoramasProvider(),
+            ElifilmsProvider(),
 
             // Metadata providers
             //TmdbProvider(),
@@ -90,6 +92,8 @@ object APIHolder {
             //ShiroProvider(), // v2 fucked me
             AnimeFlickProvider(),
             AnimeflvnetProvider(),
+            AnimeflvIOProvider(),
+            AnimefenixProvider(),
             TenshiProvider(),
             WcoProvider(),
             AnimePaheProvider(),
@@ -98,6 +102,8 @@ object APIHolder {
             ZoroProvider(),
             DubbedAnimeProvider(),
             MonoschinosProvider(),
+            MundoDonghuaProvider(),
+            JKAnimeProvider(),
             KawaiifuProvider(), // disabled due to cloudflare
         )
     }
