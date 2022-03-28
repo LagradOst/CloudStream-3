@@ -49,7 +49,7 @@ for path in glob(GLOB):
                 sites[name] = {
                     "name": display_name,
                     "url": provider_url if provider_url else "",
-                    "status": 2 if name in enabled_sites else 0
+                    "status": 3 if name in enabled_sites else 0
                 }
 
         except Exception as ex:
