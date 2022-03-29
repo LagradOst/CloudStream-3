@@ -11,12 +11,12 @@ import com.lagradost.cloudstream3.utils.getQualityFromName
 import java.net.URI
 
 class AsiaFlixProvider : MainAPI() {
-    override val mainUrl = "https://asiaflix.app"
-    override val name = "AsiaFlix"
+    override var mainUrl = "https://asiaflix.app"
+    override var name = "AsiaFlix"
     override val hasQuickSearch = false
     override val hasMainPage = true
     override val hasChromecastSupport = false
-    override val supportedTypes = setOf(TvType.TvSeries)
+    override val supportedTypes = setOf(TvType.AsianDrama)
 
     private val apiUrl = "https://api.asiaflix.app/api/v2"
 
@@ -76,7 +76,7 @@ class AsiaFlixProvider : MainAPI() {
             name,
             _id,
             this@AsiaFlixProvider.name,
-            TvType.TvSeries,
+            TvType.AsianDrama,
             image,
             releaseYear,
             episodes?.size,
@@ -100,7 +100,7 @@ class AsiaFlixProvider : MainAPI() {
             name,
             "$mainUrl$dramaUrl/$_id".replace("drama-detail", "show-details"),
             this@AsiaFlixProvider.name,
-            TvType.TvSeries,
+            TvType.AsianDrama,
             episodes.mapNotNull { it.toTvSeriesEpisode() }.sortedBy { it.episode },
             image,
             releaseYear,
@@ -112,7 +112,7 @@ class AsiaFlixProvider : MainAPI() {
         )
     }
 
-    override fun getMainPage(): HomePageResponse {
+    override suspend fun getMainPage(): HomePageResponse {
         val headers = mapOf("X-Requested-By" to "asiaflix-web")
         val response = app.get("$apiUrl/dashboard", headers = headers).text
 
@@ -138,7 +138,7 @@ class AsiaFlixProvider : MainAPI() {
         @JsonProperty("url") val url: String?,
     )
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -162,14 +162,14 @@ class AsiaFlixProvider : MainAPI() {
         return true
     }
 
-    override fun search(query: String): List<SearchResponse>? {
+    override suspend fun search(query: String): List<SearchResponse>? {
         val headers = mapOf("X-Requested-By" to "asiaflix-web")
         val url = "$apiUrl/drama/search?q=$query"
         val response = app.get(url, headers = headers).text
         return mapper.readValue<List<Data>?>(response)?.map { it.toSearchResponse() }
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val headers = mapOf("X-Requested-By" to "asiaflix-web")
         val requestUrl = "$apiUrl/drama?id=${url.split("/").lastOrNull()}"
         val response = app.get(requestUrl, headers = headers).text

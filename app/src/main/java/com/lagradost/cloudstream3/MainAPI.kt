@@ -2,15 +2,21 @@ package com.lagradost.cloudstream3
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.Uri
+import android.util.Base64.encodeToString
+import androidx.annotation.WorkerThread
 import androidx.preference.PreferenceManager
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.lagradost.cloudstream3.animeproviders.*
+import com.lagradost.cloudstream3.metaproviders.CrossTmdbProvider
 import com.lagradost.cloudstream3.movieproviders.*
 import com.lagradost.cloudstream3.ui.player.SubtitleData
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import java.util.*
+import kotlin.math.absoluteValue
 
 const val USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -27,61 +33,77 @@ object APIHolder {
 
     private const val defProvider = 0
 
-    val apis = arrayListOf(
-        PelisplusProvider(),
-        GogoanimeProvider(),
-        AllAnimeProvider(),
-        //ShiroProvider(), // v2 fucked me
-        //AnimePaheProvider(), //ddos guard
-        AnimeFlickProvider(),
+    val allProviders by lazy {
+        arrayListOf(
+            // Movie providers
+            PelisplusProvider(),
+            PelisplusHDProvider(),
+            PeliSmartProvider(),
+            MeloMovieProvider(), // Captcha for links
+            DoramasYTProvider(),
+            CinecalidadProvider(),
+            CuevanaProvider(),
+            EntrepeliculasyseriesProvider(),
+            PelisflixProvider(),
+            SeriesflixProvider(),
+            IHaveNoTvProvider(), // Documentaries provider
+            LookMovieProvider(), // RECAPTCHA (Please allow up to 5 seconds...)
+            VMoveeProvider(),
+            AllMoviesForYouProvider(),
+            VidEmbedProvider(),
+            VfFilmProvider(),
+            VfSerieProvider(),
+            FrenchStreamProvider(),
+            AsianLoadProvider(),
+            AsiaFlixProvider(), // restricted
+            BflixProvider(),
+            FmoviesToProvider(),
+            SflixProProvider(),
+            FilmanProvider(),
+            SflixProvider(),
+            DopeboxProvider(),
+            SolarmovieProvider(),
+            PinoyMoviePediaProvider(),
+            PinoyHDXyzProvider(),
+            PinoyMoviesEsProvider(),
+            TrailersTwoProvider(),
+            TwoEmbedProvider(),
+            DramaSeeProvider(),
+            WatchAsianProvider(),
+            KdramaHoodProvider(),
+            AkwamProvider(),
+            MyCimaProvider(),
+            EgyBestProvider(),
+            SoaptwoDayProvider(),
+            HDMProvider(),// disabled due to cloudflare
+            TheFlixToProvider(),
 
-        TenshiProvider(),
-        WcoProvider(),
-        // MeloMovieProvider(), // Captcha for links
-        DubbedAnimeProvider(),
-        HDMProvider(),
-        IHaveNoTvProvider(), // Documentaries provider
-        //LookMovieProvider(), // RECAPTCHA (Please allow up to 5 seconds...)
-        VMoveeProvider(),
-        WatchCartoonOnlineProvider(),
-        AllMoviesForYouProvider(),
+            // Metadata providers
+            //TmdbProvider(),
+            CrossTmdbProvider(),
+            ApiMDBProvider(),
 
-        VidEmbedProvider(),
-        VfFilmProvider(),
-        VfSerieProvider(),
-        FrenchStreamProvider(),
+            // Anime providers
+            WatchCartoonOnlineProvider(),
+            GogoanimeProvider(),
+            AllAnimeProvider(),
+            AnimekisaProvider(),
+            //ShiroProvider(), // v2 fucked me
+            AnimeFlickProvider(),
+            AnimeflvnetProvider(),
+            TenshiProvider(),
+            WcoProvider(),
+            AnimePaheProvider(),
+            NineAnimeProvider(),
+            AnimeWorldProvider(),
+            ZoroProvider(),
+            DubbedAnimeProvider(),
+            MonoschinosProvider(),
+            KawaiifuProvider(), // disabled due to cloudflare
+        )
+    }
 
-        AsianLoadProvider(),
-
-        SflixProvider("https://sflix.to", "Sflix"),
-        SflixProvider("https://dopebox.to", "Dopebox"),
-
-        //TmdbProvider(),
-
-
-
-        FilmanProvider(),
-
-        ZoroProvider(),
-        PinoyMoviePediaProvider(),
-        PinoyHDXyzProvider(),
-        PinoyMoviesEsProvider(),
-        TrailersTwoProvider(),
-        DramaSeeProvider(),
-        WatchAsianProvider(),
-        KdramaHoodProvider()
-    )
-
-    val restrictedApis = arrayListOf(
-        // TrailersToProvider(), // be aware that this is fuckery
-        // NyaaProvider(), // torrents in cs3 is wack
-        // ThenosProvider(), // ddos protection and wacked links
-        AsiaFlixProvider(),
-    )
-
-    private val backwardsCompatibleProviders = arrayListOf(
-        KawaiifuProvider(), // removed due to cloudflare
-    )
+    var apis: List<MainAPI> = arrayListOf()
 
     fun getApiFromName(apiName: String?): MainAPI {
         return getApiFromNameNull(apiName) ?: apis[defProvider]
@@ -89,16 +111,17 @@ object APIHolder {
 
     fun getApiFromNameNull(apiName: String?): MainAPI? {
         if (apiName == null) return null
-        for (api in apis) {
+        for (api in allProviders) {
             if (apiName == api.name)
                 return api
         }
-        for (api in restrictedApis) {
-            if (apiName == api.name)
-                return api
-        }
-        for (api in backwardsCompatibleProviders) {
-            if (apiName == api.name)
+        return null
+    }
+
+    fun getApiFromUrlNull(url : String?) : MainAPI? {
+        if (url == null) return null
+        for (api in allProviders) {
+            if(url.startsWith(api.mainUrl))
                 return api
         }
         return null
@@ -108,14 +131,66 @@ object APIHolder {
         return url.replace(getApiFromName(apiName).mainUrl, "").replace("/", "").hashCode()
     }
 
+
+    /**
+     * Gets the website captcha token
+     * discovered originally by https://github.com/ahmedgamal17
+     * optimized by https://github.com/justfoolingaround
+     *
+     * @param url the main url, likely the same website you found the key from.
+     * @param key used to fill https://www.google.com/recaptcha/api.js?render=....
+     *
+     * @param referer the referer for the google.com/recaptcha/api.js... request, optional.
+     * */
+
+    // Try document.select("script[src*=https://www.google.com/recaptcha/api.js?render=]").attr("src").substringAfter("render=")
+    // To get the key
+    suspend fun getCaptchaToken(url: String, key: String, referer: String? = null): String? {
+        val uri = Uri.parse(url)
+        val domain = encodeToString(
+            (uri.scheme + "://" + uri.host + ":443").encodeToByteArray(),
+            0
+        ).replace("\n", "").replace("=", ".")
+
+        val vToken =
+            app.get(
+                "https://www.google.com/recaptcha/api.js?render=$key",
+                referer = referer,
+                cacheTime = 0
+            )
+                .text
+                .substringAfter("releases/")
+                .substringBefore("/")
+        val recapToken =
+            app.get("https://www.google.com/recaptcha/api2/anchor?ar=1&hl=en&size=invisible&cb=cs3&k=$key&co=$domain&v=$vToken")
+                .document
+                .selectFirst("#recaptcha-token")?.attr("value")
+        if (recapToken != null) {
+            return app.post(
+                "https://www.google.com/recaptcha/api2/reload?k=$key",
+                data = mapOf(
+                    "v" to vToken,
+                    "k" to key,
+                    "c" to recapToken,
+                    "co" to domain,
+                    "sa" to "",
+                    "reason" to "q"
+                ), cacheTime = 0
+            ).text
+                .substringAfter("rresp\",\"")
+                .substringBefore("\"")
+        }
+        return null
+    }
+
     fun Context.getApiSettings(): HashSet<String> {
-        val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
+        //val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
 
         val hashSet = HashSet<String>()
         val activeLangs = getApiProviderLangSettings()
         hashSet.addAll(apis.filter { activeLangs.contains(it.lang) }.map { it.name })
 
-        val set = settingsManager.getStringSet(
+        /*val set = settingsManager.getStringSet(
             this.getString(R.string.search_providers_list_key),
             hashSet
         )?.toHashSet() ?: hashSet
@@ -126,9 +201,10 @@ object APIHolder {
             if (activeLangs.contains(api.lang)) {
                 list.add(name)
             }
-        }
-        if (list.isEmpty()) return hashSet
-        return list
+        }*/
+        //if (list.isEmpty()) return hashSet
+        //return list
+        return hashSet
     }
 
     fun Context.getApiDubstatusSettings(): HashSet<DubStatus> {
@@ -177,16 +253,18 @@ object APIHolder {
         return realSet
     }
 
-    fun Context.filterProviderByPreferredMedia(): List<MainAPI> {
+    fun Context.filterProviderByPreferredMedia(hasHomePageIsRequired: Boolean = true): List<MainAPI> {
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
-        val currentPrefMedia = settingsManager.getInt(this.getString(R.string.prefer_media_type_key), 0)
+        val currentPrefMedia =
+            settingsManager.getInt(this.getString(R.string.prefer_media_type_key), 0)
         val langs = this.getApiProviderLangSettings()
-        val allApis = apis.filter { langs.contains(it.lang) }.filter { api -> api.hasMainPage }
+        val allApis = apis.filter { langs.contains(it.lang) }
+            .filter { api -> api.hasMainPage || !hasHomePageIsRequired }
         return if (currentPrefMedia < 1) {
             allApis
         } else {
             // Filter API depending on preferred media type
-            val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.ONA)
+            val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
             val listEnumMovieTv = listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon)
             val mediaTypeList = if (currentPrefMedia == 1) listEnumMovieTv else listEnumAnime
 
@@ -197,10 +275,48 @@ object APIHolder {
     }
 }
 
+
+/*
+0 = Site not good
+1 = All good
+2 = Slow, heavy traffic
+3 = restricted, must donate 30 benenes to use
+ */
+const val PROVIDER_STATUS_KEY = "PROVIDER_STATUS_KEY"
+const val PROVIDER_STATUS_URL =
+    "https://raw.githubusercontent.com/LagradOst/CloudStream-3/master/docs/providers.json"
+const val PROVIDER_STATUS_BETA_ONLY = 3
+const val PROVIDER_STATUS_SLOW = 2
+const val PROVIDER_STATUS_OK = 1
+const val PROVIDER_STATUS_DOWN = 0
+
+data class ProvidersInfoJson(
+    @JsonProperty("name") var name: String,
+    @JsonProperty("url") var url: String,
+    @JsonProperty("status") var status: Int,
+)
+
 /**Every provider will **not** have try catch built in, so handle exceptions when calling these functions*/
 abstract class MainAPI {
-    open val name = "NONE"
-    open val mainUrl = "NONE"
+    companion object {
+        var overrideData: HashMap<String, ProvidersInfoJson>? = null
+    }
+
+    public fun overrideWithNewData(data: ProvidersInfoJson) {
+        this.name = data.name
+        this.mainUrl = data.url
+    }
+
+    init {
+        overrideData?.get(this.javaClass.simpleName)?.let { data ->
+            overrideWithNewData(data)
+        }
+    }
+
+    open var name = "NONE"
+    open var mainUrl = "NONE"
+
+    //open val uniqueId : Int by lazy { this.name.hashCode() } // in case of duplicate providers you can have a shared id
 
     open val lang = "en" // ISO_639_1 check SubtitleHelper
 
@@ -224,30 +340,53 @@ abstract class MainAPI {
         TvType.TvSeries,
         TvType.Cartoon,
         TvType.Anime,
-        TvType.ONA,
+        TvType.OVA,
     )
 
     open val vpnStatus = VPNStatus.None
     open val providerType = ProviderType.DirectProvider
 
-    open fun getMainPage(): HomePageResponse? {
+    @WorkerThread
+    open suspend fun getMainPage(): HomePageResponse? {
         throw NotImplementedError()
     }
 
-    open fun search(query: String): List<SearchResponse>? {
+    @WorkerThread
+    open suspend fun search(query: String): List<SearchResponse>? {
         throw NotImplementedError()
     }
 
-    open fun quickSearch(query: String): List<SearchResponse>? {
+    @WorkerThread
+    open suspend fun quickSearch(query: String): List<SearchResponse>? {
         throw NotImplementedError()
     }
 
-    open fun load(url: String): LoadResponse? {
+    @WorkerThread
+    /**
+     * Based on data from search() or getMainPage() it generates a LoadResponse,
+     * basically opening the info page from a link.
+     * */
+    open suspend fun load(url: String): LoadResponse? {
+        throw NotImplementedError()
+    }
+
+    /**
+     * Largely redundant feature for most providers.
+     *
+     * This job runs in the background when a link is playing in exoplayer.
+     * First implemented to do polling for sflix to keep the link from getting expired.
+     *
+     * This function might be updated to include exoplayer timestamps etc in the future
+     * if the need arises.
+     * */
+    @WorkerThread
+    open suspend fun extractorVerifierJob(extractorData: String?) {
         throw NotImplementedError()
     }
 
     /**Callback is fired once a link is found, will return true if method is executed successfully*/
-    open fun loadLinks(
+    @WorkerThread
+    open suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -260,10 +399,24 @@ abstract class MainAPI {
 /** Might need a different implementation for desktop*/
 @SuppressLint("NewApi")
 fun base64Decode(string: String): String {
+    return String(base64DecodeArray(string), Charsets.ISO_8859_1)
+}
+
+@SuppressLint("NewApi")
+fun base64DecodeArray(string: String): ByteArray {
     return try {
-        String(android.util.Base64.decode(string, android.util.Base64.DEFAULT), Charsets.ISO_8859_1)
+        android.util.Base64.decode(string, android.util.Base64.DEFAULT)
     } catch (e: Exception) {
-        String(Base64.getDecoder().decode(string))
+        Base64.getDecoder().decode(string)
+    }
+}
+
+@SuppressLint("NewApi")
+fun base64Encode(array: ByteArray): String {
+    return try {
+        String(android.util.Base64.encode(array, android.util.Base64.NO_WRAP), Charsets.ISO_8859_1)
+    } catch (e: Exception) {
+        String(Base64.getEncoder().encode(array))
     }
 }
 
@@ -275,7 +428,7 @@ fun parseRating(ratingString: String?): Int? {
     return (floatRating * 10).toInt()
 }
 
-fun MainAPI.fixUrlNull(url : String?) : String? {
+fun MainAPI.fixUrlNull(url: String?): String? {
     if (url.isNullOrEmpty()) {
         return null
     }
@@ -305,7 +458,7 @@ fun sortUrls(urls: Set<ExtractorLink>): List<ExtractorLink> {
     return urls.sortedBy { t -> -t.quality }
 }
 
-fun sortSubs(subs : Set<SubtitleData>) : List<SubtitleData> {
+fun sortSubs(subs: Set<SubtitleData>): List<SubtitleData> {
     return subs.sortedBy { it.name }
 }
 
@@ -364,9 +517,10 @@ enum class TvType {
     TvSeries,
     Cartoon,
     Anime,
-    ONA,
+    OVA,
     Torrent,
     Documentary,
+    AsianDrama,
 }
 
 // IN CASE OF FUTURE ANIME MOVIE OR SMTH
@@ -376,7 +530,7 @@ fun TvType.isMovieType(): Boolean {
 
 // returns if the type has an anime opening
 fun TvType.isAnimeOp(): Boolean {
-    return this == TvType.Anime || this == TvType.ONA
+    return this == TvType.Anime || this == TvType.OVA
 }
 
 data class SubtitleFile(val lang: String, val url: String)
@@ -390,62 +544,99 @@ class HomePageList(
     var list: List<SearchResponse>
 )
 
+enum class SearchQuality {
+    //https://en.wikipedia.org/wiki/Pirated_movie_release_types
+    Cam,
+    CamRip,
+    HdCam,
+    Telesync, // TS
+    WorkPrint,
+    Telecine, // TC
+    HQ,
+    HD,
+    BlueRay,
+    DVD,
+}
+
 interface SearchResponse {
     val name: String
     val url: String
     val apiName: String
-    val type: TvType?
-    val posterUrl: String?
-    val id: Int?
+    var type: TvType?
+    var posterUrl: String?
+    var id: Int?
+    var quality : SearchQuality?
 }
+
+enum class ActorRole {
+    Main,
+    Supporting,
+    Background,
+}
+
+data class Actor(
+    val name: String,
+    val image: String? = null,
+)
+
+data class ActorData(
+    val actor: Actor,
+    val role: ActorRole? = null,
+    val roleString: String? = null,
+    val voiceActor: Actor? = null,
+)
 
 data class AnimeSearchResponse(
     override val name: String,
     override val url: String,
     override val apiName: String,
-    override val type: TvType,
+    override var type: TvType?,
 
-    override val posterUrl: String?,
+    override var posterUrl: String?,
     val year: Int? = null,
     val dubStatus: EnumSet<DubStatus>? = null,
 
     val otherName: String? = null,
     val dubEpisodes: Int? = null,
     val subEpisodes: Int? = null,
-    override val id: Int? = null,
+    override var id: Int? = null,
+    override var quality: SearchQuality? = null,
 ) : SearchResponse
 
 data class TorrentSearchResponse(
     override val name: String,
     override val url: String,
     override val apiName: String,
-    override val type: TvType,
+    override var type: TvType?,
 
-    override val posterUrl: String?,
-    override val id: Int? = null,
+    override var posterUrl: String?,
+    override var id: Int? = null,
+    override var quality: SearchQuality? = null,
 ) : SearchResponse
 
 data class MovieSearchResponse(
     override val name: String,
     override val url: String,
     override val apiName: String,
-    override val type: TvType,
+    override var type: TvType?,
 
-    override val posterUrl: String?,
-    val year: Int?,
-    override val id: Int? = null,
+    override var posterUrl: String?,
+    val year: Int? = null,
+    override var id: Int? = null,
+    override var quality: SearchQuality? = null,
 ) : SearchResponse
 
 data class TvSeriesSearchResponse(
     override val name: String,
     override val url: String,
     override val apiName: String,
-    override val type: TvType,
+    override var type: TvType?,
 
-    override val posterUrl: String?,
+    override var posterUrl: String?,
     val year: Int?,
     val episodes: Int?,
-    override val id: Int? = null,
+    override var id: Int? = null,
+    override var quality: SearchQuality? = null,
 ) : SearchResponse
 
 interface LoadResponse {
@@ -456,11 +647,55 @@ interface LoadResponse {
     val posterUrl: String?
     val year: Int?
     val plot: String?
-    val rating: Int? // 0-100
+    val rating: Int? // 1-1000
     val tags: List<String>?
     var duration: Int? // in minutes
     val trailerUrl: String?
-    val recommendations: List<SearchResponse>?
+    var recommendations: List<SearchResponse>?
+    var actors: List<ActorData>?
+    var comingSoon: Boolean
+
+    companion object {
+        @JvmName("addActorNames")
+        fun LoadResponse.addActors(actors: List<String>?) {
+            this.actors = actors?.map { ActorData(Actor(it)) }
+        }
+
+        @JvmName("addActors")
+        fun LoadResponse.addActors(actors: List<Pair<Actor, String?>>?) {
+            this.actors = actors?.map { (actor, role) -> ActorData(actor, roleString = role) }
+        }
+
+        @JvmName("addActorsRole")
+        fun LoadResponse.addActors(actors: List<Pair<Actor, ActorRole?>>?) {
+            this.actors = actors?.map { (actor, role) -> ActorData(actor, role = role) }
+        }
+
+        @JvmName("addActorsOnly")
+        fun LoadResponse.addActors(actors: List<Actor>?) {
+            this.actors = actors?.map { actor -> ActorData(actor) }
+        }
+
+        fun LoadResponse.setDuration(input: String?) {
+            val cleanInput = input?.trim()?.replace(" ", "") ?: return
+            Regex("([0-9]*)h.*?([0-9]*)m").find(cleanInput)?.groupValues?.let { values ->
+                if (values.size == 3) {
+                    val hours = values[1].toIntOrNull()
+                    val minutes = values[2].toIntOrNull()
+                    this.duration = if (minutes != null && hours != null) {
+                        hours * 60 + minutes
+                    } else null
+                    if (this.duration != null) return
+                }
+            }
+            Regex("([0-9]*)m").find(cleanInput)?.groupValues?.let { values ->
+                if (values.size == 2) {
+                    this.duration = values[1].toIntOrNull()
+                    if (this.duration != null) return
+                }
+            }
+        }
+    }
 }
 
 fun LoadResponse?.isEpisodeBased(): Boolean {
@@ -470,10 +705,10 @@ fun LoadResponse?.isEpisodeBased(): Boolean {
 
 fun LoadResponse?.isAnimeBased(): Boolean {
     if (this == null) return false
-    return (this.type == TvType.Anime || this.type == TvType.ONA) // && (this is AnimeLoadResponse)
+    return (this.type == TvType.Anime || this.type == TvType.OVA) // && (this is AnimeLoadResponse)
 }
 
-fun TvType?.isEpisodeBased() : Boolean {
+fun TvType?.isEpisodeBased(): Boolean {
     if (this == null) return false
     return (this == TvType.TvSeries || this == TvType.Anime)
 }
@@ -503,6 +738,8 @@ data class TorrentLoadResponse(
     override var duration: Int? = null,
     override var trailerUrl: String? = null,
     override var recommendations: List<SearchResponse>? = null,
+    override var actors: List<ActorData>? = null,
+    override var comingSoon: Boolean = false,
 ) : LoadResponse
 
 data class AnimeLoadResponse(
@@ -529,6 +766,8 @@ data class AnimeLoadResponse(
     override var duration: Int? = null,
     override var trailerUrl: String? = null,
     override var recommendations: List<SearchResponse>? = null,
+    override var actors: List<ActorData>? = null,
+    override var comingSoon: Boolean = false,
 ) : LoadResponse
 
 fun AnimeLoadResponse.addEpisodes(status: DubStatus, episodes: List<AnimeEpisode>?) {
@@ -540,11 +779,29 @@ fun MainAPI.newAnimeLoadResponse(
     name: String,
     url: String,
     type: TvType,
-    initializer: AnimeLoadResponse.() -> Unit = { }
+    comingSoonIfNone : Boolean,
+    initializer: AnimeLoadResponse.() -> Unit = { },
 ): AnimeLoadResponse {
     val builder = AnimeLoadResponse(name = name, url = url, apiName = this.name, type = type)
     builder.initializer()
+    if(comingSoonIfNone) {
+        builder.comingSoon = true
+        for (key in builder.episodes.keys)
+            if(!builder.episodes[key].isNullOrEmpty()) {
+                builder.comingSoon = false
+                break
+            }
+    }
     return builder
+}
+
+fun MainAPI.newAnimeLoadResponse(
+    name: String,
+    url: String,
+    type: TvType,
+    initializer: AnimeLoadResponse.() -> Unit = { },
+): AnimeLoadResponse {
+    return newAnimeLoadResponse(name, url, type, true, initializer)
 }
 
 data class MovieLoadResponse(
@@ -564,6 +821,8 @@ data class MovieLoadResponse(
     override var duration: Int? = null,
     override var trailerUrl: String? = null,
     override var recommendations: List<SearchResponse>? = null,
+    override var actors: List<ActorData>? = null,
+    override var comingSoon: Boolean = false,
 ) : LoadResponse
 
 fun MainAPI.newMovieLoadResponse(
@@ -573,27 +832,16 @@ fun MainAPI.newMovieLoadResponse(
     dataUrl: String,
     initializer: MovieLoadResponse.() -> Unit = { }
 ): MovieLoadResponse {
-    val builder = MovieLoadResponse(name = name, url = url, apiName = this.name, type = type, dataUrl = dataUrl)
+    val builder = MovieLoadResponse(
+        name = name,
+        url = url,
+        apiName = this.name,
+        type = type,
+        dataUrl = dataUrl,
+        comingSoon = dataUrl.isBlank()
+    )
     builder.initializer()
     return builder
-}
-
-fun LoadResponse.setDuration(input: String?) {
-    if (input == null) return
-    Regex("([0-9]*)h.*?([0-9]*)m").matchEntire(input)?.groupValues?.let { values ->
-        if (values.size == 3) {
-            val hours = values[1].toIntOrNull()
-            val minutes = values[2].toIntOrNull()
-            this.duration = if (minutes != null && hours != null) {
-                hours * 60 + minutes
-            } else null
-        }
-    }
-    Regex("([0-9]*)m").matchEntire(input)?.groupValues?.let { values ->
-        if (values.size == 2) {
-            this.duration = values[1].toIntOrNull()
-        }
-    }
 }
 
 data class TvSeriesEpisode(
@@ -625,6 +873,8 @@ data class TvSeriesLoadResponse(
     override var duration: Int? = null,
     override var trailerUrl: String? = null,
     override var recommendations: List<SearchResponse>? = null,
+    override var actors: List<ActorData>? = null,
+    override var comingSoon: Boolean = false,
 ) : LoadResponse
 
 fun MainAPI.newTvSeriesLoadResponse(
@@ -634,7 +884,26 @@ fun MainAPI.newTvSeriesLoadResponse(
     episodes: List<TvSeriesEpisode>,
     initializer: TvSeriesLoadResponse.() -> Unit = { }
 ): TvSeriesLoadResponse {
-    val builder = TvSeriesLoadResponse(name = name, url = url, apiName = this.name, type = type, episodes = episodes)
+    val builder = TvSeriesLoadResponse(
+        name = name,
+        url = url,
+        apiName = this.name,
+        type = type,
+        episodes = episodes,
+        comingSoon = episodes.isEmpty(),
+    )
     builder.initializer()
     return builder
 }
+
+fun fetchUrls(text: String?): List<String> {
+    if (text.isNullOrEmpty()) {
+        return listOf()
+    }
+    val linkRegex =
+        Regex("""(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*))""")
+    return linkRegex.findAll(text).map { it.value.trim().removeSurrounding("\"") }.toList()
+}
+
+fun String?.toRatingInt() : Int? =
+    this?.trim()?.toDoubleOrNull()?.absoluteValue?.times(1000f)?.toInt()

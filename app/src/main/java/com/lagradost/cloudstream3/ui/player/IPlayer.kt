@@ -44,6 +44,8 @@ enum class CSPlayerLoading {
     //IsDone,
 }
 
+class InvalidFileException(msg : String) : Exception(msg)
+
 //http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4
 const val STATE_RESUME_WINDOW = "resumeWindow"
 const val STATE_RESUME_POSITION = "resumePosition"
@@ -69,6 +71,9 @@ interface IPlayer {
     fun seekTime(time: Long)
     fun seekTo(time: Long)
 
+    fun getSubtitleOffset() : Long // in ms
+    fun setSubtitleOffset(offset : Long) // in ms
+
     fun initCallbacks(
         playerUpdated: (Any?) -> Unit,                              // attach player to view
         updateIsPlaying: ((Pair<CSPlayerLoading, CSPlayerLoading>) -> Unit)? = null, // (wasPlaying, isPlaying)
@@ -79,6 +84,7 @@ interface IPlayer {
         playerPositionChanged: ((Pair<Long, Long>) -> Unit)? = null,// (position, duration) this is used to update UI based of the current time
         nextEpisode: (() -> Unit)? = null,                          // this is used by the player to load the next episode
         prevEpisode: (() -> Unit)? = null,                          // this is used by the player to load the previous episode
+        subtitlesUpdates: (() -> Unit)? = null,                     // callback from player to inform that subtitles have updated in some way
     )
 
     fun updateSubtitleStyle(style: SaveCaptionStyle)
@@ -89,6 +95,7 @@ interface IPlayer {
         data: ExtractorUri? = null,
         startPosition: Long? = null,
         subtitles : Set<SubtitleData>,
+        subtitle : SubtitleData?,
     )
 
     fun reloadPlayer(context: Context)

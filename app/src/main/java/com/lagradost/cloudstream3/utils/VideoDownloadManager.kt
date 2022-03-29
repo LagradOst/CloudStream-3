@@ -22,6 +22,7 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.hippo.unifile.UniFile
+import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
 import com.lagradost.cloudstream3.AcraApplication.Companion.removeKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.MainActivity
@@ -29,6 +30,7 @@ import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.services.VideoDownloadService
+import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.removeKey
@@ -108,44 +110,44 @@ object VideoDownloadManager {
     }
 
     data class DownloadEpisodeMetadata(
-        val id: Int,
-        val mainName: String,
-        val sourceApiName: String?,
-        val poster: String?,
-        val name: String?,
-        val season: Int?,
-        val episode: Int?
+        @JsonProperty("id") val id: Int,
+        @JsonProperty("mainName") val mainName: String,
+        @JsonProperty("sourceApiName") val sourceApiName: String?,
+        @JsonProperty("poster") val poster: String?,
+        @JsonProperty("name") val name: String?,
+        @JsonProperty("season") val season: Int?,
+        @JsonProperty("episode") val episode: Int?
     )
 
     data class DownloadItem(
-        val source: String?,
-        val folder: String?,
-        val ep: DownloadEpisodeMetadata,
-        val links: List<ExtractorLink>,
+        @JsonProperty("source") val source: String?,
+        @JsonProperty("folder") val folder: String?,
+        @JsonProperty("ep") val ep: DownloadEpisodeMetadata,
+        @JsonProperty("links") val links: List<ExtractorLink>,
     )
 
     data class DownloadResumePackage(
-        val item: DownloadItem,
-        val linkIndex: Int?,
+        @JsonProperty("item") val item: DownloadItem,
+        @JsonProperty("linkIndex") val linkIndex: Int?,
     )
 
     data class DownloadedFileInfo(
-        val totalBytes: Long,
-        val relativePath: String,
-        val displayName: String,
-        val extraInfo: String? = null,
-        val basePath: String? = null // null is for legacy downloads. See getDefaultPath()
+        @JsonProperty("totalBytes") val totalBytes: Long,
+        @JsonProperty("relativePath") val relativePath: String,
+        @JsonProperty("displayName") val displayName: String,
+        @JsonProperty("extraInfo") val extraInfo: String? = null,
+        @JsonProperty("basePath") val basePath: String? = null // null is for legacy downloads. See getDefaultPath()
     )
 
     data class DownloadedFileInfoResult(
-        val fileLength: Long,
-        val totalBytes: Long,
-        val path: Uri,
+        @JsonProperty("fileLength") val fileLength: Long,
+        @JsonProperty("totalBytes") val totalBytes: Long,
+        @JsonProperty("path") val path: Uri,
     )
 
     data class DownloadQueueResumePackage(
-        val index: Int,
-        val pkg: DownloadResumePackage,
+        @JsonProperty("index") val index: Int,
+        @JsonProperty("pkg") val pkg: DownloadResumePackage,
     )
 
     private const val SUCCESS_DOWNLOAD_DONE = 1
@@ -677,7 +679,7 @@ object VideoDownloadManager {
         extension: String,
         tryResume: Boolean,
         parentId: Int?,
-        createNotificationCallback: (CreateNotificationMetadata) -> Unit
+        createNotificationCallback: (CreateNotificationMetadata) -> Unit,
     ): Int {
         if (link.url.startsWith("magnet") || link.url.endsWith(".torrent")) {
             return ERROR_UNKNOWN
@@ -1041,7 +1043,7 @@ object VideoDownloadManager {
         return basePathToFile(this, basePathSetting) to basePathSetting
     }
 
-    private fun UniFile?.isDownloadDir(): Boolean {
+    fun UniFile?.isDownloadDir(): Boolean {
         return this != null && this.filePath == getDownloadDir()?.filePath
     }
 
@@ -1054,6 +1056,16 @@ object VideoDownloadManager {
         basePath: UniFile?
     ): Int {
         val displayName = getDisplayName(name, extension)
+
+        // delete all subtitle files
+        if (extension == "mp4") {
+            try {
+                delete(context, name, folder, "vtt", parentId, basePath)
+                delete(context, name, folder, "srt", parentId, basePath)
+            } catch (e: Exception) {
+                logError(e)
+            }
+        }
 
         // If scoped storage and using download dir (not accessible with UniFile)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && basePath.isDownloadDir()) {
@@ -1124,7 +1136,6 @@ object VideoDownloadManager {
         val tsIterator = m3u8Helper.hlsYield(listOf(m3u8), realIndex)
 
         val displayName = getDisplayName(name, extension)
-
 
         val fileStream = stream.fileStream!!
 
@@ -1334,7 +1345,25 @@ object VideoDownloadManager {
         tryResume: Boolean = false,
     ): Int {
         val name =
-            sanitizeFilename(ep.name ?: "${context.getString(R.string.episode)} ${ep.episode}")
+            // kinda ugly ik
+            sanitizeFilename(
+                if (ep.name == null) {
+                    "${context.getString(R.string.episode)} ${ep.episode}"
+                } else {
+                    if (ep.episode != null) {
+                        "${context.getString(R.string.episode)} ${ep.episode} - ${ep.name}"
+                    } else {
+                        ep.name
+                    }
+                }
+            )
+
+        // Make sure this is cancelled when download is done or cancelled.
+        val extractorJob = ioSafe {
+            if (link.extractorData != null) {
+                getApiFromNameNull(link.source)?.extractorVerifierJob(link.extractorData)
+            }
+        }
 
         if (link.isM3u8 || URI(link.url).path.endsWith(".m3u8")) {
             val startIndex = if (tryResume) {
@@ -1359,7 +1388,7 @@ object VideoDownloadManager {
                         meta.hlsTotal
                     )
                 }
-            }
+            }.also { extractorJob.cancel() }
         }
 
         return normalSafeApiCall {
@@ -1377,7 +1406,7 @@ object VideoDownloadManager {
                     )
                 }
             }
-        } ?: ERROR_UNKNOWN
+        }.also { extractorJob.cancel() } ?: ERROR_UNKNOWN
     }
 
     fun downloadCheck(

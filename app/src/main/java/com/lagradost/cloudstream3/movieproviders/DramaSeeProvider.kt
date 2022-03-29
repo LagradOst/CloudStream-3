@@ -1,61 +1,63 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import android.util.Log
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.*
+import com.lagradost.cloudstream3.animeproviders.GogoanimeProvider.Companion.extractVidstream
+import com.lagradost.cloudstream3.extractors.XStreamCdn
+import com.lagradost.cloudstream3.extractors.helper.AsianEmbedHelper
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 
 class DramaSeeProvider : MainAPI() {
-    override val mainUrl = "https://dramasee.net"
-    override val name = "DramaSee"
+    override var mainUrl = "https://dramasee.net"
+    override var name = "DramaSee"
     override val hasQuickSearch = false
     override val hasMainPage = true
     override val hasChromecastSupport = false
     override val hasDownloadSupport = true
-    override val supportedTypes = setOf(TvType.TvSeries, TvType.Movie)
+    override val supportedTypes = setOf(TvType.AsianDrama)
 
-    override fun getMainPage(): HomePageResponse {
+    override suspend fun getMainPage(): HomePageResponse {
         val headers = mapOf("X-Requested-By" to "dramasee.net")
         val document = app.get(mainUrl, headers = headers).document
         val mainbody = document.getElementsByTag("body")
 
-        return HomePageResponse(mainbody?.select("section")?.map { row ->
-            val main = row?.select("main") ?: return@map null
-            val title = main.select("div.title > div > h2")?.text() ?: "Main"
-            val inner = main.select("li.series-item") ?: return@map null
+        return HomePageResponse(
+            mainbody?.select("section")?.map { row ->
+                val main = row?.select("main") ?: return@map null
+                val title = main.select("div.title > div > h2")?.text() ?: "Main"
+                val inner = main.select("li.series-item") ?: return@map null
 
-            HomePageList(
-                title,
-                inner.mapNotNull {
-                    // Get inner div from article
-                    val innerBody = it?.selectFirst("a")
-                    // Fetch details
-                    val link = fixUrlNull(innerBody?.attr("href")) ?: return@mapNotNull null
-                    val image = fixUrlNull(innerBody?.select("img")?.attr("src")) ?: ""
-                    val name = it?.selectFirst("a.series-name")?.text() ?: "<Untitled>"
-                    //Log.i(this.name, "Result => (innerBody, image) ${innerBody} / ${image}")
-                    MovieSearchResponse(
-                        name,
-                        link,
-                        this.name,
-                        TvType.TvSeries,
-                        image,
-                        year = null,
-                        id = null,
-                    )
-                }.distinctBy { c -> c.url })
+                HomePageList(
+                    title,
+                    inner.mapNotNull {
+                        // Get inner div from article
+                        val innerBody = it?.selectFirst("a")
+                        // Fetch details
+                        val link = fixUrlNull(innerBody?.attr("href")) ?: return@mapNotNull null
+                        val image = fixUrlNull(innerBody?.select("img")?.attr("src")) ?: ""
+                        val name = it?.selectFirst("a.series-name")?.text() ?: "<Untitled>"
+                        //Log.i(this.name, "Result => (innerBody, image) ${innerBody} / ${image}")
+                        MovieSearchResponse(
+                            name,
+                            link,
+                            this.name,
+                            TvType.AsianDrama,
+                            image,
+                            year = null,
+                            id = null,
+                        )
+                    }.distinctBy { c -> c.url })
             }?.filterNotNull() ?: listOf()
         )
     }
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search?q=$query"
         val html = app.get(url).document
         val document = html.getElementsByTag("body")
-                .select("section > main > ul.series > li") ?: return listOf()
+            .select("section > main > ul.series > li") ?: return listOf()
 
         return document.mapNotNull {
             if (it == null) {
@@ -79,7 +81,7 @@ class DramaSeeProvider : MainAPI() {
         }
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url).document
         val body = doc.getElementsByTag("body")
         val inner = body?.select("div.series-info")
@@ -88,20 +90,41 @@ class DramaSeeProvider : MainAPI() {
         val poster = fixUrlNull(inner?.select("div.img > img")?.attr("src")) ?: ""
         //Log.i(this.name, "Result => (imgLinkCode) ${imgLinkCode}")
         val title = inner?.select("h1.series-name")?.text() ?: ""
-        val year = if (title.length > 5) { title.substring(title.length - 5)
-            .trim().trimEnd(')').toIntOrNull() } else { null }
+        val year = if (title.length > 5) {
+            title.substring(title.length - 5)
+                .trim().trimEnd(')').toIntOrNull()
+        } else {
+            null
+        }
         //Log.i(this.name, "Result => (year) ${title.substring(title.length - 5)}")
-        val descript = body?.select("div.series-body")?.firstOrNull()
-            ?.select("div.js-content")?.text()
+        val seriesBody = body?.select("div.series-body")
+        val descript = seriesBody?.firstOrNull()?.select("div.js-content")?.text()
+        val tags = seriesBody?.select("div.series-tags > a")
+            ?.mapNotNull { it?.text()?.trim() ?: return@mapNotNull null }
+        val recs = body?.select("ul.series > li")?.mapNotNull {
+            val a = it.select("a.series-img") ?: return@mapNotNull null
+            val aUrl = fixUrlNull(a.attr("href")) ?: return@mapNotNull null
+            val aImg = fixUrlNull(a.select("img")?.attr("src"))
+            val aName = a.select("img")?.attr("alt") ?: return@mapNotNull null
+            val aYear = aName.trim().takeLast(5).removeSuffix(")").toIntOrNull()
+            MovieSearchResponse(
+                url = aUrl,
+                name = aName,
+                type = TvType.Movie,
+                posterUrl = aImg,
+                year = aYear,
+                apiName = this.name
+            )
+        }
 
         // Episodes Links
         val episodeList = ArrayList<TvSeriesEpisode>()
-        body?.select("ul.episodes > li.episode-item")?.forEach { ep ->
+        body?.select("ul.episodes > li")?.forEach { ep ->
             val innerA = ep.select("a") ?: return@forEach
             val count = innerA.select("span.episode")?.text()?.toIntOrNull() ?: 0
             val epLink = fixUrlNull(innerA.attr("href")) ?: return@forEach
             //Log.i(this.name, "Result => (epLink) ${epLink}")
-            if (epLink.isNotEmpty()) {
+            if (epLink.isNotBlank()) {
                 // Fetch video links
                 val epVidLinkEl = app.get(epLink, referer = mainUrl).document
                 val ajaxUrl = epVidLinkEl.select("div#js-player")?.attr("embed")
@@ -110,13 +133,13 @@ class DramaSeeProvider : MainAPI() {
                     val innerPage = app.get(fixUrl(ajaxUrl), referer = epLink).document
                     val listOfLinks = mutableListOf<String>()
                     innerPage.select("div.player.active > main > div")?.forEach { em ->
-                        val href = em.attr("src") ?: ""
-                        if (href.isNotEmpty()) {
+                        val href = fixUrlNull(em.attr("src")) ?: ""
+                        if (href.isNotBlank()) {
                             listOfLinks.add(href)
                         }
                     }
 
-                    //Log.i(this.name, "Result => (listOfLinks) ${listOfLinks}")
+                    //Log.i(this.name, "Result => (listOfLinks) ${listOfLinks.toJson()}")
                     episodeList.add(
                         TvSeriesEpisode(
                             name = null,
@@ -133,72 +156,63 @@ class DramaSeeProvider : MainAPI() {
 
         //If there's only 1 episode, consider it a movie.
         if (episodeList.size == 1) {
-            return MovieLoadResponse(title, url, this.name, TvType.Movie, episodeList[0].data, poster, year, descript, null, null)
+            return MovieLoadResponse(
+                name = title,
+                url = url,
+                apiName = this.name,
+                type = TvType.Movie,
+                dataUrl = episodeList[0].data,
+                posterUrl = poster,
+                year = year,
+                plot = descript,
+                recommendations = recs,
+                tags = tags
+            )
         }
         return TvSeriesLoadResponse(
-            title,
-            url,
-            this.name,
-            TvType.TvSeries,
-            episodeList,
-            poster,
-            year,
-            descript,
-            null,
-            null,
-            null
+            name = title,
+            url = url,
+            apiName = this.name,
+            type = TvType.AsianDrama,
+            episodes = episodeList.reversed(),
+            posterUrl = poster,
+            year = year,
+            plot = descript,
+            recommendations = recs,
+            tags = tags
         )
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if (data.isEmpty()) return false
-        if (data == "[]") return false
-        if (data == "about:blank") return false
-
-        mapper.readValue<List<String>>(data).forEach { item ->
+        var count = 0
+        mapper.readValue<List<String>>(data).apmap { item ->
             if (item.isNotEmpty()) {
-                var url = item.trim()
-                if (url.startsWith("//")) {
-                    url = "https:$url"
-                }
+                count++
+                val url = fixUrl(item.trim())
                 //Log.i(this.name, "Result => (url) ${url}")
-                if (url.startsWith("https://asianembed.io")) {
-                    // Fetch links
-                    val doc = app.get(url).document
-                    val links = doc.select("div#list-server-more > ul > li.linkserver")
-                    if (!links.isNullOrEmpty()) {
-                        links.forEach {
-                            val datavid = it.attr("data-video") ?: ""
-                            //Log.i(this.name, "Result => (datavid) ${datavid}")
-                            if (datavid.isNotEmpty()) {
-                                if (datavid.startsWith("https://fembed-hd.com")) {
-                                    val extractor = XStreamCdn()
-                                    extractor.domainUrl = "fembed-hd.com"
-                                    extractor.getUrl(datavid, url).forEach { link ->
-                                        callback.invoke(link)
-                                    }
-                                } else {
-                                    loadExtractor(datavid, url, callback)
-                                }
-                            }
-                        }
+                when {
+                    url.startsWith("https://asianembed.io") || url.startsWith("https://asianload.io") -> {
+                        val iv = "9262859232435825".toByteArray()
+                        val secretKey = "93422192433952489752342908585752".toByteArray()
+                        extractVidstream(url, this.name, callback, iv, secretKey)
+                        AsianEmbedHelper.getUrls(url, callback)
                     }
-                } else if (url.startsWith("https://embedsito.com")) {
-                    val extractor = XStreamCdn()
-                    extractor.domainUrl = "embedsito.com"
-                    extractor.getUrl(url).forEach { link ->
-                        callback.invoke(link)
+                    url.startsWith("https://embedsito.com") -> {
+                        val extractor = XStreamCdn()
+                        extractor.domainUrl = "embedsito.com"
+                        extractor.getSafeUrl(url)?.forEach(callback)
                     }
-                } else {
-                    loadExtractor(url, mainUrl, callback)
-                } // end if
+                    else -> {
+                        loadExtractor(url, mainUrl, callback)
+                    }
+                }
             }
         }
-        return true
+        return count > 0
     }
 }

@@ -7,8 +7,8 @@ import org.jsoup.Jsoup
 
 // referer = https://vf-serie.org, USERAGENT ALSO REQUIRED
 class VfSerieProvider : MainAPI() {
-    override val mainUrl = "https://vf-serie.org"
-    override val name = "vf-serie.org"
+    override var mainUrl = "https://vf-serie.org"
+    override var name = "vf-serie.org"
     override val lang = "fr"
 
     override val hasQuickSearch = false
@@ -17,7 +17,7 @@ class VfSerieProvider : MainAPI() {
 
     override val supportedTypes = setOf(TvType.TvSeries)
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=$query"
         val response = app.get(url).text
         val document = Jsoup.parse(response)
@@ -42,7 +42,7 @@ class VfSerieProvider : MainAPI() {
         return returnValue
     }
 
-    private fun getDirect(original: String): String {  // original data, https://vf-serie.org/?trembed=1&trid=80467&trtype=2 for example
+    private suspend fun getDirect(original: String): String {  // original data, https://vf-serie.org/?trembed=1&trid=80467&trtype=2 for example
         val response = app.get(original).text
         val url = "iframe .*src=\"(.*?)\"".toRegex().find(response)?.groupValues?.get(1)
             .toString()  // https://vudeo.net/embed-7jdb1t5b2mvo.html for example
@@ -52,7 +52,7 @@ class VfSerieProvider : MainAPI() {
             .toString()  // direct mp4 link, https://m5.vudeo.net/2vp3xgpw2avjdohilpfbtyuxzzrqzuh4z5yxvztral5k3rjnba6f4byj3saa/v.mp4 for exemple
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -95,7 +95,7 @@ class VfSerieProvider : MainAPI() {
         return true
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         val title =

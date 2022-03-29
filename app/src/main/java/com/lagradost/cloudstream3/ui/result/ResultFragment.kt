@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.ui.result
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context.CLIPBOARD_SERVICE
@@ -8,6 +9,7 @@ import android.content.Intent
 import android.content.Intent.*
 import android.content.res.ColorStateList
 import android.content.res.Configuration
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,11 +17,13 @@ import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
@@ -28,13 +32,18 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.discord.panels.OverlappingPanelsLayout
+import com.discord.panels.PanelsChildGestureRegionObserver
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastState
 import com.google.android.material.button.MaterialButton
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.APIHolder.getApiDubstatusSettings
 import com.lagradost.cloudstream3.APIHolder.getApiFromName
 import com.lagradost.cloudstream3.APIHolder.getId
+import com.lagradost.cloudstream3.AcraApplication.Companion.context
+import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.CommonActivity.getCastSession
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.mvvm.*
@@ -46,6 +55,7 @@ import com.lagradost.cloudstream3.ui.download.DOWNLOAD_NAVIGATE_TO
 import com.lagradost.cloudstream3.ui.download.DownloadButtonSetup.handleDownloadClick
 import com.lagradost.cloudstream3.ui.download.EasyDownloadButton
 import com.lagradost.cloudstream3.ui.player.GeneratorPlayer
+import com.lagradost.cloudstream3.ui.player.RepoLinkGenerator
 import com.lagradost.cloudstream3.ui.player.SubtitleData
 import com.lagradost.cloudstream3.ui.quicksearch.QuickSearchFragment
 import com.lagradost.cloudstream3.ui.search.SearchAdapter
@@ -81,6 +91,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.setImage
 import com.lagradost.cloudstream3.utils.UIHelper.setImageBlur
 import com.lagradost.cloudstream3.utils.VideoDownloadManager.sanitizeFilename
 import kotlinx.android.synthetic.main.fragment_result.*
+import kotlinx.android.synthetic.main.fragment_result_swipe.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
@@ -110,7 +121,7 @@ data class ResultEpisode(
     val description: String?,
     val isFiller: Boolean?,
     val tvType: TvType,
-    val parentId: Int?,
+    val parentId: Int,
 )
 
 fun ResultEpisode.getRealPosition(): Long {
@@ -143,7 +154,7 @@ fun buildResultEpisode(
     description: String?,
     isFiller: Boolean?,
     tvType: TvType,
-    parentId: Int?,
+    parentId: Int,
 ): ResultEpisode {
     val posDur = getViewPos(id)
     return ResultEpisode(
@@ -171,7 +182,7 @@ fun ResultEpisode.getWatchProgress(): Float {
     return (getDisplayPosition() / 1000).toFloat() / (duration / 1000).toFloat()
 }
 
-class ResultFragment : Fragment() {
+class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegionsListener {
     companion object {
         fun newInstance(
             url: String,
@@ -185,6 +196,174 @@ class ResultFragment : Fragment() {
                 putInt("startAction", startAction)
                 putInt("startValue", startValue)
                 putBoolean("restart", true)
+            }
+        }
+
+        fun updateUI() {
+            updateUIListener?.invoke()
+        }
+
+        private var updateUIListener: (() -> Unit)? = null
+
+        suspend fun startDownload(
+            episode: ResultEpisode,
+            currentIsMovie: Boolean,
+            currentHeaderName: String,
+            currentType: TvType,
+            currentPoster: String,
+            apiName: String,
+            parentId: Int,
+            url: String,
+            links: List<ExtractorLink>,
+            subs: List<SubtitleData>?
+        ) {
+            val titleName = sanitizeFilename(currentHeaderName)
+
+            val meta = VideoDownloadManager.DownloadEpisodeMetadata(
+                episode.id,
+                titleName,
+                apiName,
+                episode.poster ?: currentPoster,
+                episode.name,
+                if (currentIsMovie) null else episode.season,
+                if (currentIsMovie) null else episode.episode
+            )
+
+            val folder = when (currentType) {
+                TvType.Anime -> "Anime/$titleName"
+                TvType.Movie -> "Movies"
+                TvType.AnimeMovie -> "Movies"
+                TvType.TvSeries -> "TVSeries/$titleName"
+                TvType.OVA -> "OVA"
+                TvType.Cartoon -> "Cartoons/$titleName"
+                TvType.Torrent -> "Torrent"
+                TvType.Documentary -> "Documentaries"
+                TvType.AsianDrama -> "AsianDrama"
+            }
+
+            val src = "$DOWNLOAD_NAVIGATE_TO/$parentId" // url ?: return@let
+
+            // SET VISUAL KEYS
+            setKey(
+                DOWNLOAD_HEADER_CACHE,
+                parentId.toString(),
+                VideoDownloadHelper.DownloadHeaderCached(
+                    apiName,
+                    url,
+                    currentType,
+                    currentHeaderName,
+                    currentPoster,
+                    parentId,
+                    System.currentTimeMillis(),
+                )
+            )
+
+            setKey(
+                getFolderName(
+                    DOWNLOAD_EPISODE_CACHE,
+                    parentId.toString()
+                ), // 3 deep folder for faster acess
+                episode.id.toString(),
+                VideoDownloadHelper.DownloadEpisodeCached(
+                    episode.name,
+                    episode.poster,
+                    episode.episode,
+                    episode.season,
+                    episode.id,
+                    parentId,
+                    episode.rating,
+                    episode.description,
+                    System.currentTimeMillis(),
+                )
+            )
+
+            // DOWNLOAD VIDEO
+            VideoDownloadManager.downloadEpisodeUsingWorker(
+                context ?: return,
+                src,//url ?: return,
+                folder,
+                meta,
+                links
+            )
+            // 1. Checks if the lang should be downloaded
+            // 2. Makes it into the download format
+            // 3. Downloads it as a .vtt file
+            val downloadList = getDownloadSubsLanguageISO639_1()
+            subs?.let { subsList ->
+                subsList.filter {
+                    downloadList.contains(
+                        SubtitleHelper.fromLanguageToTwoLetters(
+                            it.name,
+                            true
+                        )
+                    )
+                }
+                    .map { ExtractorSubtitleLink(it.name, it.url, "") }
+                    .forEach { link ->
+                        val epName = meta.name
+                            ?: "${context?.getString(R.string.episode)} ${meta.episode}"
+                        val fileName =
+                            sanitizeFilename(epName + if (downloadList.size > 1) " ${link.name}" else "")
+
+                        withContext(Dispatchers.IO) {
+                            normalSafeApiCall {
+                                VideoDownloadManager.downloadThing(
+                                    context ?: return@normalSafeApiCall,
+                                    link,
+                                    fileName,
+                                    folder,
+                                    "vtt",
+                                    false,
+                                    null
+                                ) {
+                                    // no notification
+                                }
+                            }
+                        }
+                    }
+            }
+        }
+
+        suspend fun downloadEpisode(
+            activity: Activity?,
+            episode: ResultEpisode,
+            currentIsMovie: Boolean,
+            currentHeaderName: String,
+            currentType: TvType,
+            currentPoster: String,
+            apiName: String,
+            parentId: Int,
+            url: String,
+        ) {
+            safeApiCall {
+                val generator = RepoLinkGenerator(listOf(episode))
+                val currentLinks = mutableSetOf<ExtractorLink>()
+                val currentSubs = mutableSetOf<SubtitleData>()
+                generator.generateLinks(clearCache = false, isCasting = false, callback = {
+                    it.first?.let { link ->
+                        currentLinks.add(link)
+                    }
+                }, subtitleCallback = { sub ->
+                    currentSubs.add(sub)
+                })
+
+                if (currentLinks.isEmpty()) {
+                    showToast(activity, R.string.no_links_found_toast, Toast.LENGTH_SHORT)
+                    return@safeApiCall
+                }
+
+                startDownload(
+                    episode,
+                    currentIsMovie,
+                    currentHeaderName,
+                    currentType,
+                    currentPoster,
+                    apiName,
+                    parentId,
+                    url,
+                    sortUrls(currentLinks),
+                    sortSubs(currentSubs),
+                )
             }
         }
     }
@@ -204,7 +383,7 @@ class ResultFragment : Fragment() {
     ): View? {
         viewModel =
             ViewModelProvider(this)[ResultViewModel::class.java]
-        return inflater.inflate(R.layout.fragment_result, container, false)
+        return inflater.inflate(R.layout.fragment_result_swipe, container, false)
     }
 
     override fun onDestroyView() {
@@ -215,12 +394,12 @@ class ResultFragment : Fragment() {
     override fun onDestroy() {
         //requireActivity().viewModelStore.clear() // REMEMBER THE CLEAR
         downloadButton?.dispose()
+        updateUIListener = null
+        result_cast_items?.let {
+            PanelsChildGestureRegionObserver.Provider.get().unregister(it)
+        }
 
         super.onDestroy()
-        activity?.let {
-            it.window?.navigationBarColor =
-                it.colorFromAttribute(R.attr.primaryGrayBackground)
-        }
     }
 
     override fun onResume() {
@@ -311,6 +490,22 @@ class ResultFragment : Fragment() {
         setFormatText(result_meta_duration, R.string.duration_format, duration)
     }
 
+    private fun setShow(showStatus: ShowStatus?) {
+        val status = when (showStatus) {
+            null -> null
+            ShowStatus.Ongoing -> R.string.status_ongoing
+            ShowStatus.Completed -> R.string.status_completed
+        }
+
+        if (status == null) {
+            result_meta_status?.isVisible = false
+        } else {
+            context?.getString(status)?.let {
+                result_meta_status?.text = it
+            }
+        }
+    }
+
     private fun setYear(year: Int?) {
         setFormatText(result_meta_year, R.string.year_format, year)
     }
@@ -319,20 +514,49 @@ class ResultFragment : Fragment() {
         setFormatText(result_meta_rating, R.string.rating_format, rating?.div(1000f))
     }
 
+    private fun setActors(actors: List<ActorData>?) {
+        if (actors.isNullOrEmpty()) {
+            result_cast_text?.isVisible = false
+            result_cast_items?.isVisible = false
+        } else {
+            val isImage = actors.first().actor.image != null
+            if (isImage) {
+                (result_cast_items?.adapter as ActorAdaptor?)?.apply {
+                    updateList(actors)
+                }
+                result_cast_text?.isVisible = false
+                result_cast_items?.isVisible = true
+            } else {
+                result_cast_text?.isVisible = true
+                result_cast_items?.isVisible = false
+                setFormatText(result_cast_text, R.string.cast_format,
+                    actors.joinToString { it.actor.name })
+            }
+        }
+    }
+
     private fun setRecommendations(rec: List<SearchResponse>?) {
-        return
-        result_recommendations?.isGone = rec.isNullOrEmpty()
-        rec?.let { list ->
-            (result_recommendations?.adapter as SearchAdapter?)?.apply {
-                cardList = list
-                notifyDataSetChanged()
+        val isInvalid = rec.isNullOrEmpty()
+        result_recommendations?.isGone = isInvalid
+        result_recommendations_btt?.isGone = isInvalid
+        result_recommendations_btt?.setOnClickListener {
+            if (result_overlapping_panels?.getSelectedPanel()?.ordinal == 1) {
+                result_overlapping_panels?.openEndPanel()
+            } else {
+                result_overlapping_panels?.closePanels()
+            }
+        }
+        result_overlapping_panels?.setEndPanelLockState(if (isInvalid) OverlappingPanelsLayout.LockState.CLOSE else OverlappingPanelsLayout.LockState.UNLOCKED)
+        result_recommendations.post {
+            rec?.let { list ->
+                (result_recommendations?.adapter as SearchAdapter?)?.updateList(list)
             }
         }
     }
 
     private fun fixGrid() {
-        activity?.getSpanCount()?.let { count ->
-            result_recommendations?.spanCount = count
+        activity?.getSpanCount()?.let { _ ->
+            //result_recommendations?.spanCount = count // this is due to discord not changing size with rotation
         }
     }
 
@@ -353,10 +577,23 @@ class ResultFragment : Fragment() {
         }
     }
 
+    private fun updateUI() {
+        viewModel.reloadEpisodes()
+    }
+
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        result_cast_items?.let {
+            PanelsChildGestureRegionObserver.Provider.get().register(it)
+        }
+        result_cast_items?.adapter = ActorAdaptor(mutableListOf())
         fixGrid()
+        result_recommendations?.spanCount = 3
+        result_overlapping_panels?.setStartPanelLockState(OverlappingPanelsLayout.LockState.CLOSE)
+        result_overlapping_panels?.setEndPanelLockState(OverlappingPanelsLayout.LockState.CLOSE)
+
+        updateUIListener = ::updateUI
 
         val restart = arguments?.getBoolean("restart") ?: false
         if (restart) {
@@ -367,7 +604,7 @@ class ResultFragment : Fragment() {
         hideKeyboard()
         activity?.loadCache()
 
-        activity?.fixPaddingStatusbar(result_scroll)
+        activity?.fixPaddingStatusbar(result_top_bar)
         //activity?.fixPaddingStatusbar(result_barstatus)
 
         /* val backParameter = result_back.layoutParams as FrameLayout.LayoutParams
@@ -394,7 +631,7 @@ class ResultFragment : Fragment() {
             media_route_button?.alpha = if (chromecastSupport) 1f else 0.3f
             if (!chromecastSupport) {
                 media_route_button.setOnClickListener {
-                    showToast(activity, R.string.no_chomecast_support_toast, Toast.LENGTH_LONG)
+                    showToast(activity, R.string.no_chromecast_support_toast, Toast.LENGTH_LONG)
                 }
             }
 
@@ -437,6 +674,28 @@ class ResultFragment : Fragment() {
         }
 
         fun handleAction(episodeClick: EpisodeClickEvent): Job = main {
+            if (episodeClick.action == ACTION_DOWNLOAD_EPISODE) {
+                val isMovie = currentIsMovie ?: return@main
+                val headerName = currentHeaderName ?: return@main
+                val tvType = currentType ?: return@main
+                val poster = currentPoster ?: return@main
+                val id = currentId ?: return@main
+                val curl = url ?: return@main
+                showToast(activity, R.string.download_started, Toast.LENGTH_SHORT)
+                downloadEpisode(
+                    activity,
+                    episodeClick.data,
+                    isMovie,
+                    headerName,
+                    tvType,
+                    poster,
+                    apiName,
+                    id,
+                    curl,
+                )
+                return@main
+            }
+
             var currentLinks: Set<ExtractorLink>? = null
             var currentSubs: Set<SubtitleData>? = null
 
@@ -486,121 +745,6 @@ class ResultFragment : Fragment() {
                 )
             }
 
-            fun startDownload(links: List<ExtractorLink>, subs: List<SubtitleData>?) {
-                val isMovie = currentIsMovie ?: return
-                val titleName = sanitizeFilename(currentHeaderName ?: return)
-
-                val meta = VideoDownloadManager.DownloadEpisodeMetadata(
-                    episodeClick.data.id,
-                    titleName,
-                    apiName,
-                    episodeClick.data.poster ?: currentPoster,
-                    episodeClick.data.name,
-                    if (isMovie) null else episodeClick.data.season,
-                    if (isMovie) null else episodeClick.data.episode
-                )
-
-                val folder = when (currentType) {
-                    TvType.Anime -> "Anime/$titleName"
-                    TvType.Movie -> "Movies"
-                    TvType.AnimeMovie -> "Movies"
-                    TvType.TvSeries -> "TVSeries/$titleName"
-                    TvType.ONA -> "ONA"
-                    TvType.Cartoon -> "Cartoons/$titleName"
-                    TvType.Torrent -> "Torrent"
-                    TvType.Documentary -> "Documentaries"
-                    null -> null
-                }
-
-                context?.let { ctx ->
-                    val parentId = currentId ?: return@let
-                    val src = "$DOWNLOAD_NAVIGATE_TO/$parentId" // url ?: return@let
-
-                    // SET VISUAL KEYS
-                    ctx.setKey(
-                        DOWNLOAD_HEADER_CACHE,
-                        parentId.toString(),
-                        VideoDownloadHelper.DownloadHeaderCached(
-                            apiName,
-                            url ?: return@let,
-                            currentType ?: return@let,
-                            currentHeaderName ?: return@let,
-                            currentPoster,
-                            currentId ?: return@let,
-                            System.currentTimeMillis(),
-                        )
-                    )
-
-                    val epData = episodeClick.data
-                    ctx.setKey(
-                        getFolderName(
-                            DOWNLOAD_EPISODE_CACHE,
-                            parentId.toString()
-                        ), // 3 deep folder for faster acess
-                        epData.id.toString(),
-                        VideoDownloadHelper.DownloadEpisodeCached(
-                            epData.name,
-                            epData.poster,
-                            epData.episode,
-                            epData.season,
-                            epData.id,
-                            parentId,
-                            epData.rating,
-                            epData.description,
-                            System.currentTimeMillis(),
-                        )
-                    )
-
-                    // DOWNLOAD VIDEO
-                    VideoDownloadManager.downloadEpisodeUsingWorker(
-                        ctx,
-                        src,//url ?: return,
-                        folder,
-                        meta,
-                        links
-                    )
-                    // 1. Checks if the lang should be downloaded
-                    // 2. Makes it into the download format
-                    // 3. Downloads it as a .vtt file
-                    val downloadList = getDownloadSubsLanguageISO639_1()
-                    main {
-                        subs?.let { subsList ->
-                            subsList.filter {
-                                downloadList.contains(
-                                    SubtitleHelper.fromLanguageToTwoLetters(
-                                        it.name,
-                                        true
-                                    )
-                                )
-                            }
-                                .map { ExtractorSubtitleLink(it.name, it.url, "") }
-                                .forEach { link ->
-                                    val epName = meta.name
-                                        ?: "${context?.getString(R.string.episode)} ${meta.episode}"
-                                    val fileName =
-                                        sanitizeFilename(epName + if (downloadList.size > 1) " ${link.name}" else "")
-                                    val topFolder = "$folder"
-
-                                    withContext(Dispatchers.IO) {
-                                        normalSafeApiCall {
-                                            VideoDownloadManager.downloadThing(
-                                                ctx,
-                                                link,
-                                                fileName,
-                                                topFolder,
-                                                "vtt",
-                                                false,
-                                                null
-                                            ) {
-                                                // no notification
-                                            }
-                                        }
-                                    }
-                                }
-                        }
-                    }
-                }
-            }
 
             suspend fun requireLinks(isCasting: Boolean, displayLoading: Boolean = true): Boolean {
                 val skipLoading = getApiFromName(apiName).instantLinkLoading
@@ -755,14 +899,18 @@ class ResultFragment : Fragment() {
 
                 ACTION_PLAY_EPISODE_IN_BROWSER -> {
                     acquireSingeExtractorLink(getString(R.string.episode_action_play_in_browser)) { link ->
-                        val i = Intent(ACTION_VIEW)
-                        i.data = Uri.parse(link.url)
-                        startActivity(i)
+                        try {
+                            val i = Intent(ACTION_VIEW)
+                            i.data = Uri.parse(link.url)
+                            startActivity(i)
+                        } catch (e: Exception) {
+                            logError(e)
+                        }
                     }
                 }
 
                 ACTION_CHROME_CAST_MIRROR -> {
-                    acquireSingeExtractorLink(getString(R.string.episode_action_chomecast_mirror)) { link ->
+                    acquireSingeExtractorLink(getString(R.string.episode_action_chromecast_mirror)) { link ->
                         val mirrorIndex = currentLinks?.indexOf(link) ?: -1
                         startChromecast(if (mirrorIndex == -1) 0 else mirrorIndex)
                     }
@@ -845,14 +993,7 @@ class ResultFragment : Fragment() {
                 }
 
                 ACTION_RELOAD_EPISODE -> {
-                    viewModel.loadEpisode(episodeClick.data, false)
-                }
-
-                ACTION_DOWNLOAD_EPISODE -> {
-                    startDownload(
-                        sortUrls(currentLinks ?: return@main),
-                        sortSubs(currentSubs ?: return@main)
-                    )
+                    viewModel.loadEpisode(episodeClick.data, false, clearCache = true)
                 }
 
                 ACTION_DOWNLOAD_MIRROR -> {
@@ -862,11 +1003,21 @@ class ResultFragment : Fragment() {
                         ),//(currentLinks ?: return@main).filter { !it.isM3u8 },
                         getString(R.string.episode_action_download_mirror)
                     ) { link ->
-                        showToast(activity, R.string.download_started, Toast.LENGTH_SHORT)
-                        startDownload(
-                            listOf(link),
-                            sortSubs(currentSubs ?: return@acquireSingleExtractorLink)
-                        )
+                        main {
+                            startDownload(
+                                episodeClick.data,
+                                currentIsMovie ?: return@main,
+                                currentHeaderName ?: return@main,
+                                currentType ?: return@main,
+                                currentPoster ?: return@main,
+                                apiName,
+                                currentId ?: return@main,
+                                url ?: return@main,
+                                listOf(link),
+                                sortSubs(currentSubs ?: return@main)
+                            )
+                            showToast(activity, R.string.download_started, Toast.LENGTH_SHORT)
+                        }
                     }
                 }
             }
@@ -926,8 +1077,122 @@ class ResultFragment : Fragment() {
             }
         }
 
+        /**
+         * Sets next focus to allow navigation up and down between 2 views
+         * if either of them is null nothing happens.
+         **/
+        fun setFocusUpAndDown(upper: View?, down: View?) {
+            if (upper == null || down == null) return
+            upper.nextFocusDownId = down.id
+            down.nextFocusUpId = upper.id
+        }
+
+        // This is to band-aid FireTV navigation
+        result_season_button?.isFocusableInTouchMode = context?.isTvSettings() == true
+        result_episode_select?.isFocusableInTouchMode = context?.isTvSettings() == true
+        result_dub_select?.isFocusableInTouchMode = context?.isTvSettings() == true
+
+        observe(viewModel.selectedSeason) { season ->
+            result_season_button?.text = fromIndexToSeasonText(season)
+        }
+
+        observe(viewModel.seasonSelections) { seasonList ->
+            result_season_button?.visibility = if (seasonList.size <= 1) GONE else VISIBLE.also {
+
+                // If the season button is visible the result season button will be next focus down
+                if (result_series_parent?.isVisible == true)
+                    setFocusUpAndDown(result_resume_series_button, result_season_button)
+                else
+                    setFocusUpAndDown(result_bookmark_button, result_season_button)
+            }
+
+            result_season_button?.setOnClickListener {
+                result_season_button?.popupMenuNoIconsAndNoStringRes(
+                    items = seasonList
+                        .map { Pair(it ?: -2, fromIndexToSeasonText(it)) },
+                ) {
+                    val id = this.itemId
+
+                    viewModel.changeSeason(if (id == -2) null else id)
+                }
+            }
+        }
+
+        observe(viewModel.selectedRange) { range ->
+            result_episode_select?.text = range
+        }
+
+        observe(viewModel.rangeOptions) { range ->
+            episodeRanges = range
+            result_episode_select?.visibility = if (range.size <= 1) GONE else VISIBLE.also {
+
+                // If Season button is invisible then the bookmark button next focus is episode select
+                if (result_season_button?.isVisible != true) {
+                    if (result_series_parent?.isVisible == true)
+                        setFocusUpAndDown(result_resume_series_button, result_episode_select)
+                    else
+                        setFocusUpAndDown(result_bookmark_button, result_episode_select)
+                }
+            }
+        }
+
         observe(viewModel.episodes) { episodeList ->
             lateFixDownloadButton(episodeList.size <= 1) // movies can have multible parts but still be *movies* this will fix this
+            var isSeriesVisible = false
+            var isProgressVisible = false
+            DataStoreHelper.getLastWatched(currentId)?.let { resume ->
+                if (currentIsMovie == false) {
+                    isSeriesVisible = true
+
+                    result_resume_series_button?.setOnClickListener {
+                        episodeList.firstOrNull { it.id == resume.episodeId }?.let {
+                            handleAction(EpisodeClickEvent(ACTION_PLAY_EPISODE_IN_PLAYER, it))
+                        }
+                    }
+
+                    result_resume_series_title?.text =
+                        if (resume.season == null)
+                            "${getString(R.string.episode)} ${resume.episode}"
+                        else
+                            " \"${getString(R.string.season_short)}${resume.season}:${getString(R.string.episode_short)}${resume.episode}\""
+                }
+
+                getViewPos(resume.episodeId)?.let { viewPos ->
+                    if (viewPos.position > 30_000L || currentIsMovie == false) { // first 30s will not show for movies
+                        result_resume_series_progress?.apply {
+                            max = (viewPos.duration / 1000).toInt()
+                            progress = (viewPos.position / 1000).toInt()
+                        }
+                        result_resume_series_progress_text?.text =
+                            getString(R.string.resume_time_left).format((viewPos.duration - viewPos.position) / (60_000))
+                        isProgressVisible = true
+                    } else {
+                        isProgressVisible = false
+                        isSeriesVisible = false
+                    }
+                } ?: run {
+                    isProgressVisible = false
+                    isSeriesVisible = false
+                }
+            }
+
+            result_series_parent?.isVisible = isSeriesVisible
+            if (isSeriesVisible) {
+                val down = when {
+                    result_season_button?.isVisible == true -> result_season_button
+                    result_episode_select?.isVisible == true -> result_episode_select
+                    result_dub_select?.isVisible == true -> result_dub_select
+                    else -> null
+                }
+                setFocusUpAndDown(result_resume_series_button, down)
+                setFocusUpAndDown(result_bookmark_button, result_resume_series_button)
+            }
+
+            result_resume_progress_holder?.isVisible = isProgressVisible
+            context?.getString(if (isProgressVisible) R.string.resume else R.string.play_movie_button)
+                ?.let {
+                    result_play_movie?.text = it
+                }
 
             when (startAction) {
                 START_ACTION_RESUME_LATEST -> {
@@ -955,28 +1220,7 @@ class ResultFragment : Fragment() {
             startValue = null
         }
 
-        observe(viewModel.selectedSeason)
-        { season ->
-            result_season_button?.text = fromIndexToSeasonText(season)
-        }
-
-        observe(viewModel.seasonSelections)
-        { seasonList ->
-            result_season_button?.visibility = if (seasonList.size <= 1) GONE else VISIBLE
-            result_season_button?.setOnClickListener {
-                result_season_button?.popupMenuNoIconsAndNoStringRes(
-                    items = seasonList
-                        .map { Pair(it ?: -2, fromIndexToSeasonText(it)) },
-                ) {
-                    val id = this.itemId
-
-                    viewModel.changeSeason(if (id == -2) null else id)
-                }
-            }
-        }
-
-        observe(viewModel.publicEpisodes)
-        { episodes ->
+        observe(viewModel.publicEpisodes) { episodes ->
             when (episodes) {
                 is Resource.Failure -> {
                     result_episode_loading?.isVisible = false
@@ -991,47 +1235,55 @@ class ResultFragment : Fragment() {
                     result_episode_loading?.isVisible = false
                     if (result_episodes == null || result_episodes.adapter == null) return@observe
                     currentEpisodes = episodes.value
-                    (result_episodes?.adapter as EpisodeAdapter?)?.cardList = episodes.value
-                    (result_episodes?.adapter as EpisodeAdapter?)?.updateLayout()
-                    (result_episodes?.adapter as EpisodeAdapter?)?.notifyDataSetChanged()
+                    (result_episodes?.adapter as? EpisodeAdapter?)?.cardList = episodes.value
+                    (result_episodes?.adapter as? EpisodeAdapter?)?.updateLayout()
+                    (result_episodes?.adapter as? EpisodeAdapter?)?.notifyDataSetChanged()
                 }
             }
         }
 
-        observe(viewModel.dubStatus)
-        { status ->
+        observe(viewModel.dubStatus) { status ->
             result_dub_select?.text = status.toString()
         }
 
-        observe(viewModel.dubSubSelections)
-        { range ->
+        val preferDub = context?.getApiDubstatusSettings()?.all { it == DubStatus.Dubbed } == true
+
+        observe(viewModel.dubSubSelections) { range ->
             dubRange = range
+
+            if (preferDub && dubRange?.contains(DubStatus.Dubbed) == true){
+                viewModel.changeDubStatus(DubStatus.Dubbed)
+            }
+
             result_dub_select?.visibility = if (range.size <= 1) GONE else VISIBLE
+
+            if (result_season_button?.isVisible != true && result_episode_select?.isVisible != true) {
+                if (result_series_parent?.isVisible == true)
+                    setFocusUpAndDown(result_resume_series_button, result_dub_select)
+                else
+                    setFocusUpAndDown(result_bookmark_button, result_dub_select)
+            }
+        }
+
+        result_cast_items?.setOnFocusChangeListener { v, hasFocus ->
+            // Always escape focus
+            if (hasFocus) result_bookmark_button?.requestFocus()
         }
 
         result_dub_select.setOnClickListener {
             val ranges = dubRange
             if (ranges != null) {
-                it.popupMenuNoIconsAndNoStringRes(ranges.map { status ->
-                    Pair(
-                        status.ordinal,
-                        status.toString()
-                    )
-                }
+                it.popupMenuNoIconsAndNoStringRes(ranges
+                    .map { status ->
+                        Pair(
+                            status.ordinal,
+                            status.toString()
+                        )
+                    }
                     .toList()) {
                     viewModel.changeDubStatus(DubStatus.values()[itemId])
                 }
             }
-        }
-
-        observe(viewModel.selectedRange)
-        { range ->
-            result_episode_select?.text = range
-        }
-
-        observe(viewModel.rangeOptions) { range ->
-            episodeRanges = range
-            result_episode_select?.visibility = if (range.size <= 1) GONE else VISIBLE
         }
 
         result_episode_select.setOnClickListener {
@@ -1110,13 +1362,13 @@ class ResultFragment : Fragment() {
                         currentPoster = d.posterUrl
                         currentIsMovie = !d.isEpisodeBased()
 
-                        result_openinbrower?.setOnClickListener {
+                        result_open_in_browser?.setOnClickListener {
                             val i = Intent(ACTION_VIEW)
                             i.data = Uri.parse(d.url)
                             try {
                                 startActivity(i)
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                logError(e)
                             }
                         }
 
@@ -1125,11 +1377,15 @@ class ResultFragment : Fragment() {
                         }
 
                         result_share?.setOnClickListener {
-                            val i = Intent(ACTION_SEND)
-                            i.type = "text/plain"
-                            i.putExtra(EXTRA_SUBJECT, d.name)
-                            i.putExtra(EXTRA_TEXT, d.url)
-                            startActivity(createChooser(i, d.name))
+                            try {
+                                val i = Intent(ACTION_SEND)
+                                i.type = "text/plain"
+                                i.putExtra(EXTRA_SUBJECT, d.name)
+                                i.putExtra(EXTRA_TEXT, d.url)
+                                startActivity(createChooser(i, d.name))
+                            } catch (e: Exception) {
+                                logError(e)
+                            }
                         }
 
                         updateSync(d.getId())
@@ -1148,28 +1404,47 @@ class ResultFragment : Fragment() {
                             }
                         }
 
-                        val metadataInfoArray = ArrayList<Pair<Int, String>>()
-                        if (d is AnimeLoadResponse) {
-                            val status = when (d.showStatus) {
-                                null -> null
-                                ShowStatus.Ongoing -> R.string.status_ongoing
-                                ShowStatus.Completed -> R.string.status_completed
-                            }
-                            if (status != null) {
-                                metadataInfoArray.add(Pair(R.string.status, getString(status)))
-                            }
+                        val showStatus = when (d) {
+                            is TvSeriesLoadResponse -> d.showStatus
+                            is AnimeLoadResponse -> d.showStatus
+                            else -> null
                         }
-
+                        setShow(showStatus)
                         setDuration(d.duration)
                         setYear(d.year)
                         setRating(d.rating)
                         setRecommendations(d.recommendations)
+                        setActors(d.actors)
 
                         result_meta_site?.text = d.apiName
 
-                        if (!d.posterUrl.isNullOrEmpty()) {
-                            result_poster?.setImage(d.posterUrl)
-                            result_poster_blur?.setImageBlur(d.posterUrl, 10, 3)
+                        val posterImageLink = d.posterUrl
+                        if (!posterImageLink.isNullOrEmpty()) {
+                            result_poster?.setImage(posterImageLink)
+                            result_poster_blur?.setImageBlur(posterImageLink, 10, 3)
+                            //Full screen view of Poster image
+                            result_poster_holder?.setOnClickListener {
+                                try {
+                                    context?.let { ctx ->
+                                        val bitmap = result_poster.drawable.toBitmap()
+                                        val sourceBuilder = AlertDialog.Builder(ctx)
+                                        sourceBuilder.setView(R.layout.result_poster)
+
+                                        val sourceDialog = sourceBuilder.create()
+                                        sourceDialog.show()
+
+                                        sourceDialog.findViewById<ImageView?>(R.id.imgPoster)
+                                            ?.apply {
+                                                setImageBitmap(bitmap)
+                                                setOnClickListener {
+                                                    sourceDialog.dismissSafe()
+                                                }
+                                            }
+                                    }
+                                } catch (e: Exception) {
+                                    logError(e)
+                                }
+                            }
                         } else {
                             result_poster?.setImageResource(R.drawable.default_cover)
                             result_poster_blur?.setImageResource(R.drawable.default_cover)
@@ -1177,10 +1452,10 @@ class ResultFragment : Fragment() {
 
                         result_poster_holder?.visibility = VISIBLE
 
-                        result_play_movie?.text =
+                        /*result_play_movie?.text =
                             if (d.type == TvType.Torrent) getString(R.string.play_torrent_button) else getString(
                                 R.string.play_movie_button
-                            )
+                            )*/
                         //result_plot_header?.text =
                         //    if (d.type == TvType.Torrent) getString(R.string.torrent_plot) else getString(R.string.result_plot)
                         if (!d.plot.isNullOrEmpty()) {
@@ -1206,6 +1481,11 @@ class ResultFragment : Fragment() {
                         result_tag?.removeAllViews()
                         //result_tag_holder?.visibility = GONE
                         // result_status.visibility = GONE
+
+                        d.comingSoon.let { soon ->
+                            result_coming_soon?.isVisible = soon
+                            result_data_holder?.isGone = soon
+                        }
 
                         val tags = d.tags
                         if (tags.isNullOrEmpty()) {
@@ -1262,12 +1542,15 @@ class ResultFragment : Fragment() {
                                     )
                                 downloadButton?.dispose()
                                 downloadButton = EasyDownloadButton()
-                                downloadButton?.setUpMaterialButton(
+                                downloadButton?.setUpMoreButton(
                                     file?.fileLength,
                                     file?.totalBytes,
                                     result_movie_progress_downloaded,
+                                    result_movie_download_icon,
+                                    result_movie_download_text,
+                                    result_movie_download_text_precentage,
                                     result_download_movie,
-                                    result_movie_text_progress,
+                                    true,
                                     VideoDownloadHelper.DownloadEpisodeCached(
                                         d.name,
                                         d.posterUrl,
@@ -1314,10 +1597,88 @@ class ResultFragment : Fragment() {
                                         )
                                     }
                                 }
+
+                                result_download_movie?.setOnLongClickListener {
+                                    val card =
+                                        currentEpisodes?.firstOrNull()
+                                            ?: return@setOnLongClickListener false
+                                    handleAction(EpisodeClickEvent(ACTION_DOWNLOAD_MIRROR, card))
+                                    return@setOnLongClickListener true
+                                }
+
+                                /*downloadButton?.setUpMaterialButton(
+                                    file?.fileLength,
+                                    file?.totalBytes,
+                                    result_movie_progress_downloaded,
+                                    result_download_movie,
+                                    null, //result_movie_text_progress
+                                    VideoDownloadHelper.DownloadEpisodeCached(
+                                        d.name,
+                                        d.posterUrl,
+                                        0,
+                                        null,
+                                        localId,
+                                        localId,
+                                        d.rating,
+                                        d.plot,
+                                        System.currentTimeMillis(),
+                                    )
+                                ) { downloadClickEvent ->
+                                    if (downloadClickEvent.action == DOWNLOAD_ACTION_DOWNLOAD) {
+                                        currentEpisodes?.firstOrNull()?.let { episode ->
+                                            handleAction(
+                                                EpisodeClickEvent(
+                                                    ACTION_DOWNLOAD_EPISODE,
+                                                    ResultEpisode(
+                                                        d.name,
+                                                        d.name,
+                                                        null,
+                                                        0,
+                                                        null,
+                                                        episode.data,
+                                                        d.apiName,
+                                                        localId,
+                                                        0,
+                                                        0L,
+                                                        0L,
+                                                        null,
+                                                        null,
+                                                        null,
+                                                        d.type,
+                                                        localId,
+                                                    )
+                                                )
+                                            )
+                                        }
+                                    } else {
+                                        handleDownloadClick(
+                                            activity,
+                                            currentHeaderName,
+                                            downloadClickEvent
+                                        )
+                                    }
+                                }*/
                             }
                         } else {
                             lateFixDownloadButton(false)
                         }
+
+                        context?.getString(
+                            when (d.type) {
+                                TvType.TvSeries -> R.string.tv_series_singular
+                                TvType.Anime -> R.string.anime_singular
+                                TvType.OVA -> R.string.ova_singular
+                                TvType.AnimeMovie -> R.string.movies_singular
+                                TvType.Cartoon -> R.string.cartoons_singular
+                                TvType.Documentary -> R.string.documentaries_singular
+                                TvType.Movie -> R.string.movies_singular
+                                TvType.Torrent -> R.string.torrent_singular
+                                TvType.AsianDrama -> R.string.asian_drama_singular
+                            }
+                        )?.let {
+                            result_meta_type?.text = it
+                        }
+
 
                         when (d) {
                             is AnimeLoadResponse -> {
@@ -1360,7 +1721,7 @@ class ResultFragment : Fragment() {
 
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
             val showFillers =
-                settingsManager.getBoolean(ctx.getString(R.string.show_fillers_key), true)
+                settingsManager.getBoolean(ctx.getString(R.string.show_fillers_key), false)
 
             val tempUrl = url
             if (tempUrl != null) {
@@ -1374,7 +1735,17 @@ class ResultFragment : Fragment() {
                     try {
                         startActivity(i)
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        logError(e)
+                    }
+                }
+
+                result_open_in_browser?.setOnClickListener {
+                    val i = Intent(ACTION_VIEW)
+                    i.data = Uri.parse(tempUrl)
+                    try {
+                        startActivity(i)
+                    } catch (e: Exception) {
+                        logError(e)
                     }
                 }
 
@@ -1388,5 +1759,16 @@ class ResultFragment : Fragment() {
                 }
             }
         }
+
+        PanelsChildGestureRegionObserver.Provider.get().addGestureRegionsUpdateListener(this)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        PanelsChildGestureRegionObserver.Provider.get().addGestureRegionsUpdateListener(this)
+    }
+
+    override fun onGestureRegionsUpdate(gestureRegions: List<Rect>) {
+        result_overlapping_panels?.setChildGestureRegions(gestureRegions)
     }
 }

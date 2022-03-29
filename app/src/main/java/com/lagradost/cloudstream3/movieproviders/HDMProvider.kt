@@ -6,42 +6,40 @@ import com.lagradost.cloudstream3.utils.Qualities
 import org.jsoup.Jsoup
 
 class HDMProvider : MainAPI() {
-    override val name = "HD Movies"
-    override val mainUrl = "https://hdm.to"
+    override var name = "HD Movies"
+    override var mainUrl = "https://hdm.to"
     override val hasMainPage = true
 
     override val supportedTypes = setOf(
         TvType.Movie,
     )
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search/$query"
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         val items = document.select("div.col-md-2 > article > a")
-        if (items.isEmpty()) return ArrayList()
-        val returnValue = ArrayList<SearchResponse>()
-        for (i in items) {
+        if (items.isEmpty()) return emptyList()
+
+        return items.map { i ->
             val href = i.attr("href")
             val data = i.selectFirst("> div.item")
             val img = data.selectFirst("> img").attr("src")
             val name = data.selectFirst("> div.movie-details").text()
-            returnValue.add(MovieSearchResponse(name, href, this.name, TvType.Movie, img, null))
+            MovieSearchResponse(name, href, this.name, TvType.Movie, img, null)
         }
-
-        return returnValue
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         if (data == "") return false
-        val slug = ".*/(.*?)\\.mp4".toRegex().find(data)?.groupValues?.get(1) ?: return false
+        val slug = Regex(".*/(.*?)\\.mp4").find(data)?.groupValues?.get(1) ?: return false
         val response = app.get(data).text
-        val key = "playlist\\.m3u8(.*?)\"".toRegex().find(response)?.groupValues?.get(1) ?: return false
+        val key = Regex("playlist\\.m3u8(.*?)\"").find(response)?.groupValues?.get(1) ?: return false
         callback.invoke(
             ExtractorLink(
                 this.name,
@@ -55,7 +53,7 @@ class HDMProvider : MainAPI() {
         return true
     }
 
-    override fun load(url: String): LoadResponse? {
+    override suspend fun load(url: String): LoadResponse? {
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         val title = document.selectFirst("h2.movieTitle")?.text() ?: throw ErrorLoadingException("No Data Found")
@@ -71,8 +69,8 @@ class HDMProvider : MainAPI() {
         )
     }
 
-    override fun getMainPage(): HomePageResponse {
-        val html = app.get("$mainUrl", timeout = 25).text
+    override suspend fun getMainPage(): HomePageResponse {
+        val html = app.get(mainUrl, timeout = 25).text
         val document = Jsoup.parse(html)
         val all = ArrayList<HomePageList>()
 

@@ -1,17 +1,16 @@
 package com.lagradost.cloudstream3.ui.result
 
 import android.content.Context
-import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
+import com.lagradost.cloudstream3.APIHolder.getApiFromUrlNull
 import com.lagradost.cloudstream3.APIHolder.getId
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.mvvm.Resource
-import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.syncproviders.SyncAPI
 import com.lagradost.cloudstream3.ui.APIRepository
@@ -19,19 +18,20 @@ import com.lagradost.cloudstream3.ui.WatchType
 import com.lagradost.cloudstream3.ui.player.IGenerator
 import com.lagradost.cloudstream3.ui.player.RepoLinkGenerator
 import com.lagradost.cloudstream3.ui.player.SubtitleData
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.DOWNLOAD_HEADER_CACHE
+import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.DataStoreHelper.getBookmarkedData
 import com.lagradost.cloudstream3.utils.DataStoreHelper.getDub
 import com.lagradost.cloudstream3.utils.DataStoreHelper.getResultSeason
 import com.lagradost.cloudstream3.utils.DataStoreHelper.getResultWatchState
 import com.lagradost.cloudstream3.utils.DataStoreHelper.getViewPos
-import com.lagradost.cloudstream3.utils.DataStoreHelper.removeLastWatched
 import com.lagradost.cloudstream3.utils.DataStoreHelper.setBookmarkedData
 import com.lagradost.cloudstream3.utils.DataStoreHelper.setDub
-import com.lagradost.cloudstream3.utils.DataStoreHelper.setLastWatched
 import com.lagradost.cloudstream3.utils.DataStoreHelper.setResultSeason
 import com.lagradost.cloudstream3.utils.DataStoreHelper.setResultWatchState
+import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.FillerEpisodeCheck.getFillerEpisodes
+import com.lagradost.cloudstream3.utils.VideoDownloadHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -43,7 +43,6 @@ const val EPISODE_RANGE_OVERLOAD = 60
 class ResultViewModel : ViewModel() {
     private var repo: APIRepository? = null
     private var generator: IGenerator? = null
-
 
     private val _resultResponse: MutableLiveData<Resource<Any?>> = MutableLiveData()
     private val _episodes: MutableLiveData<List<ResultEpisode>> = MutableLiveData()
@@ -190,12 +189,12 @@ class ResultViewModel : ViewModel() {
     }
 
     fun changeDubStatus(status: DubStatus?) {
-        if(status == null) return
+        if (status == null) return
         dubSubEpisodes.value?.get(status)?.let { episodes ->
             id.value?.let {
                 setDub(it, status)
             }
-            _dubStatus.postValue(status)
+            _dubStatus.postValue(status!!)
             updateEpisodes(null, episodes, null)
         }
     }
@@ -220,7 +219,10 @@ class ResultViewModel : ViewModel() {
                 currentSubs.add(sub)
             })
 
-            return@safeApiCall Pair(currentLinks.toSet(), currentSubs.toSet()) as Pair<Set<ExtractorLink>, Set<SubtitleData>>
+            return@safeApiCall Pair(
+                currentLinks.toSet(),
+                currentSubs.toSet()
+            )
         }
     }
 
@@ -247,13 +249,15 @@ class ResultViewModel : ViewModel() {
         generator = RepoLinkGenerator(list)
 
         val set = HashMap<Int, Int>()
+        val range = selectedRangeInt.value
 
         list.withIndex().forEach { set[it.value.id] = it.index }
         episodeById.postValue(set)
 
         filterEpisodes(
             list,
-            if (selection == -1) getResultSeason(localId ?: id.value ?: return) else selection, null
+            if (selection == -1) getResultSeason(localId ?: id.value ?: return) else selection,
+            range
         )
     }
 
@@ -280,7 +284,7 @@ class ResultViewModel : ViewModel() {
         _publicEpisodes.postValue(Resource.Loading())
 
         _apiName.postValue(apiName)
-        val api = getApiFromNameNull(apiName)
+        val api = getApiFromNameNull(apiName) ?: getApiFromUrlNull(url)
         if (api == null) {
             _resultResponse.postValue(
                 Resource.Failure(
@@ -330,9 +334,7 @@ class ResultViewModel : ViewModel() {
                         val status = getDub(mainId)
                         val statuses = d.episodes.map { it.key }
                         val dubStatus = if (statuses.contains(status)) status else statuses.first()
-                        _dubStatus.postValue(dubStatus)
 
-                        _dubSubSelections.postValue(d.episodes.keys)
                         val fillerEpisodes =
                             if (showFillers) safeApiCall { getFillerEpisodes(d.name) } else null
 
@@ -362,14 +364,18 @@ class ResultViewModel : ViewModel() {
                                 ))
                             }
                             idIndex++
+                            episodes.sortBy { it.episode }
 
                             Pair(ep.key, episodes)
                         }.toMap()
 
+                        // These posts needs to be in this order as to make the preferDub in ResultFragment work
                         _dubSubEpisodes.postValue(res)
                         res[dubStatus]?.let { episodes ->
                             updateEpisodes(mainId, episodes, -1)
                         }
+                        _dubStatus.postValue(dubStatus)
+                        _dubSubSelections.postValue(d.episodes.keys)
                     }
 
                     is TvSeriesLoadResponse -> {
@@ -393,8 +399,8 @@ class ResultViewModel : ViewModel() {
                                     mainId
                                 )
                             )
-
                         }
+                        episodes.sortBy { (it.season?.times(10000) ?: 0) + it.episode }
                         updateEpisodes(mainId, episodes, -1)
                     }
                     is MovieLoadResponse -> {

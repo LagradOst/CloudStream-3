@@ -10,29 +10,29 @@ import java.util.*
 class AnimeFlickProvider : MainAPI() {
     companion object {
         fun getType(t: String): TvType {
-            return if (t.contains("OVA") || t.contains("Special")) TvType.ONA
+            return if (t.contains("OVA") || t.contains("Special")) TvType.OVA
             else if (t.contains("Movie")) TvType.AnimeMovie
             else TvType.Anime
         }
     }
 
-    override val mainUrl = "https://animeflick.net"
-    override val name = "AnimeFlick"
+    override var mainUrl = "https://animeflick.net"
+    override var name = "AnimeFlick"
     override val hasQuickSearch = false
     override val hasMainPage = false
 
     override val supportedTypes = setOf(
         TvType.AnimeMovie,
         TvType.Anime,
-        TvType.ONA
+        TvType.OVA
     )
 
-    override fun search(query: String): ArrayList<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val link = "https://animeflick.net/search.php?search=$query"
         val html = app.get(link).text
         val doc = Jsoup.parse(html)
 
-        return ArrayList(doc.select(".row.mt-2").map {
+        return doc.select(".row.mt-2").map {
             val href = mainUrl + it.selectFirst("a").attr("href")
             val title = it.selectFirst("h5 > a").text()
             val poster = mainUrl + it.selectFirst("img").attr("src").replace("70x110", "225x320")
@@ -45,10 +45,10 @@ class AnimeFlickProvider : MainAPI() {
                 null,
                 EnumSet.of(DubStatus.Subbed),
             )
-        })
+        }
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val html = app.get(url).text
         val doc = Jsoup.parse(html)
 
@@ -79,7 +79,7 @@ class AnimeFlickProvider : MainAPI() {
         }
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -95,9 +95,7 @@ class AnimeFlickProvider : MainAPI() {
             var alreadyAdded = false
             for (extractor in extractorApis) {
                 if (link.startsWith(extractor.mainUrl)) {
-                    extractor.getSafeUrl(link, data)?.forEach {
-                        callback(it)
-                    }
+                    extractor.getSafeUrl(link, data)?.forEach(callback)
                     alreadyAdded = true
                     break
                 }

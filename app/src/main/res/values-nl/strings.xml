@@ -34,11 +34,11 @@
     <string name="go_back">Ga terug</string>
     <string name="episode_poster_img_des">Afleveringsposter</string>
     <string name="play_episode">Aflevering afspelen</string>
-    <string name="need_storage">Toestaan om afleveringen te downloaden</string>
+    <!--<string name="need_storage">Toestaan om afleveringen te downloaden</string>-->
     <string name="download">Download</string>
     <string name="error_loading_links_toast">Fout bij laden van links</string>
     <string name="download_storage_text">Interne opslag</string>
-    <string name="options">Opties</string>
+    <!--<string name="options">Opties</string>-->
 
     <string name="app_dubbed_text">Dub</string>
     <string name="app_subbed_text">Sub</string>
@@ -125,7 +125,7 @@
 
     <string name="app_language">App Taal</string>
 
-    <string name="no_chomecast_support_toast">Deze provider heeft geen Chromecast ondersteuning</string>
+    <string name="no_chromecast_support_toast">Deze provider heeft geen Chromecast ondersteuning</string>
     <string name="no_links_found_toast">Geen links gevonden</string>
     <string name="copy_link_toast">Link gekopieerd naar klembord</string>
     
@@ -170,8 +170,8 @@
     <string name="unexpected_error">Onverwachte speler fout</string>
     <string name="storage_error">Downloadfout, controleer opslagrechten</string>
 
-    <string name="episode_action_chomecast_episode">Chromecast aflevering</string>
-    <string name="episode_action_chomecast_mirror">Chromecast spiegel</string>
+    <string name="episode_action_chromecast_episode">Chromecast aflevering</string>
+    <string name="episode_action_chromecast_mirror">Chromecast spiegel</string>
     <string name="episode_action_play_in_app">Afspelen In App</string>
     <string name="episode_action_play_in_vlc">Afspelen in VLC</string>
     <string name="episode_action_play_in_browser">Afspelen in browser</string>

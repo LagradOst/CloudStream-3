@@ -6,8 +6,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.*
-import androidx.appcompat.app.AlertDialog
+import android.widget.AbsListView
+import android.widget.ArrayAdapter
+import android.widget.ImageView
+import android.widget.ListView
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -15,26 +17,24 @@ import androidx.fragment.app.activityViewModels
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.switchmaterial.SwitchMaterial
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.button.MaterialButton
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.APIHolder.apis
-import com.lagradost.cloudstream3.APIHolder.getApiProviderLangSettings
+import com.lagradost.cloudstream3.APIHolder.filterProviderByPreferredMedia
+import com.lagradost.cloudstream3.APIHolder.getApiFromName
 import com.lagradost.cloudstream3.APIHolder.getApiSettings
-import com.lagradost.cloudstream3.APIHolder.getApiTypeSettings
+import com.lagradost.cloudstream3.AcraApplication.Companion.removeKey
 import com.lagradost.cloudstream3.mvvm.Resource
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.observe
 import com.lagradost.cloudstream3.ui.APIRepository
-import com.lagradost.cloudstream3.ui.APIRepository.Companion.providersActive
-import com.lagradost.cloudstream3.ui.APIRepository.Companion.typesActive
 import com.lagradost.cloudstream3.ui.home.HomeFragment
 import com.lagradost.cloudstream3.ui.home.HomeFragment.Companion.currentSpan
 import com.lagradost.cloudstream3.ui.home.HomeFragment.Companion.loadHomepageList
 import com.lagradost.cloudstream3.ui.home.ParentItemAdapter
-import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
+import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTrueTvSettings
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.setKey
-import com.lagradost.cloudstream3.utils.SEARCH_PROVIDER_TOGGLE
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.lagradost.cloudstream3.utils.UIHelper.getSpanCount
@@ -42,6 +42,8 @@ import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import kotlinx.android.synthetic.main.fragment_search.*
 import java.util.concurrent.locks.ReentrantLock
 
+const val SEARCH_PREF_TAGS = "search_pref_tags"
+const val SEARCH_PREF_PROVIDERS = "search_pref_providers"
 
 class SearchFragment : Fragment() {
     companion object {
@@ -90,6 +92,25 @@ class SearchFragment : Fragment() {
         super.onDestroyView()
     }
 
+    var selectedSearchTypes = mutableListOf<TvType>()
+    var selectedApis = mutableSetOf<String>()
+
+    fun search(query: String?) {
+        if (query == null) return
+        context?.getApiSettings()?.let { settings ->
+            searchViewModel.searchAndCancel(
+                query = query,
+                providersActive = selectedApis.filter { name ->
+                    settings.contains(name) && getApiFromName(name).supportedTypes.any {
+                        selectedSearchTypes.contains(
+                            it
+                        )
+                    }
+                }.toSet()
+            )
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -108,199 +129,219 @@ class SearchFragment : Fragment() {
         search_autofit_results.adapter = adapter
         search_loading_bar.alpha = 0f
 
-        val searchExitIcon = main_search.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
-        val searchMagIcon = main_search.findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon)
+        val searchExitIcon =
+            main_search.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
+        val searchMagIcon =
+            main_search.findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon)
         searchMagIcon.scaleX = 0.65f
         searchMagIcon.scaleY = 0.65f
+
+        context?.let { ctx ->
+            val validAPIs = ctx.filterProviderByPreferredMedia()
+            selectedApis = ctx.getKey(
+                SEARCH_PREF_PROVIDERS,
+                defVal = validAPIs.map { it.name }
+            )!!.toMutableSet()
+        }
+
         search_filter.setOnClickListener { searchView ->
-            val apiNamesSetting = activity?.getApiSettings()
-            val langs = activity?.getApiProviderLangSettings()
-            if (apiNamesSetting != null && langs != null) {
-                val apiNames = apis.filter { langs.contains(it.lang) }.map { it.name }
+            searchView?.context?.let { ctx ->
+                val validAPIs = ctx.filterProviderByPreferredMedia(hasHomePageIsRequired = false)
+                var currentValidApis = listOf<MainAPI>()
+                val currentSelectedApis = if (selectedApis.isEmpty()) validAPIs.map { it.name }
+                    .toMutableSet() else selectedApis
                 val builder =
-                    AlertDialog.Builder(searchView.context).setView(R.layout.provider_list)
+                    BottomSheetDialog(ctx)
 
-                val dialog = builder.create()
-                dialog.show()
+                builder.setContentView(R.layout.home_select_mainpage)
+                builder.show()
+                builder.let { dialog ->
+                    val anime = dialog.findViewById<MaterialButton>(R.id.home_select_anime)
+                    val cartoons = dialog.findViewById<MaterialButton>(R.id.home_select_cartoons)
+                    val tvs = dialog.findViewById<MaterialButton>(R.id.home_select_tv_series)
+                    val docs = dialog.findViewById<MaterialButton>(R.id.home_select_documentaries)
+                    val movies = dialog.findViewById<MaterialButton>(R.id.home_select_movies)
+                    val asian = dialog.findViewById<MaterialButton>(R.id.home_select_asian)
+                    val cancelBtt = dialog.findViewById<MaterialButton>(R.id.cancel_btt)
+                    val applyBtt = dialog.findViewById<MaterialButton>(R.id.apply_btt)
 
-                val listView = dialog.findViewById<ListView>(R.id.listview1)!!
-                val listView2 = dialog.findViewById<ListView>(R.id.listview2)!!
-                val toggle = dialog.findViewById<SwitchMaterial>(R.id.toggle1)!!
-                val applyButton = dialog.findViewById<TextView>(R.id.apply_btt)!!
-                val cancelButton = dialog.findViewById<TextView>(R.id.cancel_btt)!!
-                // val applyHolder = dialog.findViewById<LinearLayout>(R.id.apply_btt_holder)!!
+                    val pairList =
+                        HomeFragment.getPairList(anime, cartoons, tvs, docs, movies, asian)
 
-                val arrayAdapter = ArrayAdapter<String>(searchView.context, R.layout.sort_bottom_single_choice)
-                arrayAdapter.addAll(apiNames)
-
-                listView.adapter = arrayAdapter
-                listView.choiceMode = AbsListView.CHOICE_MODE_MULTIPLE
-
-                val typeChoices = listOf(
-                    Pair(R.string.movies, listOf(TvType.Movie)),
-                    Pair(R.string.tv_series, listOf(TvType.TvSeries, TvType.Documentary)),
-                    Pair(R.string.cartoons, listOf(TvType.Cartoon)),
-                    Pair(R.string.anime, listOf(TvType.Anime, TvType.ONA, TvType.AnimeMovie)),
-                    Pair(R.string.torrent, listOf(TvType.Torrent)),
-                ).filter { item -> apis.any { api -> api.supportedTypes.any { type -> item.second.contains(type) } } }
-
-                val arrayAdapter2 = ArrayAdapter<String>(searchView.context, R.layout.sort_bottom_single_choice)
-                arrayAdapter2.addAll(typeChoices.map { getString(it.first) })
-
-                listView2.adapter = arrayAdapter2
-                listView2.choiceMode = AbsListView.CHOICE_MODE_MULTIPLE
-
-                for ((index, item) in apiNames.withIndex()) {
-                    listView.setItemChecked(index, apiNamesSetting.contains(item))
-                }
-
-                for ((index, item) in typeChoices.withIndex()) {
-                    listView2.setItemChecked(index, item.second.any { typesActive.contains(it) })
-                }
-
-                fun toggleSearch(isOn: Boolean) {
-                    toggle.text =
-                        getString(if (isOn) R.string.search_provider_text_types else R.string.search_provider_text_providers)
-
-                    if (isOn) {
-                        listView2.visibility = View.VISIBLE
-                        listView.visibility = View.GONE
-                    } else {
-                        listView.visibility = View.VISIBLE
-                        listView2.visibility = View.GONE
+                    cancelBtt?.setOnClickListener {
+                        dialog.dismissSafe()
                     }
-                }
 
-                val defVal = context?.getKey(SEARCH_PROVIDER_TOGGLE, true) ?: true
-                toggleSearch(defVal)
+                    cancelBtt?.setOnClickListener {
+                        dialog.dismissSafe()
+                    }
 
-                toggle.isChecked = defVal
-                toggle.setOnCheckedChangeListener { _, isOn ->
-                    toggleSearch(isOn)
-                }
+                    applyBtt?.setOnClickListener {
+                        //if (currentApiName != selectedApiName) {
+                        //    currentApiName?.let(callback)
+                        //}
+                        dialog.dismissSafe()
+                    }
 
-                listView.setOnItemClickListener { _, _, _, _ ->
-                    val types = HashSet<TvType>()
-                    for ((index, api) in apis.withIndex()) {
-                        if (listView.checkedItemPositions[index]) {
-                            types.addAll(api.supportedTypes)
+                    dialog.setOnDismissListener {
+                        context?.setKey(SEARCH_PREF_PROVIDERS, currentSelectedApis.toList())
+                        selectedApis = currentSelectedApis
+                    }
+
+                    val selectedSearchTypes = context?.getKey<List<String>>(SEARCH_PREF_TAGS)
+                        ?.mapNotNull { listName ->
+                            TvType.values().firstOrNull { it.name == listName }
                         }
-                    }
-                    for ((typeIndex, type) in typeChoices.withIndex()) {
-                        listView2.setItemChecked(typeIndex, type.second.any { types.contains(it) })
-                    }
-                }
+                        ?.toMutableList()
+                        ?: mutableListOf(TvType.Movie, TvType.TvSeries)
 
-                listView2.setOnItemClickListener { _, _, _, _ ->
-                    for ((index, api) in apis.withIndex()) {
-                        var isSupported = false
+                    val listView = dialog.findViewById<ListView>(R.id.listview1)
+                    val arrayAdapter = ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
+                    listView?.adapter = arrayAdapter
+                    listView?.choiceMode = AbsListView.CHOICE_MODE_MULTIPLE
 
-                        for ((typeIndex, type) in typeChoices.withIndex()) {
-                            if (listView2.checkedItemPositions[typeIndex]) {
-                                if (api.supportedTypes.any { type.second.contains(it) }) {
-                                    isSupported = true
-                                }
+                    listView?.setOnItemClickListener { _, _, i, _ ->
+                        if (!currentValidApis.isNullOrEmpty()) {
+                            val api = currentValidApis[i].name
+                            if (currentSelectedApis.contains(api)) {
+                                listView.setItemChecked(i, false)
+                                currentSelectedApis -= api
+                            } else {
+                                listView.setItemChecked(i, true)
+                                currentSelectedApis += api
                             }
                         }
-
-                        listView.setItemChecked(
-                            index,
-                            isSupported
-                        )
-                    }
-                }
-
-                dialog.setOnDismissListener {
-                    context?.setKey(SEARCH_PROVIDER_TOGGLE, toggle.isChecked)
-                }
-
-                applyButton.setOnClickListener {
-                    val settingsManagerLocal = PreferenceManager.getDefaultSharedPreferences(activity)
-
-                    val activeTypes = HashSet<TvType>()
-                    for ((index, _) in typeChoices.withIndex()) {
-                        if (listView2.checkedItemPositions[index]) {
-                            activeTypes.addAll(typeChoices[index].second)
-                        }
                     }
 
-                    if (activeTypes.size == 0) {
-                        activeTypes.addAll(TvType.values())
-                    }
+                    fun updateList() {
+                        arrayAdapter.clear()
+                        currentValidApis = validAPIs.filter { api ->
+                            api.supportedTypes.any {
+                                selectedSearchTypes.contains(it)
+                            }
+                        }.sortedBy { it.name }
 
+                        val names = currentValidApis.map { it.name }
 
-                    val activeApis = HashSet<String>()
-                    for ((index, name) in apiNames.withIndex()) {
-                        if (listView.checkedItemPositions[index]) {
-                            activeApis.add(name)
-                        }
-                    }
-
-                    if (activeApis.size == 0) {
-                        activeApis.addAll(apiNames)
-                    }
-
-                    val edit = settingsManagerLocal.edit()
-                    edit.putStringSet(
-                        getString(R.string.search_providers_list_key),
-                        activeApis
-                    )
-                    edit.putStringSet(
-                        getString(R.string.search_types_list_key),
-                        activeTypes.map { it.name }.toSet()
-                    )
-                    edit.apply()
-                    providersActive = activeApis
-                    typesActive = activeTypes
-
-                    dialog.dismissSafe(activity)
-                }
-
-                cancelButton.setOnClickListener {
-                    dialog.dismissSafe(activity)
-                }
-
-                //listView.setSelection(selectedIndex)
-                // listView.setItemChecked(selectedIndex, true)
-                /*
-                val builder: AlertDialog.Builder = AlertDialog.Builder(requireContext())
-
-                builder.setMultiChoiceItems(
-                    apiNames.toTypedArray(),
-                    apiNames.map { a -> apiNamesSetting.contains(a) }.toBooleanArray()
-                ) { _, position: Int, checked: Boolean ->
-                    val apiNamesSettingLocal = activity?.getApiSettings()
-                    if (apiNamesSettingLocal != null) {
-                        val settingsManagerLocal = PreferenceManager.getDefaultSharedPreferences(activity)
-                        if (checked) {
-                            apiNamesSettingLocal.add(apiNames[position])
-                        } else {
-                            apiNamesSettingLocal.remove(apiNames[position])
+                        for ((index, api) in names.withIndex()) {
+                            listView?.setItemChecked(index, currentSelectedApis.contains(api))
                         }
 
-                        val edit = settingsManagerLocal.edit()
-                        edit.putStringSet(
-                            getString(R.string.search_providers_list_key),
-                            apiNames.filter { a -> apiNamesSettingLocal.contains(a) }.toSet()
-                        )
-                        edit.apply()
-                        providersActive = apiNamesSettingLocal
+                        //arrayAdapter.notifyDataSetChanged()
+                        arrayAdapter.addAll(names)
+                        arrayAdapter.notifyDataSetChanged()
                     }
+
+                    for ((button, validTypes) in pairList) {
+                        val isValid =
+                            validAPIs.any { api -> validTypes.any { api.supportedTypes.contains(it) } }
+                        button?.isVisible = isValid
+                        if (isValid) {
+                            fun buttonContains(): Boolean {
+                                return selectedSearchTypes.any { validTypes.contains(it) }
+                            }
+
+                            button?.isSelected = buttonContains()
+                            button?.setOnClickListener {
+                                selectedSearchTypes.clear()
+                                selectedSearchTypes.addAll(validTypes)
+                                for ((otherButton, _) in pairList) {
+                                    otherButton?.isSelected = false
+                                }
+                                button.isSelected = true
+                                updateList()
+                            }
+
+                            button?.setOnLongClickListener {
+                                if (!buttonContains()) {
+                                    button.isSelected = true
+                                    selectedSearchTypes.addAll(validTypes)
+                                } else {
+                                    button.isSelected = false
+                                    selectedSearchTypes.removeAll(validTypes)
+                                }
+                                updateList()
+                                return@setOnLongClickListener true
+                            }
+                        }
+                    }
+                    updateList()
                 }
-                builder.setTitle("Search Providers")
-                builder.setNegativeButton("Ok") { _, _ -> }
-                builder.show()*/
             }
         }
 
-        if (context?.isTvSettings() == true) {
+        val pairList = HomeFragment.getPairList(
+            search_select_anime,
+            search_select_cartoons,
+            search_select_tv_series,
+            search_select_documentaries,
+            search_select_movies,
+            search_select_asian,
+        )
+
+        val settingsManager = context?.let { PreferenceManager.getDefaultSharedPreferences(it) }
+        val isAdvancedSearch = settingsManager?.getBoolean("advanced_search", true) ?: true
+
+        selectedSearchTypes = context?.getKey<List<String>>(SEARCH_PREF_TAGS)
+            ?.mapNotNull { listName -> TvType.values().firstOrNull { it.name == listName } }
+            ?.toMutableList()
+            ?: mutableListOf(TvType.Movie, TvType.TvSeries)
+
+        fun updateSelectedList(list: MutableList<TvType>) {
+            selectedSearchTypes = list
+            for ((button, validTypes) in pairList) {
+                button?.isSelected = selectedSearchTypes.any { validTypes.contains(it) }
+            }
+        }
+
+        context?.filterProviderByPreferredMedia()?.let { validAPIs ->
+            for ((button, validTypes) in pairList) {
+                val isValid =
+                    validAPIs.any { api -> validTypes.any { api.supportedTypes.contains(it) } }
+                button?.isVisible = isValid
+                if (isValid) {
+                    fun buttonContains(): Boolean {
+                        return selectedSearchTypes.any { validTypes.contains(it) }
+                    }
+
+                    button?.isSelected = buttonContains()
+                    button?.setOnClickListener {
+                        val last = selectedSearchTypes.toSet()
+                        selectedSearchTypes.clear()
+                        selectedSearchTypes.addAll(validTypes)
+                        for ((otherButton, _) in pairList) {
+                            otherButton?.isSelected = false
+                        }
+                        it?.context?.setKey(SEARCH_PREF_TAGS, selectedSearchTypes)
+                        it?.isSelected = true
+                        if (last != selectedSearchTypes.toSet()) // if you click the same button again the it does nothing
+                            search(main_search?.query?.toString())
+                    }
+
+                    button?.setOnLongClickListener {
+                        if (!buttonContains()) {
+                            it?.isSelected = true
+                            selectedSearchTypes.addAll(validTypes)
+                        } else {
+                            it?.isSelected = false
+                            selectedSearchTypes.removeAll(validTypes)
+                        }
+                        it?.context?.setKey(SEARCH_PREF_TAGS, selectedSearchTypes)
+                        search(main_search?.query?.toString())
+                        return@setOnLongClickListener true
+                    }
+                }
+            }
+        }
+
+        if (context?.isTrueTvSettings() == true) {
             search_filter.isFocusable = true
             search_filter.isFocusableInTouchMode = true
         }
 
         main_search.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
-                searchViewModel.searchAndCancel(query = query)
+                search(query)
 
                 main_search?.let {
                     hideKeyboard(it)
@@ -311,19 +352,31 @@ class SearchFragment : Fragment() {
 
             override fun onQueryTextChange(newText: String): Boolean {
                 //searchViewModel.quickSearch(newText)
+                val showHistory = newText.isBlank()
+                searchViewModel.clearSearch()
+                searchViewModel.updateHistory()
+
+                search_history_recycler?.isVisible = showHistory
+
+                search_master_recycler?.isVisible = !showHistory && isAdvancedSearch
+                search_autofit_results?.isVisible = !showHistory && !isAdvancedSearch
+
                 return true
             }
         })
+
+        observe(searchViewModel.currentHistory) { list ->
+            (search_history_recycler.adapter as? SearchHistoryAdaptor?)?.updateList(list)
+        }
+
+        searchViewModel.updateHistory()
 
         observe(searchViewModel.searchResponse) {
             when (it) {
                 is Resource.Success -> {
                     it.value.let { data ->
                         if (data.isNotEmpty()) {
-                            (search_autofit_results?.adapter as SearchAdapter?)?.apply {
-                                cardList = data.toList()
-                                notifyDataSetChanged()
-                            }
+                            (search_autofit_results?.adapter as SearchAdapter?)?.updateList(data)
                         }
                     }
                     searchExitIcon.alpha = 1f
@@ -347,14 +400,16 @@ class SearchFragment : Fragment() {
                 // https://stackoverflow.com/questions/6866238/concurrent-modification-exception-adding-to-an-arraylist
                 listLock.lock()
                 (search_master_recycler?.adapter as ParentItemAdapter?)?.apply {
-                    items = list.map { ongoing ->
+                    val newItems = list.map { ongoing ->
                         val ongoingList = HomePageList(
                             ongoing.apiName,
                             if (ongoing.data is Resource.Success) ongoing.data.value.filterSearchResponse() else ArrayList()
                         )
                         ongoingList
                     }
-                    notifyDataSetChanged()
+                    updateList(newItems)
+
+                    //notifyDataSetChanged()
                 }
             } catch (e: Exception) {
                 logError(e)
@@ -363,10 +418,6 @@ class SearchFragment : Fragment() {
             }
         }
 
-        activity?.let {
-            providersActive = it.getApiSettings()
-            typesActive = it.getApiTypeSettings()
-        }
 
         /*main_search.setOnQueryTextFocusChangeListener { _, b ->
             if (b) {
@@ -376,20 +427,37 @@ class SearchFragment : Fragment() {
         }*/
         //main_search.onActionViewExpanded()*/
 
-        val masterAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder> = ParentItemAdapter(listOf(), { callback ->
-            SearchHelper.handleSearchClickCallback(activity, callback)
-        }, { item ->
-            activity?.loadHomepageList(item)
-        })
+        val masterAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder> =
+            ParentItemAdapter(mutableListOf(), { callback ->
+                SearchHelper.handleSearchClickCallback(activity, callback)
+            }, { item ->
+                activity?.loadHomepageList(item)
+            })
 
-        search_master_recycler.adapter = masterAdapter
-        search_master_recycler.layoutManager = GridLayoutManager(context, 1)
+        val historyAdapter = SearchHistoryAdaptor(mutableListOf()) { click ->
+            val searchItem = click.item
+            when (click.clickAction) {
+                SEARCH_HISTORY_OPEN -> {
+                    searchViewModel.clearSearch()
+                    if (searchItem.type.isNotEmpty())
+                        updateSelectedList(searchItem.type.toMutableList())
+                    main_search?.setQuery(searchItem.searchText, true)
+                }
+                SEARCH_HISTORY_REMOVE -> {
+                    removeKey(SEARCH_HISTORY_KEY, searchItem.key)
+                    searchViewModel.updateHistory()
+                }
+                else -> {
+                    // wth are you doing???
+                }
+            }
+        }
 
-        val settingsManager = PreferenceManager.getDefaultSharedPreferences(context)
-        val isAdvancedSearch = settingsManager.getBoolean("advanced_search", true)
+        search_history_recycler?.adapter = historyAdapter
+        search_history_recycler?.layoutManager = GridLayoutManager(context, 1)
 
-        search_master_recycler.isVisible = isAdvancedSearch
-        search_autofit_results.isVisible = !isAdvancedSearch
+        search_master_recycler?.adapter = masterAdapter
+        search_master_recycler?.layoutManager = GridLayoutManager(context, 1)
 
         // SubtitlesFragment.push(activity)
         //searchViewModel.search("iron man")

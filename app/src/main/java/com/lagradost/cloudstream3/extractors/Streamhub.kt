@@ -8,15 +8,15 @@ import com.lagradost.cloudstream3.utils.Qualities
 import java.net.URI
 
 class Streamhub : ExtractorApi() {
-    override val mainUrl = "https://streamhub.to"
-    override val name = "Streamhub"
+    override var mainUrl = "https://streamhub.to"
+    override var name = "Streamhub"
     override val requiresReferer = false
 
     override fun getExtractorUrl(id: String): String {
         return "$mainUrl/e/$id"
     }
 
-    override fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val response = app.get(url).text
         Regex("eval((.|\\n)*?)</script>").find(response)?.groupValues?.get(1)?.let { jsEval ->
             JsUnpacker("eval$jsEval").unpack()?.let { unPacked ->

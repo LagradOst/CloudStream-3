@@ -16,6 +16,7 @@ import android.widget.Toast
 import androidx.annotation.FontRes
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.android.exoplayer2.text.Cue
 import com.google.android.exoplayer2.ui.CaptionStyleCompat
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
@@ -25,7 +26,7 @@ import com.lagradost.cloudstream3.CommonActivity.onColorSelectedEvent
 import com.lagradost.cloudstream3.CommonActivity.onDialogDismissedEvent
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
-import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
+import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTrueTvSettings
 import com.lagradost.cloudstream3.utils.DataStore.setKey
 import com.lagradost.cloudstream3.utils.Event
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
@@ -42,18 +43,18 @@ const val SUBTITLE_AUTO_SELECT_KEY = "subs_auto_select"
 const val SUBTITLE_DOWNLOAD_KEY = "subs_auto_download"
 
 data class SaveCaptionStyle(
-    var foregroundColor: Int,
-    var backgroundColor: Int,
-    var windowColor: Int,
+    @JsonProperty("foregroundColor") var foregroundColor: Int,
+    @JsonProperty("backgroundColor") var backgroundColor: Int,
+    @JsonProperty("windowColor") var windowColor: Int,
     @CaptionStyleCompat.EdgeType
-    var edgeType: Int,
-    var edgeColor: Int,
+    @JsonProperty("edgeType") var edgeType: Int,
+    @JsonProperty("edgeColor")  var edgeColor: Int,
     @FontRes
-    var typeface: Int?,
+    @JsonProperty("typeface") var typeface: Int?,
     /**in dp**/
-    var elevation: Int,
+    @JsonProperty("elevation") var elevation: Int,
     /**in sp**/
-    var fixedTextSize: Float?,
+    @JsonProperty("fixedTextSize") var fixedTextSize: Float?,
 )
 
 const val DEF_SUBS_ELEVATION = 20
@@ -196,10 +197,10 @@ class SubtitlesFragment : Fragment() {
         state = getCurrentSavedStyle()
         context?.updateState()
 
-        val isTvSettings = context?.isTvSettings() == true
+        val isTvTrueSettings = context?.isTrueTvSettings() == true
 
         fun View.setFocusableInTv() {
-            this.isFocusableInTouchMode = isTvSettings
+            this.isFocusableInTouchMode = isTvTrueSettings
         }
 
         fun View.setup(id: Int) {
@@ -322,18 +323,25 @@ class SubtitlesFragment : Fragment() {
             val fontSizes = listOf(
                 Pair(null, textView.context.getString(R.string.normal)),
                 Pair(6f, "6$suffix"),
+                Pair(7f, "7$suffix"),
                 Pair(8f, "8$suffix"),
                 Pair(9f, "9$suffix"),
                 Pair(10f, "10$suffix"),
                 Pair(11f, "11$suffix"),
                 Pair(12f, "12$suffix"),
+                Pair(13f, "13$suffix"),
                 Pair(14f, "14$suffix"),
+                Pair(15f, "15$suffix"),
                 Pair(16f, "16$suffix"),
+                Pair(17f, "17$suffix"),
                 Pair(18f, "18$suffix"),
                 Pair(19f, "19$suffix"),
+                Pair(20f, "20$suffix"),
                 Pair(21f, "21$suffix"),
+                Pair(22f, "22$suffix"),
                 Pair(23f, "23$suffix"),
                 Pair(24f, "24$suffix"),
+                Pair(25f, "25$suffix"),
                 Pair(26f, "26$suffix"),
                 Pair(28f, "28$suffix"),
                 Pair(30f, "30$suffix"),

@@ -11,8 +11,8 @@ import org.jsoup.Jsoup
 import java.util.*
 
 class DubbedAnimeProvider : MainAPI() {
-    override val mainUrl = "https://bestdubbedanime.com"
-    override val name = "DubbedAnime"
+    override var mainUrl = "https://bestdubbedanime.com"
+    override var name = "DubbedAnime"
     override val hasQuickSearch = true
     override val hasMainPage = true
 
@@ -54,13 +54,13 @@ class DubbedAnimeProvider : MainAPI() {
         @JsonProperty("tags") val tags: String,*/
     )
 
-    private fun parseDocumentTrending(url: String): List<SearchResponse> {
+    private suspend fun parseDocumentTrending(url: String): List<SearchResponse> {
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         return document.select("li > a").map {
             val href = fixUrl(it.attr("href"))
             val title = it.selectFirst("> div > div.cittx").text()
-            val poster = fixUrl(it.selectFirst("> div > div.imghddde > img").attr("src"))
+            val poster = fixUrlNull(it.selectFirst("> div > div.imghddde > img")?.attr("src"))
             AnimeSearchResponse(
                 title,
                 href,
@@ -73,7 +73,10 @@ class DubbedAnimeProvider : MainAPI() {
         }
     }
 
-    private fun parseDocument(url: String, trimEpisode: Boolean = false): List<SearchResponse> {
+    private suspend fun parseDocument(
+        url: String,
+        trimEpisode: Boolean = false
+    ): List<SearchResponse> {
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         return document.select("a.grid__link").map {
@@ -92,7 +95,7 @@ class DubbedAnimeProvider : MainAPI() {
         }
     }
 
-    override fun getMainPage(): HomePageResponse {
+    override suspend fun getMainPage(): HomePageResponse {
         val trendingUrl = "$mainUrl/xz/trending.php?_=$unixTimeMS"
         val lastEpisodeUrl = "$mainUrl/xz/epgrid.php?p=1&_=$unixTimeMS"
         val recentlyAddedUrl = "$mainUrl/xz/gridgrabrecent.php?p=1&_=$unixTimeMS"
@@ -109,7 +112,7 @@ class DubbedAnimeProvider : MainAPI() {
     }
 
 
-    private fun getAnimeEpisode(slug: String, isMovie: Boolean): EpisodeInfo {
+    private suspend fun getAnimeEpisode(slug: String, isMovie: Boolean): EpisodeInfo {
         val url =
             mainUrl + (if (isMovie) "/movies/jsonMovie" else "/xz/v3/jsonEpi") + ".php?slug=$slug&_=$unixTime"
         val response = app.get(url).text
@@ -126,74 +129,66 @@ class DubbedAnimeProvider : MainAPI() {
         return href.replace("$mainUrl/", "")
     }
 
-    override fun quickSearch(query: String): List<SearchResponse> {
+    override suspend fun quickSearch(query: String): List<SearchResponse> {
         val url = "$mainUrl/xz/searchgrid.php?p=1&limit=12&s=$query&_=$unixTime"
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         val items = document.select("div.grid__item > a")
-        if (items.isEmpty()) return ArrayList()
-        val returnValue = ArrayList<SearchResponse>()
-        for (i in items) {
+        if (items.isEmpty()) return emptyList()
+        return items.map { i ->
             val href = fixUrl(i.attr("href"))
             val title = i.selectFirst("div.gridtitlek").text()
-            val img = fixUrl(i.selectFirst("img.grid__img").attr("src"))
-            returnValue.add(
-                if (getIsMovie(href)) {
-                    MovieSearchResponse(
-                        title, href, this.name, TvType.AnimeMovie, img, null
-                    )
-                } else {
-                    AnimeSearchResponse(
-                        title,
-                        href,
-                        this.name,
-                        TvType.Anime,
-                        img,
-                        null,
-                        EnumSet.of(DubStatus.Dubbed),
-                    )
-                }
-            )
+            val img = fixUrlNull(i.selectFirst("img.grid__img")?.attr("src"))
+
+            if (getIsMovie(href)) {
+                MovieSearchResponse(
+                    title, href, this.name, TvType.AnimeMovie, img, null
+                )
+            } else {
+                AnimeSearchResponse(
+                    title,
+                    href,
+                    this.name,
+                    TvType.Anime,
+                    img,
+                    null,
+                    EnumSet.of(DubStatus.Dubbed),
+                )
+            }
         }
-        return returnValue
     }
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search/$query"
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         val items = document.select("div.resultinner > a.resulta")
         if (items.isEmpty()) return ArrayList()
-        val returnValue = ArrayList<SearchResponse>()
-        for (i in items) {
+        return items.map { i ->
             val innerDiv = i.selectFirst("> div.result")
             val href = fixUrl(i.attr("href"))
             val img = fixUrl(innerDiv.selectFirst("> div.imgkz > img").attr("src"))
             val title = innerDiv.selectFirst("> div.titleresults").text()
 
-            returnValue.add(
-                if (getIsMovie(href)) {
-                    MovieSearchResponse(
-                        title, href, this.name, TvType.AnimeMovie, img, null
-                    )
-                } else {
-                    AnimeSearchResponse(
-                        title,
-                        href,
-                        this.name,
-                        TvType.Anime,
-                        img,
-                        null,
-                        EnumSet.of(DubStatus.Dubbed),
-                    )
-                }
-            )
+            if (getIsMovie(href)) {
+                MovieSearchResponse(
+                    title, href, this.name, TvType.AnimeMovie, img, null
+                )
+            } else {
+                AnimeSearchResponse(
+                    title,
+                    href,
+                    this.name,
+                    TvType.Anime,
+                    img,
+                    null,
+                    EnumSet.of(DubStatus.Dubbed),
+                )
+            }
         }
-
-        return returnValue
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -230,7 +225,7 @@ class DubbedAnimeProvider : MainAPI() {
         return true
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         if (getIsMovie(url)) {
             val realSlug = url.replace("movies/", "")
             val episode = getAnimeEpisode(realSlug, true)

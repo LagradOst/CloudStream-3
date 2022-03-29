@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3.ui
 
-import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
@@ -15,26 +14,28 @@ import com.google.android.gms.cast.MediaSeekOptions
 import com.google.android.gms.cast.MediaStatus.REPEAT_MODE_REPEAT_OFF
 import com.google.android.gms.cast.MediaTrack
 import com.google.android.gms.cast.TextTrackStyle
-import com.google.android.gms.cast.TextTrackStyle.EDGE_TYPE_OUTLINE
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import com.google.android.gms.cast.framework.media.uicontroller.UIController
 import com.google.android.gms.cast.framework.media.widget.ExpandedControllerActivity
 import com.lagradost.cloudstream3.R
-import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
+import com.lagradost.cloudstream3.mvvm.Resource
+import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.sortSubs
 import com.lagradost.cloudstream3.sortUrls
 import com.lagradost.cloudstream3.ui.player.RepoLinkGenerator
 import com.lagradost.cloudstream3.ui.player.SubtitleData
 import com.lagradost.cloudstream3.ui.result.ResultEpisode
+import com.lagradost.cloudstream3.ui.subtitles.ChromecastSubtitlesFragment
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.CastHelper.awaitLinks
 import com.lagradost.cloudstream3.utils.CastHelper.getMediaInfo
+import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.DataStore.toKotlinObject
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import org.json.JSONObject
-import kotlin.concurrent.thread
 
 /*class SkipOpController(val view: ImageView) : UIController() {
     init {
@@ -144,16 +145,22 @@ class SelectSourceController(val view: ImageView, val activity: ControllerActivi
                             if (which == 0) {
                                 remoteMediaClient?.setActiveMediaTracks(longArrayOf()) // NO SUBS
                             } else {
-                                val font = TextTrackStyle()
-                                font.fontFamily = "Google Sans" //TODO FONT SETTINGS
-                                font.backgroundColor = 0x00FFFFFF // TRANSPARENT
+                                ChromecastSubtitlesFragment.getCurrentSavedStyle().apply {
+                                    val font = TextTrackStyle()
+                                    font.fontFamily = fontFamily ?: "Google Sans"
+                                    fontGenericFamily?.let {
+                                        font.fontGenericFamily = it
+                                    }
+                                    font.windowColor = windowColor
+                                    font.backgroundColor = backgroundColor
 
-                                font.edgeColor = Color.BLACK
-                                font.edgeType = EDGE_TYPE_OUTLINE
-                                font.foregroundColor = Color.WHITE
-                                font.fontScale = 1.05f
+                                    font.edgeColor = edgeColor
+                                    font.edgeType = edgeType
+                                    font.foregroundColor = foregroundColor
+                                    font.fontScale = fontScale
 
-                                remoteMediaClient?.setTextTrackStyle(font)
+                                    remoteMediaClient?.setTextTrackStyle(font)
+                                }
 
                                 remoteMediaClient?.setActiveMediaTracks(longArrayOf(subTracks[which - 1].id))
                                     ?.setResultCallback {
@@ -264,7 +271,7 @@ class SelectSourceController(val view: ImageView, val activity: ControllerActivi
 
                 if (itemCount != null && itemCount - currentIdIndex == 1 && !isLoadingMore) {
                     isLoadingMore = true
-                    thread {
+                    ioSafe {
                         val index = meta.currentEpisodeIndex + 1
                         val epData = meta.episodes[index]
                         val currentLinks = mutableSetOf<ExtractorLink>()
@@ -272,7 +279,7 @@ class SelectSourceController(val view: ImageView, val activity: ControllerActivi
 
                         val generator = RepoLinkGenerator(listOf(epData))
 
-                        val isSuccessful = normalSafeApiCall {
+                        val isSuccessful = safeApiCall {
                             generator.generateLinks(false, true,
                                 {
                                     it.first?.let { link ->
@@ -285,16 +292,16 @@ class SelectSourceController(val view: ImageView, val activity: ControllerActivi
 
                         val sortedLinks = sortUrls(currentLinks)
                         val sortedSubs = sortSubs(currentSubs)
-                        if (isSuccessful == true) {
+                        if (isSuccessful == Resource.Success(true)) {
                             if (currentLinks.isNotEmpty()) {
                                 val jsonCopy = meta.copy(
-                                    currentLinks =  sortedLinks,
+                                    currentLinks = sortedLinks,
                                     currentSubtitles = sortedSubs,
                                     currentEpisodeIndex = index
                                 )
 
                                 val done =
-                                    JSONObject(mapper.writeValueAsString(jsonCopy))
+                                    JSONObject(jsonCopy.toJson())
 
                                 val mediaInfo = getMediaInfo(
                                     epData,
@@ -318,13 +325,10 @@ class SelectSourceController(val view: ImageView, val activity: ControllerActivi
                                 }*/
                                 activity.runOnUiThread {
                                     awaitLinks(
-
                                         remoteMediaClient?.queueAppendItem(
                                             MediaQueueItem.Builder(mediaInfo).build(),
                                             JSONObject()
                                         )
-
-
                                     ) {
                                         println("FAILED TO LOAD NEXT ITEM")
                                         //  loadIndex(1)

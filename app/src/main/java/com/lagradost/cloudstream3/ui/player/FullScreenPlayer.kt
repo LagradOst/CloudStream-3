@@ -11,6 +11,7 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.Editable
 import android.util.DisplayMetrics
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -20,11 +21,16 @@ import android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHO
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
+import androidx.core.widget.doOnTextChanged
 import androidx.preference.PreferenceManager
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
@@ -35,6 +41,7 @@ import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
 import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
+import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.getNavigationBarHeight
 import com.lagradost.cloudstream3.utils.UIHelper.getStatusBarHeight
 import com.lagradost.cloudstream3.utils.UIHelper.hideSystemUI
@@ -42,7 +49,6 @@ import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
 import com.lagradost.cloudstream3.utils.UIHelper.showSystemUI
 import com.lagradost.cloudstream3.utils.UIHelper.toPx
 import com.lagradost.cloudstream3.utils.Vector2
-import kotlinx.android.synthetic.main.fragment_player.*
 import kotlinx.android.synthetic.main.player_custom_layout.*
 import kotlin.math.*
 
@@ -56,7 +62,7 @@ const val DOUBLE_TAB_MINIMUM_TIME_BETWEEN = 200L    // this also affects the UI 
 const val DOUBLE_TAB_PAUSE_PERCENTAGE = 0.15        // in both directions
 
 // All the UI Logic for the player
-open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
+open class FullScreenPlayer : AbstractPlayerFragment() {
     // state of player UI
     protected var isShowing = false
     protected var isLocked = false
@@ -71,6 +77,19 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
     protected var playerResizeEnabled = false
     protected var doubleTapEnabled = false
     protected var doubleTapPauseEnabled = true
+
+    protected var subtitleDelay
+        set(value) = try {
+            player.setSubtitleOffset(-value)
+        } catch (e: Exception) {
+            logError(e)
+        }
+        get() = try {
+            -player.getSubtitleOffset()
+        } catch (e: Exception) {
+            logError(e)
+            0L
+        }
 
     //private var useSystemBrightness = false
     protected var useTrueSystemBrightness = true
@@ -122,15 +141,16 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
     /** Returns false if the touch is on the status bar or navigation bar*/
     private fun isValidTouch(rawX: Float, rawY: Float): Boolean {
         val statusHeight = statusBarHeight ?: 0
-        val navHeight = navigationBarHeight ?: 0
-        return rawY > statusHeight && rawX < screenWidth - navHeight
+        // val navHeight = navigationBarHeight ?: 0
+        // nav height is removed because screenWidth already takes into account that
+        return rawY > statusHeight && rawX < screenWidth //- navHeight
     }
 
     private fun animateLayoutChanges() {
         if (isShowing) {
             updateUIVisibility()
         } else {
-            player_holder.postDelayed({ updateUIVisibility() }, 200)
+            player_holder?.postDelayed({ updateUIVisibility() }, 200)
         }
 
         val titleMove = if (isShowing) 0f else -50.toPx.toFloat()
@@ -196,6 +216,10 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         player_top_holder?.startAnimation(fadeAnimation)
     }
 
+    override fun subtitlesChanged() {
+        player_subtitle_offset_btt?.isGone = player.getCurrentPreferredSubtitle() == null
+    }
+
     override fun onResume() {
         activity?.hideSystemUI()
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
@@ -226,7 +250,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
     private fun setPlayBackSpeed(speed: Float) {
         try {
             setKey(PLAYBACK_SPEED_KEY, speed)
-            playback_speed_btt?.text =
+            player_speed_btt?.text =
                 getString(R.string.player_speed_text_format).format(speed)
                     .replace(".0x", "x")
         } catch (e: Exception) {
@@ -239,6 +263,77 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
 
     private fun skipOp() {
         player.seekTime(85000) // skip 85s
+    }
+
+    private fun showSubtitleOffsetDialog() {
+        context?.let { ctx ->
+            val builder =
+                AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
+                    .setView(R.layout.subtitle_offset)
+            val dialog = builder.create()
+            dialog.show()
+
+            val beforeOffset = subtitleDelay
+
+            val applyButton = dialog.findViewById<TextView>(R.id.apply_btt)!!
+            val cancelButton = dialog.findViewById<TextView>(R.id.cancel_btt)!!
+            val input = dialog.findViewById<EditText>(R.id.subtitle_offset_input)!!
+            val sub = dialog.findViewById<ImageView>(R.id.subtitle_offset_subtract)!!
+            val add = dialog.findViewById<ImageView>(R.id.subtitle_offset_add)!!
+            val subTitle = dialog.findViewById<TextView>(R.id.subtitle_offset_sub_title)!!
+
+            input.doOnTextChanged { text, _, _, _ ->
+                text?.toString()?.toLongOrNull()?.let {
+                    subtitleDelay = it
+                    when {
+                        it > 0L -> {
+                            context?.getString(R.string.subtitle_offset_extra_hint_later_format)
+                                ?.format(it)
+                        }
+                        it < 0L -> {
+                            context?.getString(R.string.subtitle_offset_extra_hint_before_format)
+                                ?.format(-it)
+                        }
+                        it == 0L -> {
+                            context?.getString(R.string.subtitle_offset_extra_hint_none_format)
+                        }
+                        else -> {
+                            null
+                        }
+                    }?.let { str ->
+                        subTitle.text = str
+                    }
+                }
+            }
+            input.text = Editable.Factory.getInstance()?.newEditable(beforeOffset.toString())
+
+            val buttonChange = 100L
+
+            fun changeBy(by: Long) {
+                val current = (input.text?.toString()?.toLongOrNull() ?: 0) + by
+                input.text = Editable.Factory.getInstance()?.newEditable(current.toString())
+            }
+
+            add.setOnClickListener {
+                changeBy(buttonChange)
+            }
+
+            sub.setOnClickListener {
+                changeBy(-buttonChange)
+            }
+
+            dialog.setOnDismissListener {
+                activity?.hideSystemUI()
+            }
+            applyButton.setOnClickListener {
+                dialog.dismissSafe(activity)
+                player.seekTime(1L)
+            }
+            cancelButton.setOnClickListener {
+                subtitleDelay = beforeOffset
+                dialog.dismissSafe(activity)
+            }
+        }
     }
 
     private fun showSpeedDialog() {
@@ -351,6 +446,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         }
         activity?.hideSystemUI()
         animateLayoutChanges()
+        player_pause_play?.requestFocus()
     }
 
     private fun toggleLock() {
@@ -385,6 +481,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
 
         //TITLE
         player_video_title_rez?.startAnimation(fadeAnimation)
+        player_episode_filler?.startAnimation(fadeAnimation)
         player_video_title?.startAnimation(fadeAnimation)
         player_top_holder?.startAnimation(fadeAnimation)
         // BOTTOM
@@ -404,6 +501,9 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         player_pause_play?.isGone = isGone
         //player_buffering?.isGone = isGone
         player_top_holder?.isGone = isGone
+        player_video_title?.isGone = isGone
+        player_video_title_rez?.isGone = isGone
+        player_episode_filler?.isGone = isGone
         player_center_menu?.isGone = isGone
         player_lock?.isGone = !isShowing
         //player_media_route_button?.isClickable = !isGone
@@ -412,13 +512,15 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
 
     private fun updateLockUI() {
         player_lock?.setIconResource(if (isLocked) R.drawable.video_locked else R.drawable.video_unlocked)
-        val color = if (isLocked) context?.colorFromAttribute(R.attr.colorPrimary)
-        else Color.WHITE
-        if (color != null) {
-            player_lock?.setTextColor(color)
-            player_lock?.iconTint = ColorStateList.valueOf(color)
-            player_lock?.rippleColor =
-                ColorStateList.valueOf(Color.argb(50, color.red, color.green, color.blue))
+        if (layout == R.layout.fragment_player) {
+            val color = if (isLocked) context?.colorFromAttribute(R.attr.colorPrimary)
+            else Color.WHITE
+            if (color != null) {
+                player_lock?.setTextColor(color)
+                player_lock?.iconTint = ColorStateList.valueOf(color)
+                player_lock?.rippleColor =
+                    ColorStateList.valueOf(Color.argb(50, color.red, color.green, color.blue))
+            }
         }
     }
 
@@ -436,7 +538,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
     // this is used because you don't want to hide UI when double tap seeking
     private var currentDoubleTapIndex = 0
     private fun toggleShowDelayed() {
-        if (doubleTapEnabled) {
+        if (doubleTapEnabled || doubleTapPauseEnabled) {
             val index = currentDoubleTapIndex
             player_holder?.postDelayed({
                 if (index == currentDoubleTapIndex) {
@@ -616,8 +718,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
                     && holdTime != null
                     && holdTime < DOUBLE_TAB_MAXIMUM_HOLD_TIME // it is a click not a long hold
                 ) {
-                    if (doubleTapEnabled
-                        && !isLocked
+                    if (!isLocked
                         && (System.currentTimeMillis() - currentLastTouchEndTime) < DOUBLE_TAB_MINIMUM_TIME_BETWEEN // the time since the last action is short
                     ) {
                         currentClickCount++
@@ -627,16 +728,18 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
                             if (doubleTapPauseEnabled) { // you can pause if your tap is in the middle of the screen
                                 when {
                                     currentTouch.x < screenWidth / 2 - (DOUBLE_TAB_PAUSE_PERCENTAGE * screenWidth) -> {
-                                        rewind()
+                                        if (doubleTapEnabled)
+                                            rewind()
                                     }
                                     currentTouch.x > screenWidth / 2 + (DOUBLE_TAB_PAUSE_PERCENTAGE * screenWidth) -> {
-                                        fastForward()
+                                        if (doubleTapEnabled)
+                                            fastForward()
                                     }
                                     else -> {
                                         player.handleEvent(CSPlayerEvent.PlayPauseToggle)
                                     }
                                 }
-                            } else {
+                            } else if (doubleTapEnabled) {
                                 if (currentTouch.x < screenWidth / 2) {
                                     rewind()
                                 } else {
@@ -818,50 +921,71 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         return true
     }
 
-    private fun handleKeyEvent(event: KeyEvent): Boolean {
-        event.keyCode.let { keyCode ->
-            when (event.action) {
-                KeyEvent.ACTION_DOWN -> {
-                    when (keyCode) {
-                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_DPAD_UP -> {
-                            if (!isShowing) {
-                                onClickChange()
-                                return true
+    private fun handleKeyEvent(event: KeyEvent, hasNavigated: Boolean): Boolean {
+        if (hasNavigated) {
+            autoHide()
+        } else {
+            event.keyCode.let { keyCode ->
+                when (event.action) {
+                    KeyEvent.ACTION_DOWN -> {
+                        when (keyCode) {
+                            KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                if (!isShowing) {
+                                    if (!isLocked) player.handleEvent(CSPlayerEvent.PlayPauseToggle)
+                                    onClickChange()
+                                    return true
+                                }
+                            }
+                            KeyEvent.KEYCODE_DPAD_UP -> {
+                                if (!isShowing) {
+                                    onClickChange()
+                                    return true
+                                }
+                            }
+                            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                if (!isShowing && !isLocked) {
+                                    player.seekTime(-10000L)
+                                    return true
+                                } else if (player_pause_play?.isFocused == true) {
+                                    player.seekTime(-30000L)
+                                    return true
+                                }
+                            }
+                            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                if (!isShowing && !isLocked) {
+                                    player.seekTime(10000L)
+                                    return true
+                                } else if (player_pause_play?.isFocused == true) {
+                                    player.seekTime(30000L)
+                                    return true
+                                }
                             }
                         }
                     }
-
-                    //println("Keycode: $keyCode")
-                    //showToast(
-                    //    this,
-                    //    "Got Keycode $keyCode | ${KeyEvent.keyCodeToString(keyCode)} \n ${event?.action}",
-                    //    Toast.LENGTH_LONG
-                    //)
                 }
-            }
 
-            when (keyCode) {
-                // don't allow dpad move when hidden
-                KeyEvent.KEYCODE_DPAD_LEFT,
-                KeyEvent.KEYCODE_DPAD_DOWN,
-                KeyEvent.KEYCODE_DPAD_UP,
-                KeyEvent.KEYCODE_DPAD_RIGHT,
-                KeyEvent.KEYCODE_DPAD_DOWN_LEFT,
-                KeyEvent.KEYCODE_DPAD_DOWN_RIGHT,
-                KeyEvent.KEYCODE_DPAD_UP_LEFT,
-                KeyEvent.KEYCODE_DPAD_UP_RIGHT -> {
-                    if (!isShowing) {
-                        return true
-                    } else {
-                        autoHide()
+                when (keyCode) {
+                    // don't allow dpad move when hidden
+
+                    KeyEvent.KEYCODE_DPAD_DOWN,
+                    KeyEvent.KEYCODE_DPAD_UP,
+                    KeyEvent.KEYCODE_DPAD_DOWN_LEFT,
+                    KeyEvent.KEYCODE_DPAD_DOWN_RIGHT,
+                    KeyEvent.KEYCODE_DPAD_UP_LEFT,
+                    KeyEvent.KEYCODE_DPAD_UP_RIGHT -> {
+                        if (!isShowing) {
+                            return true
+                        } else {
+                            autoHide()
+                        }
                     }
-                }
 
-                // netflix capture back and hide ~monke
-                KeyEvent.KEYCODE_BACK -> {
-                    if (isShowing) {
-                        onClickChange()
-                        return true
+                    // netflix capture back and hide ~monke
+                    KeyEvent.KEYCODE_BACK -> {
+                        if (isShowing) {
+                            onClickChange()
+                            return true
+                        }
                     }
                 }
             }
@@ -939,17 +1063,17 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         }
 
         // handle tv controls directly based on player state
-        keyEventListener = { keyEvent ->
-            if (keyEvent != null) {
-                handleKeyEvent(keyEvent)
-            } else {
-                false
-            }
+        keyEventListener = { eventNav ->
+            val (event, hasNavigated) = eventNav
+            if (event != null)
+                handleKeyEvent(event, hasNavigated)
+            else false
         }
 
         try {
-            val settingsManager = PreferenceManager.getDefaultSharedPreferences(activity)
             context?.let { ctx ->
+                val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
+
                 navigationBarHeight = ctx.getNavigationBarHeight()
                 statusBarHeight = ctx.getStatusBarHeight()
 
@@ -989,7 +1113,8 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
                 //    settingsManager.getBoolean(ctx.getString(R.string.use_system_brightness_key), false)
             }
 
-            playback_speed_btt?.isVisible = playBackSpeedEnabled
+            player_speed_btt?.isVisible = playBackSpeedEnabled
+            player_resize_btt?.isVisible = playerResizeEnabled
         } catch (e: Exception) {
             logError(e)
         }
@@ -1005,7 +1130,7 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
             nextResize()
         }
 
-        playback_speed_btt?.setOnClickListener {
+        player_speed_btt?.setOnClickListener {
             autoHide()
             showSpeedDialog()
         }
@@ -1023,6 +1148,10 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
         player_lock?.setOnClickListener {
             autoHide()
             toggleLock()
+        }
+
+        player_subtitle_offset_btt?.setOnClickListener {
+            showSubtitleOffsetDialog()
         }
 
         exo_rew?.setOnClickListener {
@@ -1048,6 +1177,21 @@ open class FullScreenPlayer : AbstractPlayerFragment(R.layout.fragment_player) {
             return@setOnTouchListener handleMotionEvent(callView, event)
         }
 
+        exo_progress?.setOnTouchListener { _, event ->
+            // this makes the bar not disappear when sliding
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    currentTapIndex++
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    currentTapIndex++
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_BUTTON_RELEASE -> {
+                    autoHide()
+                }
+            }
+            return@setOnTouchListener false
+        }
         // init UI
         try {
             uiReset()

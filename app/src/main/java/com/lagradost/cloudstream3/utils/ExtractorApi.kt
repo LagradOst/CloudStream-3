@@ -5,7 +5,8 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.*
-import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
+import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
+import kotlinx.coroutines.delay
 import org.jsoup.Jsoup
 
 data class ExtractorLink(
@@ -15,7 +16,9 @@ data class ExtractorLink(
     override val referer: String,
     val quality: Int,
     val isM3u8: Boolean = false,
-    override val headers: Map<String, String> = mapOf()
+    override val headers: Map<String, String> = mapOf(),
+    /** Used for getExtractorVerifierJob() */
+    val extractorData: String? = null
 ) : VideoDownloadManager.IDownloadableMinimum
 
 data class ExtractorUri(
@@ -52,7 +55,7 @@ enum class Qualities(var value: Int) {
 }
 
 fun getQualityFromName(qualityName: String): Int {
-    return when (qualityName.replace("p", "").replace("P", "")) {
+    return when (qualityName.replace("p", "").replace("P", "").trim()) {
         "360" -> Qualities.P360
         "480" -> Qualities.P480
         "720" -> Qualities.P720
@@ -78,7 +81,7 @@ fun getAndUnpack(string: String): String {
 /**
  * Tries to load the appropriate extractor based on link, returns true if any extractor is loaded.
  * */
-fun loadExtractor(url: String, referer: String?, callback: (ExtractorLink) -> Unit) : Boolean {
+suspend fun loadExtractor(url: String, referer: String? = null, callback: (ExtractorLink) -> Unit) : Boolean {
     for (extractor in extractorApis) {
         if (url.startsWith(extractor.mainUrl)) {
             extractor.getSafeUrl(url, referer)?.forEach(callback)
@@ -91,21 +94,44 @@ fun loadExtractor(url: String, referer: String?, callback: (ExtractorLink) -> Un
 val extractorApis: Array<ExtractorApi> = arrayOf(
     //AllProvider(),
     WcoStream(),
+    Vidstreamz(),
+    Vizcloud(),
+    Vizcloud2(),
+    VizcloudOnline(),
+    VizcloudXyz(),
     Mp4Upload(),
     StreamTape(),
     MixDrop(),
+    Mcloud(),
     XStreamCdn(),
     StreamSB(),
-    Streamhub(),
+    StreamSB1(),
+    StreamSB2(),
+    StreamSB3(),
+    StreamSB4(),
+    StreamSB5(),
+    StreamSB6(),
+    StreamSB7(),
+    StreamSB8(),
+    StreamSB9(),
+    StreamSB10(),
+   // Streamhub(), cause Streamhub2() works
+    Streamhub2(),
 
     FEmbed(),
     FeHD(),
     Fplayer(),
-    WatchSB(),
+  //  WatchSB(), 'cause StreamSB.kt works
     Uqload(),
+    Uqload1(),
     Evoload(),
+    Evoload1(),
     VoeExtractor(),
-    UpstreamExtractor(),
+   // UpstreamExtractor(), GenericM3U8.kt works
+
+    Tomatomatela(),
+    Cinestart(),
+    OkRu(),
 
     // dood extractors
     DoodToExtractor(),
@@ -115,9 +141,19 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
 
     AsianLoad(),
 
-    SBPlay(),
-    SBPlay1(),
-    SBPlay2(),
+   // GenericM3U8(),
+    Jawcloud(),
+    Zplayer(),
+    ZplayerV2(),
+    Upstream(),
+
+
+  // StreamSB.kt works
+  //  SBPlay(),
+  //  SBPlay1(),
+  //  SBPlay2(),
+
+    PlayerVoxzer(),
 )
 
 fun getExtractorApiFromName(name: String): ExtractorApi {
@@ -135,7 +171,7 @@ fun httpsify(url: String): String {
     return if (url.startsWith("//")) "https:$url" else url
 }
 
-fun getPostForm(requestUrl : String, html : String) : String? {
+suspend fun getPostForm(requestUrl : String, html : String) : String? {
     val document = Jsoup.parse(html)
     val inputs = document.select("Form > input")
     if (inputs.size < 4) return null
@@ -157,7 +193,7 @@ fun getPostForm(requestUrl : String, html : String) : String? {
     if (op == null || id == null || mode == null || hash == null) {
         return null
     }
-    Thread.sleep(5000) // ye this is needed, wont work with 0 delay
+    delay(5000) // ye this is needed, wont work with 0 delay
 
     val postResponse = app.post(
         requestUrl,
@@ -178,14 +214,14 @@ abstract class ExtractorApi {
     abstract val mainUrl: String
     abstract val requiresReferer: Boolean
 
-    fun getSafeUrl(url: String, referer: String? = null): List<ExtractorLink>? {
-        return normalSafeApiCall { getUrl(url, referer) }
+    suspend fun getSafeUrl(url: String, referer: String? = null): List<ExtractorLink>? {
+        return suspendSafeApiCall { getUrl(url, referer) }
     }
 
     /**
      * Will throw errors, use getSafeUrl if you don't want to handle the exception yourself
      */
-    abstract fun getUrl(url: String, referer: String? = null): List<ExtractorLink>?
+    abstract suspend fun getUrl(url: String, referer: String? = null): List<ExtractorLink>?
 
     open fun getExtractorUrl(id: String): String {
         return id

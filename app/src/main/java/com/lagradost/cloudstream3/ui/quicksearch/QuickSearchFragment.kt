@@ -12,6 +12,8 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.lagradost.cloudstream3.APIHolder.apis
+import com.lagradost.cloudstream3.APIHolder.getApiProviderLangSettings
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.Resource
@@ -34,11 +36,24 @@ class QuickSearchFragment(var isMainApis: Boolean = false) : Fragment() {
         fun pushSearch(activity: Activity?, autoSearch: String? = null) {
             activity.navigate(R.id.global_to_navigation_quick_search, Bundle().apply {
                 putBoolean("mainapi", true)
-                putString("autosearch", autoSearch)
+                autoSearch?.let {
+                    putString(
+                        "autosearch",
+                        it.trim()
+                            .removeSuffix("(DUB)")
+                            .removeSuffix("(SUB)")
+                            .removeSuffix("(Dub)")
+                            .removeSuffix("(Sub)").trim()
+                    )
+                }
             })
         }
 
-        fun pushSync(activity: Activity?, autoSearch: String? = null, callback: (SearchClickCallback) -> Unit) {
+        fun pushSync(
+            activity: Activity?,
+            autoSearch: String? = null,
+            callback: (SearchClickCallback) -> Unit
+        ) {
             clickCallback = callback
             activity.navigate(R.id.global_to_navigation_quick_search, Bundle().apply {
                 putBoolean("mainapi", false)
@@ -82,14 +97,13 @@ class QuickSearchFragment(var isMainApis: Boolean = false) : Fragment() {
                 // https://stackoverflow.com/questions/6866238/concurrent-modification-exception-adding-to-an-arraylist
                 listLock.lock()
                 (quick_search_master_recycler?.adapter as ParentItemAdapter?)?.apply {
-                    items = list.map { ongoing ->
+                    updateList(list.map { ongoing ->
                         val ongoingList = HomePageList(
                             ongoing.apiName,
                             if (ongoing.data is Resource.Success) ongoing.data.value.filterSearchResponse() else ArrayList()
                         )
                         ongoingList
-                    }
-                    notifyDataSetChanged()
+                    })
                 }
             } catch (e: Exception) {
                 logError(e)
@@ -98,31 +112,44 @@ class QuickSearchFragment(var isMainApis: Boolean = false) : Fragment() {
             }
         }
 
-        val masterAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder> = ParentItemAdapter(listOf(), { callback ->
-            when (callback.action) {
-                SEARCH_ACTION_LOAD -> {
-                    if (isMainApis) {
-                        activity?.popCurrentPage()
+        val masterAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder> =
+            ParentItemAdapter(mutableListOf(), { callback ->
+                when (callback.action) {
+                    SEARCH_ACTION_LOAD -> {
+                        if (isMainApis) {
+                            activity?.popCurrentPage()
 
-                        SearchHelper.handleSearchClickCallback(activity, callback)
-                    } else {
-                        clickCallback?.invoke(callback)
+                            SearchHelper.handleSearchClickCallback(activity, callback)
+                        } else {
+                            clickCallback?.invoke(callback)
+                        }
                     }
+                    else -> SearchHelper.handleSearchClickCallback(activity, callback)
                 }
-                else -> SearchHelper.handleSearchClickCallback(activity, callback)
-            }
-        }, { item ->
-            activity?.loadHomepageList(item)
-        })
+            }, { item ->
+                activity?.loadHomepageList(item)
+            })
 
-        val searchExitIcon = quick_search.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
-        val searchMagIcon = quick_search.findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon)
+        val searchExitIcon =
+            quick_search?.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
+        val searchMagIcon =
+            quick_search?.findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon)
 
-        searchMagIcon.scaleX = 0.65f
-        searchMagIcon.scaleY = 0.65f
-        quick_search.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+        searchMagIcon?.scaleX = 0.65f
+        searchMagIcon?.scaleY = 0.65f
+        quick_search?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
-                searchViewModel.searchAndCancel(query = query, isMainApis = isMainApis, ignoreSettings = true)
+                val active = if (isMainApis) {
+                    val langs = context?.getApiProviderLangSettings()
+                    apis.filter { langs?.contains(it.lang) == true }.map { it.name }.toSet()
+                } else emptySet()
+
+                searchViewModel.searchAndCancel(
+                    query = query,
+                    isMainApis = isMainApis,
+                    ignoreSettings = false,
+                    providersActive = active
+                )
                 quick_search?.let {
                     UIHelper.hideKeyboard(it)
                 }
@@ -142,29 +169,26 @@ class QuickSearchFragment(var isMainApis: Boolean = false) : Fragment() {
                 is Resource.Success -> {
                     it.value.let { data ->
                         if (data.isNotEmpty()) {
-                            (search_autofit_results?.adapter as SearchAdapter?)?.apply {
-                                cardList = data.toList()
-                                notifyDataSetChanged()
-                            }
+                            (search_autofit_results?.adapter as? SearchAdapter?)?.updateList(data)
                         }
                     }
-                    searchExitIcon.alpha = 1f
-                    quick_search_loading_bar.alpha = 0f
+                    searchExitIcon?.alpha = 1f
+                    quick_search_loading_bar?.alpha = 0f
                 }
                 is Resource.Failure -> {
                     // Toast.makeText(activity, "Server error", Toast.LENGTH_LONG).show()
-                    searchExitIcon.alpha = 1f
-                    quick_search_loading_bar.alpha = 0f
+                    searchExitIcon?.alpha = 1f
+                    quick_search_loading_bar?.alpha = 0f
                 }
                 is Resource.Loading -> {
-                    searchExitIcon.alpha = 0f
-                    quick_search_loading_bar.alpha = 1f
+                    searchExitIcon?.alpha = 0f
+                    quick_search_loading_bar?.alpha = 1f
                 }
             }
         }
 
-        quick_search_master_recycler.adapter = masterAdapter
-        quick_search_master_recycler.layoutManager = GridLayoutManager(context, 1)
+        quick_search_master_recycler?.adapter = masterAdapter
+        quick_search_master_recycler?.layoutManager = GridLayoutManager(context, 1)
 
         //quick_search.setOnQueryTextFocusChangeListener { _, b ->
         //    if (b) {
@@ -178,7 +202,7 @@ class QuickSearchFragment(var isMainApis: Boolean = false) : Fragment() {
         }
 
         arguments?.getString("autosearch")?.let {
-            quick_search.setQuery(it, true)
+            quick_search?.setQuery(it, true)
             arguments?.remove("autosearch")
         }
     }

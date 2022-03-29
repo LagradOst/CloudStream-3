@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
@@ -15,13 +14,14 @@
             android:id="@+id/home_loading"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
+
         <ProgressBar
                 android:layout_gravity="center"
                 android:visibility="gone"
                 tools:visibility="gone"
                 android:layout_width="50dp"
-                android:layout_height="50dp">
-        </ProgressBar>
+                android:layout_height="50dp" />
+
         <com.facebook.shimmer.ShimmerFrameLayout
                 android:id="@+id/home_loading_shimmer"
                 app:shimmer_base_alpha="0.2"
@@ -34,14 +34,17 @@
                 android:layout_gravity="center"
                 android:layout_marginTop="15dp"
                 android:orientation="vertical">
+
             <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
+
                 <FrameLayout
                         android:orientation="horizontal"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
+
                     <androidx.cardview.widget.CardView
                             android:layout_margin="@dimen/loading_margin"
                             android:layout_gravity="center"
@@ -49,16 +52,16 @@
                             android:background="@color/grayShimmer"
                             android:translationX="-164dp"
                             android:layout_width="125dp"
-                            android:layout_height="200dp">
-                    </androidx.cardview.widget.CardView>
+                            android:layout_height="200dp" />
+
                     <androidx.cardview.widget.CardView
                             android:layout_margin="@dimen/loading_margin"
                             android:layout_gravity="center"
                             app:cardCornerRadius="@dimen/loading_radius"
                             android:background="@color/grayShimmer"
                             android:layout_width="148dp"
-                            android:layout_height="234dp">
-                    </androidx.cardview.widget.CardView>
+                            android:layout_height="234dp" />
+
                     <androidx.cardview.widget.CardView
                             android:layout_margin="@dimen/loading_margin"
                             android:layout_gravity="center"
@@ -66,10 +69,10 @@
                             android:background="@color/grayShimmer"
                             android:translationX="164dp"
                             android:layout_width="125dp"
-                            android:layout_height="200dp">
-                    </androidx.cardview.widget.CardView>
+                            android:layout_height="200dp" />
                 </FrameLayout>
-                <include layout="@layout/loading_line_short_center"/>
+
+                <include layout="@layout/loading_line_short_center" />
 
                 <LinearLayout
                         android:orientation="vertical"
@@ -77,11 +80,14 @@
                         android:layout_marginStart="@dimen/result_padding"
                         android:layout_marginEnd="@dimen/result_padding"
 
-                        android:layout_width="match_parent" android:layout_height="wrap_content">
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
 
-                    <include layout="@layout/loading_list"/>
-                    <include layout="@layout/loading_list"/>
-                    <include layout="@layout/loading_list"/>
+                    <include layout="@layout/loading_list" />
+
+                    <include layout="@layout/loading_list" />
+
+                    <include layout="@layout/loading_list" />
                 </LinearLayout>
             </LinearLayout>
         </com.facebook.shimmer.ShimmerFrameLayout>
@@ -90,6 +96,7 @@
                 android:id="@+id/home_loading_statusbar"
                 android:layout_width="match_parent"
                 android:layout_height="70dp">
+
             <ImageView
                     android:id="@+id/home_change_api_loading"
                     android:layout_margin="10dp"
@@ -99,8 +106,7 @@
                     android:src="@drawable/ic_baseline_keyboard_arrow_down_24"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:contentDescription="@string/home_change_provider_img_des">
-            </ImageView>
+                    android:contentDescription="@string/home_change_provider_img_des" />
         </FrameLayout>
     </FrameLayout>
 
@@ -112,6 +118,7 @@
             android:layout_gravity="center"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
+
         <com.google.android.material.button.MaterialButton
                 android:layout_gravity="center"
                 style="@style/WhiteButton"
@@ -122,8 +129,8 @@
                 android:text="@string/reload_error"
                 android:id="@+id/home_reload_connectionerror"
                 android:layout_width="wrap_content"
-                android:minWidth="200dp"
-        />
+                android:minWidth="200dp" />
+
         <com.google.android.material.button.MaterialButton
                 android:layout_gravity="center"
                 style="@style/BlackButton"
@@ -134,8 +141,8 @@
                 android:text="@string/result_open_in_browser"
                 android:id="@+id/home_reload_connection_open_in_browser"
                 android:layout_width="wrap_content"
-                android:minWidth="200dp"
-        />
+                android:minWidth="200dp" />
+
         <TextView
                 android:layout_margin="5dp"
                 android:gravity="center"
@@ -143,9 +150,9 @@
                 android:id="@+id/result_error_text"
                 android:textColor="?attr/textColor"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-        />
+                android:layout_height="wrap_content" />
     </LinearLayout>
+
     <androidx.core.widget.NestedScrollView
             android:background="?attr/primaryBlackBackground"
             tools:visibility="visible"
@@ -158,16 +165,19 @@
                 android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
+
             <View
                     android:background="?attr/primaryGrayBackground"
                     android:id="@+id/home_statusbar"
                     android:layout_height="wrap_content"
-                    android:layout_width="match_parent"/>
+                    android:layout_width="match_parent" />
+
             <FrameLayout
                     android:id="@+id/home_settings_bar"
                     android:background="?attr/primaryGrayBackground"
                     android:layout_width="match_parent"
                     android:layout_height="70dp">
+
                 <LinearLayout
                         android:layout_marginEnd="50dp"
                         android:paddingTop="10dp"
@@ -179,6 +189,7 @@
                         android:orientation="horizontal"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent">
+
                     <androidx.cardview.widget.CardView
                             android:id="@+id/home_profile_picture_holder"
                             android:layout_marginEnd="20dp"
@@ -186,19 +197,21 @@
                             android:layout_gravity="center_vertical"
                             android:layout_width="35dp"
                             android:layout_height="35dp">
+
                         <ImageView
                                 android:id="@+id/home_profile_picture"
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
-                                tools:ignore="ContentDescription">
-                        </ImageView>
+                                tools:ignore="ContentDescription" />
                     </androidx.cardview.widget.CardView>
+
                     <LinearLayout
                             android:gravity="center"
 
                             android:orientation="vertical"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent">
+
                         <TextView
                                 android:gravity="center_vertical"
                                 android:layout_gravity="center"
@@ -208,8 +221,8 @@
                                 tools:text="Hello World"
                                 android:layout_width="match_parent"
 
-                                android:layout_height="wrap_content">
-                        </TextView>
+                                android:layout_height="wrap_content" />
+
                         <TextView
                                 android:gravity="center_vertical"
                                 android:layout_gravity="center"
@@ -218,8 +231,7 @@
                                 android:textSize="14sp"
                                 tools:text="Hello World"
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content">
-                        </TextView>
+                                android:layout_height="wrap_content" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -238,7 +250,8 @@
                         android:layout_width="30dp"
                         android:layout_height="30dp"
                         android:contentDescription="@string/home_change_provider_img_des">
-                    <requestFocus/>
+
+                    <requestFocus />
                 </ImageView>
             </FrameLayout>
 
@@ -248,6 +261,7 @@
                     android:orientation="vertical"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
+
                 <androidx.recyclerview.widget.RecyclerView
                         android:descendantFocusability="afterDescendants"
                         android:nextFocusUp="@id/home_change_api"
@@ -262,8 +276,7 @@
                         android:orientation="horizontal"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        tools:listitem="@layout/home_result_grid"
-                />
+                        tools:listitem="@layout/home_result_grid" />
                 <!--<ImageView
                         android:foreground="@drawable/outline_drawable"
                         android:id="@+id/home_main_poster"
@@ -286,7 +299,8 @@
                         android:layout_width="match_parent"
                         android:maxLines="2"
                         android:ellipsize="end"
-                        android:layout_height="40sp"/>
+                        android:layout_height="40sp" />
+
                 <LinearLayout
                         android:padding="5dp"
                         android:layout_gravity="center"
@@ -309,8 +323,8 @@
 
                             app:icon="@drawable/ic_baseline_play_arrow_24"
                             android:minWidth="120dp"
-                            android:layout_width="wrap_content">
-                    </com.google.android.material.button.MaterialButton>
+                            android:layout_width="wrap_content" />
+
                     <com.google.android.material.button.MaterialButton
                             android:nextFocusLeft="@id/home_main_play"
                             android:nextFocusUp="@id/home_main_poster_recyclerview"
@@ -328,8 +342,7 @@
                             android:focusable="true"
 
                             android:minWidth="120dp"
-                            android:layout_width="wrap_content">
-                    </com.google.android.material.button.MaterialButton>
+                            android:layout_width="wrap_content" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -351,12 +364,13 @@
                         android:padding="12dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
+
                     <TextView
                             android:layout_gravity="center_vertical"
                             android:id="@+id/home_watch_parent_item_title"
                             style="@style/WatchHeaderText"
-                            android:text="@string/continue_watching"
-                    />
+                            android:text="@string/continue_watching" />
+
                     <ImageView
                             app:tint="?attr/textColor"
                             android:layout_marginEnd="5dp"
@@ -364,8 +378,7 @@
                             android:src="@drawable/ic_baseline_arrow_forward_24"
                             android:layout_width="30dp"
                             android:layout_height="match_parent"
-                            android:contentDescription="@string/home_more_info">
-                    </ImageView>
+                            android:contentDescription="@string/home_more_info" />
                 </FrameLayout>
 
 
@@ -378,8 +391,7 @@
                         android:orientation="horizontal"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        tools:listitem="@layout/home_result_grid"
-                />
+                        tools:listitem="@layout/home_result_grid" />
 
             </LinearLayout>
 
@@ -404,52 +416,60 @@
                         android:paddingEnd="12dp"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
+
                     <HorizontalScrollView
                             android:fadingEdge="horizontal"
                             android:requiresFadingEdge="horizontal"
                             android:layout_marginEnd="50dp"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content">
+
                         <LinearLayout
                                 android:orientation="horizontal"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content">
+
                             <com.google.android.material.button.MaterialButton
                                     android:nextFocusLeft="@id/nav_rail_view"
                                     android:nextFocusRight="@id/home_plan_to_watch_btt"
 
                                     android:id="@+id/home_type_watching_btt"
                                     android:text="@string/type_watching"
-                                    style="@style/RoundedSelectableButton"/>
+                                    style="@style/RoundedSelectableButton" />
+
                             <com.google.android.material.button.MaterialButton
                                     android:nextFocusLeft="@id/home_type_watching_btt"
                                     android:nextFocusRight="@id/home_type_on_hold_btt"
 
                                     android:id="@+id/home_plan_to_watch_btt"
                                     android:text="@string/type_plan_to_watch"
-                                    style="@style/RoundedSelectableButton"/>
+                                    style="@style/RoundedSelectableButton" />
+
                             <com.google.android.material.button.MaterialButton
                                     android:nextFocusLeft="@id/home_plan_to_watch_btt"
                                     android:nextFocusRight="@id/home_type_dropped_btt"
 
                                     android:id="@+id/home_type_on_hold_btt"
                                     android:text="@string/type_on_hold"
-                                    style="@style/RoundedSelectableButton"/>
+                                    style="@style/RoundedSelectableButton" />
+
                             <com.google.android.material.button.MaterialButton
                                     android:nextFocusLeft="@id/home_type_on_hold_btt"
                                     android:nextFocusRight="@id/home_type_completed_btt"
 
                                     android:id="@+id/home_type_dropped_btt"
                                     android:text="@string/type_dropped"
-                                    style="@style/RoundedSelectableButton"/>
+                                    style="@style/RoundedSelectableButton" />
+
                             <com.google.android.material.button.MaterialButton
                                     android:nextFocusLeft="@id/home_type_dropped_btt"
 
                                     android:id="@+id/home_type_completed_btt"
                                     android:text="@string/type_completed"
-                                    style="@style/RoundedSelectableButton"/>
+                                    style="@style/RoundedSelectableButton" />
                         </LinearLayout>
                     </HorizontalScrollView>
+
                     <ImageView
                             app:tint="?attr/textColor"
                             android:layout_marginEnd="5dp"
@@ -457,9 +477,9 @@
                             android:src="@drawable/ic_baseline_arrow_forward_24"
                             android:layout_width="30dp"
                             android:layout_height="match_parent"
-                            android:contentDescription="@string/home_more_info">
-                    </ImageView>
+                            android:contentDescription="@string/home_more_info" />
                 </FrameLayout>
+
                 <androidx.recyclerview.widget.RecyclerView
                         android:paddingHorizontal="5dp"
                         android:clipToPadding="false"
@@ -470,8 +490,7 @@
                         android:orientation="horizontal"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        tools:listitem="@layout/home_result_grid"
-                />
+                        tools:listitem="@layout/home_result_grid" />
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
@@ -480,16 +499,17 @@
                     android:id="@+id/home_master_recycler"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    tools:listitem="@layout/homepage_parent"
-            />
+                    tools:listitem="@layout/homepage_parent" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:visibility="gone"
             tools:visibility="visible"
+            android:text="@string/home_source"
             android:id="@+id/home_api_fab"
             app:icon="@drawable/ic_baseline_filter_list_24"
             style="@style/ExtendedFloatingActionButton"
-            tools:ignore="ContentDescription">
-    </com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton>
+            android:textColor="?attr/textColor"
+            tools:ignore="ContentDescription" />
 </FrameLayout>

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTime
 import com.lagradost.cloudstream3.extractors.M3u8Manifest
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.jsoup.Jsoup
@@ -12,8 +13,8 @@ import org.jsoup.Jsoup
 //BE AWARE THAT weboas.is is a clone of lookmovie
 class LookMovieProvider : MainAPI() {
     override val hasQuickSearch = true
-    override val name = "LookMovie"
-    override val mainUrl = "https://lookmovie.io"
+    override var name = "LookMovie"
+    override var mainUrl = "https://lookmovie.io"
 
     override val supportedTypes = setOf(
         TvType.Movie,
@@ -63,7 +64,7 @@ class LookMovieProvider : MainAPI() {
         @JsonProperty("season") var season: String,
     )
 
-    override fun quickSearch(query: String): List<SearchResponse> {
+    override suspend fun quickSearch(query: String): List<SearchResponse> {
         val movieUrl = "$mainUrl/api/v1/movies/search/?q=$query"
         val movieResponse = app.get(movieUrl).text
         val movies = mapper.readValue<LookMovieSearchResultRoot>(movieResponse).result
@@ -108,37 +109,32 @@ class LookMovieProvider : MainAPI() {
         return returnValue
     }
 
-    override fun search(query: String): List<SearchResponse> {
-        fun search(query: String, isMovie: Boolean): ArrayList<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
+        suspend fun search(query: String, isMovie: Boolean): List<SearchResponse> {
             val url = "$mainUrl/${if (isMovie) "movies" else "shows"}/search/?q=$query"
             val response = app.get(url).text
             val document = Jsoup.parse(response)
 
             val items = document.select("div.flex-wrap-movielist > div.movie-item-style-1")
-            val returnValue = ArrayList<SearchResponse>()
-            items.forEach { item ->
+            return items.map { item ->
                 val titleHolder = item.selectFirst("> div.mv-item-infor > h6 > a")
                 val href = fixUrl(titleHolder.attr("href"))
                 val name = titleHolder.text()
                 val posterHolder = item.selectFirst("> div.image__placeholder > a")
                 val poster = posterHolder.selectFirst("> img")?.attr("data-src")
                 val year = posterHolder.selectFirst("> p.year")?.text()?.toIntOrNull()
-
-                returnValue.add(
-                    if (isMovie) {
-                        MovieSearchResponse(
-                            name, href, this.name, TvType.Movie, poster, year
-                        )
-                    } else
-                        TvSeriesSearchResponse(
-                            name, href, this.name, TvType.TvSeries, poster, year, null
-                        )
-                )
+                if (isMovie) {
+                    MovieSearchResponse(
+                        name, href, this.name, TvType.Movie, poster, year
+                    )
+                } else
+                    TvSeriesSearchResponse(
+                        name, href, this.name, TvType.TvSeries, poster, year, null
+                    )
             }
-            return returnValue
         }
 
-        val movieList = search(query, true)
+        val movieList = search(query, true).toMutableList()
         val seriesList = search(query, false)
         movieList.addAll(seriesList)
         return movieList
@@ -146,7 +142,10 @@ class LookMovieProvider : MainAPI() {
 
     data class LookMovieLinkLoad(val url: String, val extraUrl: String, val isMovie: Boolean)
 
-    private fun addSubtitles(subs: List<LookMovieTokenSubtitle>?, subtitleCallback: (SubtitleFile) -> Unit) {
+    private fun addSubtitles(
+        subs: List<LookMovieTokenSubtitle>?,
+        subtitleCallback: (SubtitleFile) -> Unit
+    ) {
         if (subs == null) return
         subs.forEach {
             if (it.file.endsWith(".vtt"))
@@ -154,7 +153,7 @@ class LookMovieProvider : MainAPI() {
         }
     }
 
-    private fun loadCurrentLinks(url: String, callback: (ExtractorLink) -> Unit) {
+    private suspend fun loadCurrentLinks(url: String, callback: (ExtractorLink) -> Unit) {
         val response = app.get(url.replace("\$unixtime", unixTime.toString())).text
         M3u8Manifest.extractLinks(response).forEach {
             callback.invoke(
@@ -170,7 +169,7 @@ class LookMovieProvider : MainAPI() {
         }
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -194,7 +193,7 @@ class LookMovieProvider : MainAPI() {
         return true
     }
 
-    override fun load(url: String): LoadResponse? {
+    override suspend fun load(url: String): LoadResponse? {
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         val isMovie = url.contains("/movies/")
@@ -203,13 +202,16 @@ class LookMovieProvider : MainAPI() {
         val nameHeader = watchHeader.selectFirst("> h1.bd-hd")
         val year = nameHeader.selectFirst("> span")?.text()?.toIntOrNull()
         val title = nameHeader.ownText()
-        val rating = parseRating(watchHeader.selectFirst("> div.movie-rate > div.rate > p > span").text())
+        val rating =
+            parseRating(watchHeader.selectFirst("> div.movie-rate > div.rate > p > span").text())
         val imgElement = document.selectFirst("div.movie-img > p.movie__poster")
         val img = imgElement?.attr("style")
-        var poster = if (img.isNullOrEmpty()) null else "url\\((.*?)\\)".toRegex().find(img)?.groupValues?.get(1)
+        var poster = if (img.isNullOrEmpty()) null else "url\\((.*?)\\)".toRegex()
+            .find(img)?.groupValues?.get(1)
         if (poster.isNullOrEmpty()) poster = imgElement?.attr("data-background-image")
         val descript = document.selectFirst("p.description-short").text()
-        val id = "${if (isMovie) "id_movie" else "id_show"}:(.*?),".toRegex().find(response)?.groupValues?.get(1)
+        val id = "${if (isMovie) "id_movie" else "id_show"}:(.*?),".toRegex()
+            .find(response)?.groupValues?.get(1)
             ?.replace(" ", "")
             ?: return null
         val realSlug = url.replace("$mainUrl/${if (isMovie) "movies" else "shows"}/view/", "")
@@ -217,13 +219,13 @@ class LookMovieProvider : MainAPI() {
             "$mainUrl/api/v1/security/${if (isMovie) "movie" else "show"}-access?${if (isMovie) "id_movie=$id" else "slug=$realSlug"}&token=1&sk=&step=1"
 
         if (isMovie) {
-            val localData = mapper.writeValueAsString(
+            val localData =
                 LookMovieLinkLoad(
                     realUrl,
                     "$mainUrl/manifests/movies/json/$id/\$unixtime/\$accessToken/master.m3u8",
                     true
-                )
-            )
+                ).toJson()
+
             return MovieLoadResponse(
                 title,
                 url,
@@ -242,10 +244,14 @@ class LookMovieProvider : MainAPI() {
             val accessToken = root.data?.accessToken ?: return null
 
             val window =
-                "window\\['show_storage'] =((.|\\n)*?<)".toRegex().find(response)?.groupValues?.get(1)
+                "window\\['show_storage'] =((.|\\n)*?<)".toRegex().find(response)?.groupValues?.get(
+                    1
+                )
                     ?: return null
             // val id = "id_show:(.*?),".toRegex().find(response.text)?.groupValues?.get(1) ?: return null
-            val season = "seasons:.*\\[((.|\\n)*?)]".toRegex().find(window)?.groupValues?.get(1) ?: return null
+            val season = "seasons:.*\\[((.|\\n)*?)]".toRegex().find(window)?.groupValues?.get(1)
+                ?: return null
+
             fun String.fixSeasonJson(replace: String): String {
                 return this.replace("$replace:", "\"$replace\":")
             }
@@ -260,13 +266,13 @@ class LookMovieProvider : MainAPI() {
             val realJson = "[" + json.substring(0, json.lastIndexOf(',')) + "]"
 
             val episodes = mapper.readValue<List<LookMovieEpisode>>(realJson).map {
-                val localData = mapper.writeValueAsString(
+                val localData =
                     LookMovieLinkLoad(
                         "$mainUrl/manifests/shows/json/$accessToken/\$unixtime/${it.idEpisode}/master.m3u8",
                         "https://lookmovie.io/api/v1/shows/episode-subtitles/?id_episode=${it.idEpisode}",
                         false
-                    )
-                )
+                    ).toJson()
+
 
                 TvSeriesEpisode(
                     it.title,

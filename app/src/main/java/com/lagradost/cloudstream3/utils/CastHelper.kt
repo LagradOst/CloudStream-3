@@ -1,9 +1,6 @@
 package com.lagradost.cloudstream3.utils
 
 import android.net.Uri
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.google.android.exoplayer2.util.MimeTypes
 import com.google.android.gms.cast.*
 import com.google.android.gms.cast.framework.CastSession
@@ -13,15 +10,13 @@ import com.google.android.gms.common.images.WebImage
 import com.lagradost.cloudstream3.ui.MetadataHolder
 import com.lagradost.cloudstream3.ui.player.SubtitleData
 import com.lagradost.cloudstream3.ui.result.ResultEpisode
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.Coroutines.main
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 object CastHelper {
-    private val mapper: JsonMapper = JsonMapper.builder().addModule(KotlinModule())
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).build()
-
     fun getMediaInfo(
         epData: ResultEpisode,
         holder: MetadataHolder,
@@ -97,7 +92,7 @@ object CastHelper {
     ): Boolean {
         if (this == null) return false
         if (episodes.isEmpty()) return false
-        if (currentLinks.size <= currentEpisodeIndex) return false
+        if (currentEpisodeIndex >= episodes.size) return false
 
         val epData = episodes[currentEpisodeIndex]
 
@@ -107,7 +102,7 @@ object CastHelper {
         val index = if (startIndex == null || startIndex < 0) 0 else startIndex
 
         val mediaItem =
-            getMediaInfo(epData, holder, index, JSONObject(mapper.writeValueAsString(holder)), subtitles)
+            getMediaInfo(epData, holder, index, JSONObject(holder.toJson()), subtitles)
 
         awaitLinks(
             this.remoteMediaClient?.load(

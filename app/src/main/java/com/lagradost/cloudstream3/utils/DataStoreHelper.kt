@@ -1,10 +1,12 @@
 package com.lagradost.cloudstream3.utils
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKeys
 import com.lagradost.cloudstream3.AcraApplication.Companion.removeKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.DubStatus
+import com.lagradost.cloudstream3.SearchQuality
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.ui.WatchType
@@ -17,7 +19,10 @@ const val RESULT_SEASON = "result_season"
 const val RESULT_DUB = "result_dub"
 
 object DataStoreHelper {
-    data class PosDur(val position: Long, val duration: Long)
+    data class PosDur(
+        @JsonProperty("position") val position: Long,
+        @JsonProperty("duration") val duration: Long
+    )
 
     fun PosDur.fixVisual(): PosDur {
         if (duration <= 0) return PosDur(0, duration)
@@ -29,31 +34,33 @@ object DataStoreHelper {
     }
 
     data class BookmarkedData(
-        override val id: Int?,
-        val bookmarkedTime: Long,
-        val latestUpdatedTime: Long,
-        override val name: String,
-        override val url: String,
-        override val apiName: String,
-        override val type: TvType,
-        override val posterUrl: String?,
-        val year: Int?,
+        @JsonProperty("id") override var id: Int?,
+        @JsonProperty("bookmarkedTime") val bookmarkedTime: Long,
+        @JsonProperty("latestUpdatedTime") val latestUpdatedTime: Long,
+        @JsonProperty("name") override val name: String,
+        @JsonProperty("url") override val url: String,
+        @JsonProperty("apiName") override val apiName: String,
+        @JsonProperty("type") override var type: TvType? = null,
+        @JsonProperty("posterUrl") override var posterUrl: String?,
+        @JsonProperty("year") val year: Int?,
+        @JsonProperty("quality") override var quality: SearchQuality? = null
     ) : SearchResponse
 
     data class ResumeWatchingResult(
-        override val name: String,
-        override val url: String,
-        override val apiName: String,
-        override val type: TvType,
-        override val posterUrl: String?,
+        @JsonProperty("name") override val name: String,
+        @JsonProperty("url") override val url: String,
+        @JsonProperty("apiName") override val apiName: String,
+        @JsonProperty("type") override var type: TvType? = null,
+        @JsonProperty("posterUrl") override var posterUrl: String?,
 
-        val watchPos: PosDur?,
+        @JsonProperty("watchPos") val watchPos: PosDur?,
 
-        override val id: Int?,
-        val parentId: Int?,
-        val episode: Int?,
-        val season: Int?,
-        val isFromDownload: Boolean,
+        @JsonProperty("id") override var id: Int?,
+        @JsonProperty("parentId") val parentId: Int?,
+        @JsonProperty("episode") val episode: Int?,
+        @JsonProperty("season") val season: Int?,
+        @JsonProperty("isFromDownload") val isFromDownload: Boolean,
+        @JsonProperty("quality") override var quality: SearchQuality? = null
     ) : SearchResponse
 
     var currentAccount: String = "0" //TODO ACCOUNT IMPLEMENTATION
@@ -124,7 +131,7 @@ object DataStoreHelper {
     }
 
     fun getViewPos(id: Int?): PosDur? {
-        if(id == null) return null
+        if (id == null) return null
         return getKey("$currentAccount/$VIDEO_POS_DUR", id.toString(), null)
     }
 
@@ -148,7 +155,13 @@ object DataStoreHelper {
     }
 
     fun getResultWatchState(id: Int): WatchType {
-        return WatchType.fromInternalId(getKey<Int>("$currentAccount/$RESULT_WATCH_STATE", id.toString(), null))
+        return WatchType.fromInternalId(
+            getKey<Int>(
+                "$currentAccount/$RESULT_WATCH_STATE",
+                id.toString(),
+                null
+            )
+        )
     }
 
     fun getResultSeason(id: Int): Int {

@@ -1,12 +1,11 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
-import okio.Buffer
+import com.lagradost.cloudstream3.LoadResponse.Companion.setDuration
+import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
-import java.net.URLDecoder
 
 class AllMoviesForYouProvider : MainAPI() {
     companion object {
@@ -20,65 +19,104 @@ class AllMoviesForYouProvider : MainAPI() {
     }
 
     // Fetching movies will not work if this link is outdated.
-    override val mainUrl = "https://allmoviesforyou.net"
-    override val name = "AllMoviesForYou"
+    override var mainUrl = "https://allmoviesforyou.net"
+    override var name = "AllMoviesForYou"
+    override val hasMainPage = true
     override val supportedTypes = setOf(
         TvType.Movie,
         TvType.TvSeries
     )
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun getMainPage(): HomePageResponse {
+        val items = ArrayList<HomePageList>()
+        val soup = app.get(mainUrl).document
+        val urls = listOf(
+            Pair("Movies", "section[data-id=movies] article.TPost.B"),
+            Pair("TV Series", "section[data-id=series] article.TPost.B"),
+        )
+        for ((name, element) in urls) {
+            try {
+                val home = soup.select(element).map {
+                    val title = it.selectFirst("h2.title").text()
+                    val link = it.selectFirst("a").attr("href")
+                    TvSeriesSearchResponse(
+                        title,
+                        link,
+                        this.name,
+                        TvType.Movie,
+                        fixUrl(it.selectFirst("figure img").attr("data-src")),
+                        null,
+                        null,
+                    )
+                }
+
+                items.add(HomePageList(name, home))
+            } catch (e: Exception) {
+                logError(e)
+            }
+        }
+        if (items.size <= 0) throw ErrorLoadingException()
+        return HomePageResponse(items)
+    }
+
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=$query"
-        val response = app.get(url).text
-        val document = Jsoup.parse(response)
+        val document = app.get(url).document
 
         val items = document.select("ul.MovieList > li > article > a")
-        val returnValue = ArrayList<SearchResponse>()
-        for (item in items) {
+        return items.map { item ->
             val href = item.attr("href")
             val title = item.selectFirst("> h2.Title").text()
             val img = fixUrl(item.selectFirst("> div.Image > figure > img").attr("data-src"))
             val type = getType(href)
             if (type == TvType.Movie) {
-                returnValue.add(MovieSearchResponse(title, href, this.name, type, img, null))
-            } else if (type == TvType.TvSeries) {
-                returnValue.add(TvSeriesSearchResponse(title, href, this.name, type, img, null, null))
+                MovieSearchResponse(title, href, this.name, type, img, null)
+            } else {
+                TvSeriesSearchResponse(
+                    title,
+                    href,
+                    this.name,
+                    type,
+                    img,
+                    null,
+                    null
+                )
             }
         }
-        return returnValue
     }
 
-    private fun getLink(document: Document): List<String>? {
-        val list = ArrayList<String>()
-        Regex("iframe src=\"(.*?)\"").find(document.html())?.groupValues?.get(1)?.let {
-            list.add(it)
-        }
-        document.select("div.OptionBx")?.forEach { element ->
-            val baseElement = element.selectFirst("> a.Button")
-            val elementText = element.selectFirst("> p.AAIco-dns")?.text()
-            if (elementText == "Streamhub" || elementText == "Dood") {
-                baseElement?.attr("href")?.let { href ->
-                    list.add(href)
-                }
-            }
-        }
+//    private fun getLink(document: Document): List<String>? {
+//         val list = ArrayList<String>()
+//         Regex("iframe src=\"(.*?)\"").find(document.html())?.groupValues?.get(1)?.let {
+//             list.add(it)
+//         }
+//         document.select("div.OptionBx")?.forEach { element ->
+//             val baseElement = element.selectFirst("> a.Button")
+//             val elementText = element.selectFirst("> p.AAIco-dns")?.text()
+//             if (elementText == "Streamhub" || elementText == "Dood") {
+//                 baseElement?.attr("href")?.let { href ->
+//                     list.add(href)
+//                 }
+//             }
+//         }
+//
+//         return if (list.isEmpty()) null else list
+//     }
 
-        return if (list.isEmpty()) null else list
-    }
-
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val type = getType(url)
 
-        val response = app.get(url).text
-        val document = Jsoup.parse(response)
+        val document = app.get(url).document
 
         val title = document.selectFirst("h1.Title").text()
         val descipt = document.selectFirst("div.Description > p").text()
         val rating =
-            document.selectFirst("div.Vote > div.post-ratings > span")?.text()?.toFloatOrNull()?.times(1000)?.toInt()
+            document.selectFirst("div.Vote > div.post-ratings > span")?.text()?.toFloatOrNull()
+                ?.times(1000)?.toInt()
         val year = document.selectFirst("span.Date")?.text()
         val duration = document.selectFirst("span.Time").text()
-        val backgroundPoster = fixUrl(document.selectFirst("div.Image > figure > img").attr("data-src"))
+        val backgroundPoster =
+            fixUrlNull(document.selectFirst("div.Image > figure > img")?.attr("data-src"))
 
         if (type == TvType.TvSeries) {
             val list = ArrayList<Pair<Int, String>>()
@@ -111,8 +149,8 @@ class AllMoviesForYouProvider : MainAPI() {
                                 name,
                                 season.first,
                                 epNum,
-                                href,
-                                if (poster != null) fixUrl(poster) else null,
+                                fixUrl(href),
+                                fixUrlNull(poster),
                                 date
                             )
                         )
@@ -133,11 +171,13 @@ class AllMoviesForYouProvider : MainAPI() {
                 rating
             )
         } else {
-            val data = getLink(document)
-                ?: throw ErrorLoadingException("No Links Found")
-
-            return newMovieLoadResponse(title,url,type,mapper.writeValueAsString(data.filter { it != "about:blank" })) {
-               posterUrl = backgroundPoster
+            return newMovieLoadResponse(
+                title,
+                url,
+                type,
+                fixUrl(url)
+            ) {
+                posterUrl = backgroundPoster
                 this.year = year?.toIntOrNull()
                 this.plot = descipt
                 this.rating = rating
@@ -146,72 +186,23 @@ class AllMoviesForYouProvider : MainAPI() {
         }
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if (data == "about:blank") return false
-        if (data.startsWith("$mainUrl/episode/")) {
-            val response = app.get(data).text
-            getLink(Jsoup.parse(response))?.let { links ->
-                for (link in links) {
-                    if (link == data) continue
-                    loadLinks(link, isCasting, subtitleCallback, callback)
+        val doc = app.get(data).document
+        val iframe = doc.select("body iframe").map { fixUrl(it.attr("src")) }
+        iframe.apmap { id ->
+            if (id.contains("trembed")) {
+                val soup = app.get(id).document
+                soup.select("body iframe").map {
+                    val link = fixUrl(it.attr("src").replace("streamhub.to/d/","streamhub.to/e/"))
+                    loadExtractor(link, data, callback)
                 }
-                return true
-            }
-            return false
-        } else if (data.startsWith(mainUrl) && data != mainUrl) {
-            val realDataUrl = URLDecoder.decode(data, "UTF-8")
-            if (data.contains("trdownload")) {
-                val request = app.get(data)
-                val requestUrl = request.url
-                if (requestUrl.startsWith("https://streamhub.to/d/")) {
-                    val buffer = Buffer()
-                    val source = request.body?.source()
-                    var html = ""
-                    var tries = 0 // 20 tries = 163840 bytes = 0.16mb
-
-                    while (source?.exhausted() == false && tries < 20) {
-                        // 8192 = max size
-                        source.read(buffer, 8192)
-                        tries += 1
-                        html += buffer.readUtf8()
-                    }
-                    getPostForm(request.url, html)?.let { form ->
-                        val postDocument = Jsoup.parse(form)
-
-                        postDocument.selectFirst("a.downloadbtn")?.attr("href")?.let { url ->
-                            callback(ExtractorLink(this.name, this.name, url, mainUrl, Qualities.Unknown.value))
-                        }
-                    }
-                } else if (requestUrl.startsWith("https://dood")) {
-                    for (extractor in extractorApis) {
-                        if (requestUrl.startsWith(extractor.mainUrl)) {
-                            extractor.getSafeUrl(requestUrl)?.forEach { link ->
-                                callback(link)
-                            }
-                            break
-                        }
-                    }
-                } else {
-                    callback(ExtractorLink(this.name, this.name, realDataUrl, mainUrl, Qualities.Unknown.value))
-                }
-                return true
-            }
-            val response = app.get(realDataUrl).text
-            Regex("<iframe.*?src=\"(.*?)\"").find(response)?.groupValues?.get(1)?.let { url ->
-                loadExtractor(url.trimStart(), realDataUrl, callback)
-            }
-            return true
-        } else {
-            val links = mapper.readValue<List<String>>(data)
-            for (link in links) {
-                loadLinks(link, isCasting, subtitleCallback, callback)
-            }
-            return true
+            } else loadExtractor(id, data, callback)
         }
+        return true
     }
 }

@@ -1,25 +1,40 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.StreamTape
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 import java.net.URLEncoder
 
 class IHaveNoTvProvider : MainAPI() {
-    override val mainUrl = "https://ihavenotv.com"
-    override val name = "I Have No TV"
+    override var mainUrl = "https://ihavenotv.com"
+    override var name = "I Have No TV"
     override val hasQuickSearch = false
     override val hasMainPage = true
 
     override val supportedTypes = setOf(TvType.Documentary)
 
-    override fun getMainPage(): HomePageResponse {
+    override suspend fun getMainPage(): HomePageResponse {
         // Uhh, I am too lazy to scrape the "latest documentaries" and "recommended documentaries",
         // so I am just scraping 3 random categories
         val allCategories = listOf(
-            "astronomy", "brain", "creativity", "design", "economics", "environment", "health", "history",
-            "lifehack", "math", "music", "nature", "people", "physics", "science", "technology", "travel"
+            "astronomy",
+            "brain",
+            "creativity",
+            "design",
+            "economics",
+            "environment",
+            "health",
+            "history",
+            "lifehack",
+            "math",
+            "music",
+            "nature",
+            "people",
+            "physics",
+            "science",
+            "technology",
+            "travel"
         )
 
         val categories = allCategories.asSequence().shuffled().take(3)
@@ -67,7 +82,7 @@ class IHaveNoTvProvider : MainAPI() {
         return HomePageResponse(items)
     }
 
-    override fun search(query: String): ArrayList<SearchResponse> {
+    override suspend fun search(query: String): ArrayList<SearchResponse> {
         val url = """$mainUrl/search/${URLEncoder.encode(query, "UTF-8")}"""
         val response = app.get(url).text
         val soup = Jsoup.parse(response)
@@ -82,7 +97,9 @@ class IHaveNoTvProvider : MainAPI() {
                 res.selectFirst("a[href][title]")
             }
             val year =
-                Regex("""•?\s+(\d{4})\s+•""").find(res.selectFirst(".episodeMeta").text())?.destructured?.component1()
+                Regex("""•?\s+(\d{4})\s+•""").find(
+                    res.selectFirst(".episodeMeta").text()
+                )?.destructured?.component1()
                     ?.toIntOrNull()
 
             val title = aTag.attr("title")
@@ -101,7 +118,7 @@ class IHaveNoTvProvider : MainAPI() {
         return ArrayList(searchResults.values)
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val isSeries = url.contains("/series/")
         val html = app.get(url).text
         val soup = Jsoup.parse(html)
@@ -138,7 +155,8 @@ class IHaveNoTvProvider : MainAPI() {
                     ep.selectFirst(".episodeMeta").text()
                 )?.destructured?.component1()?.toIntOrNull()
 
-                categories.addAll(ep.select(".episodeMeta > a[href*=\"/category/\"]").map { it.text().trim() })
+                categories.addAll(
+                    ep.select(".episodeMeta > a[href*=\"/category/\"]").map { it.text().trim() })
 
                 TvSeriesEpisode(
                     epTitle,
@@ -165,7 +183,8 @@ class IHaveNoTvProvider : MainAPI() {
                 description,
                 null,
                 null,
-                soup.selectFirst(".videoDetails").select("a[href*=\"/category/\"]").map { it.text().trim() }
+                soup.selectFirst(".videoDetails").select("a[href*=\"/category/\"]")
+                    .map { it.text().trim() }
             ))
         }
 
@@ -190,7 +209,7 @@ class IHaveNoTvProvider : MainAPI() {
         ) else (episodes?.first() as MovieLoadResponse)
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
@@ -201,9 +220,7 @@ class IHaveNoTvProvider : MainAPI() {
 
         val iframe = soup.selectFirst("#videoWrap iframe")
         if (iframe != null) {
-            if (iframe.attr("src").startsWith("https://streamtape.com")) {
-                StreamTape().getSafeUrl(iframe.attr("src"))?.forEach(callback)
-            }
+            loadExtractor(iframe.attr("src"), null, callback)
         }
         return true
     }

@@ -17,6 +17,7 @@
 
         <item name="android:textViewStyle">@style/AppTextViewStyle</item>
         <item name="android:buttonStyle">@style/AppButtonStyle</item>
+        <item name="android:editTextStyle">@style/AppEditStyle</item>
         <item name="materialButtonStyle">@style/AppMaterialButtonStyle</item>
         <item name="preferenceFragmentCompatStyle">@style/PreferenceTheme</item>
         <item name="bottomSheetDialogTheme">@style/AppBottomSheetDialogTheme</item>
@@ -174,13 +175,18 @@
         <item name="android:colorAccent">@color/colorPrimaryPink</item>
     </style>
 
+    <style name="customRatingBar" parent="@style/Widget.AppCompat.RatingBar">
+
+        <item name="android:progressDrawable">@drawable/abc_ratingbar_indicator_material</item>
+        <item name="android:indeterminateDrawable">@drawable/abc_ratingbar_indicator_material</item>
+    </style>
+
     <style name="LoadedStyle">
         <item name="android:navigationBarColor">?attr/primaryGrayBackground</item>
         <item name="android:windowBackground">?attr/primaryBlackBackground</item>
     </style>
 
-    <style name="AppSearchViewStyle"
-           parent="Theme.MaterialComponents.NoActionBar">
+    <style name="AppSearchViewStyle" parent="Theme.MaterialComponents.NoActionBar">
         <item name="android:searchIcon">@drawable/search_icon</item>
         <item name="android:queryHint">@string/search_hint</item>
         <item name="android:background">@color/transparent</item>
@@ -205,8 +211,7 @@
         <item name="behavior_peekHeight">512dp</item>
     </style>
 
-    <style name="PreferenceTheme" parent="@style/AppTheme">
-    </style>
+    <style name="PreferenceTheme" parent="@style/AppTheme"></style>
 
     <style name="Theme.AlertDialog" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
         <item name="android:windowMinWidthMajor">@android:dimen/dialog_min_width_major</item>
@@ -221,6 +226,23 @@
 
     <style name="AppButtonStyle" parent="android:Widget.Holo.Button">
         <item name="android:fontFamily">@font/google_sans</item>
+    </style>
+
+    <style name="AppEditStyle" parent="android:Widget.EditText">
+        <item name="android:fontFamily">@font/google_sans</item>
+    </style>
+
+    <style name="ResultInfoText">
+        <item name="android:layout_gravity">center_vertical</item>
+        <item name="textColor">?attr/white</item>
+
+        <item name="android:gravity">center</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">24dp</item>
+        <item name="android:minWidth">0dp</item>
+        <!--   <item name="android:paddingStart">5dp</item>
+           <item name="android:paddingEnd">5dp</item>-->
     </style>
 
     <style name="AppMaterialButtonStyle" parent="Widget.MaterialComponents.Button">
@@ -239,6 +261,7 @@
         <item name="tabMinWidth">75dp</item>
         <item name="tabMode">scrollable</item>-->
     </style>
+
     <style name="AlertDialogCustom" parent="Theme.AppCompat.Dialog.Alert">
         <item name="android:windowFullscreen">true</item>
         <item name="android:textColor">?attr/textColor</item>
@@ -255,9 +278,11 @@
         <item name="android:windowMinWidthMinor">@android:dimen/dialog_min_width_minor</item>
         <item name="android:windowBackground">@drawable/dialog__window_background</item>
     </style>
+
     <style name="AlertDialogCustomTransparent" parent="Theme.AppCompat.Dialog.Alert">
         <item name="android:windowBackground">@color/transparent</item>
     </style>
+
     <style name="AlertDialogCustomBlack" parent="Theme.AppCompat.Dialog.Alert">
         <item name="android:windowBackground">?attr/primaryBlackBackground</item>
         <item name="android:layout_width">fill_parent</item>
@@ -415,6 +440,49 @@
         <item name="android:layout_marginEnd">10dp</item>
     </style>
 
+    <style name="SyncButton" parent="NiceButton">
+        <item name="rippleColor">?attr/white</item>
+        <item name="iconTint">?attr/textColor</item>
+        <item name="android:layout_columnWeight">1</item>
+        <item name="android:layout_rowWeight">1</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:textColor">?attr/textColor</item>
+        <item name="backgroundTint">@color/toggle_button</item>
+        <item name="android:layout_marginBottom">10dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">@color/toggle_button_outline</item>
+    </style>
+
+    <style name="Tag" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">@color/tag_stroke_color</item>
+    </style>
+
+    <style name="VideoButtonTV">
+        <item name="android:stateListAnimator">@null</item>
+        <item name="strokeColor">@color/transparent</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:background">@drawable/player_button_tv</item>
+        <item name="rippleColor">@color/white</item>
+        <item name="android:shadowColor">@color/transparent</item>
+
+        <item name="iconTint">@color/player_on_button_tv</item>
+        <item name="textColor">@color/player_on_button_tv</item>
+        <item name="android:textColor">@color/player_on_button_tv</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">25dp</item>
+        <item name="iconSize">16dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:baselineAligned">false</item>
+        <item name="textAllCaps">false</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:layout_marginStart">4dp</item>
+        <item name="android:layout_marginEnd">4dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:insetTop">0dp</item>
+    </style>
+
     <!--@color/white ?attr/colorPrimary-->
     <!--CHECK ?attr/darkBackground ?attr/colorPrimary-->
     <!-- CHROMECAST -->
@@ -433,26 +501,34 @@
         <item name="castPlayButtonDrawable">@drawable/ic_baseline_play_arrow_24</item>
         <item name="castPauseButtonDrawable">@drawable/netflix_pause</item>
         <item name="castStopButtonDrawable">@drawable/cast_ic_expanded_controller_stop</item>
-        <item name="castSkipPreviousButtonDrawable">@drawable/cast_ic_expanded_controller_skip_previous</item>
-        <item name="castSkipNextButtonDrawable">@drawable/cast_ic_expanded_controller_skip_next</item>
+        <item name="castSkipPreviousButtonDrawable">
+            @drawable/cast_ic_expanded_controller_skip_previous
+        </item>
+        <item name="castSkipNextButtonDrawable">@drawable/cast_ic_expanded_controller_skip_next
+        </item>
         <item name="castRewind30ButtonDrawable">@drawable/go_back_30</item>
         <item name="castForward30ButtonDrawable">@drawable/go_forward_30</item>
     </style>
+
     <style name="CustomCastMiniController" parent="CastMiniController">
         <item name="castMiniControllerLoadingIndicatorColor">?attr/colorPrimary</item>
         <item name="castShowImageThumbnail">true</item>
 
         <item name="castTitleTextAppearance">@style/TextAppearance.AppCompat.Subhead</item>
         <item name="castSubtitleTextAppearance">@style/TextAppearance.AppCompat.Caption</item>
-        <item name="castBackground">@color/transparent</item> <!--CHECK bitDarkerGrayBackground darkBackground-->
+        <item name="castBackground">@color/transparent
+        </item> <!--CHECK bitDarkerGrayBackground darkBackground-->
         <item name="castProgressBarColor">?attr/colorPrimary</item>
         <item name="castStopButtonDrawable">@drawable/cast_ic_mini_controller_stop</item>'
         <item name="castLargeStopButtonDrawable">@drawable/cast_ic_mini_controller_stop_large</item>
-        <item name="castSkipPreviousButtonDrawable">@drawable/cast_ic_mini_controller_skip_prev</item>
+        <item name="castSkipPreviousButtonDrawable">@drawable/cast_ic_mini_controller_skip_prev
+        </item>
         <item name="castSkipNextButtonDrawable">@drawable/cast_ic_mini_controller_skip_next</item>
         <item name="castRewind30ButtonDrawable">@drawable/go_back_30</item>
         <item name="castForward30ButtonDrawable">@drawable/go_forward_30</item>
         <item name="castMuteToggleButtonDrawable">@drawable/cast_ic_mini_controller_mute</item>
-        <item name="castClosedCaptionsButtonDrawable">@drawable/cast_ic_mini_controller_closed_caption</item>
+        <item name="castClosedCaptionsButtonDrawable">
+            @drawable/cast_ic_mini_controller_closed_caption
+        </item>
     </style>
 </resources>

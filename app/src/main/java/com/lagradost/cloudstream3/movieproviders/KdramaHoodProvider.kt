@@ -1,25 +1,32 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import android.util.Log
-import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.*
+import com.lagradost.cloudstream3.extractors.XStreamCdn
+import com.lagradost.cloudstream3.extractors.helper.AsianEmbedHelper
+import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
-import kotlin.Exception
 
 class KdramaHoodProvider : MainAPI() {
-    override val mainUrl = "https://kdramahood.com"
-    override val name = "KDramaHood"
+    override var mainUrl = "https://kdramahood.com"
+    override var name = "KDramaHood"
     override val hasQuickSearch = false
     override val hasMainPage = true
     override val hasChromecastSupport = false
     override val hasDownloadSupport = true
-    override val supportedTypes = setOf(TvType.TvSeries, TvType.Movie)
+    override val supportedTypes = setOf(TvType.AsianDrama)
 
-    override fun getMainPage(): HomePageResponse {
+    private data class ResponseDatas(
+        @JsonProperty("label") val label: String,
+        @JsonProperty("file") val file: String
+    )
+
+    override suspend fun getMainPage(): HomePageResponse {
         val doc = app.get("$mainUrl/home2").document
         val home = ArrayList<HomePageList>()
 
@@ -59,7 +66,7 @@ class KdramaHoodProvider : MainAPI() {
         return HomePageResponse(home.filter { it.list.isNotEmpty() })
     }
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=$query"
         val html = app.get(url).document
         val document = html.getElementsByTag("body")
@@ -87,7 +94,7 @@ class KdramaHoodProvider : MainAPI() {
         }
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url).document
         val inner = doc.selectFirst("div.central")
 
@@ -111,6 +118,24 @@ class KdramaHoodProvider : MainAPI() {
             res
         } catch (e: Exception) { null }
 
+        val recs = doc.select("div.sidebartv > div.tvitemrel")?.mapNotNull {
+            val a = it?.select("a") ?: return@mapNotNull null
+            val aUrl = fixUrlNull(a.attr("href")) ?: return@mapNotNull null
+            val aImg = a.select("img")
+            val aCover = fixUrlNull(aImg?.attr("src")) ?: fixUrlNull(aImg?.attr("data-src"))
+            val aNameYear = a.select("div.datatvrel") ?: return@mapNotNull null
+            val aName = aNameYear.select("h4")?.text() ?: aImg?.attr("alt") ?: return@mapNotNull null
+            val aYear = aName.trim().takeLast(5).removeSuffix(")").toIntOrNull()
+            MovieSearchResponse(
+                url = aUrl,
+                name = aName,
+                type = TvType.Movie,
+                posterUrl = aCover,
+                year = aYear,
+                apiName = this.name
+            )
+        }
+
         // Episodes Links
         val episodeList = inner?.select("ul.episodios > li")?.mapNotNull { ep ->
             //Log.i(this.name, "Result => (ep) ${ep}")
@@ -120,7 +145,7 @@ class KdramaHoodProvider : MainAPI() {
             //Log.i(this.name, "Result => (innerA) ${innerA}")
             val epLink = fixUrlNull(innerA.attr("href")) ?: return@mapNotNull null
             //Log.i(this.name, "Result => (epLink) ${epLink}")
-            if (epLink.isNotEmpty()) {
+            if (epLink.isNotBlank()) {
                 // Fetch video links
                 val epVidLinkEl = app.get(epLink, referer = mainUrl).document
                 val epLinksContent = epVidLinkEl.selectFirst("div.player_nav > script")?.html()
@@ -130,25 +155,22 @@ class KdramaHoodProvider : MainAPI() {
                 if (!epLinksContent.isNullOrEmpty()) {
                     //Log.i(this.name, "Result => (epLinksContent) ${Jsoup.parse(epLinksContent)?.select("div")}")
                     Jsoup.parse(epLinksContent)?.select("div")?.forEach { em ->
-                        var href = em?.html()?.trim()?.removePrefix("'") ?: return@forEach
-                        if (href.startsWith("//")) {
-                            href = "https:$href"
-                        }
+                        val href = em?.html()?.trim()?.removePrefix("'") ?: return@forEach
                         //Log.i(this.name, "Result => (ep#$count link) $href")
-                        if (href.isNotEmpty()) {
-                            listOfLinks.add(href)
+                        if (href.isNotBlank()) {
+                            listOfLinks.add(fixUrl(href))
                         }
                     }
-                    /* Doesn't get all links for some reasons
-                    val rex = Regex("(?<=ifr_target.src =)(.*)(?=';)")
-                    rex.find(epLinksContent)?.groupValues?.forEach { em ->
-                        val href = em.trim()
-                        Log.i(this.name, "Result => (ep #$count href) $href")
-                        if (href.isNotEmpty()) {
-                            listOfLinks.add(href)
+                }
+                //Fetch default source and subtitles
+                epVidLinkEl.select("div.embed2")?.forEach { defsrc ->
+                    if (defsrc == null) { return@forEach }
+                    val scriptstring = defsrc.toString()
+                    if (scriptstring.contains("sources: [{")) {
+                        "(?<=playerInstance2.setup\\()([\\s\\S]*?)(?=\\);)".toRegex().find(scriptstring)?.value?.let { itemjs ->
+                            listOfLinks.add("$mainUrl$itemjs")
                         }
                     }
-                     */
                 }
             }
             TvSeriesEpisode(
@@ -163,64 +185,102 @@ class KdramaHoodProvider : MainAPI() {
 
         //If there's only 1 episode, consider it a movie.
         if (episodeList.size == 1) {
-            return MovieLoadResponse(title, url, this.name, TvType.Movie, episodeList[0].data, poster, year, descript, null, null)
+            return MovieLoadResponse(
+                name = title,
+                url = url,
+                apiName = this.name,
+                type = TvType.Movie,
+                dataUrl = episodeList[0].data,
+                posterUrl = poster,
+                year = year,
+                plot = descript,
+                recommendations = recs
+            )
         }
         return TvSeriesLoadResponse(
-            title,
-            url,
-            this.name,
-            TvType.TvSeries,
-            episodeList,
-            poster,
-            year,
-            descript,
-            null,
-            null,
-            null
+            name = title,
+            url = url,
+            apiName = this.name,
+            type = TvType.AsianDrama,
+            episodes = episodeList.reversed(),
+            posterUrl = poster,
+            year = year,
+            plot = descript,
+            recommendations = recs
         )
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if (data.isEmpty()) return false
-        if (data == "[]") return false
-        if (data == "about:blank") return false
-
         var count = 0
-        mapper.readValue<List<String>>(data).forEach { item ->
-            if (item.isNotEmpty()) {
+        parseJson<List<String>>(data).apmap { item ->
+            if (item.isNotBlank()) {
                 count++
-                var url = item.trim()
-                if (url.startsWith("//")) {
-                    url = "https:$url"
-                }
-                //Log.i(this.name, "Result => (url) ${url}")
-                if (url.startsWith("https://asianembed.io")) {
-                    // Fetch links
-                    val doc = app.get(url).document
-                    val links = doc.select("div#list-server-more > ul > li.linkserver")
-                    if (!links.isNullOrEmpty()) {
-                        links.forEach {
-                            val datavid = it.attr("data-video") ?: ""
-                            //Log.i(this.name, "Result => (datavid) ${datavid}")
-                            if (datavid.isNotEmpty()) {
-                                loadExtractor(datavid, url, callback)
+                if (item.startsWith(mainUrl)) {
+                    val text = item.substring(mainUrl.length)
+                    //Log.i(this.name, "Result => (text) $text")
+                    //Find video files
+                    try {
+                        "(?<=sources: )([\\s\\S]*?)(?<=])".toRegex().find(text)?.value?.let { vid ->
+                            parseJson<List<ResponseDatas>>(vid).forEach { src ->
+                                //Log.i(this.name, "Result => (src) ${src.toJson()}")
+                                callback(
+                                    ExtractorLink(
+                                        name = "$name ${src.label}",
+                                        url = src.file,
+                                        quality = getQualityFromName(src.label),
+                                        referer = mainUrl,
+                                        source = name
+                                    )
+                                )
                             }
                         }
+                    } catch (e: Exception) {
+                        logError(e)
                     }
-                } else if (url.startsWith("https://embedsito.com")) {
-                    val extractor = XStreamCdn()
-                    extractor.domainUrl = "embedsito.com"
-                    extractor.getUrl(url).forEach { link ->
-                        callback.invoke(link)
+                    //Find subtitles
+                    try {
+                        "(?<=tracks: )([\\s\\S]*?)(?<=])".toRegex().find(text)?.value?.let { sub ->
+                            val subtext = sub.replace("file:", "\"file\":")
+                                .replace("label:", "\"label\":")
+                                .replace("kind:", "\"kind\":")
+                            parseJson<List<ResponseDatas>>(subtext).forEach { src ->
+                                //Log.i(this.name, "Result => (sub) ${src.toJson()}")
+                                subtitleCallback(
+                                    SubtitleFile(
+                                        lang = src.label,
+                                        url = src.file
+                                    )
+                                )
+                            }
+                        }
+                    } catch (e: Exception) {
+                        logError(e)
                     }
+
                 } else {
-                    loadExtractor(url, mainUrl, callback)
-                } // end if
+                    val url = fixUrl(item.trim())
+                    //Log.i(this.name, "Result => (url) $url")
+                    when {
+                        url.startsWith("https://asianembed.io") -> {
+                            AsianEmbedHelper.getUrls(url, callback)
+                        }
+                        url.startsWith("https://embedsito.com") -> {
+                            val extractor = XStreamCdn()
+                            extractor.domainUrl = "embedsito.com"
+                            extractor.getUrl(url).forEach { link ->
+                                callback.invoke(link)
+                            }
+                        }
+                        else -> {
+                            loadExtractor(url, mainUrl, callback)
+                        }
+                    }
+                }
             }
         }
         return count > 0

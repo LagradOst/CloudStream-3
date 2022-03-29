@@ -7,8 +7,8 @@ import org.jsoup.Jsoup
 
 // referer = https://vf-film.org, USERAGENT ALSO REQUIRED
 class VfFilmProvider : MainAPI() {
-    override val mainUrl = "https://vf-film.me"
-    override val name = "vf-film.me"
+    override var mainUrl = "https://vf-film.me"
+    override var name = "vf-film.me"
     override val lang = "fr"
     override val hasQuickSearch = false
     override val hasMainPage = false
@@ -16,7 +16,7 @@ class VfFilmProvider : MainAPI() {
 
     override val supportedTypes = setOf(TvType.Movie)
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=$query"
         val response = app.get(url).text
         val document = Jsoup.parse(response)
@@ -39,13 +39,13 @@ class VfFilmProvider : MainAPI() {
         return returnValue
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if (data == "") return false
+        if (data.length <= 4) return false
         callback.invoke(
             ExtractorLink(
                 this.name,
@@ -59,7 +59,7 @@ class VfFilmProvider : MainAPI() {
         return true
     }
 
-    private fun getDirect(original: String): String {  // original data, https://vf-film.org/?trembed=1&trid=55313&trtype=1 for example
+    private suspend fun getDirect(original: String): String {  // original data, https://vf-film.org/?trembed=1&trid=55313&trtype=1 for example
         val response = app.get(original).text
         val url = "iframe .*src=\"(.*?)\"".toRegex().find(response)?.groupValues?.get(1)
             .toString()  // https://vudeo.net/embed-uweno86lzx8f.html for example
@@ -70,7 +70,7 @@ class VfFilmProvider : MainAPI() {
         return vudoUrl
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         val title = document?.selectFirst("div.SubTitle")?.text()
@@ -100,14 +100,13 @@ class VfFilmProvider : MainAPI() {
                 number_player += 1
             }
         }
-        if (found == false) {
+        if (!found) {
             number_player = 0
         }
         val i = number_player.toString()
         val trid = Regex("iframe .*trid=(.*?)&").find(document.html())?.groupValues?.get(1)
 
         val data = getDirect("$mainUrl/?trembed=$i&trid=$trid&trtype=1")
-
 
         return MovieLoadResponse(
             title,

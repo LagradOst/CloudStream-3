@@ -1,24 +1,22 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import android.util.Log
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
-import java.lang.Exception
 
 class PinoyMoviePediaProvider : MainAPI() {
-    override val name = "Pinoy Moviepedia"
-    override val mainUrl = "https://pinoymoviepedia.ru"
+    override var name = "Pinoy Moviepedia"
+    override var mainUrl = "https://pinoymoviepedia.ru"
     override val lang = "tl"
-    override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
+    override val supportedTypes = setOf(TvType.AsianDrama)
     override val hasDownloadSupport = true
     override val hasMainPage = true
     override val hasQuickSearch = false
 
-    override fun getMainPage(): HomePageResponse {
+    override suspend fun getMainPage(): HomePageResponse {
         val all = ArrayList<HomePageList>()
         val document = app.get(mainUrl).document
         val mainbody = document.getElementsByTag("body")
@@ -38,20 +36,28 @@ class PinoyMoviePediaProvider : MainAPI() {
             val inner = mainbody?.select("div#${item.second} > article")
 
             val elements: List<SearchResponse> = inner?.mapNotNull {
-                if (it == null) {
-                    return@mapNotNull null
-                }
+                if (it == null) { return@mapNotNull null }
+
                 // Get inner div from article
                 val urlTitle = it.select("div.data") ?: return@mapNotNull null
                 // Fetch details
                 val link = fixUrlNull(urlTitle.select("a")?.attr("href")) ?: return@mapNotNull null
-                val name = urlTitle.text() ?: ""
                 val image = it.select("div.poster > img")?.attr("src")
-                // Get Year from Title
-                val year = try {
+
+                // Get Title and Year
+                val titleYear = it.select("div.data.dfeatur")
+                var name = titleYear?.select("h3")?.text() ?: ""
+                var year = titleYear?.select("span")?.text()?.toIntOrNull()
+
+                if (name.isEmpty()) {
+                    name = urlTitle.select("h3")?.text() ?: ""
+                    year = titleYear?.select("span")?.text()?.takeLast(4)?.toIntOrNull()
+                }
+                if (year == null) {
+                    // Get year from name
                     val rex = Regex("\\((\\d+)")
-                    rex.find(name)?.value?.replace("(", "")?.toIntOrNull()
-                } catch (e: Exception) { null }
+                    year = rex.find(name)?.value?.replace("(", "")?.toIntOrNull()
+                }
 
                 val tvType = TvType.Movie
                 MovieSearchResponse(
@@ -74,7 +80,7 @@ class PinoyMoviePediaProvider : MainAPI() {
         return HomePageResponse(all.filter { a -> a.list.isNotEmpty() })
     }
 
-    override fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=${query}"
         val document = app.get(url).document.selectFirst("div.search-page")
             ?.select("div.result-item")
@@ -99,7 +105,7 @@ class PinoyMoviePediaProvider : MainAPI() {
         }?.distinctBy { c -> c.url } ?: listOf()
     }
 
-    override fun load(url: String): LoadResponse {
+    override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url).document
         val body = doc.getElementsByTag("body")
         val inner = body?.select("div.sheader")
@@ -107,21 +113,43 @@ class PinoyMoviePediaProvider : MainAPI() {
         val isTvSeries = doc.select("title")?.text()?.lowercase()?.contains("full episode -") ?: false
 
         // Video details
+        val data = inner?.select("div.data")
         val poster = inner?.select("div.poster > img")?.attr("src")
-        val title = inner?.select("div.data > h1")?.firstOrNull()?.text() ?: ""
-        val descript = body?.select("div#info > div.wp-content")?.text()
+        val title = data?.select("h1")?.firstOrNull()?.text()?.trim() ?: ""
+        val descript = body?.select("div#info > div.wp-content p")?.firstOrNull()?.text()
         val rex = Regex("\\((\\d+)")
         val yearRes = rex.find(title)?.value ?: ""
         //Log.i(this.name, "Result => (yearRes) ${yearRes}")
         val year = yearRes.replace("(", "").toIntOrNull()
+        val tags = data?.select("div.sgeneros > a")?.mapNotNull { tag ->
+            tag?.text()?.trim() ?: return@mapNotNull null
+        }?.toList()
+        val recList = body?.select("div#single_relacionados > article")?.mapNotNull {
+            val a = it.select("a") ?: return@mapNotNull null
+            val aUrl = a.attr("href") ?: return@mapNotNull null
+            val aImg = a.select("img")?.attr("src")
+            val aName = a.select("img")?.attr("alt") ?: return@mapNotNull null
+            val aYear = try {
+                aName.trim().takeLast(5).removeSuffix(")").toIntOrNull()
+            } catch (e: Exception) { null }
+
+            MovieSearchResponse(
+                url = aUrl,
+                name = aName,
+                type = TvType.Movie,
+                posterUrl = aImg,
+                year = aYear,
+                apiName = this.name
+            )
+        }
 
         // Video links
         val playcontainer = body?.select("div#playcontainer")
         val listOfLinks: MutableList<String> = mutableListOf()
         playcontainer?.select("iframe")?.forEach { item ->
-            val lnk = item?.attr("src")?.trim()
+            val lnk = item?.attr("src")?.trim() ?: ""
             //Log.i(this.name, "Result => (lnk) $lnk")
-            if (!lnk.isNullOrEmpty()) {
+            if (lnk.isNotBlank()) {
                 listOfLinks.add(lnk)
             }
         }
@@ -156,35 +184,43 @@ class PinoyMoviePediaProvider : MainAPI() {
                 }
             }
             return TvSeriesLoadResponse(
-                title,
-                url,
-                this.name,
-                TvType.TvSeries,
-                episodeList,
-                poster,
-                year,
-                descript,
-                null,
-                null,
-                null
+                name = title,
+                url = url,
+                apiName = this.name,
+                type = TvType.AsianDrama,
+                episodes = episodeList,
+                posterUrl = poster,
+                year = year,
+                plot = descript,
+                tags = tags,
+                recommendations = recList
             )
         }
         val streamlinks = listOfLinks.distinct().toJson()
-        return MovieLoadResponse(title, url, this.name, TvType.Movie, streamlinks, poster, year, descript, null, null)
+        return MovieLoadResponse(
+            name = title,
+            url = url,
+            apiName = this.name,
+            type = TvType.Movie,
+            dataUrl = streamlinks,
+            posterUrl = poster,
+            year = year,
+            plot = descript,
+            tags = tags,
+            recommendations = recList
+        )
     }
 
-    override fun loadLinks(
+    override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if (data.isEmpty()) return false
-        if (data == "[]") return false
-        if (data == "about:blank") return false
-
         // parse movie servers
-        mapper.readValue<List<String>>(data).forEach { link ->
+        var count = 0
+        mapper.readValue<List<String>>(data).apmap { link ->
+            count++
             if (link.contains("fembed.com")) {
                 val extractor = FEmbed()
                 extractor.domainUrl = "diasfem.com"
@@ -195,6 +231,6 @@ class PinoyMoviePediaProvider : MainAPI() {
                 loadExtractor(link, mainUrl, callback)
             }
         }
-        return true
+        return count > 0
     }
 }

@@ -42,17 +42,18 @@ class DownloadFileGenerator(
         return episodes[currentIndex].id
     }
 
-    override fun getCurrent(): Any {
-        return episodes[currentIndex]
+    override fun getCurrent(offset: Int): Any? {
+        return episodes.getOrNull(currentIndex + offset)
     }
 
-    override fun generateLinks(
+    override suspend fun generateLinks(
         clearCache: Boolean,
         isCasting: Boolean,
         callback: (Pair<ExtractorLink?, ExtractorUri?>) -> Unit,
-        subtitleCallback: (SubtitleData) -> Unit
+        subtitleCallback: (SubtitleData) -> Unit,
+        offset: Int,
     ): Boolean {
-        val meta = episodes[currentIndex]
+        val meta = episodes[currentIndex + offset]
         callback(Pair(null, meta))
 
         context?.let { ctx ->
