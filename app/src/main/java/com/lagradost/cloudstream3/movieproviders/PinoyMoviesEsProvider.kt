@@ -56,7 +56,7 @@ class PinoyMoviesEsProvider : MainAPI() {
                     val rex = Regex("\\((\\d+)")
                     year = rex.find(name)?.value?.replace("(", "")?.toIntOrNull()
                 }
-                Log.i(this.name, "ApiError -> ${it.selectFirst("span.quality")?.text()}")
+                //Log.i(this.name, "ApiError -> ${it.selectFirst("span.quality")?.text()}")
                 val searchQual = getQualityFromString(it.selectFirst("span.quality")?.text())
 
                 MovieSearchResponse(
