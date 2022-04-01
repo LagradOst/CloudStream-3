@@ -577,7 +577,6 @@ fun getQualityFromString(string: String?) : SearchQuality? {
         "highdefinition" -> SearchQuality.HD
         "hdrip" -> SearchQuality.HD
         "hd" -> SearchQuality.HD
-        "camrip" -> SearchQuality.CamRip
         "rip" -> SearchQuality.CamRip
         "telecine" -> SearchQuality.Telecine
         "tc" -> SearchQuality.Telecine
