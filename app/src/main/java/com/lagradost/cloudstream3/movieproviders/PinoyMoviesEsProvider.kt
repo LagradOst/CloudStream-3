@@ -57,7 +57,7 @@ class PinoyMoviesEsProvider : MainAPI() {
                     year = rex.find(name)?.value?.replace("(", "")?.toIntOrNull()
                 }
                 Log.i(this.name, "ApiError -> ${it.selectFirst("span.quality")?.text()}")
-                val searchQual = getSearchQuality(it.selectFirst("span.quality")?.text())
+                val searchQual = getQualityFromString(it.selectFirst("span.quality")?.text())
 
                 MovieSearchResponse(
                     name = name,
@@ -120,7 +120,7 @@ class PinoyMoviesEsProvider : MainAPI() {
             val title = urlTitle.text()?.trim() ?: "<No Title>"
             val year = urlTitle.select("span.year")?.text()?.toIntOrNull()
             val image = it.select("div.poster > img")?.attr("src")
-            val searchQual = getSearchQuality(it.selectFirst("span.quality")?.text())
+            val searchQual = getQualityFromString(it.selectFirst("span.quality")?.text())
 
             MovieSearchResponse(
                 name = title,
