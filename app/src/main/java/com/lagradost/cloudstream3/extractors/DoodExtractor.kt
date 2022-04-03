@@ -18,6 +18,10 @@ class DoodWsExtractor : DoodLaExtractor() {
     override var mainUrl = "https://dood.ws"
 }
 
+class DoodShExtractor : DoodLaExtractor() {
+    override var mainUrl = "https://dood.sh"
+}
+
 
 open class DoodLaExtractor : ExtractorApi() {
     override var name = "DoodStream"

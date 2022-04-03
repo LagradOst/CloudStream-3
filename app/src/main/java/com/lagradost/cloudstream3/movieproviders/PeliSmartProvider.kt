@@ -1,9 +1,7 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.extractorApis
-import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.*
 import kotlin.collections.ArrayList
 
 class PeliSmartProvider: MainAPI() {
@@ -27,27 +25,23 @@ class PeliSmartProvider: MainAPI() {
             Pair("$mainUrl/documentales/", "Documentales"),
         )
 
-        for ((url, name) in urls) {
-            try {
-                val soup = app.get(url).document
-                val home = soup.select(".description-off").map {
-                    val title = it.selectFirst("h3.entry-title a").text()
-                    val link = it.selectFirst("a").attr("href")
-                    TvSeriesSearchResponse(
-                        title,
-                        link,
-                        this.name,
-                        if (link.contains("pelicula")) TvType.Movie else TvType.TvSeries,
-                        it.selectFirst("div img").attr("src"),
-                        null,
-                        null,
-                    )
-                }
-
-                items.add(HomePageList(name, home))
-            } catch (e: Exception) {
-                e.printStackTrace()
+        urls.apmap { (url, name) ->
+            val soup = app.get(url).document
+            val home = soup.select(".description-off").map {
+                val title = it.selectFirst("h3.entry-title a").text()
+                val link = it.selectFirst("a").attr("href")
+                TvSeriesSearchResponse(
+                    title,
+                    link,
+                    this.name,
+                    if (link.contains("pelicula")) TvType.Movie else TvType.TvSeries,
+                    it.selectFirst("div img").attr("src"),
+                    null,
+                    null,
+                )
             }
+
+            items.add(HomePageList(name, home))
         }
 
         if (items.size <= 0) throw ErrorLoadingException()

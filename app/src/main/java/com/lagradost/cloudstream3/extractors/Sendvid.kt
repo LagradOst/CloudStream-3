@@ -3,22 +3,24 @@ package com.lagradost.cloudstream3.extractors
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.app
+import java.net.URLDecoder
 
+class Sendvid1: Sendvid() {
+    override val mainUrl: String = "https://www.sendvid.com"
+}
 
-open class PlayerVoxzer : ExtractorApi() {
-    override var name = "Voxzer"
-    override var mainUrl = "https://player.voxzer.org"
+open class Sendvid : ExtractorApi() {
+    override val name = "Sendvid"
+    override val mainUrl = "https://sendvid.com"
     override val requiresReferer = false
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val listurl = url.replace("/view/","/list/")
-        val urltext = app.get(listurl, referer = url).text
-        val m3u8regex = Regex("((https:|http:)\\/\\/.*\\.m3u8)")
+        val doc = app.get(url).document
+        val urlString = doc.select("head meta[property=og:video:secure_url]").attr("content")
         val sources = mutableListOf<ExtractorLink>()
-        val listm3 = m3u8regex.find(urltext)?.value
-        if (listm3?.contains("m3u8") == true)  M3u8Helper().m3u8Generation(
+        if (urlString.contains("m3u8"))  M3u8Helper().m3u8Generation(
             M3u8Helper.M3u8Stream(
-                listm3,
+                urlString,
                 headers = app.get(url).headers.toMap()
             ), true
         )

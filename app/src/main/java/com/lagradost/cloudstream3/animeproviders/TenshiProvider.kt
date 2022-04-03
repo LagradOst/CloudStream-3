@@ -72,14 +72,21 @@ class TenshiProvider : MainAPI() {
                 } else {
                     val title = section.selectFirst("h2").text()
                     val anime = section.select("li > a").map {
+                        val link = it.attr("href").replace(Regex("\\/(\\d+)\$"),"")
+                        val epnumdoc = it.selectFirst("div.episode-title").text()
+                        println(epnumdoc)
+                        val epnumRegex = Regex("(Ep\\. (\\d+))")
+                        val epNum = epnumRegex.find(epnumdoc)?.value?.replace("Ep. ","") ?: ""
+                        println(epNum)
                         AnimeSearchResponse(
-                            it.selectFirst(".thumb-title")?.text() ?: "",
-                            fixUrl(it.attr("href")),
+                            (it.selectFirst(".thumb-title")?.text() ?: it.selectFirst("div.title")?.text())!!,
+                            fixUrl(link),
                             this.name,
                             TvType.Anime,
                             it.selectFirst("img").attr("src"),
                             null,
                             EnumSet.of(DubStatus.Subbed),
+                            subEpisodes = epNum.toIntOrNull()
                         )
                     }
                     items.add(HomePageList(title, anime))
