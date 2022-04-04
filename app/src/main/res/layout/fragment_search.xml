@@ -112,7 +112,7 @@
 
             <com.google.android.material.button.MaterialButton
                     android:nextFocusLeft="@id/search_select_tv_series"
-                    android:nextFocusRight="@id/search_select_asian_dramas"
+                    android:nextFocusRight="@id/search_select_asian"
 
                     android:id="@+id/search_select_anime"
                     android:text="@string/anime"
