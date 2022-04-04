@@ -271,6 +271,7 @@ class SearchFragment : Fragment() {
             }
         }
 
+
         val pairList = HomeFragment.getPairList(
             search_select_anime,
             search_select_cartoons,
@@ -278,7 +279,7 @@ class SearchFragment : Fragment() {
             search_select_documentaries,
             search_select_movies,
             search_select_mirror,
-            search_select_asian_dramas,
+            search_select_asian,
         )
 
         val settingsManager = context?.let { PreferenceManager.getDefaultSharedPreferences(it) }
