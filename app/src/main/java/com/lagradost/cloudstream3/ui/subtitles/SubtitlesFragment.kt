@@ -121,11 +121,11 @@ class SubtitlesFragment : Fragment() {
         }
 
         fun getDownloadSubsLanguageISO639_1(): List<String> {
-            return getKey(SUBTITLE_DOWNLOAD_KEY) ?: listOf("en")
+            return getKey(SUBTITLE_DOWNLOAD_KEY) ?: listOf("es", "en", "esLA", "enUS")
         }
 
         fun getAutoSelectLanguageISO639_1(): String {
-            return getKey(SUBTITLE_AUTO_SELECT_KEY) ?: "en"
+            return getKey(SUBTITLE_AUTO_SELECT_KEY) ?: "es"
         }
     }
 
@@ -444,7 +444,7 @@ class SubtitlesFragment : Fragment() {
         }
 
         subs_auto_select_language.setOnLongClickListener {
-            setKey(SUBTITLE_AUTO_SELECT_KEY, "en")
+            setKey(SUBTITLE_AUTO_SELECT_KEY, "es")
             showToast(activity, R.string.subs_default_reset_toast, Toast.LENGTH_SHORT)
             return@setOnLongClickListener true
         }
@@ -467,7 +467,7 @@ class SubtitlesFragment : Fragment() {
         }
 
         subs_download_languages.setOnLongClickListener {
-            setKey(SUBTITLE_DOWNLOAD_KEY, listOf("en"))
+            setKey(SUBTITLE_DOWNLOAD_KEY, listOf("es"))
 
             showToast(activity, R.string.subs_default_reset_toast, Toast.LENGTH_SHORT)
             return@setOnLongClickListener true

@@ -22,7 +22,7 @@ open class PlayerVoxzer : ExtractorApi() {
                 headers = app.get(url).headers.toMap()
             ), true
         )
-            .map { stream ->
+            .apmap { stream ->
                 val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
                 sources.add(  ExtractorLink(
                     name,

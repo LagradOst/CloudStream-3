@@ -136,9 +136,17 @@
 
             <com.google.android.material.button.MaterialButton
                     android:nextFocusLeft="@id/search_select_cartoons"
+                    android:nextFocusRight="@id/search_select_mirror"
 
                     android:id="@+id/search_select_documentaries"
                     android:text="@string/documentaries"
+                    style="@style/RoundedSelectableButton" />
+            <com.google.android.material.button.MaterialButton
+                    android:nextFocusLeft="@id/search_select_documentaries"
+                    android:nextFocusRight="@id/search_select_mirror"
+
+                    android:id="@+id/search_select_mirror"
+                    android:text="@string/mirror"
                     style="@style/RoundedSelectableButton" />
         </LinearLayout>
     </HorizontalScrollView>

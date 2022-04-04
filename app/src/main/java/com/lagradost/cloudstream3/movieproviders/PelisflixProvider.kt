@@ -24,27 +24,23 @@ class PelisflixProvider : MainAPI() {
             Pair("$mainUrl/ver-peliculas-online-gratis-fullhdc3/", "Películas"),
             Pair("$mainUrl/ver-series-online-gratis/", "Series"),
         )
-        for (i in urls) {
-            try {
-                val soup = app.get(i.first).document
-                val home = soup.select("article.TPost.B").map {
-                    val title = it.selectFirst("h2.title").text()
-                    val link = it.selectFirst("a").attr("href")
-                    TvSeriesSearchResponse(
-                        title,
-                        link,
-                        this.name,
-                        TvType.Movie,
-                        it.selectFirst("figure img").attr("data-src"),
-                        null,
-                        null,
-                    )
-                }
-
-                items.add(HomePageList(i.second, home))
-            } catch (e: Exception) {
-                logError(e)
+        urls.apmap { (url, name) ->
+            val soup = app.get(url).document
+            val home = soup.select("article.TPost.B").map {
+                val title = it.selectFirst("h2.title").text()
+                val link = it.selectFirst("a").attr("href")
+                TvSeriesSearchResponse(
+                    title,
+                    link,
+                    this.name,
+                    TvType.Movie,
+                    it.selectFirst("figure img").attr("data-src"),
+                    null,
+                    null,
+                )
             }
+
+            items.add(HomePageList(name, home))
         }
         if (items.size <= 0) throw ErrorLoadingException()
         return HomePageResponse(items)
@@ -81,7 +77,7 @@ class PelisflixProvider : MainAPI() {
         }.toList()
     }
 
-    override suspend fun load(url: String): LoadResponse? {
+    override suspend fun load(url: String): LoadResponse {
         val type = if (url.contains("/pelicula/")) TvType.Movie else TvType.TvSeries
 
         val document = app.get(url).document
@@ -129,7 +125,7 @@ class PelisflixProvider : MainAPI() {
 
             val episodeList = ArrayList<TvSeriesEpisode>()
 
-            for ((seasonInt, seasonUrl) in list) {
+            list.apmap { (seasonInt, seasonUrl) ->
                 val seasonDocument = app.get(seasonUrl).document
                 val episodes = seasonDocument.select("table > tbody > tr")
                 if (episodes.isNotEmpty()) {

@@ -14,15 +14,15 @@ open class Jawcloud : ExtractorApi() {
         val doc = app.get(url).document
         val urlString = doc.select("html body div source").attr("src")
         val sources = mutableListOf<ExtractorLink>()
-        if (urlString.contains("m3u8"))  M3u8Helper().m3u8Generation(
+       if (urlString.contains("m3u8"))  M3u8Helper().m3u8Generation(
             M3u8Helper.M3u8Stream(
                 urlString,
                 headers = app.get(url).headers.toMap()
             ), true
         )
-            .map { stream ->
+            .apmap { stream ->
                 val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
-                sources.add(  ExtractorLink(
+              sources.add(  ExtractorLink(
                     name,
                     "$name $qualityString",
                     stream.streamUrl,

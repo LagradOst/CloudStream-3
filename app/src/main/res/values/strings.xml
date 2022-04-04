@@ -459,4 +459,11 @@
     <string name="quality_webrip">Web</string>
 
     <string name="poster_image">Poster Image</string>
+    <string name="dub_status_subbed" />
+    <string name="dub_status_premium" />
+    <string name="dub_status_dubbed" />
+    <string name="sub_status_premium" />
+    <string name="mirror_singular" />
+    <string name="donghua_singular" />
+    <string name="mirror" />
 </resources>

@@ -132,8 +132,8 @@ class AllMoviesForYouProvider : MainAPI() {
 
             val episodeList = ArrayList<TvSeriesEpisode>()
 
-            for (season in list) {
-                val seasonResponse = app.get(season.second).text
+             list.apmap { (seasonInt, seasonString) ->
+                val seasonResponse = app.get(seasonString).text
                 val seasonDocument = Jsoup.parse(seasonResponse)
                 val episodes = seasonDocument.select("table > tbody > tr")
                 if (episodes.isNotEmpty()) {
@@ -147,7 +147,7 @@ class AllMoviesForYouProvider : MainAPI() {
                         episodeList.add(
                             TvSeriesEpisode(
                                 name,
-                                season.first,
+                                seasonInt,
                                 epNum,
                                 fixUrl(href),
                                 fixUrlNull(poster),
@@ -197,7 +197,8 @@ class AllMoviesForYouProvider : MainAPI() {
             if (id.contains("trembed")) {
                 val soup = app.get(id).document
                 soup.select("body iframe").map {
-                    val link = fixUrl(it.attr("src").replace("streamhub.to/d/","streamhub.to/e/"))
+                    val iframelink = it.attr("src").replace("streamhub.to/d/","streamhub.to/e/").trim()
+                    val link = fixUrl(iframelink)
                     loadExtractor(link, data, callback)
                 }
             } else loadExtractor(id, data, callback)

@@ -3,6 +3,7 @@ package com.lagradost.cloudstream3.animeproviders
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.loadExtractor
 import java.util.*
 import kotlin.collections.ArrayList
@@ -40,20 +41,19 @@ class MonoschinosProvider : MainAPI() {
         )
 
         val items = ArrayList<HomePageList>()
-
         items.add(
             HomePageList(
-                "Capítulos actualizados",
-                app.get(mainUrl, timeout = 120).document.select(".col-6").map {
+                "Últimos episodios",
+                app.get(mainUrl).document.select(".col-6").map {
                     val title = it.selectFirst("p.animetitles").text()
                     val poster = it.selectFirst(".animeimghv").attr("data-src")
                     val epRegex = Regex("episodio-(\\d+)")
-                    val url = it.selectFirst("a").attr("href").replace("ver/", "anime/")
+                    val href = it.selectFirst("a").attr("href").replace("ver/", "anime/")
                         .replace(epRegex, "sub-espanol")
                     val epNum = it.selectFirst(".positioning h5").text().toIntOrNull()
                     AnimeSearchResponse(
                         title,
-                        url,
+                        href,
                         this.name,
                         TvType.Anime,
                         poster,
@@ -66,31 +66,24 @@ class MonoschinosProvider : MainAPI() {
                     )
                 })
         )
-
-        for (i in urls) {
-            try {
-                val home = app.get(i.first, timeout = 120).document.select(".col-6").map {
-                    val title = it.selectFirst(".seristitles").text()
-                    val poster = it.selectFirst("img.animemainimg").attr("src")
-                    AnimeSearchResponse(
-                        title,
-                        fixUrl(it.selectFirst("a").attr("href")),
-                        this.name,
-                        TvType.Anime,
-                        fixUrl(poster),
-                        null,
-                        if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
-                            DubStatus.Dubbed
-                        ) else EnumSet.of(DubStatus.Subbed),
-                    )
-                }
-
-                items.add(HomePageList(i.second, home))
-            } catch (e: Exception) {
-                e.printStackTrace()
+        urls.apmap { (url, name) ->
+            val home = app.get(url).document.select(".col-6").map {
+                val title = it.selectFirst(".seristitles").text()
+                val poster = it.selectFirst("img.animemainimg").attr("src")
+                AnimeSearchResponse(
+                    title,
+                    fixUrl(it.selectFirst("a").attr("href")),
+                    this.name,
+                    TvType.Anime,
+                    fixUrl(poster),
+                    null,
+                    if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
+                        DubStatus.Dubbed
+                    ) else EnumSet.of(DubStatus.Subbed),
+                )
             }
+            items.add(HomePageList(name, home))
         }
-
         if (items.size <= 0) throw ErrorLoadingException()
         return HomePageResponse(items)
     }
@@ -115,20 +108,28 @@ class MonoschinosProvider : MainAPI() {
             }
         return ArrayList(search)
     }
-
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url, timeout = 120).document
         val poster = doc.selectFirst(".chapterpic img").attr("src")
         val title = doc.selectFirst(".chapterdetails h1").text()
         val type = doc.selectFirst("div.chapterdetls2").text()
-        val description = doc.selectFirst("p.textComplete").text().replace("Ver menos", "")
+        val description = doc.selectFirst("p.textComplete").text().replace("Ver menos", "").trim()
         val genres = doc.select(".breadcrumb-item a").map { it.text() }
         val status = when (doc.selectFirst("button.btn1")?.text()) {
             "Estreno" -> ShowStatus.Ongoing
             "Finalizado" -> ShowStatus.Completed
             else -> null
         }
-        val episodes = doc.select("div.col-item").map {
+        val yearregex = Regex("((\\d+)<\\/li)")
+        val yearselector = doc.selectFirst("div.row div.col-lg-12.col-md-9")
+        val year1 = try {
+            yearregex.findAll(yearselector.toString()).map {
+                it.value.replace("</li","")
+            }.toList().first().toIntOrNull()
+        } catch (e: Exception) {
+            null
+        }
+        val episodes = doc.select("div.heroarea2 div.heromain2 div.allanimes div.row.jpage.row-cols-md-6 div.col-item").map {
             val name = it.selectFirst("p.animetitles").text()
             val link = it.selectFirst("a").attr("href")
             val epThumb = it.selectFirst(".animeimghv").attr("data-src")
@@ -140,27 +141,22 @@ class MonoschinosProvider : MainAPI() {
             showStatus = status
             plot = description
             tags = genres
+            year = year1
         }
     }
-
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        app.get(data).document.select("div.playother p").forEach {
+        val test =
+        app.get(data).document.select("div.playother p").apmap {
             val encodedurl = it.select("p").attr("data-player")
             val urlDecoded = base64Decode(encodedurl)
             val url = (urlDecoded).replace("https://monoschinos2.com/reproductor?url=", "")
-            if (url.startsWith("https://www.fembed.com")) {
-                val extractor = FEmbed()
-                extractor.getUrl(url).forEach { link ->
-                    callback.invoke(link)
-                }
-            } else {
-                loadExtractor(url, mainUrl, callback)
-            }
+                .replace("https://repro.monoschinos2.com/aqua/sv?url=","")
+            loadExtractor(url, data, callback)
         }
         return true
     }
