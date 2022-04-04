@@ -141,14 +141,14 @@
         <item name="android:colorAccent">@color/colorPrimaryWhite</item>
     </style>
 
-    <style name="OverlayPrimaryColorBlack">
-        <item name="colorPrimary">@color/colorPrimaryBlack</item>
-        <item name="android:colorPrimary">@color/colorPrimaryBlack</item>
-        <item name="colorPrimaryDark">#000000</item>
-        <item name="colorAccent">#000000</item>
-        <item name="colorOnPrimary">#000000</item>
+    <style name="OverlayPrimaryColorBrown">
+        <item name="colorPrimary">@color/colorPrimaryBrown</item>
+        <item name="android:colorPrimary">@color/colorPrimaryBrown</item>
+        <item name="colorPrimaryDark">#582700</item>
+        <item name="colorAccent">#622C00</item>
+        <item name="colorOnPrimary">#622C00</item>
         <!-- Needed for leanback fuckery -->
-        <item name="android:colorAccent">@color/colorPrimaryBlack</item>
+        <item name="android:colorAccent">@color/colorPrimaryBrown</item>
     </style>
 
     <style name="OverlayPrimaryColorBlue">
