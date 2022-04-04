@@ -59,7 +59,7 @@
 
             <com.google.android.material.button.MaterialButton
                     android:nextFocusLeft="@id/home_select_movies"
-                    android:nextFocusRight="@id/home_select_anime"
+                    android:nextFocusRight="@id/home_select_asian"
 
                     android:id="@+id/home_select_tv_series"
                     android:text="@string/tv_series"
@@ -91,18 +91,18 @@
 
             <com.google.android.material.button.MaterialButton
                     android:nextFocusLeft="@id/home_select_cartoons"
+                    android:nextFocusRight="@id/home_select_mirror"
 
                     android:id="@+id/home_select_documentaries"
                     android:text="@string/documentaries"
                     style="@style/RoundedSelectableButton" />
-
             <com.google.android.material.button.MaterialButton
-                android:nextFocusLeft="@id/home_select_documentaries"
-                android:nextFocusRight="@id/home_select_mirror"
+                    android:nextFocusLeft="@id/home_select_documentaries"
+                    android:nextFocusRight="@id/home_select_mirror"
 
-                android:id="@+id/home_select_mirror"
-                android:text="@string/mirror"
-                style="@style/RoundedSelectableButton" />
+                    android:id="@+id/home_select_mirror"
+                    android:text="@string/mirror"
+                    style="@style/RoundedSelectableButton"/>
         </LinearLayout>
     </HorizontalScrollView>
 
