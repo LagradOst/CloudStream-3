@@ -58,7 +58,7 @@
     <color name="colorPrimaryCarnationPink">#BD5DA5</color>
     <color name="colorPrimaryGrey">#808080</color>
     <color name="colorPrimaryWhite">#FFFFFF</color>
-    <color name="colorPrimaryBlack">#252525</color>
+    <color name="colorPrimaryBlack">#000000</color>
     <color name="colorPrimaryNavyBlue">#000080</color>
     <color name="colorPrimaryBlue">#5664B7</color>
     <color name="colorPrimaryRed">#D50000</color>

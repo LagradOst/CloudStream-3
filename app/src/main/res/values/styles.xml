@@ -134,9 +134,9 @@
     <style name="OverlayPrimaryColorBlack">
         <item name="colorPrimary">@color/colorPrimaryBlack</item>
         <item name="android:colorPrimary">@color/colorPrimaryBlack</item>
-        <item name="colorPrimaryDark">#1D1D1D</item>
-        <item name="colorAccent">#252525</item>
-        <item name="colorOnPrimary">#252525</item>
+        <item name="colorPrimaryDark">#000000</item>
+        <item name="colorAccent">#000000</item>
+        <item name="colorOnPrimary">#000000</item>
         <!-- Needed for leanback fuckery -->
         <item name="android:colorAccent">@color/colorPrimaryBlack</item>
     </style>
