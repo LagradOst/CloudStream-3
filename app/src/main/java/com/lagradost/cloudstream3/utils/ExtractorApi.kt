@@ -10,8 +10,8 @@ import kotlinx.coroutines.delay
 import org.jsoup.Jsoup
 
 data class ExtractorLink(
-    val source: String,
-    val name: String,
+    var source: String,
+    var name: String,
     override val url: String,
     override val referer: String,
     val quality: Int,
@@ -46,6 +46,8 @@ data class ExtractorSubtitleLink(
 
 enum class Qualities(var value: Int) {
     Unknown(0),
+    P144(-4), //144p
+    P240(-3), //240p
     P360(-2), // 360p
     P480(-1), // 480p
     P720(1), // 720p
@@ -56,6 +58,8 @@ enum class Qualities(var value: Int) {
 
 fun getQualityFromName(qualityName: String): Int {
     return when (qualityName.replace("p", "").replace("P", "").trim()) {
+        "144" -> Qualities.P144
+        "240" -> Qualities.P240
         "360" -> Qualities.P360
         "480" -> Qualities.P480
         "720" -> Qualities.P720
@@ -102,7 +106,7 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     Mp4Upload(),
     StreamTape(),
     MixDrop(),
-    Mcloud(),
+    MixDrop1(),
     XStreamCdn(),
     StreamSB(),
     StreamSB1(),
@@ -115,19 +119,43 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     StreamSB8(),
     StreamSB9(),
     StreamSB10(),
-   // Streamhub(), cause Streamhub2() works
+    //Streamhub(),
     Streamhub2(),
 
+    Tomatomatela(),
+    Cinestart(),
+
+    Solidfiles(),
+    Solidfiles1(),
+
+    Sendvid(),
+    Sendvid1(),
+
     FEmbed(),
+    Femax20(),
     FeHD(),
     Fplayer(),
-  //  WatchSB(), 'cause StreamSB.kt works
+    Suzihaza(),
+    // WatchSB(),
+    // Watchsb1(),
+    // Watchsb2(),
+    // Watchsb3(),
+    //  Watchsb4(),
     Uqload(),
     Uqload1(),
     Evoload(),
     Evoload1(),
     VoeExtractor(),
-   // UpstreamExtractor(), GenericM3U8.kt works
+  //  UpstreamExtractor(),
+    Upstream(),
+
+    Jawcloud(),
+
+
+    OkRu(),
+
+    Videobin(),
+    Videobin1(),
 
     Tomatomatela(),
     Cinestart(),
@@ -138,23 +166,20 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     DoodSoExtractor(),
     DoodLaExtractor(),
     DoodWsExtractor(),
+    DoodShExtractor(),
 
     AsianLoad(),
 
-   // GenericM3U8(),
-    Jawcloud(),
-    Zplayer(),
+    YourUpload(),
+    Mcloud(),
+
+   // Genericm3u8Extractor(),
     ZplayerV2(),
-    Upstream(),
-
-
-  // StreamSB.kt works
-  //  SBPlay(),
-  //  SBPlay1(),
-  //  SBPlay2(),
+    Zplayer(),
 
     PlayerVoxzer(),
-)
+    )
+
 
 fun getExtractorApiFromName(name: String): ExtractorApi {
     for (api in extractorApis) {

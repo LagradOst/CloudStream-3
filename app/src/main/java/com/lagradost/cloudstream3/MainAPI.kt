@@ -80,18 +80,27 @@ object APIHolder {
             SoaptwoDayProvider(),
             HDMProvider(),// disabled due to cloudflare
             TheFlixToProvider(),
+            ComamosRamenProvider(),
+            HDTodayProvider(),
+            MoviesJoyProvider(),
+            MyflixerToProvider(),
+            EstrenosDoramasProvider(),
+            ElifilmsProvider(),
+            FmoviesProvider(),
+            PelisplusSOProvider(),
+            YesMoviesProviders(),
 
-            // Metadata providers
-            //TmdbProvider(),
+// Metadata providers
+//TmdbProvider(),
             CrossTmdbProvider(),
             ApiMDBProvider(),
 
-            // Anime providers
+// Anime providers
             WatchCartoonOnlineProvider(),
             GogoanimeProvider(),
             AllAnimeProvider(),
             AnimekisaProvider(),
-            //ShiroProvider(), // v2 fucked me
+//ShiroProvider(), // v2 fucked me
             AnimeFlickProvider(),
             AnimeflvnetProvider(),
             TenshiProvider(),
@@ -103,7 +112,16 @@ object APIHolder {
             DubbedAnimeProvider(),
             MonoschinosProvider(),
             KawaiifuProvider(), // disabled due to cloudflare
-        )
+            AnimefenixProvider(),
+            AnimeflvIOProvider(),
+            AnimeIDProvider(),
+            AnimeonlineProvider(),
+            HenaojaraProvider(),
+            JKAnimeProvider(),
+            KrunchyProvider(),
+            MundoDonghuaProvider(),
+            TioAnimeProvider(),
+            )
     }
 
     var apis: List<MainAPI> = arrayListOf()
@@ -267,8 +285,8 @@ object APIHolder {
             allApis
         } else {
             // Filter API depending on preferred media type
-            val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
-            val listEnumMovieTv = listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon)
+            val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua)
+            val listEnumMovieTv = listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror)
             val mediaTypeList = if (currentPrefMedia == 1) listEnumMovieTv else listEnumAnime
 
             val filteredAPI =
@@ -344,6 +362,9 @@ abstract class MainAPI {
         TvType.Cartoon,
         TvType.Anime,
         TvType.OVA,
+        TvType.Mirror,
+        TvType.Donghua,
+        TvType.AsianDrama
     )
 
     open val vpnStatus = VPNStatus.None
@@ -515,8 +536,10 @@ enum class ShowStatus {
 }
 
 enum class DubStatus {
-    Dubbed,
     Subbed,
+    PremiumSub,
+    Dubbed,
+    PremiumDub,
 }
 
 enum class TvType {
@@ -528,7 +551,9 @@ enum class TvType {
     OVA,
     Torrent,
     Documentary,
-    AsianDrama,
+    Mirror,
+    Donghua,
+    AsianDrama
 }
 
 // IN CASE OF FUTURE ANIME MOVIE OR SMTH
@@ -538,7 +563,7 @@ fun TvType.isMovieType(): Boolean {
 
 // returns if the type has an anime opening
 fun TvType.isAnimeOp(): Boolean {
-    return this == TvType.Anime || this == TvType.OVA
+    return this == TvType.Anime || this == TvType.OVA || this == TvType.Donghua
 }
 
 data class SubtitleFile(val lang: String, val url: String)
@@ -789,7 +814,7 @@ fun LoadResponse?.isAnimeBased(): Boolean {
 
 fun TvType?.isEpisodeBased(): Boolean {
     if (this == null) return false
-    return (this == TvType.TvSeries || this == TvType.Anime)
+    return (this == TvType.TvSeries || this == TvType.Anime || this == TvType.Donghua || this == TvType.AsianDrama)
 }
 
 data class AnimeEpisode(

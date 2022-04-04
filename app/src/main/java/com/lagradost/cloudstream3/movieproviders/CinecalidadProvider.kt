@@ -27,27 +27,23 @@ class CinecalidadProvider:MainAPI() {
             Pair("$mainUrl/genero-de-la-pelicula/peliculas-en-calidad-4k/", "4K UHD"),
         )
 
-        for ((url, name) in urls) {
-            try {
-                val soup = app.get(url).document
-                val home = soup.select(".item.movies").map {
-                    val title = it.selectFirst("div.in_title").text()
-                    val link = it.selectFirst("a").attr("href")
-                    TvSeriesSearchResponse(
-                        title,
-                        link,
-                        this.name,
-                        if (link.contains("/ver-pelicula/")) TvType.Movie else TvType.TvSeries,
-                        it.selectFirst(".poster.custom img").attr("data-src"),
-                        null,
-                        null,
-                    )
-                }
-
-                items.add(HomePageList(name, home))
-            } catch (e: Exception) {
-                logError(e)
+        urls.apmap { (url, name) ->
+            val soup = app.get(url).document
+            val home = soup.select(".item.movies").map {
+                val title = it.selectFirst("div.in_title").text()
+                val link = it.selectFirst("a").attr("href")
+                TvSeriesSearchResponse(
+                    title,
+                    link,
+                    this.name,
+                    if (link.contains("/ver-pelicula/")) TvType.Movie else TvType.TvSeries,
+                    it.selectFirst(".poster.custom img").attr("data-src"),
+                    null,
+                    null,
+                )
             }
+
+            items.add(HomePageList(name, home))
         }
 
         if (items.size <= 0) throw ErrorLoadingException()
