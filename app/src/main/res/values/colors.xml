@@ -56,6 +56,7 @@
 
     <!--Other Colors -->
     <color name="colorPrimaryCarnationPink">#BD5DA5</color>
+    <color name="colorPrimaryDarkGreen">#004500</color>005700
     <color name="colorPrimaryNavyBlue">#000080</color>
     <color name="colorPrimaryGrey">#515151</color>
     <color name="colorPrimaryWhite">#FFFFFF</color>
