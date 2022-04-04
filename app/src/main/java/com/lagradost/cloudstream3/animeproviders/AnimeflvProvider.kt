@@ -58,28 +58,24 @@ class AnimeflvnetProvider:MainAPI() {
                     )
                 })
         )
-        for ((url, name) in urls) {
-            try {
-                val doc = app.get(url).document
-                val home = doc.select("ul.ListAnimes li article").map {
-                    val title = it.selectFirst("h3.Title").text()
-                    val poster = it.selectFirst("figure img").attr("src")
-                    AnimeSearchResponse(
-                        title,
-                        fixUrl(it.selectFirst("a").attr("href")),
-                        this.name,
-                        TvType.Anime,
-                        fixUrl(poster),
-                        null,
-                        if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(DubStatus.Subbed),
-                    )
-                }
+       urls.apmap { (url, name) ->
+           val doc = app.get(url).document
+           val home = doc.select("ul.ListAnimes li article").map {
+               val title = it.selectFirst("h3.Title").text()
+               val poster = it.selectFirst("figure img").attr("src")
+               AnimeSearchResponse(
+                   title,
+                   fixUrl(it.selectFirst("a").attr("href")),
+                   this.name,
+                   TvType.Anime,
+                   fixUrl(poster),
+                   null,
+                   if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(DubStatus.Subbed),
+               )
+           }
 
-                items.add(HomePageList(name, home))
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+           items.add(HomePageList(name, home))
+       }
         if (items.size <= 0) throw ErrorLoadingException()
         return HomePageResponse(items)
     }

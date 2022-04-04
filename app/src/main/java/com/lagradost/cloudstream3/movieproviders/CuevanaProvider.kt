@@ -25,6 +25,7 @@ class CuevanaProvider:MainAPI() {
             Pair(mainUrl, "Recientemente actualizadas"),
             Pair("$mainUrl/estrenos/", "Estrenos"),
         )
+        argamap({
         items.add(
             HomePageList(
                 "Series",
@@ -43,28 +44,25 @@ class CuevanaProvider:MainAPI() {
                     )
                 })
         )
-        for ((url, name) in urls) {
-            try {
-                val soup = app.get(url).document
-                val home = soup.select("section li.xxx.TPostMv").map {
-                    val title = it.selectFirst("h2.Title").text()
-                    val link = it.selectFirst("a").attr("href")
-                    TvSeriesSearchResponse(
-                        title,
-                        link,
-                        this.name,
-                        if (link.contains("/pelicula/")) TvType.Movie else TvType.TvSeries,
-                        it.selectFirst("img.lazy").attr("data-src"),
-                        null,
-                        null,
-                    )
-                }
-
-                items.add(HomePageList(name, home))
-            } catch (e: Exception) {
-                logError(e)
+        urls.apmap { (url, name) ->
+            val soup = app.get(url).document
+            val home = soup.select("section li.xxx.TPostMv").map {
+                val title = it.selectFirst("h2.Title").text()
+                val link = it.selectFirst("a").attr("href")
+                TvSeriesSearchResponse(
+                    title,
+                    link,
+                    this.name,
+                    if (link.contains("/pelicula/")) TvType.Movie else TvType.TvSeries,
+                    it.selectFirst("img.lazy").attr("data-src"),
+                    null,
+                    null,
+                )
             }
+
+            items.add(HomePageList(name, home))
         }
+        })
 
         if (items.size <= 0) throw ErrorLoadingException()
         return HomePageResponse(items)

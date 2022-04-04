@@ -213,7 +213,7 @@ class AnimePaheProvider : MainAPI() {
             }
 
             if (lastPage == 1 && perPage > total) {
-                data.data.forEach {
+                data.data.apmap {
                     episodes.add(
                         AnimeEpisode(
                             "$mainUrl/api?m=links&id=${it.animeId}&session=${it.session}&p=kwik!!TRUE!!",
@@ -544,7 +544,7 @@ class AnimePaheProvider : MainAPI() {
         val req = app.get(link, headers = headers).text
         val data = mapper.readValue<AnimePaheEpisodeLoadLinks>(req)
 
-        data.data.forEach {
+        data.data.apmap {
             it.entries.toList().apmap { quality ->
                 getStreamUrlFromKwik(quality.value.kwik)?.let { link ->
                     callback(

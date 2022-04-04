@@ -65,3 +65,15 @@ fun OkHttpClient.Builder.addAdGuardDns() = (
                 "94.140.14.141",
             )
         ))
+
+// Gets selected as default
+// fun OkHttpClient.Builder.addQuad9Dns() = (
+//        addGenericDns(
+//           "https://dns.quad9.net/dns-query",
+//           listOf(
+//               "9.9.9.9",
+//               "149.112.112.112",
+//                "2620:fe::fe",
+//               "2620:fe::9"
+//           )
+//       ))

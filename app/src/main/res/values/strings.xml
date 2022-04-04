@@ -294,6 +294,8 @@
     <string name="documentaries">Documentaries</string>
     <string name="mirror">Mirrors</string>
     <string name="ova">OVA</string>
+    <string name="asian_drama">Asian Dramas</string>
+    
 
     <!--singular-->
     <string name="movies_singular">Movie</string>
@@ -305,6 +307,9 @@
     <string name="asian_drama_singular">Asian Drama</string>
     <string name="torrent_singular">Torrent</string>
     <string name="documentaries_singular">Documentary</string>
+    <string name="asian_drama_singular">Asian Drama</string>
+    <string name="mirror_singular">Mirror</string>
+    <string name="donghua_singular">Donghua</string>
     <string name="mirror_singular">Mirror</string>
     <string name="ova_singular">@string/ova</string>
 
