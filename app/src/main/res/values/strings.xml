@@ -302,6 +302,7 @@
     <string name="torrent_singular">Torrent</string>
     <string name="documentaries_singular">Documentary</string>
     <string name="mirror_singular">Mirror</string>
+    <string name="donghua_singular">Donghua</string>
 
     <string name="source_error">Source error</string>
     <string name="remote_error">Remote error</string>
