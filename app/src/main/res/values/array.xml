@@ -200,10 +200,10 @@
     <string-array name="themes_overlay_names_values">
         <item>Normal</item>
         <item>CarnationPink</item>
+        <item>NavyBlue</item>
         <item>Grey</item>
         <item>White</item>
         <item>Black</item>
-        <item>NavyBlue</item>
         <item>Blue</item>
         <item>Red</item>
         <item>Purple</item>
