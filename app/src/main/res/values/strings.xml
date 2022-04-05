@@ -329,7 +329,6 @@
 
     <string name="no_update_found">No Update Found</string>
     <string name="check_for_update">Check for Update</string>
-    <string name="app_version">Update</string>
 
     <string name="video_lock">Lock</string>
     <string name="video_aspect_ratio_resize">Resize</string>
