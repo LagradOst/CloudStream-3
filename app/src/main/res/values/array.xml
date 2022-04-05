@@ -50,6 +50,7 @@
         <item>All</item>
         <item>Movies and TV</item>
         <item>Anime</item>
+        <item>Documentary</item>
     </array>
     <array name="media_type_pref_values">
         <item>0</item>
