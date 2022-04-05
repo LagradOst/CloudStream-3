@@ -111,6 +111,16 @@
         <item name="android:colorAccent">@color/colorPrimaryCarnationPink</item>
     </style>
 
+    <style name="OverlayPrimaryColorBurgundy">
+        <item name="colorPrimary">@color/colorPrimaryBurgundy</item>
+        <item name="android:colorPrimary">@color/colorPrimaryBurgundy</item>
+        <item name="colorPrimaryDark">#370C0C</item>
+        <item name="colorAccent">#451010</item>
+        <item name="colorOnPrimary">#451010</item>
+        <!-- Needed for leanback fuckery -->
+        <item name="android:colorAccent">@color/colorPrimaryBurgundy</item>
+    </style>
+
     <style name="OverlayPrimaryColorDarkGreen">
         <item name="colorPrimary">@color/colorPrimaryDarkGreen</item>
         <item name="android:colorPrimary">@color/colorPrimaryDarkGreen</item>

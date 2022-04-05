@@ -184,6 +184,7 @@
     <string-array name="themes_overlay_names">
         <item>Normal</item>
         <item>Carnation Pink</item>
+        <item>Burgundy</item>
         <item>Dark Green</item>
         <item>Navy Blue</item>
         <item>Grey</item>
@@ -201,6 +202,7 @@
     <string-array name="themes_overlay_names_values">
         <item>Normal</item>
         <item>CarnationPink</item>
+        <item>Burgundy</item>
         <item>DarkGreen</item>
         <item>NavyBlue</item>
         <item>Grey</item>
