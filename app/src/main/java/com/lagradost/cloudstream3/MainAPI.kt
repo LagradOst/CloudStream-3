@@ -84,8 +84,6 @@ object APIHolder {
             HDTodayProvider(),
             MoviesJoyProvider(),
             MyflixerToProvider(),
-            EstrenosDoramasProvider(),
-            ElifilmsProvider(),
             FmoviesProvider(),
             PelisplusSOProvider(),
             YesMoviesProviders(),
@@ -112,14 +110,9 @@ object APIHolder {
             DubbedAnimeProvider(),
             MonoschinosProvider(),
             KawaiifuProvider(), // disabled due to cloudflare
-            AnimefenixProvider(),
-            AnimeflvIOProvider(),
             AnimeIDProvider(),
             AnimeonlineProvider(),
             HenaojaraProvider(),
-            JKAnimeProvider(),
-            KrunchyProvider(),
-            MundoDonghuaProvider(),
             TioAnimeProvider(),
             )
     }
