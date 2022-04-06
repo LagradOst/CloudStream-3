@@ -13,7 +13,6 @@ class Vidstreamz : WcoStream() {
 class Vizcloud : WcoStream() {
     override var mainUrl = "https://vizcloud2.ru"
 }
-
 class Vizcloud2 : WcoStream() {
     override var mainUrl = "https://vizcloud2.online"
 }
@@ -62,7 +61,7 @@ open class WcoStream : ExtractorApi() {
         val sources = mutableListOf<ExtractorLink>()
 
         if (mapped.success) {
-            mapped.media.sources.forEach {
+            mapped.media.sources.apmap {
                 if (mainUrl == "https://vizcloud2.ru" || mainUrl == "https://vizcloud.online") {
                     if (it.file.contains("vizcloud2.ru") || it.file.contains("vizcloud.online")) {
                         //Had to do this thing 'cause "list.m3u8#.mp4" gives 404 error so no quality is added
@@ -100,35 +99,69 @@ open class WcoStream : ExtractorApi() {
                 }
                 if (mainUrl == "https://vidstream.pro" || mainUrl == "https://vidstreamz.online" || mainUrl == "https://vizcloud2.online"
                     || mainUrl == "https://vizcloud.xyz") {
-                if (it.file.contains("m3u8")) {
-                    hlsHelper.m3u8Generation(M3u8Helper.M3u8Stream(it.file.replace("#.mp4",""), null,
-                    headers = mapOf("Referer" to url)), true)
-                        .forEach { stream ->
-                            val qualityString =
-                                if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
+                    if (it.file.contains("vizcloud2") || it.file.contains("vizloud.xyz")) {
+                        val link1080 = it.file.replace("list.m3u8#.mp4","H4/v.m3u8")
+                        val link720 = it.file.replace("list.m3u8#.mp4","H3/v.m3u8")
+                        val link480 = it.file.replace("list.m3u8#.mp4","H2/v.m3u8")
+                        val link360 = it.file.replace("list.m3u8#.mp4","H1/v.m3u8")
+                        val linkauto = it.file.replace("#.mp4","")
+                        listOf(
+                            link1080,
+                            link720,
+                            link480,
+                            link360,
+                            linkauto).apmap { serverurl ->
+                            val testurl = app.get(serverurl.replace("#.mp4",""), headers = mapOf("Referer" to url)).text
+                            if (testurl.contains("EXTM3")) {
+                                val quality = if (serverurl.contains("H4")) "1080p"
+                                else if (serverurl.contains("H3")) "720p"
+                                else if (serverurl.contains("H2")) "480p"
+                                else if (serverurl.contains("H1")) "360p"
+                                else "Auto"
+                                sources.add(
+                                    ExtractorLink(
+                                        "VidStream",
+                                        "VidStream $quality",
+                                        serverurl.replace("#.mp4",""),
+                                        url,
+                                        getQualityFromName(quality),
+                                        true,
+                                    )
+                                )
+                            }
+                        }
+                    } else {
+                     val link1080 = it.file.replace("list.m3u8","hls/1080/1080.m3u8")
+                     val link720 = it.file.replace("list.m3u8","hls/720/720.m3u8")
+                     val link480 = it.file.replace("list.m3u8","hls/480/480.m3u8")
+                     val link360 = it.file.replace("list.m3u8","hls/360/360.m3u8")
+                     val linkauto = it.file
+                    listOf(
+                        link1080,
+                        link720,
+                        link480,
+                        link360,
+                        linkauto).apmap { serverurl ->
+                        val testurl = app.get(serverurl, headers = mapOf("Referer" to url)).text
+                        if (testurl.contains("EXTM3")) {
+                            val quality = if (serverurl.contains("1080")) "1080p"
+                            else if (serverurl.contains("720")) "720p"
+                            else if (serverurl.contains("480")) "480p"
+                            else if (serverurl.contains("360")) "360p"
+                            else "Auto"
                             sources.add(
                                 ExtractorLink(
-                                    name,
-                                    "$name $qualityString",
-                                    stream.streamUrl,
+                                    "VidStream",
+                                    "VidStream $quality",
+                                    serverurl,
                                     url,
-                                    getQualityFromName(stream.quality.toString()),
+                                    getQualityFromName(quality),
                                     true,
                                 )
                             )
                         }
-                } else {
-                    sources.add(
-                        ExtractorLink(
-                            name,
-                            name + if (it.label != null) " - ${it.label}" else "",
-                            it.file,
-                            "",
-                            Qualities.P720.value,
-                            false
-                        )
-                    )
-                }
+                    }
+                   }
                 }
             }
         }
