@@ -287,11 +287,12 @@ object APIHolder {
             val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua)
             val listEnumMovieTv = listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror)
             val listEnumDoc = listOf(TvType.Documentary)
-            val mediaTypeList = if (currentPrefMedia == 1) listEnumMovieTv else listEnumAnime
-
-            val filteredAPI =
-                allApis.filter { api -> api.supportedTypes.any { it in mediaTypeList } }
-            filteredAPI
+            val mediaTypeList = when (currentPrefMedia) {
+                2 -> listEnumAnime
+                3 -> listEnumDoc
+                else -> listEnumMovieTv
+            }
+            allApis.filter { api -> api.supportedTypes.any { it in mediaTypeList } }
         }
     }
 }
