@@ -150,20 +150,20 @@ class TrailersTwoProvider : TmdbProvider() {
                 "https://trailers.to/subtitles/$suffix"
             )
         }
-        argamap(
-            {
-        val aa = app.get(videoUrl).url
+
         callback.invoke(
             ExtractorLink(
                 this.name,
                 this.name,
-                aa,
+                videoUrl,
                 "https://trailers.to",
                 Qualities.Unknown.value,
                 false,
             )
         )
 
+        argamap(
+            {
                 val subtitles =
                     app.get(subtitleUrl).text
                 val subtitlesMapped = parseJson<List<TrailersSubtitleFile>>(subtitles)

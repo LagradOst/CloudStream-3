@@ -112,7 +112,7 @@
 
             <com.google.android.material.button.MaterialButton
                     android:nextFocusLeft="@id/search_select_tv_series"
-                    android:nextFocusRight="@id/search_select_asian_dramas"
+                    android:nextFocusRight="@id/search_select_asian"
 
                     android:id="@+id/search_select_anime"
                     android:text="@string/anime"
@@ -122,12 +122,12 @@
                     android:nextFocusLeft="@id/search_select_anime"
                     android:nextFocusRight="@id/search_select_cartoons"
 
-                    android:id="@+id/search_select_asian_dramas"
+                    android:id="@+id/search_select_asian"
                     android:text="@string/asian_drama"
                     style="@style/RoundedSelectableButton" />
 
             <com.google.android.material.button.MaterialButton
-                    android:nextFocusLeft="@id/search_select_asian_dramas"
+                    android:nextFocusLeft="@id/search_select_asian"
                     android:nextFocusRight="@id/search_select_documentaries"
 
                     android:id="@+id/search_select_cartoons"
@@ -136,17 +136,9 @@
 
             <com.google.android.material.button.MaterialButton
                     android:nextFocusLeft="@id/search_select_cartoons"
-                    android:nextFocusRight="@id/search_select_mirror"
 
                     android:id="@+id/search_select_documentaries"
                     android:text="@string/documentaries"
-                    style="@style/RoundedSelectableButton" />
-            <com.google.android.material.button.MaterialButton
-                    android:nextFocusLeft="@id/search_select_documentaries"
-                    android:nextFocusRight="@id/search_select_mirror"
-
-                    android:id="@+id/search_select_mirror"
-                    android:text="@string/mirror"
                     style="@style/RoundedSelectableButton" />
         </LinearLayout>
     </HorizontalScrollView>

@@ -272,7 +272,7 @@ open class BflixProvider() : MainAPI() {
         val yearegex = Regex("<span>(\\d+)<\\/span>")
         val duration = if (durationdoc.contains("na min")) null
         else durationregex.find(durationdoc)?.destructured?.component1()?.replace(" min","")?.toIntOrNull()
-        val year = if (mainUrl.contains("bflix")) { yearegex.find(durationdoc)?.destructured?.component1()
+        val year = if (mainUrl == "https://bflix.ru") { yearegex.find(durationdoc)?.destructured?.component1()
             ?.replace(Regex("<span>|<\\/span>"),"") } else null
         return when (tvType) {
             TvType.TvSeries -> {

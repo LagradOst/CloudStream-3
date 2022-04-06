@@ -29,7 +29,7 @@ class CustomReportSender : ReportSender {
     override fun send(context: Context, errorContent: CrashReportData) {
         println("Sending report")
         val url =
-            "null"
+            "https://docs.google.com/forms/u/0/d/e/1FAIpQLSeFmyBChi6HF3IkhTVWPiDXJtxt8W0Hf4Agljm_0-0_QuEYFg/formResponse"
         val data = mapOf(
             "entry.134906550" to errorContent.toJSON()
         )
@@ -45,7 +45,7 @@ class CustomReportSender : ReportSender {
 
         runOnMainThread { // to run it on main looper
             normalSafeApiCall {
-                Toast.makeText(context, R.string.acra_report_toast, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, R.string.acra_report_toast, Toast.LENGTH_SHORT).show()
             }
         }
     }

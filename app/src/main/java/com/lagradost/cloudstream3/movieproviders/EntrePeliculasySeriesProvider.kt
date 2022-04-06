@@ -26,23 +26,27 @@ class EntrepeliculasyseriesProvider:MainAPI() {
             Pair("$mainUrl/anime/", "Animes"),
         )
 
-        urls.apmap { (url, name) ->
-            val soup = app.get(url).document
-            val home = soup.select("ul.list-movie li").map {
-                val title = it.selectFirst("a.link-title h2").text()
-                val link = it.selectFirst("a").attr("href")
-                TvSeriesSearchResponse(
-                    title,
-                    link,
-                    this.name,
-                    if (link.contains("/pelicula/")) TvType.Movie else TvType.TvSeries,
-                    it.selectFirst("a.poster img").attr("src"),
-                    null,
-                    null,
-                )
-            }
+        for ((url, name) in urls) {
+            try {
+                val soup = app.get(url).document
+                val home = soup.select("ul.list-movie li").map {
+                    val title = it.selectFirst("a.link-title h2").text()
+                    val link = it.selectFirst("a").attr("href")
+                    TvSeriesSearchResponse(
+                        title,
+                        link,
+                        this.name,
+                        if (link.contains("/pelicula/")) TvType.Movie else TvType.TvSeries,
+                        it.selectFirst("a.poster img").attr("src"),
+                        null,
+                        null,
+                    )
+                }
 
-            items.add(HomePageList(name, home))
+                items.add(HomePageList(name, home))
+            } catch (e: Exception) {
+                logError(e)
+            }
         }
 
         if (items.size <= 0) throw ErrorLoadingException()
@@ -91,7 +95,7 @@ class EntrepeliculasyseriesProvider:MainAPI() {
         val poster: String? = soup.selectFirst("article.TPost img.lazy").attr("data-src")
         val episodes = soup.select(".TPostMv article").map { li ->
             val href = (li.select("a") ?: li.select(".C a") ?: li.select("article a")).attr("href")
-            val epThumb = li.selectFirst("div.Image img").attr("data-src").replace(Regex("/w(\\d+)/"),"/w500/")
+            val epThumb = li.selectFirst("div.Image img").attr("data-src")
             val seasonid = li.selectFirst("span.Year").text().let { str ->
                 str.split("x").mapNotNull { subStr -> subStr.toIntOrNull() }
             }

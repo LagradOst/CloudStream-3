@@ -81,7 +81,7 @@ class InAppUpdater {
         }
 
         private fun Activity.getReleaseUpdate(): Update {
-            val url = "https://api.github.com/repos/KillerDogeEmpire/CloudStream-3/releases"
+            val url = "https://api.github.com/repos/LagradOst/CloudStream-3/releases"
             val headers = mapOf("Accept" to "application/vnd.github.v3+json")
             val response =
                 mapper.readValue<List<GithubRelease>>(runBlocking {
@@ -147,8 +147,8 @@ class InAppUpdater {
 
         private fun Activity.getPreReleaseUpdate(): Update = runBlocking {
             val tagUrl =
-                "https://api.github.com/repos/KillerDogeEmpire/CloudStream-3/git/ref/tags/pre-release"
-            val releaseUrl = "https://api.github.com/repos/KillerDogeEmpire/CloudStream-3/releases"
+                "https://api.github.com/repos/LagradOst/CloudStream-3/git/ref/tags/pre-release"
+            val releaseUrl = "https://api.github.com/repos/LagradOst/CloudStream-3/releases"
             val headers = mapOf("Accept" to "application/vnd.github.v3+json")
             val response =
                 mapper.readValue<List<GithubRelease>>(app.get(releaseUrl, headers = headers).text)

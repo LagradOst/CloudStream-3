@@ -18,6 +18,7 @@ object SubtitleHelper {
         val response = get(url).text
         val document = Jsoup.parse(response)
         val headers = document.select("table.wikitable > tbody > tr")
+
         var text = "listOf(\n"
         for (head in headers) {
             val tds = head.select("td")
@@ -29,6 +30,7 @@ object SubtitleHelper {
             val ISO_639_2_B = tds[6].ownText().replace("+", "").replace(" ", "")
             val ISO_639_3 = tds[7].ownText().replace("+", "").replace(" ", "")
             val ISO_639_6 = tds[8].ownText().replace("+", "").replace(" ", "")
+
             val txtAdd =
                 "Language(\"$name\", \"$native\", \"$ISO_639_1\", \"$ISO_639_2_T\", \"$ISO_639_2_B\", \"$ISO_639_3\", \"$ISO_639_6\"),\n"
             text += txtAdd

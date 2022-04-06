@@ -3,7 +3,6 @@ package com.lagradost.cloudstream3.animeproviders
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.loadExtractor
 import java.util.*
 
@@ -13,7 +12,7 @@ class DoramasYTProvider : MainAPI() {
         fun getType(t: String): TvType {
             return if (t.contains("OVA") || t.contains("Especial")) TvType.OVA
             else if (t.contains("Pelicula")) TvType.Movie
-            else TvType.AsianDrama
+            else TvType.TvSeries
         }
     }
 
@@ -24,7 +23,8 @@ class DoramasYTProvider : MainAPI() {
     override val hasChromecastSupport = true
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
-        TvType.AsianDrama,
+        TvType.TvSeries,
+        TvType.Movie,
     )
 
     override suspend fun getMainPage(): HomePageResponse {
@@ -57,7 +57,7 @@ class DoramasYTProvider : MainAPI() {
                         title,
                         url,
                         this.name,
-                        TvType.AsianDrama,
+                        TvType.Anime,
                         poster,
                         null,
                         if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
@@ -68,25 +68,32 @@ class DoramasYTProvider : MainAPI() {
                     )
                 })
         )
-        urls.apmap { (url, name) ->
-            val posterelement = if (url.contains("/emision")) "div.animes img" else ".anithumb img"
-            val home = app.get(url, timeout = 120).document.select(".col-6").map {
-                val title = it.selectFirst(".animedtls p").text()
-                val poster = it.selectFirst(posterelement).attr("src")
-                AnimeSearchResponse(
-                    title,
-                    it.selectFirst("a").attr("href"),
-                    this.name,
-                    TvType.AsianDrama,
-                    poster,
-                    null,
-                    if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
-                        DubStatus.Dubbed
-                    ) else EnumSet.of(DubStatus.Subbed),
-                )
+
+        for (i in urls) {
+            try {
+
+                val home = app.get(i.first, timeout = 120).document.select(".col-6").map {
+                    val title = it.selectFirst(".animedtls p").text()
+                    val poster = it.selectFirst(".anithumb img").attr("src")
+                    AnimeSearchResponse(
+                        title,
+                        it.selectFirst("a").attr("href"),
+                        this.name,
+                        TvType.Anime,
+                        poster,
+                        null,
+                        if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
+                            DubStatus.Dubbed
+                        ) else EnumSet.of(DubStatus.Subbed),
+                    )
+                }
+
+                items.add(HomePageList(i.second, home))
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            items.add(HomePageList(name, home))
         }
+
         if (items.size <= 0) throw ErrorLoadingException()
         return HomePageResponse(items)
     }
@@ -100,7 +107,7 @@ class DoramasYTProvider : MainAPI() {
                 title,
                 href,
                 this.name,
-                TvType.AsianDrama,
+                TvType.Anime,
                 image,
                 null,
                 if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
@@ -112,7 +119,7 @@ class DoramasYTProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url, timeout = 120).document
-        val poster = doc.selectFirst("head meta[property=og:image]").attr("content") ?: doc.selectFirst("div.flimimg img.img1").attr("src")
+        val poster = doc.selectFirst("div.flimimg img.img1").attr("src")
         val title = doc.selectFirst("h1").text()
         val type = doc.selectFirst("h4").text()
         val description = doc.selectFirst("p.textComplete").text().replace("Ver menos", "")
@@ -147,8 +154,14 @@ class DoramasYTProvider : MainAPI() {
             val encodedurl = it.select("p").attr("data-player")
             val urlDecoded = base64Decode(encodedurl)
             val url = (urlDecoded).replace("https://doramasyt.com/reproductor?url=", "")
-                .replace("https://repro.monoschinos2.com/aqua/sv?url=","")
-            loadExtractor(url, data, callback)
+            if (url.startsWith("https://www.fembed.com")) {
+                val extractor = FEmbed()
+                extractor.getUrl(url).forEach { link ->
+                    callback.invoke(link)
+                }
+            } else {
+                loadExtractor(url, mainUrl, callback)
+            }
         }
         return true
     }

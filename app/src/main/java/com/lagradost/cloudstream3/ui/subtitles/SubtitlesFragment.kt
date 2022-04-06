@@ -121,7 +121,7 @@ class SubtitlesFragment : Fragment() {
         }
 
         fun getDownloadSubsLanguageISO639_1(): List<String> {
-            return getKey(SUBTITLE_DOWNLOAD_KEY) ?: listOf("es", "en", "esLA", "enUS")
+            return getKey(SUBTITLE_DOWNLOAD_KEY) ?: listOf("en")
         }
 
         fun getAutoSelectLanguageISO639_1(): String {
@@ -467,7 +467,7 @@ class SubtitlesFragment : Fragment() {
         }
 
         subs_download_languages.setOnLongClickListener {
-            setKey(SUBTITLE_DOWNLOAD_KEY, listOf("es"))
+            setKey(SUBTITLE_DOWNLOAD_KEY, listOf("en"))
 
             showToast(activity, R.string.subs_default_reset_toast, Toast.LENGTH_SHORT)
             return@setOnLongClickListener true

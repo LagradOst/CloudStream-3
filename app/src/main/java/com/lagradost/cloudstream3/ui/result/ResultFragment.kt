@@ -275,9 +275,8 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                 TvType.Cartoon -> "Cartoons/$titleName"
                 TvType.Torrent -> "Torrent"
                 TvType.Documentary -> "Documentaries"
-                TvType.Mirror -> "Mirror"
-                TvType.Donghua -> "Donghua"
-                TvType.AsianDrama -> "Asian Drama"                }
+                TvType.AsianDrama -> "AsianDrama"
+            }
         }
 
         fun startDownload(
@@ -1494,12 +1493,7 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
         }
 
         observe(viewModel.dubStatus) { status ->
-            val dubstatusName = if (status.name == "Subbed") getString(R.string.dub_status_subbed)
-            else if (status.name == "Dubbed") getString(R.string.dub_status_dubbed)
-            else if (status.name == "PremiumDub") getString(R.string.dub_status_premium)
-            else if (status.name == "PremiumSub") getString(R.string.sub_status_premium)
-            else ""
-            result_dub_select?.text = dubstatusName
+            result_dub_select?.text = status.toString()
         }
 
         val preferDub = context?.getApiDubstatusSettings()?.all { it == DubStatus.Dubbed } == true
@@ -1531,14 +1525,9 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
             if (ranges != null) {
                 it.popupMenuNoIconsAndNoStringRes(ranges
                     .map { status ->
-                        val dubstatusName = if (status.name == "Subbed") getString(R.string.dub_status_subbed)
-                        else if (status.name == "Dubbed") getString(R.string.dub_status_dubbed)
-                        else if (status.name == "PremiumDub") getString(R.string.dub_status_premium)
-                        else if (status.name == "PremiumSub") getString(R.string.sub_status_premium)
-                        else ""
                         Pair(
                             status.ordinal,
-                            dubstatusName
+                            status.toString()
                         )
                     }
                     .toList()) {
@@ -1926,9 +1915,8 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                             TvType.Documentary -> R.string.documentaries_singular
                             TvType.Movie -> R.string.movies_singular
                             TvType.Torrent -> R.string.torrent_singular
-                            TvType.Mirror -> R.string.mirror_singular
-                            TvType.Donghua -> R.string.donghua_singular
-                            TvType.AsianDrama -> R.string.asian_drama_singular                        }
+                            TvType.AsianDrama -> R.string.asian_drama_singular
+                        }
                     )?.let {
                         result_meta_type?.text = it
                     }
