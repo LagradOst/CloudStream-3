@@ -101,7 +101,7 @@
                 android:nextFocusRight="@id/home_select_mirror"
 
                 android:id="@+id/home_select_mirror"
-                android:text="@string/documentaries"
+                android:text="@string/mirror"
                 style="@style/RoundedSelectableButton" />
         </LinearLayout>
     </HorizontalScrollView>
