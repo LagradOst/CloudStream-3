@@ -20,7 +20,7 @@ class AllAnimeProvider : MainAPI() {
     override var mainUrl = "https://allanime.site"
     override var name = "AllAnime"
     override val hasQuickSearch = false
-    override val hasMainPage = false
+    override val hasMainPage = true
 
     private val hlsHelper = M3u8Helper()
 
