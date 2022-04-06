@@ -27,7 +27,7 @@ class ComamosRamenProvider : MainAPI() {
     data class HomeProps (
         @JsonProperty("pageProps") var pageProps : HomePageProps? = HomePageProps(),
 
-    )
+        )
 
     data class HomePageProps (
         @JsonProperty("data") var data : HomeData? = HomeData(),
@@ -74,7 +74,7 @@ class ComamosRamenProvider : MainAPI() {
                             val link = "$mainUrl/v/${data.Id}/${title.replace(" ","-")}"
                             val img = "https://img.comamosramen.com/${data.img.vertical}-high.jpg"
                             val epnumRegex = Regex("(\\d+\$)")
-                            val lastepisode = epnumRegex.find(data.lastEpisodeEdited!!)?.value?.toIntOrNull()
+                            val lastepisode = epnumRegex.find(data.lastEpisodeEdited ?: "")?.value ?: ""
                             AnimeSearchResponse(
                                 title,
                                 link,
@@ -83,8 +83,8 @@ class ComamosRamenProvider : MainAPI() {
                                 img,
                                 null,
                                 if (title.contains("Latino")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(DubStatus.Subbed),
-                                subEpisodes = lastepisode,
-                                dubEpisodes = lastepisode,
+                                subEpisodes = lastepisode.toIntOrNull(),
+                                dubEpisodes = lastepisode.toIntOrNull(),
                             )
                         }
                         items.add(HomePageList(a.second!!, home))
@@ -123,22 +123,22 @@ class ComamosRamenProvider : MainAPI() {
         val url = "${mainUrl.replace("m.","")}/buscar/${query}"
         val document = app.get(url).document
         val search = ArrayList<AnimeSearchResponse>()
-         document.select("script[type=application/json]").map { script ->
+        document.select("script[type=application/json]").map { script ->
             val json = parseJson<SearchOb>(script.data())
-              json.props?.pageProps?.data?.datum?.map {
-                 val title = it.title
-                 val img = "https://img.comamosramen.com/${it.img?.vertical}-high.jpg"
-                 val link = "$mainUrl/v/${it.Id}/${title.replace(" ", "-")}"
-                 search.add(AnimeSearchResponse(
-                     title,
-                     link,
-                     this.name,
-                     TvType.AsianDrama,
-                     img,
-                     null,
-                     if (title.contains("Latino")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(DubStatus.Subbed),
-                 ))
-             }
+            json.props?.pageProps?.data?.datum?.map {
+                val title = it.title
+                val img = "https://img.comamosramen.com/${it.img?.vertical}-high.jpg"
+                val link = "$mainUrl/v/${it.Id}/${title.replace(" ", "-")}"
+                search.add(AnimeSearchResponse(
+                    title,
+                    link,
+                    this.name,
+                    TvType.AsianDrama,
+                    img,
+                    null,
+                    if (title.contains("Latino")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(DubStatus.Subbed),
+                ))
+            }
         }
         return search
     }
@@ -234,7 +234,7 @@ class ComamosRamenProvider : MainAPI() {
         val tags = metadataLoad?.metadata?.tags
         val status = if (metadataLoad?.status?.isOnAir == true) ShowStatus.Ongoing else ShowStatus.Completed
         val year = metadataLoad?.metadata?.year
-         metadataLoad?.seasons?.map { seasons ->
+        metadataLoad?.seasons?.map { seasons ->
             val seasonID = seasons.season
             seasons.episodes.map { episodes ->
                 val epnum = episodes.episode
@@ -259,7 +259,7 @@ class ComamosRamenProvider : MainAPI() {
             null,
             tags
         )
-        }
+    }
 
     data class LoadLinksMain (
         @JsonProperty("SeasonID") var SeasonID  : Int?               = null,
@@ -296,9 +296,9 @@ class ComamosRamenProvider : MainAPI() {
                 .removePrefix("[")
                 .removeSuffix("]")
         }
-        val serversinfo = "["+seasonsJson?.first()+"]"
+        val serversinfo = seasonsJson.toString().replace("[,","[")
         val jsonservers = parseJson<List<LoadLinksMain>>(serversinfo)
-         jsonservers.forEach { info ->
+        jsonservers.forEach { info ->
             val episodeID = info.EpisodeID
             val seasonID = info.SeasonID
             if (seasonID == seasonid && episodeID == epID) {
@@ -317,5 +317,5 @@ class ComamosRamenProvider : MainAPI() {
             }
         }
         return true
-        }
     }
+}

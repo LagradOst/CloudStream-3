@@ -50,11 +50,13 @@
         <item>All</item>
         <item>Movies and TV</item>
         <item>Anime</item>
+        <item>Documentary</item>
     </array>
     <array name="media_type_pref_values">
         <item>0</item>
         <item>1</item>
         <item>2</item>
+        <item>3</item>
     </array>
 
     <array name="video_buffer_length_names">
@@ -184,7 +186,7 @@
     <string-array name="themes_overlay_names">
         <item>Normal</item>
         <item>Carnation Pink</item>
-        <item>Burgundy</item>
+        <item>Maroon</item>
         <item>Dark Green</item>
         <item>Navy Blue</item>
         <item>Grey</item>
@@ -202,7 +204,7 @@
     <string-array name="themes_overlay_names_values">
         <item>Normal</item>
         <item>CarnationPink</item>
-        <item>Burgundy</item>
+        <item>Maroon</item>
         <item>DarkGreen</item>
         <item>NavyBlue</item>
         <item>Grey</item>
