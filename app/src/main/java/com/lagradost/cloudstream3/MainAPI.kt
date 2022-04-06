@@ -536,8 +536,10 @@ enum class ShowStatus {
 }
 
 enum class DubStatus {
-    Dubbed,
     Subbed,
+    PremiumSub,
+    Dubbed,
+    PremiumDub,
 }
 
 enum class TvType {
@@ -549,7 +551,9 @@ enum class TvType {
     OVA,
     Torrent,
     Documentary,
-    AsianDrama,
+    Mirror,
+    Donghua,
+    AsianDrama
 }
 
 // IN CASE OF FUTURE ANIME MOVIE OR SMTH
