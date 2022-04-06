@@ -38,7 +38,7 @@
                 app:key="@string/playback_speed_enabled_key"
                 android:title="@string/eigengraumode_settings"
                 android:summary="@string/eigengraumode_settings_des"
-                app:defaultValue="false" />
+                app:defaultValue="true" />
         <SwitchPreference
                 android:icon="@drawable/ic_baseline_ondemand_video_24"
                 app:key="@string/swipe_enabled_key"
@@ -50,13 +50,13 @@
                 app:key="@string/swipe_vertical_enabled_key"
                 android:title="@string/swipe_to_change_settings"
                 android:summary="@string/swipe_to_change_settings_des"
-                app:defaultValue="true" />
+                app:defaultValue="false" />
         <SwitchPreference
                 android:icon="@drawable/ic_baseline_touch_app_24"
                 app:key="@string/double_tap_enabled_key"
                 android:title="@string/double_tap_to_seek_settings"
                 android:summary="@string/double_tap_to_seek_settings_des"
-                app:defaultValue="false" />
+                app:defaultValue="true" />
         <SwitchPreference
                 android:icon="@drawable/netflix_pause"
                 app:key="@string/double_tap_pause_enabled_key"
@@ -85,7 +85,7 @@
                 android:key="@string/video_buffer_clear_key"
                 android:title="@string/video_buffer_clear_settings"
                 android:icon="@drawable/ic_baseline_delete_outline_24" />
-        <!--
+
         <SwitchPreference
                 android:icon="@drawable/ic_baseline_brightness_7_24"
                 app:key="@string/use_system_brightness_key"
@@ -119,7 +119,7 @@
                 android:key="@string/show_fillers_key"
                 android:icon="@drawable/ic_baseline_skip_next_24"
                 android:title="@string/show_fillers_settings"
-                android:defaultValue="false" />
+                android:defaultValue="true" />
         <Preference
                 android:key="@string/dns_key"
                 android:title="@string/dns_pref"
@@ -213,35 +213,19 @@
                 android:key="@string/anilist_key"
                 android:icon="@drawable/ic_anilist_icon" />
 
-        <Preference
-                android:title="@string/github"
-                android:icon="@drawable/ic_github_logo"
-                app:summary="https://github.com/LagradOst/CloudStream-3">
-            <intent
-                    android:action="android.intent.action.VIEW"
-                    android:data="https://github.com/LagradOst/CloudStream-3" />
-        </Preference>
 
-        <Preference
-                android:title="@string/lightnovel"
-                android:icon="@drawable/quick_novel_icon"
-                app:summary="https://github.com/LagradOst/QuickNovel">
-            <intent
-                    android:action="android.intent.action.VIEW"
-                    android:data="https://github.com/LagradOst/QuickNovel" />
+        <Preference android:title="@string/github" android:icon="@drawable/ic_github_logo" app:summary="https://github.com/KillerDogeEmpire/CloudStream-3">
+            <intent android:action="android.intent.action.VIEW" android:data="https://github.com/KillerDogeEmpire/CloudStream-3"/>
         </Preference>
-        <Preference
-                android:title="@string/discord"
-                android:icon="@drawable/ic_baseline_discord_24"
-                app:summary="https://discord.gg/5Hus6fM">
-            <intent
-                    android:action="android.intent.action.VIEW"
-                    android:data="https://discord.gg/5Hus6fM" />
+        <Preference android:title="@string/github" android:icon="@drawable/ic_github_logo" app:summary="https://github.com/LagradOst/CloudStream-3">
+            <intent android:action="android.intent.action.VIEW" android:data="https://github.com/LagradOst/CloudStream-3"/>
         </Preference>
-        <Preference
-                android:key="@string/benene_count"
-                android:title="@string/benene"
-                android:icon="@drawable/benene"
-                app:summary="@string/benene_des" />
+        <Preference android:title="@string/lightnovel" android:icon="@drawable/quick_novel_icon" app:summary="https://github.com/LagradOst/QuickNovel">
+            <intent android:action="android.intent.action.VIEW" android:data="https://github.com/LagradOst/QuickNovel"/>
+        </Preference>
+        <Preference android:title="@string/discord" android:icon="@drawable/ic_baseline_discord_24" app:summary="https://discord.gg/5Hus6fM">
+            <intent android:action="android.intent.action.VIEW" android:data="https://discord.gg/5Hus6fM"/>
+        </Preference>
+        <Preference android:key="@string/benene_count" android:title="@string/benene" android:icon="@drawable/benene" app:summary="@string/benene_des"/>
     </PreferenceCategory>
 </PreferenceScreen>
