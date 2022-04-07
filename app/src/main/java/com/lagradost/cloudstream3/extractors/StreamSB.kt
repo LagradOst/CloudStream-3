@@ -100,11 +100,10 @@ open class StreamSB : ExtractorApi() {
             headers = headers,
             allowRedirects = false
         ).text
-        if (urltext.contains("Sorry")) return null
         val mapped = urltext.let { parseJson<Main>(it) }
-        val sources = ArrayList<ExtractorLink>()
         val testurl = app.get(mapped.streamData.file, headers = headers).text
-        if (urltext.contains("m3u8") && testurl.contains("EXTM3U"))  M3u8Helper().m3u8Generation(
+        // val urlmain = mapped.streamData.file.substringBefore("/hls/")
+        if (urltext.contains("m3u8") && testurl.contains("EXTM3U")) return  M3u8Helper().m3u8Generation(
             M3u8Helper.M3u8Stream(
                 mapped.streamData.file,
                 headers = headers
@@ -113,15 +112,15 @@ open class StreamSB : ExtractorApi() {
             .map { stream ->
                // val cleanstreamurl = stream.streamUrl.replace(Regex("https://.*/hls/"), "$urlmain/hls/")
                 val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
-                sources.add(ExtractorLink(
+                ExtractorLink(
                     name,
                     "$name $qualityString",
                     stream.streamUrl,
                     url,
                     getQualityFromName(stream.quality.toString()),
                     true
-                ))
+                )
             }
-        return sources
+        return null
     }
 }

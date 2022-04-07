@@ -29,7 +29,7 @@ open class Mcloud : ExtractorApi() {
         "Pragma" to "no-cache",
         "Cache-Control" to "no-cache",)
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val link = url.replace(Regex("$mainUrl/e/|$mainUrl/embed"),"$mainUrl/info/")
+        val link = url.replace("$mainUrl/e/","$mainUrl/info/")
         val response = app.get(link, headers = headers).text
 
         if(response.startsWith("<!DOCTYPE html>")) {
@@ -56,36 +56,25 @@ open class Mcloud : ExtractorApi() {
         if (mapped.success)
             mapped.media.sources.apmap {
                 if (it.file.contains("m3u8")) {
-                    val link1080 = it.file.replace("list.m3u8","hls/1080/1080.m3u8")
-                    val link720 = it.file.replace("list.m3u8","hls/720/720.m3u8")
-                    val link480 = it.file.replace("list.m3u8","hls/480/480.m3u8")
-                    val link360 = it.file.replace("list.m3u8","hls/360/360.m3u8")
-                    val linkauto = it.file
-                    listOf(
-                        link1080,
-                        link720,
-                        link480,
-                        link360,
-                        linkauto).apmap { serverurl ->
-                        val testurl = app.get(serverurl, headers = mapOf("Referer" to url)).text
-                        if (testurl.contains("EXTM3")) {
-                            val quality = if (serverurl.contains("1080")) "1080p"
-                            else if (serverurl.contains("720")) "720p"
-                            else if (serverurl.contains("480")) "480p"
-                            else if (serverurl.contains("360")) "360p"
-                            else "Auto"
+                    M3u8Helper().m3u8Generation(
+                        M3u8Helper.M3u8Stream(
+                            it.file,
+                            headers = app.get(url).headers.toMap()
+                        ), true
+                    )
+                        .map { stream ->
+                            val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
                             sources.add(
                                 ExtractorLink(
-                                    "MyCloud",
-                                    "MyCloud $quality",
-                                    serverurl,
+                                    name,
+                                    "$name $qualityString",
+                                    stream.streamUrl,
                                     url,
-                                    getQualityFromName(quality),
-                                    true,
+                                    getQualityFromName(stream.quality.toString()),
+                                    true
                                 )
                             )
                         }
-                    }
                 }
             }
         return sources

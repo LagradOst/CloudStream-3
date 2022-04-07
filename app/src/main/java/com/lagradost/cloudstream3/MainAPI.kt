@@ -81,18 +81,27 @@ object APIHolder {
             SoaptwoDayProvider(),
             HDMProvider(),// disabled due to cloudflare
             TheFlixToProvider(),
+            ComamosRamenProvider(),
+            HDTodayProvider(),
+            MoviesJoyProvider(),
+            MyflixerToProvider(),
+            EstrenosDoramasProvider(),
+            ElifilmsProvider(),
+            FmoviesProvider(),
+            PelisplusSOProvider(),
+            YesMoviesProviders(),
 
-            // Metadata providers
-            //TmdbProvider(),
+// Metadata providers
+//TmdbProvider(),
             CrossTmdbProvider(),
             ApiMDBProvider(),
 
-            // Anime providers
+// Anime providers
             WatchCartoonOnlineProvider(),
             GogoanimeProvider(),
             AllAnimeProvider(),
             AnimekisaProvider(),
-            //ShiroProvider(), // v2 fucked me
+//ShiroProvider(), // v2 fucked me
             AnimeFlickProvider(),
             AnimeflvnetProvider(),
             TenshiProvider(),
@@ -104,6 +113,15 @@ object APIHolder {
             DubbedAnimeProvider(),
             MonoschinosProvider(),
             KawaiifuProvider(), // disabled due to cloudflare
+            AnimefenixProvider(),
+            AnimeflvIOProvider(),
+            AnimeIDProvider(),
+            AnimeonlineProvider(),
+            HenaojaraProvider(),
+            JKAnimeProvider(),
+            KrunchyProvider(),
+            MundoDonghuaProvider(),
+            TioAnimeProvider(),
             //MultiAnimeProvider(),
         )
     }
@@ -520,8 +538,10 @@ enum class ShowStatus {
 }
 
 enum class DubStatus {
-    Dubbed,
     Subbed,
+    PremiumSub,
+    Dubbed,
+    PremiumDub,
 }
 
 enum class TvType {
@@ -533,7 +553,9 @@ enum class TvType {
     OVA,
     Torrent,
     Documentary,
-    AsianDrama,
+    Mirror,
+    Donghua,
+    AsianDrama
 }
 
 // IN CASE OF FUTURE ANIME MOVIE OR SMTH
