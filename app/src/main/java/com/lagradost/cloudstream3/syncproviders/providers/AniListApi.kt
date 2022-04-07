@@ -801,8 +801,10 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         /**
         MAIN
         A primary character role in the media
+
         SUPPORTING
         A supporting character role in the media
+
         BACKGROUND
         A background character in the media
          */
