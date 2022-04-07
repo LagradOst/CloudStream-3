@@ -231,7 +231,7 @@ class SearchFragment : Fragment() {
                                 it.lang
                             )?.plus(" ") ?: ""
                         }${it.name}" else it.name }
-                        
+
 
                         //arrayAdapter.notifyDataSetChanged()
                         arrayAdapter.addAll(names)
