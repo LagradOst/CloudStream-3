@@ -89,6 +89,7 @@ import kotlinx.android.synthetic.main.fragment_home.home_watch_parent_item_title
 import kotlinx.android.synthetic.main.fragment_home.result_error_text
 import kotlinx.android.synthetic.main.fragment_home_tv.*
 import java.util.*
+import kotlin.random.Random
 
 const val HOME_BOOKMARK_VALUE_LIST = "home_bookmarked_last_list"
 const val HOME_PREF_HOMEPAGE = "home_pref_homepage"
@@ -97,6 +98,7 @@ class HomeFragment : Fragment() {
     companion object {
         val configEvent = Event<Int>()
         var currentSpan = 1
+        val listHomepageItems = mutableListOf<SearchResponse>()
 
         fun Activity.loadHomepageList(item: HomePageList) {
             val context = this
@@ -373,6 +375,14 @@ class HomeFragment : Fragment() {
             setKey(HOMEPAGE_API, apiName)
             home_provider_name?.text = apiName
             home_provider_meta_info?.isVisible = false
+            home_random?.setOnClickListener {
+                val totalItems = listHomepageItems.size
+                if (totalItems > 0) {
+                    val randInt = Random.nextInt(totalItems)
+                    val randItem = listHomepageItems[randInt]
+                    activity.loadSearchResult(randItem)
+                }
+            }
 
             getApiFromNameNull(apiName)?.let { currentApi ->
                 val typeChoices = listOf(
@@ -441,11 +451,13 @@ class HomeFragment : Fragment() {
                     home_loading_shimmer?.stopShimmer()
 
                     val d = data.value
+                    listHomepageItems.clear()
 
                     currentHomePage = d
                     (home_master_recycler?.adapter as? ParentItemAdapter?)?.updateList(
                         d?.items?.mapNotNull {
                             try {
+                                listHomepageItems.addAll(it.list.filterSearchResponse())
                                 HomePageList(it.name, it.list.filterSearchResponse())
                             } catch (e: Exception) {
                                 logError(e)
