@@ -121,7 +121,6 @@ object APIHolder {
             KrunchyProvider(),
             MundoDonghuaProvider(),
             TioAnimeProvider(),
-
             )
     }
 
@@ -216,7 +215,6 @@ object APIHolder {
             this.getString(R.string.search_providers_list_key),
             hashSet
         )?.toHashSet() ?: hashSet
-
         val list = HashSet<String>()
         for (name in set) {
             val api = getApiFromNameNull(name) ?: continue
@@ -286,7 +284,7 @@ object APIHolder {
             allApis
         } else {
             // Filter API depending on preferred media type
-            val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
+            val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua)
             val listEnumMovieTv = listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror)
             val listEnumDoc = listOf(TvType.Documentary)
             val mediaTypeList = when (currentPrefMedia) {
@@ -365,6 +363,9 @@ abstract class MainAPI {
         TvType.Cartoon,
         TvType.Anime,
         TvType.OVA,
+        TvType.Mirror,
+        TvType.Donghua,
+        TvType.AsianDrama
     )
 
     open val vpnStatus = VPNStatus.None
@@ -563,7 +564,7 @@ fun TvType.isMovieType(): Boolean {
 
 // returns if the type has an anime opening
 fun TvType.isAnimeOp(): Boolean {
-    return this == TvType.Anime || this == TvType.OVA
+    return this == TvType.Anime || this == TvType.OVA || this == TvType.Donghua
 }
 
 data class SubtitleFile(val lang: String, val url: String)
@@ -814,7 +815,7 @@ fun LoadResponse?.isAnimeBased(): Boolean {
 
 fun TvType?.isEpisodeBased(): Boolean {
     if (this == null) return false
-    return (this == TvType.TvSeries || this == TvType.Anime)
+    return (this == TvType.TvSeries || this == TvType.Anime || this == TvType.Donghua || this == TvType.AsianDrama)
 }
 
 data class AnimeEpisode(
