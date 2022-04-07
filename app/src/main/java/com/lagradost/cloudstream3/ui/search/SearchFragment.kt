@@ -232,6 +232,9 @@ class SearchFragment : Fragment() {
                             )?.plus(" ") ?: ""
                         }${it.name}" else it.name }
 
+                        for ((index, api) in names.withIndex()) {
+                            listView?.setItemChecked(index, currentSelectedApis.contains(api))
+                        }
 
                         //arrayAdapter.notifyDataSetChanged()
                         arrayAdapter.addAll(names)
