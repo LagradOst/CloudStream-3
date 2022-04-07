@@ -147,7 +147,7 @@
 
                 android:id="@+id/search_select_mirror"
                 android:text="@string/mirror"
-                style="@style/RoundedSelectableButton" />
+                style="@style/RoundedSelectableButton"/>
         </LinearLayout>
     </HorizontalScrollView>
 
