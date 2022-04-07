@@ -155,8 +155,8 @@ class HomeFragment : Fragment() {
                 Pair(tvs, listOf(TvType.TvSeries)),
                 Pair(docs, listOf(TvType.Documentary)),
                 Pair(movies, listOf(TvType.Movie, TvType.Torrent)),
-                Pair(mirror, listOf(TvType.Mirror)),
                 Pair(asian_dramas, listOf(TvType.AsianDrama)),
+                Pair(mirror, listOf(TvType.Mirror)),
             )
         }
 
