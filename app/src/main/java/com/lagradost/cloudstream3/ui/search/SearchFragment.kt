@@ -166,19 +166,12 @@ class SearchFragment : Fragment() {
                     val docs = dialog.findViewById<MaterialButton>(R.id.home_select_documentaries)
                     val movies = dialog.findViewById<MaterialButton>(R.id.home_select_movies)
                     val asian = dialog.findViewById<MaterialButton>(R.id.home_select_asian)
+                    val mirror = dialog.findViewById<MaterialButton>(R.id.home_select_mirror)
                     val cancelBtt = dialog.findViewById<MaterialButton>(R.id.cancel_btt)
                     val applyBtt = dialog.findViewById<MaterialButton>(R.id.apply_btt)
 
                     val pairList =
-                        HomeFragment.getPairList(
-                            anime,
-                            cartoons,
-                            tvs,
-                            docs,
-                            movies,
-                            asian,
-                            search_select_asian
-                        )
+                        HomeFragment.getPairList(anime, cartoons, tvs, docs, movies, mirror, asian)
 
                     cancelBtt?.setOnClickListener {
                         dialog.dismissSafe()
