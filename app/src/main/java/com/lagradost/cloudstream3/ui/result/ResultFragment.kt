@@ -276,6 +276,8 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                 TvType.Torrent -> "Torrent"
                 TvType.Documentary -> "Documentaries"
                 TvType.AsianDrama -> "AsianDrama"
+                TvType.Mirror -> "Mirror"
+                TvType.Donghua -> "Donghua"
             }
         }
 
