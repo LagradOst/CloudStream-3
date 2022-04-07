@@ -145,17 +145,17 @@ class HomeFragment : Fragment() {
             tvs: MaterialButton?,
             docs: MaterialButton?,
             movies: MaterialButton?,
-            asian: MaterialButton?,
             mirror: MaterialButton?,
+            asian_dramas: MaterialButton?
         ): List<Pair<MaterialButton?, List<TvType>>> {
             return listOf(
-                Pair(anime, listOf(TvType.Anime, TvType.OVA, TvType.AnimeMovie)),
+                Pair(anime, listOf(TvType.Anime, TvType.OVA, TvType.AnimeMovie, TvType.Donghua)),
                 Pair(cartoons, listOf(TvType.Cartoon)),
                 Pair(tvs, listOf(TvType.TvSeries)),
                 Pair(docs, listOf(TvType.Documentary)),
                 Pair(movies, listOf(TvType.Movie, TvType.Torrent)),
-                Pair(asian, listOf(TvType.AsianDrama)),
                 Pair(mirror, listOf(TvType.Mirror)),
+                Pair(asian_dramas, listOf(TvType.AsianDrama)),
             )
         }
 
