@@ -145,8 +145,9 @@ class HomeFragment : Fragment() {
             tvs: MaterialButton?,
             docs: MaterialButton?,
             movies: MaterialButton?,
+            asian_dramas: MaterialButton?,
             mirror: MaterialButton?,
-            asian_dramas: MaterialButton?
+
         ): List<Pair<MaterialButton?, List<TvType>>> {
             return listOf(
                 Pair(anime, listOf(TvType.Anime, TvType.OVA, TvType.AnimeMovie, TvType.Donghua)),
