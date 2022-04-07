@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.lagradost.cloudstream3.animeproviders.*
 import com.lagradost.cloudstream3.metaproviders.CrossTmdbProvider
+import com.lagradost.cloudstream3.metaproviders.MultiAnimeProvider
 import com.lagradost.cloudstream3.movieproviders.*
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.aniListApi
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.malApi
@@ -121,6 +122,7 @@ object APIHolder {
             KrunchyProvider(),
             MundoDonghuaProvider(),
             TioAnimeProvider(),
+            //MultiAnimeProvider(),
             )
     }
 
