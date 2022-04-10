@@ -89,7 +89,6 @@ import kotlinx.android.synthetic.main.fragment_home.home_watch_parent_item_title
 import kotlinx.android.synthetic.main.fragment_home.result_error_text
 import kotlinx.android.synthetic.main.fragment_home_tv.*
 import java.util.*
-import kotlin.random.Random
 
 const val HOME_BOOKMARK_VALUE_LIST = "home_bookmarked_last_list"
 const val HOME_PREF_HOMEPAGE = "home_pref_homepage"
@@ -376,11 +375,8 @@ class HomeFragment : Fragment() {
             home_provider_name?.text = apiName
             home_provider_meta_info?.isVisible = false
             home_random?.setOnClickListener {
-                val totalItems = listHomepageItems.size
-                if (totalItems > 0) {
-                    val randInt = Random.nextInt(totalItems)
-                    val randItem = listHomepageItems[randInt]
-                    activity.loadSearchResult(randItem)
+                if (listHomepageItems.isNotEmpty()) {
+                    activity.loadSearchResult(listHomepageItems.random())
                 }
             }
 
@@ -401,6 +397,7 @@ class HomeFragment : Fragment() {
         }
 
         observe(homeViewModel.randomItems) { items ->
+            home_random?.isVisible = listHomepageItems.isNotEmpty()
             if (items.isNullOrEmpty()) {
                 toggleMainVisibility(false)
             } else {
