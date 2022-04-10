@@ -23,7 +23,7 @@
         <Preference
             android:key="@string/prefer_limit_title_key"
             android:title="@string/limit_title"
-            android:icon="@drawable/ic_baseline_letter_a" />
+            android:icon="@drawable/ic_baseline_text_format_24" />
 
         <SwitchPreference
                 android:icon="@drawable/ic_baseline_picture_in_picture_alt_24"

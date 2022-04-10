@@ -60,7 +60,7 @@
     </array>
 
     <array name="limit_title_pref_names">
-        <item>None</item>
+        <item>@string/none</item>
         <item>16 characters</item>
         <item>32 characters</item>
         <item>64 characters</item>

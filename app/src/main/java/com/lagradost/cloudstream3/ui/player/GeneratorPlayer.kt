@@ -523,8 +523,11 @@ class GeneratorPlayer : FullScreenPlayer() {
             }
         }
         //Get limit of characters on Video Title
-        val settingsManager = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        val limitTitle = settingsManager.getInt(getString(R.string.prefer_limit_title_key), 0)
+        var limitTitle = 0
+        context?.let {
+            val settingsManager = PreferenceManager.getDefaultSharedPreferences(it)
+            limitTitle = settingsManager.getInt(getString(R.string.prefer_limit_title_key), 0)
+        }
         //Generate video title
         var playerVideoTitle = if (headerName != null) {
             (headerName +
