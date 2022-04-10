@@ -1,7 +1,7 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.setDuration
+import com.lagradost.cloudstream3.LoadResponse.Companion.addDuration
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -127,7 +127,7 @@ class PelisflixProvider : MainAPI() {
             }
             if (list.isEmpty()) throw ErrorLoadingException("No Seasons Found")
 
-            val episodeList = ArrayList<TvSeriesEpisode>()
+            val episodeList = ArrayList<Episode>()
 
             for ((seasonInt, seasonUrl) in list) {
                 val seasonDocument = app.get(seasonUrl).document
@@ -141,14 +141,13 @@ class PelisflixProvider : MainAPI() {
                         val href = aName.attr("href")
                         val date = episode.selectFirst("> td.MvTbTtl > span")?.text()
                         episodeList.add(
-                            TvSeriesEpisode(
-                                name,
-                                seasonInt,
-                                epNum,
-                                href,
-                                fixUrlNull(epthumb),
-                                date
-                            )
+                            newEpisode(href) {
+                                this.name = name
+                                this.season = seasonInt
+                                this.episode =  epNum
+                                this.posterUrl = fixUrlNull(epthumb)
+                                addDate(date)
+                            }
                         )
                     }
                 }
@@ -163,7 +162,6 @@ class PelisflixProvider : MainAPI() {
                 year?.toIntOrNull(),
                 descipt2,
                 null,
-                null,
                 rating
             )
         } else {
@@ -177,7 +175,7 @@ class PelisflixProvider : MainAPI() {
                 this.year = year?.toIntOrNull()
                 this.plot = descipt
                 this.rating = rating
-                setDuration(duration)
+                addDuration(duration)
             }
         }
     }

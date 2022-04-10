@@ -1,11 +1,15 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import java.util.*
-import org.json.JSONObject
-import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addRating
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
+import org.json.JSONObject
+import org.jsoup.nodes.Element
+import java.util.*
 
 class AnimeWorldProvider : MainAPI() {
     override var mainUrl = "https://www.animeworld.tv"
@@ -121,7 +125,7 @@ class AnimeWorldProvider : MainAPI() {
 
         val type: TvType = getType(widget.select("dd").first()?.text())
         val genres = widget.select(".meta").select("a[href*=\"/genre/\"]").map { it.text() }
-        val rating: Int? = widget.select("#average-vote").text().toFloatOrNull()?.times(1000)?.toInt()
+        val rating = widget.select("#average-vote")?.text()
 
         val trailerUrl = document.select(".trailer[data-url]").attr("data-url")
         val malId = document.select("#mal-button").attr("href")
@@ -150,7 +154,7 @@ class AnimeWorldProvider : MainAPI() {
         val episodes = servers.select(".server[data-name=\"9\"] .episode").map {
             val id = it.select("a").attr("data-id")
             val number = it.select("a").attr("data-episode-num").toIntOrNull()
-            AnimeEpisode(
+            Episode(
                 fixUrl("$mainUrl/api/episode/info?id=$id"),
                 episode = number
             )
@@ -170,11 +174,11 @@ class AnimeWorldProvider : MainAPI() {
             showStatus = status
             plot = description
             tags = genres
-            this.malId = malId
-            this.anilistId = anlId
-            this.rating = rating
+            addMalId(malId)
+            addAniListId(anlId)
+            addRating(rating)
             this.duration = duration
-            this.trailerUrl = trailerUrl
+            addTrailer(trailerUrl)
             this.recommendations = recommendations
             this.comingSoon = comingSoon
         }

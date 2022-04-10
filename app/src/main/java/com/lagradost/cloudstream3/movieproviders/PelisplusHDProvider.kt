@@ -1,9 +1,9 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
-import java.util.*
 
 class PelisplusHDProvider:MainAPI() {
     override var mainUrl = "https://pelisplushd.net"
@@ -111,11 +111,11 @@ class PelisplusHDProvider:MainAPI() {
             val isValid = seasonid.size == 2
             val episode = if (isValid) seasonid.getOrNull(1) else null
             val season = if (isValid) seasonid.getOrNull(0) else null
-            TvSeriesEpisode(
+            Episode(
+                href,
                 name,
                 season,
                 episode,
-                href,
             )
         }
 
@@ -137,7 +137,6 @@ class PelisplusHDProvider:MainAPI() {
                     description,
                     null,
                     null,
-                    null,
                     tags,
                 )
             }
@@ -151,7 +150,6 @@ class PelisplusHDProvider:MainAPI() {
                     poster,
                     year,
                     description,
-                    null,
                     null,
                     tags,
                 )

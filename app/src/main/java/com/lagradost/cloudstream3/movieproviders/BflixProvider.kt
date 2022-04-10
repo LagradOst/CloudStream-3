@@ -17,7 +17,7 @@ class SflixProProvider : BflixProvider() {
 }
 
 open class BflixProvider() : MainAPI() {
-    override var mainUrl = "https://bflix.ru"
+    override var mainUrl = "https://bflix.to"
     override var name = "Bflix"
     override val hasMainPage = true
     override val hasChromecastSupport = true
@@ -43,7 +43,8 @@ open class BflixProvider() : MainAPI() {
             val test = soup.select(element).map {
                 val title = it.selectFirst("h3 a").text()
                 val link = fixUrl(it.selectFirst("a").attr("href"))
-                // val quality = it.selectFirst("div.quality").text()
+                val qualityInfo = it.selectFirst("div.quality").text()
+                val quality = getQualityFromString(qualityInfo)
                 TvSeriesSearchResponse(
                     title,
                     link,
@@ -52,6 +53,7 @@ open class BflixProvider() : MainAPI() {
                     it.selectFirst("a.poster img").attr("src"),
                     null,
                     null,
+                    quality = quality
                 )
             }
             items.add(HomePageList(name, test))
@@ -178,6 +180,8 @@ open class BflixProvider() : MainAPI() {
             val href = fixUrl(it.selectFirst("a").attr("href"))
             val image = it.selectFirst("a.poster img").attr("src")
             val isMovie = href.contains("/movie/")
+            val qualityInfo = it.selectFirst("div.quality").text()
+            val quality = getQualityFromString(qualityInfo)
 
             if (isMovie) {
                 MovieSearchResponse(
@@ -186,7 +190,8 @@ open class BflixProvider() : MainAPI() {
                     this.name,
                     TvType.Movie,
                     image,
-                    null
+                    null,
+                    quality = quality
                 )
             } else {
                 TvSeriesSearchResponse(
@@ -196,7 +201,8 @@ open class BflixProvider() : MainAPI() {
                     TvType.TvSeries,
                     image,
                     null,
-                    null
+                    null,
+                    quality = quality
                 )
             }
         }
@@ -236,11 +242,11 @@ open class BflixProvider() : MainAPI() {
             val eptitle = it.selectFirst(".episode a span.name").text()
             val secondtitle = it.selectFirst(".episode a span").text()
                 .replace(Regex("(Episode (\\d+):|Episode (\\d+)-|Episode (\\d+))"),"") ?: ""
-            TvSeriesEpisode(
+            Episode(
+                href,
                 secondtitle+eptitle,
                 season,
                 episode,
-                href,
             )
         }
         val tvType = if (url.contains("/movie/") && episodes.size == 1) TvType.Movie else TvType.TvSeries
@@ -259,8 +265,7 @@ open class BflixProvider() : MainAPI() {
                         year = null
                     )
                 }
-        val rating = soup.selectFirst(".info span.imdb").text().toFloatOrNull()
-            ?.times(1000)?.toInt()
+        val rating = soup.selectFirst(".info span.imdb")?.text()?.toRatingInt()
         val durationdoc = soup.selectFirst("div.info div.meta").toString()
         val durationregex = Regex("((\\d+) min)")
         val yearegex = Regex("<span>(\\d+)<\\/span>")
@@ -280,7 +285,6 @@ open class BflixProvider() : MainAPI() {
                     year?.toIntOrNull(),
                     description,
                     null,
-                    null,
                     rating,
                     tags,
                     recommendations = recommendations,
@@ -297,7 +301,6 @@ open class BflixProvider() : MainAPI() {
                     poster,
                     year?.toIntOrNull(),
                     description,
-                    null,
                     rating,
                     tags,
                     recommendations = recommendations,
@@ -374,7 +377,7 @@ open class BflixProvider() : MainAPI() {
                 }
                 //Apparently any server works, I haven't found any diference
                 val sublink =
-                    app.get("$mainUrl/ajax/episode/subtitles/${jsonservers.vidstream}").text
+                    app.get("$mainUrl/ajax/episode/subtitles/${jsonservers.mcloud}").text
                 val jsonsub = parseJson<List<Subtitles>>(sublink)
                 jsonsub.forEach { subtitle ->
                     subtitleCallback(

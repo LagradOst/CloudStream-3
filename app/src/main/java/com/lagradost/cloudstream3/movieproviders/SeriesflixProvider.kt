@@ -1,7 +1,7 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.setDuration
+import com.lagradost.cloudstream3.LoadResponse.Companion.addDuration
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -92,8 +92,7 @@ class SeriesflixProvider : MainAPI() {
         val descRegex = Regex("(Recuerda.*Seriesflix.)")
         val descipt = document.selectFirst("div.Description > p").text().replace(descRegex, "")
         val rating =
-            document.selectFirst("div.Vote > div.post-ratings > span")?.text()?.toFloatOrNull()
-                ?.times(1000)?.toInt()
+            document.selectFirst("div.Vote > div.post-ratings > span")?.text()?.toRatingInt()
         val year = document.selectFirst("span.Date")?.text()
         // ?: does not work
         val duration = try {
@@ -124,7 +123,7 @@ class SeriesflixProvider : MainAPI() {
             }
             if (list.isEmpty()) throw ErrorLoadingException("No Seasons Found")
 
-            val episodeList = ArrayList<TvSeriesEpisode>()
+            val episodeList = ArrayList<Episode>()
 
             for (season in list) {
                 val seasonDocument = app.get(season.second).document
@@ -138,14 +137,13 @@ class SeriesflixProvider : MainAPI() {
                         val href = aName.attr("href")
                         val date = episode.selectFirst("> td.MvTbTtl > span")?.text()
                         episodeList.add(
-                            TvSeriesEpisode(
-                                name,
-                                season.first,
-                                epNum,
-                                href,
-                                fixUrlNull(epthumb),
-                                date
-                            )
+                            newEpisode(href) {
+                                this.name = name
+                                this.season = season.first
+                                this.episode = epNum
+                                this.posterUrl = fixUrlNull(epthumb)
+                                addDate(date)
+                            }
                         )
                     }
                 }
@@ -160,7 +158,6 @@ class SeriesflixProvider : MainAPI() {
                 year?.toIntOrNull(),
                 descipt,
                 null,
-                null,
                 rating
             )
         } else {
@@ -174,7 +171,7 @@ class SeriesflixProvider : MainAPI() {
                 this.year = year?.toIntOrNull()
                 this.plot = descipt
                 this.rating = rating
-                setDuration(duration)
+                addDuration(duration)
             }
         }
     }

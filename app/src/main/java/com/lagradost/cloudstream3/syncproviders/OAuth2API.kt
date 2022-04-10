@@ -10,9 +10,9 @@ interface OAuth2API {
     val redirectUrl: String
 
     // don't change this as all keys depend on it
-    val idPrefix : String
+    val idPrefix: String
 
-    fun handleRedirect(url: String)
+    suspend fun handleRedirect(url: String) : Boolean
     fun authenticate()
 
     fun loginInfo(): LoginInfo?
@@ -43,8 +43,8 @@ interface OAuth2API {
 
         // used for active syncing
         val SyncApis
-            get() = listOf<SyncAPI>(
-                malApi, aniListApi
+            get() = listOf(
+                SyncRepo(malApi), SyncRepo(aniListApi)
             )
 
         const val appString = "cloudstreamapp"

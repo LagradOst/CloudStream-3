@@ -25,6 +25,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.apis
 import com.lagradost.cloudstream3.APIHolder.filterProviderByPreferredMedia
 import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
+import com.lagradost.cloudstream3.APIHolder.getApiProviderLangSettings
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.mvvm.Resource
@@ -50,6 +51,7 @@ import com.lagradost.cloudstream3.utils.DataStoreHelper.setResultWatchState
 import com.lagradost.cloudstream3.utils.Event
 import com.lagradost.cloudstream3.utils.HOMEPAGE_API
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showOptionSelectStringRes
+import com.lagradost.cloudstream3.utils.SubtitleHelper.getFlagFromIso
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbarView
@@ -60,7 +62,6 @@ import com.lagradost.cloudstream3.utils.UIHelper.setImageBlur
 import com.lagradost.cloudstream3.widget.CenterZoomLayoutManager
 import kotlinx.android.synthetic.main.fragment_home.*
 import kotlinx.android.synthetic.main.fragment_home.home_api_fab
-import kotlinx.android.synthetic.main.fragment_home.home_bookmarked_child_more_info
 import kotlinx.android.synthetic.main.fragment_home.home_bookmarked_child_recyclerview
 import kotlinx.android.synthetic.main.fragment_home.home_bookmarked_holder
 import kotlinx.android.synthetic.main.fragment_home.home_change_api
@@ -82,7 +83,6 @@ import kotlinx.android.synthetic.main.fragment_home.home_type_completed_btt
 import kotlinx.android.synthetic.main.fragment_home.home_type_dropped_btt
 import kotlinx.android.synthetic.main.fragment_home.home_type_on_hold_btt
 import kotlinx.android.synthetic.main.fragment_home.home_type_watching_btt
-import kotlinx.android.synthetic.main.fragment_home.home_watch_child_more_info
 import kotlinx.android.synthetic.main.fragment_home.home_watch_child_recyclerview
 import kotlinx.android.synthetic.main.fragment_home.home_watch_holder
 import kotlinx.android.synthetic.main.fragment_home.home_watch_parent_item_title
@@ -170,6 +170,7 @@ class HomeFragment : Fragment() {
             builder.setContentView(R.layout.home_select_mainpage)
             builder.show()
             builder.let { dialog ->
+                val isMultiLang = getApiProviderLangSettings().size > 1
                 //dialog.window?.setGravity(Gravity.BOTTOM)
 
                 var currentApiName = selectedApiName
@@ -224,13 +225,12 @@ class HomeFragment : Fragment() {
                         api.hasMainPage && api.supportedTypes.any {
                             preSelectedTypes.contains(it)
                         }
-                    }.sortedBy { it.name }.toMutableList()
+                    }.sortedBy { it.name.lowercase() }.toMutableList()
                     currentValidApis.addAll(0, validAPIs.subList(0, 2))
 
-                    val names = currentValidApis.map { it.name }
-                    val index = names.indexOf(currentApiName)
+                    val names = currentValidApis.map { if(isMultiLang) "${getFlagFromIso(it.lang)?.plus(" ") ?: ""}${it.name}" else it.name }
+                    val index = currentValidApis.map { it.name }.indexOf(currentApiName)
                     listView?.setItemChecked(index, true)
-                    arrayAdapter.notifyDataSetChanged()
                     arrayAdapter.addAll(names)
                     arrayAdapter.notifyDataSetChanged()
                 }
@@ -823,9 +823,8 @@ class HomeFragment : Fragment() {
             for (syncApi in OAuth2API.OAuth2Apis) {
                 val login = syncApi.loginInfo()
                 val pic = login?.profilePicture
-                if (pic != null) {
-                    home_profile_picture.setImage(pic)
-                    home_profile_picture_holder.isVisible = true
+                if (home_profile_picture?.setImage(pic) == true) {
+                    home_profile_picture_holder?.isVisible = true
                     break
                 }
             }

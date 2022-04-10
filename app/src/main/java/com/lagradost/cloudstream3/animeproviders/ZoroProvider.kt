@@ -1,21 +1,25 @@
 package com.lagradost.cloudstream3.animeproviders
 
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.util.NameTransformer
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
-import com.lagradost.cloudstream3.movieproviders.SflixProvider
+import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.extractRabbitStream
-import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.toExtractorLink
-import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.toSubtitleFile
-import com.lagradost.cloudstream3.network.WebViewResolver
+import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.runSflixExtractorVerifierJob
+import com.lagradost.cloudstream3.network.Requests.Companion.await
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import okhttp3.Interceptor
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.net.URI
 import java.util.*
+
+private const val OPTIONS = "OPTIONS"
 
 class ZoroProvider : MainAPI() {
     override var mainUrl = "https://zoro.to"
@@ -182,9 +186,16 @@ class ZoroProvider : MainAPI() {
         return Actor(name = name, image = image)
     }
 
+    data class ZoroSyncData(
+        @JsonProperty("mal_id") val malId : String?,
+        @JsonProperty("anilist_id") val aniListId : String?,
+    )
+
     override suspend fun load(url: String): LoadResponse {
         val html = app.get(url).text
         val document = Jsoup.parse(html)
+
+        val syncData = tryParseJson<ZoroSyncData>(document.selectFirst("#syncData")?.data())
 
         val title = document.selectFirst(".anisc-detail > .film-name")?.text().toString()
         val poster = document.selectFirst(".anisc-poster img")?.attr("src")
@@ -220,16 +231,10 @@ class ZoroProvider : MainAPI() {
                 ).text
             ).html
         ).select(".ss-list > a[href].ssl-item.ep-item").map {
-            val name = it?.attr("title")
-            AnimeEpisode(
-                fixUrl(it.attr("href")),
-                name,
-                null,
-                null,
-                null,
-                null,
-                it.selectFirst(".ssli-order")?.text()?.toIntOrNull()
-            )
+            newEpisode(it.attr("href")) {
+                this.name = it?.attr("title")
+                this.episode = it.selectFirst(".ssli-order")?.text()?.toIntOrNull()
+            }
         }
 
         val actors = document.select("div.block-actors-content > div.bac-list-wrap > div.bac-item")
@@ -282,28 +287,52 @@ class ZoroProvider : MainAPI() {
             this.tags = tags
             this.recommendations = recommendations
             this.actors = actors
+            addMalId(syncData?.malId?.toIntOrNull())
+            addAniListId(syncData?.aniListId?.toIntOrNull())
         }
-    }
-
-    private suspend fun getM3u8FromRapidCloud(url: String): String {
-        return /*Regex("""/(embed-\d+)/(.*?)\?z=""").find(url)?.groupValues?.let {
-            val jsonLink = "https://rapid-cloud.ru/ajax/${it[1]}/getSources?id=${it[2]}"
-            app.get(jsonLink).text
-        } ?:*/ app.get(
-            "$url&autoPlay=1&oa=0",
-            headers = mapOf(
-                "Referer" to "https://zoro.to/",
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0"
-            ),
-            interceptor = WebViewResolver(
-                Regex("""/getSources""")
-            )
-        ).text
     }
 
     private data class RapidCloudResponse(
         @JsonProperty("link") val link: String
     )
+
+    override suspend fun extractorVerifierJob(extractorData: String?) {
+        Log.d(this.name, "Starting ${this.name} job!")
+        runSflixExtractorVerifierJob(this, extractorData, "https://rapid-cloud.ru/")
+    }
+
+    /** Url hashcode to sid */
+    var sid: HashMap<Int, String?> = hashMapOf()
+
+    /**
+     * Makes an identical Options request before .ts request
+     * Adds an SID header to the .ts request.
+     * */
+    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor {
+        return Interceptor { chain ->
+            val request = chain.request()
+            if (request.url.toString().endsWith(".ts")
+                && request.method != OPTIONS
+                // No option requests on VidCloud
+                && !request.url.toString().contains("betterstream")
+            ) {
+                val newRequest =
+                    chain.request()
+                        .newBuilder().apply {
+                            sid[extractorLink.url.hashCode()]?.let { sid ->
+                                addHeader("SID", sid)
+                            }
+                        }
+                        .build()
+                val options = request.newBuilder().method(OPTIONS, request.body).build()
+                ioSafe { app.baseClient.newCall(options).await() }
+
+                return@Interceptor chain.proceed(newRequest)
+            } else {
+                return@Interceptor chain.proceed(chain.request())
+            }
+        }
+    }
 
     override suspend fun loadLinks(
         data: String,
@@ -322,6 +351,8 @@ class ZoroProvider : MainAPI() {
             )
         }
 
+        val extractorData =
+            "https://ws1.rapid-cloud.ru/socket.io/?EIO=4&transport=polling"
 
         // Prevent duplicates
         servers.distinctBy { it.second }.apmap {
@@ -330,11 +361,18 @@ class ZoroProvider : MainAPI() {
             val extractorLink = app.get(
                 link,
             ).mapped<RapidCloudResponse>().link
-            val hasLoadedExtractorLink = loadExtractor(extractorLink, mainUrl, callback)
+            val hasLoadedExtractorLink =
+                loadExtractor(extractorLink, "https://rapid-cloud.ru/", callback)
 
             if (!hasLoadedExtractorLink) {
-                extractRabbitStream(extractorLink, subtitleCallback, callback) { sourceName ->
-                     sourceName + " - ${it.first}"
+                extractRabbitStream(
+                    extractorLink,
+                    subtitleCallback,
+                    // Blacklist VidCloud for now
+                    { videoLink -> if (!videoLink.url.contains("betterstream")) callback(videoLink) },
+                    extractorData
+                ) { sourceName ->
+                    sourceName + " - ${it.first}"
                 }
             }
         }

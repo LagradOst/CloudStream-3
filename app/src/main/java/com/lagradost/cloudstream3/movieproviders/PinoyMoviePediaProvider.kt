@@ -1,9 +1,9 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 
@@ -53,21 +53,22 @@ class PinoyMoviePediaProvider : MainAPI() {
                     name = urlTitle.select("h3")?.text() ?: ""
                     year = titleYear?.select("span")?.text()?.takeLast(4)?.toIntOrNull()
                 }
+                // Get year from name
                 if (year == null) {
-                    // Get year from name
                     val rex = Regex("\\((\\d+)")
                     year = rex.find(name)?.value?.replace("(", "")?.toIntOrNull()
                 }
+                //Get quality
+                val qual = getQualityFromString(it.selectFirst("span.quality")?.text())
 
-                val tvType = TvType.Movie
                 MovieSearchResponse(
-                    name,
-                    link,
-                    this.name,
-                    tvType,
-                    image,
-                    year,
-                    null,
+                    name = name,
+                    url = link,
+                    apiName = this.name,
+                    TvType.Movie,
+                    posterUrl = image,
+                    year = year,
+                    quality = qual
                 )
             }?.distinctBy { c -> c.url } ?: listOf()
             // Add
@@ -93,14 +94,16 @@ class PinoyMoviePediaProvider : MainAPI() {
             val title = details.select("div.title")?.text() ?: ""
             val year = details.select("div.meta > span.year")?.text()?.toIntOrNull()
             val image = inner.select("div.image > div > a > img")?.attr("src")
+            val qual = getQualityFromString(it.selectFirst("span.quality")?.text())
 
             MovieSearchResponse(
-                title,
-                link,
-                this.name,
+                name = title,
+                url = link,
+                apiName = this.name,
                 TvType.Movie,
-                image,
-                year
+                posterUrl = image,
+                year = year,
+                quality = qual
             )
         }?.distinctBy { c -> c.url } ?: listOf()
     }
@@ -149,14 +152,14 @@ class PinoyMoviePediaProvider : MainAPI() {
         playcontainer?.select("iframe")?.forEach { item ->
             val lnk = item?.attr("src")?.trim() ?: ""
             //Log.i(this.name, "Result => (lnk) $lnk")
-            if (lnk.isNotBlank()) {
+            if (lnk.isNotEmpty()) {
                 listOfLinks.add(lnk)
             }
         }
 
         // Parse episodes if series
         if (isTvSeries) {
-            val episodeList = ArrayList<TvSeriesEpisode>()
+            val episodeList = ArrayList<Episode>()
             val epLinks = playcontainer?.select("div > div > div.source-box")
             //Log.i(this.name, "Result => (epList) ${epList}")
             body?.select("div#playeroptions > ul > li")?.forEach { ep ->
@@ -172,7 +175,7 @@ class PinoyMoviePediaProvider : MainAPI() {
                     val streamEpLink = listOf(href.trim()).toJson()
                     //Log.i(this.name, "Result => (streamEpLink $epNum) $streamEpLink")
                     episodeList.add(
-                        TvSeriesEpisode(
+                        Episode(
                             name = null,
                             season = null,
                             episode = epNum,
@@ -219,7 +222,7 @@ class PinoyMoviePediaProvider : MainAPI() {
     ): Boolean {
         // parse movie servers
         var count = 0
-        mapper.readValue<List<String>>(data).apmap { link ->
+        tryParseJson<List<String>>(data)?.apmap { link ->
             count++
             if (link.contains("fembed.com")) {
                 val extractor = FEmbed()

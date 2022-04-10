@@ -235,7 +235,6 @@ class LookMovieProvider : MainAPI() {
                 poster,
                 year,
                 descript,
-                null,
                 rating
             )
         } else {
@@ -274,11 +273,11 @@ class LookMovieProvider : MainAPI() {
                     ).toJson()
 
 
-                TvSeriesEpisode(
+                Episode(
+                    localData,
                     it.title,
                     it.season.toIntOrNull(),
                     it.episode.toIntOrNull(),
-                    localData
                 )
             }.toList()
 
@@ -291,7 +290,6 @@ class LookMovieProvider : MainAPI() {
                 poster,
                 year,
                 descript,
-                null,
                 null,
                 rating
             )

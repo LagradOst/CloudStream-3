@@ -303,7 +303,7 @@ class GogoanimeProvider : MainAPI() {
         val params = mapOf("ep_start" to "0", "ep_end" to "2000", "id" to animeId)
 
         val episodes = app.get(episodeloadApi, params = params).document.select("a").map {
-            AnimeEpisode(
+            Episode(
                 fixUrl(it.attr("href").trim()),
                 "Episode " + it.selectFirst(".name").text().replace("EP", "").trim()
             )
@@ -380,9 +380,9 @@ class GogoanimeProvider : MainAPI() {
                             loadExtractor(data, streamingResponse.url, callback)
                         }
                 }, {
-                    val iv = "31323835363732333833393339383532".decodeHex()
+                    val iv = "4770478969418267".toByteArray()
                     val secretKey =
-                        "3235373136353338353232393338333936313634363632323738383333323838".decodeHex()
+                        "63976882873559819639988080820907".toByteArray()
                     extractVidstream(iframe, this.name, callback, iv, secretKey)
                 })
             }

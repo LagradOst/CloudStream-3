@@ -1,6 +1,6 @@
 package com.lagradost.cloudstream3.ui.result
 
-import android.content.Context
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -10,6 +10,7 @@ import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
 import com.lagradost.cloudstream3.APIHolder.getApiFromUrlNull
 import com.lagradost.cloudstream3.APIHolder.getId
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.Resource
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.syncproviders.SyncAPI
@@ -44,7 +45,7 @@ class ResultViewModel : ViewModel() {
     private var repo: APIRepository? = null
     private var generator: IGenerator? = null
 
-    private val _resultResponse: MutableLiveData<Resource<Any?>> = MutableLiveData()
+    private val _resultResponse: MutableLiveData<Resource<LoadResponse>> = MutableLiveData()
     private val _episodes: MutableLiveData<List<ResultEpisode>> = MutableLiveData()
     private val episodeById: MutableLiveData<HashMap<Int, Int>> =
         MutableLiveData() // lookup by ID to get Index
@@ -56,7 +57,8 @@ class ResultViewModel : ViewModel() {
     private val selectedRangeInt: MutableLiveData<Int> = MutableLiveData()
     val rangeOptions: LiveData<List<String>> = _rangeOptions
 
-    val resultResponse: LiveData<Resource<Any?>> get() = _resultResponse
+    val result: LiveData<Resource<LoadResponse>> get() = _resultResponse
+
     val episodes: LiveData<List<ResultEpisode>> get() = _episodes
     val publicEpisodes: LiveData<Resource<List<ResultEpisode>>> get() = _publicEpisodes
     val publicEpisodesCount: LiveData<Int> get() = _publicEpisodesCount
@@ -78,9 +80,6 @@ class ResultViewModel : ViewModel() {
 
     private val _watchStatus: MutableLiveData<WatchType> = MutableLiveData()
     val watchStatus: LiveData<WatchType> get() = _watchStatus
-
-    private val _sync: MutableLiveData<List<Resource<SyncAPI.SyncResult?>>> = MutableLiveData()
-    val sync: LiveData<List<Resource<SyncAPI.SyncResult?>>> get() = _sync
 
     fun updateWatchStatus(status: WatchType) = viewModelScope.launch {
         val currentId = id.value ?: return@launch
@@ -107,6 +106,34 @@ class ResultViewModel : ViewModel() {
                     )
                 )
             }
+        }
+    }
+
+    companion object {
+        const val TAG = "RVM"
+    }
+
+    var lastMeta: SyncAPI.SyncResult? = null
+    private fun applyMeta(resp: LoadResponse, meta: SyncAPI.SyncResult?): LoadResponse {
+        if (meta == null) return resp
+        lastMeta = meta
+        return resp.apply {
+            Log.i(TAG, "applyMeta")
+
+            duration = duration ?: meta.duration
+            rating = rating ?: meta.publicScore
+            tags = tags ?: meta.genres
+            plot = if (plot.isNullOrBlank()) meta.synopsis else plot
+            addTrailer(meta.trailerUrl)
+            posterUrl = posterUrl ?: meta.posterUrl ?: meta.backgroundPosterUrl
+            actors = actors ?: meta.actors
+        }
+    }
+
+    fun setMeta(meta: SyncAPI.SyncResult) {
+        Log.i(TAG, "setMeta")
+        (result.value as? Resource.Success<LoadResponse>?)?.value?.let { resp ->
+            _resultResponse.postValue(Resource.Success(applyMeta(resp, meta)))
         }
     }
 
@@ -233,17 +260,6 @@ class ResultViewModel : ViewModel() {
         return generator
     }
 
-    fun updateSync(context: Context?, sync: List<Pair<SyncAPI, String>>) = viewModelScope.launch {
-        if (context == null) return@launch
-
-        val list = ArrayList<Resource<SyncAPI.SyncResult?>>()
-        for (s in sync) {
-            val result = safeApiCall { s.first.getResult(s.second) }
-            list.add(result)
-            _sync.postValue(list)
-        }
-    }
-
     private fun updateEpisodes(localId: Int?, list: List<ResultEpisode>, selection: Int?) {
         _episodes.postValue(list)
         generator = RepoLinkGenerator(list)
@@ -304,7 +320,7 @@ class ResultViewModel : ViewModel() {
 
         when (data) {
             is Resource.Success -> {
-                val d = data.value
+                val d = applyMeta(data.value, lastMeta)
                 page.postValue(d)
                 val mainId = d.getId()
                 id.postValue(mainId)
@@ -349,8 +365,8 @@ class ResultViewModel : ViewModel() {
                                     filterName(i.name),
                                     i.posterUrl,
                                     episode,
-                                    null, // TODO FIX SEASON
-                                    i.url,
+                                    i.season,
+                                    i.data,
                                     apiName,
                                     mainId + index + 1 + idIndex * 100000,
                                     index,

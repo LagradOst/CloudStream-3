@@ -21,8 +21,8 @@
     },
     "AnimePaheProvider": {
         "name": "AnimePahe",
-        "status": 1,
-        "url": "https://animepahe.com"
+        "url": "https://animepahe.com",
+        "status": 0
     },
     "AnimeWorldProvider": {
         "name": "AnimeWorld",
@@ -56,8 +56,18 @@
     },
     "BflixProvider": {
         "name": "Bflix",
-        "status": 1,
-        "url": "https://fmovies.to"
+        "url": "https://bflix.to",
+        "status": 1
+    },
+    "FmoviesToProvider": {
+        "name": "Fmovies.to",
+        "url": "https://fmovies.to",
+        "status": 1
+    },
+    "SflixProProvider": {
+        "name": "Sflix.pro",
+        "url": "https://sflix.pro",
+        "status": 1
     },
     "CinecalidadProvider": {
         "name": "Cinecalidad",
@@ -166,13 +176,8 @@
     },
     "NineAnimeProvider": {
         "name": "9Anime",
-        "status": 1,
-        "url": "https://9anime.center"
-    },
-    "NyaaProvider": {
-        "name": "Nyaa",
-        "status": 0,
-        "url": "https://nyaa.si"
+        "url": "https://9anime.id",
+        "status": 1
     },
     "PeliSmartProvider": {
         "name": "PeliSmart",
@@ -241,18 +246,8 @@
     },
     "TheFlixToProvider": {
         "name": "TheFlix.to",
-        "status": 1,
-        "url": "https://theflix.to"
-    },
-    "TmdbProvider": {
-        "name": "Tmdb",
-        "status": 0,
-        "url": ""
-    },
-    "TrailersTwoProvider": {
-        "name": "Trailers.to",
-        "status": 1,
-        "url": "https://trailers.to"
+        "url": "https://theflix.to",
+        "status": 0
     },
     "TwoEmbedProvider": {
         "name": "2Embed",
