@@ -11,22 +11,9 @@ URL_REGEX = compile(
 NAME_REGEX = compile("([A-Za-z0-9]+)(?:.kt)$")
 JSON_PATH = "docs/providers.json"
 GLOB = "app/src/main/java/com/lagradost/cloudstream3/*providers/*Provider.kt"
-MAIN_API = "app/src/main/java/com/lagradost/cloudstream3/MainAPI.kt"
-API_REGEX = compile(
-    "val\s*allProviders.*?{\s.*?arrayListOf\(([\W\w]*?)\)\s*\n*\s*}", DOTALL)
 
 old_sites: Dict[str, Dict] = load(open(JSON_PATH, "r", encoding="utf-8"))
 sites: Dict[str, Dict] = {}
-enabled_sites: List[str] = []
-
-# find all sites that are added in MainApi.kt
-with open(MAIN_API, "r", encoding="utf-8") as f:
-    apis = findall(API_REGEX, f.read())
-    for api_list in apis:
-        for api in api_list.split("\n"):
-            if not api.strip() or api.strip().startswith("/"):
-                continue
-            enabled_sites.append(api.strip().split("(")[0])
 
 # parse all *Provider.kt files
 for path in glob(GLOB):
@@ -49,7 +36,7 @@ for path in glob(GLOB):
                 sites[name] = {
                     "name": display_name,
                     "url": provider_url if provider_url else "",
-                    "status": 3 if name in enabled_sites else 0
+                    "status": 3
                 }
 
         except Exception as ex:
