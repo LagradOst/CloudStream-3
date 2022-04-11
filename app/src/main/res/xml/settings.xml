@@ -180,7 +180,7 @@
             android:key="@string/nginx_info"
             android:title="@string/nginx_info_title"
             android:icon="@drawable/ic_baseline_play_arrow_24"
-	    android:summary="@string/nginx_info_summary" >
+	        android:summary="@string/nginx_info_summary" >
             <intent
                 android:action="android.intent.action.VIEW"
                 android:data="https://www.sarlays.com/use-nginx-with-cloudstream/" />
