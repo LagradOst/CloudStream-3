@@ -2,6 +2,8 @@ package com.lagradost.cloudstream3.ui.settings
 
 
 import android.app.UiModeManager
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -45,15 +47,22 @@ import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showBottomDialog
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
+import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showNginxTextInputDialog
 import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showMultiDialog
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.SubtitleHelper.getFlagFromIso
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import com.lagradost.cloudstream3.utils.UIHelper.setImage
+import com.lagradost.cloudstream3.utils.VideoDownloadManager
 import com.lagradost.cloudstream3.utils.VideoDownloadManager.getBasePath
 import com.lagradost.cloudstream3.utils.VideoDownloadManager.getDownloadDir
+import kotlinx.android.synthetic.main.logcat.*
+import okhttp3.internal.closeQuietly
+import java.io.BufferedReader
 import java.io.File
+import java.io.InputStreamReader
+import java.io.OutputStream
 import kotlin.concurrent.thread
 
 
@@ -477,6 +486,32 @@ class SettingsFragment : PreferenceFragmentCompat() {
             return@setOnPreferenceClickListener true
         }
 
+	getPref(R.string.nginx_url_key)?.setOnPreferenceClickListener {
+
+            activity?.showNginxTextInputDialog(
+                settingsManager.getString(getString(R.string.nginx_url_pref), "Nginx server url").toString(),
+                settingsManager.getString(getString(R.string.nginx_url_key), "").toString(),  // key: the actual you use rn
+                android.text.InputType.TYPE_TEXT_VARIATION_URI,  // uri
+                {}) {
+                settingsManager.edit()
+                    .putString(getString(R.string.nginx_url_key), it).apply()  // change the stored url in nginx_url_key to it
+            }
+            return@setOnPreferenceClickListener true
+        }
+
+        getPref(R.string.nginx_credentials)?.setOnPreferenceClickListener {
+
+            activity?.showNginxTextInputDialog(
+                settingsManager.getString(getString(R.string.nginx_credentials_title), "Nginx Credentials").toString(),
+                settingsManager.getString(getString(R.string.nginx_credentials), "").toString(),  // key: the actual you use rn
+                android.text.InputType.TYPE_TEXT_VARIATION_URI,
+                {}) {
+                settingsManager.edit()
+                    .putString(getString(R.string.nginx_credentials), it).apply()  // change the stored url in nginx_url_key to it
+            }
+            return@setOnPreferenceClickListener true
+        }
+
         getPref(R.string.prefer_media_type_key)?.setOnPreferenceClickListener {
             val prefNames = resources.getStringArray(R.array.media_type_pref)
             val prefValues = resources.getIntArray(R.array.media_type_pref_values)
@@ -496,6 +531,69 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
                 removeKey(HOMEPAGE_API)
                 (context ?: AcraApplication.context)?.let { ctx -> app.initClient(ctx) }
+            }
+            return@setOnPreferenceClickListener true
+        }
+
+        getPref(R.string.show_logcat_key)?.setOnPreferenceClickListener { pref ->
+            val builder =
+                AlertDialog.Builder(pref.context, R.style.AlertDialogCustom)
+                    .setView(R.layout.logcat)
+
+            val dialog = builder.create()
+            dialog.show()
+            val log = StringBuilder()
+            try {
+                //https://developer.android.com/studio/command-line/logcat
+                val process = Runtime.getRuntime().exec("logcat -d")
+                val bufferedReader = BufferedReader(
+                    InputStreamReader(process.inputStream)
+                )
+
+                var line: String?
+                while (bufferedReader.readLine().also { line = it } != null) {
+                    log.append(line)
+                }
+            } catch (e: Exception) {
+                logError(e) // kinda ironic
+            }
+
+            val text = log.toString()
+            dialog.text1?.text = text
+
+            dialog.copy_btt?.setOnClickListener {
+                val serviceClipboard =
+                    (activity?.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?)
+                        ?: return@setOnClickListener
+                val clip = ClipData.newPlainText("logcat", text)
+                serviceClipboard.setPrimaryClip(clip)
+                dialog.dismissSafe(activity)
+            }
+            dialog.clear_btt?.setOnClickListener {
+                Runtime.getRuntime().exec("logcat -c")
+                dialog.dismissSafe(activity)
+            }
+            dialog.save_btt?.setOnClickListener {
+                var fileStream: OutputStream? = null
+                try {
+                    fileStream =
+                        VideoDownloadManager.setupStream(
+                            it.context,
+                            "logcat",
+                            null,
+                            "txt",
+                            false
+                        ).fileStream
+                    fileStream?.writer()?.write(text)
+                } catch (e: Exception) {
+                    logError(e)
+                } finally {
+                    fileStream?.closeQuietly()
+                    dialog.dismissSafe(activity)
+                }
+            }
+            dialog.close_btt?.setOnClickListener {
+                dialog.dismissSafe(activity)
             }
             return@setOnPreferenceClickListener true
         }
