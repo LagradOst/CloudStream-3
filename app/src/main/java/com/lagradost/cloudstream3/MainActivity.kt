@@ -645,16 +645,18 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             createISO()
         }*/
 
-        var providersAndroidManifestString = "Current androidmanifest should be:\n"
-        for (api in allProviders) {
-            providersAndroidManifestString += "<data android:scheme=\"https\" android:host=\"${
-                api.mainUrl.removePrefix(
-                    "https://"
-                )
-            }\" android:pathPrefix=\"/\"/>\n"
-        }
+        if (BuildConfig.DEBUG) {
+            var providersAndroidManifestString = "Current androidmanifest should be:\n"
+            for (api in allProviders) {
+                providersAndroidManifestString += "<data android:scheme=\"https\" android:host=\"${
+                    api.mainUrl.removePrefix(
+                        "https://"
+                    )
+                }\" android:pathPrefix=\"/\"/>\n"
+            }
 
-        println(providersAndroidManifestString)
+            println(providersAndroidManifestString)
+        }
 
         handleAppIntent(intent)
 
