@@ -10,7 +10,6 @@ import java.lang.Exception
 
 class NginxProvider : MainAPI() {
     override var name = "Nginx"
-    override var storedCredentials: String? = null // needed ??
     override val hasQuickSearch = false
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.AnimeMovie, TvType.TvSeries, TvType.Movie)
