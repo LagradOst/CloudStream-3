@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
 import org.jsoup.nodes.Element
 
 class FaselHDProvider : MainAPI() {
@@ -10,7 +11,7 @@ class FaselHDProvider : MainAPI() {
     override var name = "FaselHD"
     override val usesWebView = false
     override val hasMainPage = true
-    override val supportedTypes = setOf(TvType.TvSeries, TvType.Movie, TvType.Anime)
+    override val supportedTypes = setOf(TvType.TvSeries, TvType.Movie, TvType.AsianDrama, TvType.Anime)
 
     private fun String.getIntFromText(): Int? {
         return Regex("""\d+""").find(this)?.groupValues?.firstOrNull()?.toIntOrNull()
@@ -22,7 +23,7 @@ class FaselHDProvider : MainAPI() {
                         select("div.postDiv a div img")?.attr("src")
         val title = select("div.postDiv a div img")?.attr("alt")
             ?.replace("فيلم|مترجم|اون لاين|مسلسل|مشاهدة|انمي".toRegex(),"")
-        val quality = select(".quality").first()?.text()?.replace("1080p |-".toRegex(), "")
+        val quality = select(".quality").first().text().replace("1080p |-".toRegex(), "")
         return MovieSearchResponse(
             title!!,
             url,
@@ -54,13 +55,11 @@ class FaselHDProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val q = query.replace(" ","+")
-        val result = arrayListOf<SearchResponse>()
         val d = app.get("$mainUrl/?s=$q").document
-            d.select("div[id=\"postList\"] div[class=\"col-xl-2 col-lg-2 col-md-3 col-sm-3\"]")
-                .mapNotNull {
-                result.add(it.toSearchResponse()!!)
+        return d.select("div[id=\"postList\"] div[class=\"col-xl-2 col-lg-2 col-md-3 col-sm-3\"]")
+            .mapNotNull {
+                it.toSearchResponse()
             }
-        return result
     }
 
 
@@ -104,9 +103,6 @@ class FaselHDProvider : MainAPI() {
                         it.text(),
                         doc.select("div.seasonDiv.active div.title").text().getIntFromText() ?: 1,
                         it.text().getIntFromText(),
-                        null,
-                        null,
-                        null
                     )
                 )
             }
@@ -120,9 +116,6 @@ class FaselHDProvider : MainAPI() {
                             it.text(),
                             s.select("div.seasonDiv.active div.title").text().getIntFromText(),
                             it.text().getIntFromText(),
-                            null,
-                            null,
-                            null
                         )
                     )
                 }
@@ -135,6 +128,16 @@ class FaselHDProvider : MainAPI() {
             }
         }
     }
+    private fun getQualityFromInt(id: Int?): Qualities {
+        return when (id) {
+            360 -> Qualities.P360 // Extrapolated
+            480 -> Qualities.P480
+            720 -> Qualities.P720
+            1080 -> Qualities.P1080
+            else -> Qualities.Unknown
+        }
+    }
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -142,20 +145,20 @@ class FaselHDProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val player = app.get(app.get(data).document.select("iframe[name=\"player_iframe\"]").attr("src")).document
-           player.select("div.quality_change").map { it ->
-                it.select("button.hd_btn").map {
-                    callback.invoke(
-                        ExtractorLink(
-                            this.name,
-                            this.name + " - ${it.text()}",
-                            it.attr("data-url"),
-                            this.mainUrl,
-                            2,
-                             isM3u8 = true
-                        )
+        player.select("div.quality_change").map { it ->
+            it.select("button.hd_btn").map {
+                callback.invoke(
+                    ExtractorLink(
+                        this.name,
+                        this.name + " - ${it.text()}",
+                        it.attr("data-url"),
+                        this.mainUrl,
+                        quality = getQualityFromInt(it.text().getIntFromText()).value,
+                        isM3u8 = true
                     )
-                }
-            }.flatten()
+                )
+            }
+        }
         return true
     }
 }
