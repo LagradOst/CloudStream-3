@@ -38,17 +38,17 @@ class FaselHDProvider : MainAPI() {
     override suspend fun getMainPage(): HomePageResponse {
         // Title, Url
         val moviesUrl = listOf(
-            "Movies" to "$mainUrl/all-movies/page/"+(0..10).random(),
-            "Series" to "$mainUrl/series/page/"+(0..10).random()
+            Pair("Movies", "$mainUrl/all-movies/page/"+(0..10).random()),
+            Pair("Series", "$mainUrl/series/page/"+(0..10).random())
         )
-        val pages = moviesUrl.apmap {
-            val doc = app.get(it.second).document
+        val pages = moviesUrl.apmap { (title, url) ->
+            val doc = app.get(url).document
             val list = doc.select("div[id=\"postList\"] div[class=\"col-xl-2 col-lg-2 col-md-3 col-sm-3\"]")
                 .mapNotNull { element ->
-                element.toSearchResponse()
-            }
-            HomePageList(it.first, list)
-        }.sortedBy { it.name }
+                    element.toSearchResponse()
+                }
+            HomePageList(title, list)
+        }
         return HomePageResponse(pages)
     }
 
