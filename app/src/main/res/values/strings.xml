@@ -30,6 +30,7 @@
     <string name="swipe_vertical_enabled_key" translatable="false">swipe_vertical_enabled_key</string>
     <string name="display_sub_key" translatable="false">display_sub_key</string>
     <string name="show_fillers_key" translatable="false">show_fillers_key</string>
+    <string name="random_button_key" translatable="false">random_button_key</string>
     <string name="provider_lang_key" translatable="false">provider_lang_key</string>
     <string name="dns_key" translatable="false">dns_key</string>
     <string name="download_path_key" translatable="false">download_path_key</string>
@@ -393,6 +394,8 @@
         CloudStream 3 at your own risk.
     </string>
     <string name="general">General</string>
+    <string name="random_button_settings">Random Button</string>
+    <string name="random_button_settings_desc">Show random button on Homepage</string>
     <string name="provider_lang_settings">Provider Languages</string>
     <string name="app_layout">App Layout</string>
     <string name="preferred_media_settings">Preferred Media</string>
