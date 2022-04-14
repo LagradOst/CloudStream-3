@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addDuration
 import com.lagradost.cloudstream3.LoadResponse.Companion.addRating
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.TvType
@@ -74,10 +75,9 @@ class NginxProvider : MainAPI() {
                 this.year = date
                 this.plot = description
                 this.rating = ratingAverage
-                this.posterUrl = poster
                 this.tags = tagsList
                 this.trailers = trailer
-                this.posterHeaders = authHeader
+                addPoster(poster, authHeader)
             }
         } else  // a tv serie
         {
@@ -141,9 +141,9 @@ class NginxProvider : MainAPI() {
                                     this.name = name
                                     this.season = seasonInt
                                     this.episode = epNum
-                                    this.posterUrl = poster
-                                    addDate(date)
+                                    this.posterUrl = poster  // will require headers too
                                     this.description = plot
+                                    addDate(date)
                             }
                         )
                     }
@@ -151,11 +151,10 @@ class NginxProvider : MainAPI() {
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodeList) {
                 this.name = title
                 this.url = url
-                this.posterUrl = posterUrl
                 this.episodes = episodeList
                 this.plot = description
                 this.tags = tagsList
-                this.posterHeaders = authHeader
+                addPoster(posterUrl, authHeader)
             }
         }
 
