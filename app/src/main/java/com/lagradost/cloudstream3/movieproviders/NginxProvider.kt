@@ -65,23 +65,20 @@ class NginxProvider : MainAPI() {
 
             val data = url + dataList.firstNotNullOf { item -> item.takeIf { (!it.attr("href").contains(".nfo") &&  !it.attr("href").contains(".jpg"))} }.attr("href").toString()  // exclude poster and nfo (metadata) file
 
-
-            return MovieLoadResponse(
+            return newMovieLoadResponse(
                 title,
-                data,
-                this.name,
+                url,
                 TvType.Movie,
-                data,
-                poster,
-                date,
-                description,
-                ratingAverage,
-                tagsList,
-                null,
-                trailer,
-                null,
-                null,
-            )
+                data
+            ) {
+                this.year = date
+                this.plot = description
+                this.rating = ratingAverage
+                this.posterUrl = poster
+                this.tags = tagsList
+                this.trailers = trailer
+                this.posterHeaders = authHeader
+            }
         } else  // a tv serie
         {
 
@@ -158,6 +155,7 @@ class NginxProvider : MainAPI() {
                 this.episodes = episodeList
                 this.plot = description
                 this.tags = tagsList
+                this.posterHeaders = authHeader
             }
         }
 
@@ -189,7 +187,7 @@ class NginxProvider : MainAPI() {
 
 
 
-    override suspend fun getMainPage(): HomePageResponse? {
+    override suspend fun getMainPage(): HomePageResponse {
         val authHeader = getAuthHeader(storedCredentials)  // call again because it isn't reloaded if in main class and storedCredentials loads after
         if (mainUrl == "NONE"){
             throw ErrorLoadingException("No nginx url specified in the settings: Nginx Settigns > Nginx server url, try again in a few seconds")
