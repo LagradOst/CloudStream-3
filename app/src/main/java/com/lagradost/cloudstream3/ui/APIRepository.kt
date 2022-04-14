@@ -11,15 +11,17 @@ class APIRepository(val api: MainAPI) {
         var dubStatusActive = HashSet<DubStatus>()
 
         val noneApi = object : MainAPI() {
-            override val name = "None"
+            override var name = "None"
             override val supportedTypes = emptySet<TvType>()
+            override val lang = ""
         }
         val randomApi = object : MainAPI() {
-            override val name = "Random"
+            override var name = "Random"
             override val supportedTypes = emptySet<TvType>()
+            override val lang = ""
         }
 
-        fun isInvalidData(data : String): Boolean {
+        fun isInvalidData(data: String): Boolean {
             return data.isEmpty() || data == "[]" || data == "about:blank"
         }
     }
@@ -30,7 +32,7 @@ class APIRepository(val api: MainAPI) {
     val hasQuickSearch = api.hasQuickSearch
 
     suspend fun load(url: String): Resource<LoadResponse> {
-        if(isInvalidData(url)) throw ErrorLoadingException()
+        if (isInvalidData(url)) throw ErrorLoadingException()
 
         return safeApiCall {
             api.load(api.fixUrl(url)) ?: throw ErrorLoadingException()
@@ -61,6 +63,12 @@ class APIRepository(val api: MainAPI) {
     suspend fun getMainPage(): Resource<HomePageResponse?> {
         return safeApiCall {
             api.getMainPage() ?: throw ErrorLoadingException()
+        }
+    }
+
+    suspend fun extractorVerifierJob(extractorData: String?) {
+        safeApiCall {
+            api.extractorVerifierJob(extractorData)
         }
     }
 

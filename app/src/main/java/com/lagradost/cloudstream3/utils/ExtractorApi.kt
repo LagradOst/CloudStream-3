@@ -16,7 +16,9 @@ data class ExtractorLink(
     override val referer: String,
     val quality: Int,
     val isM3u8: Boolean = false,
-    override val headers: Map<String, String> = mapOf()
+    override val headers: Map<String, String> = mapOf(),
+    /** Used for getExtractorVerifierJob() */
+    val extractorData: String? = null
 ) : VideoDownloadManager.IDownloadableMinimum
 
 data class ExtractorUri(
@@ -92,23 +94,43 @@ suspend fun loadExtractor(url: String, referer: String? = null, callback: (Extra
 val extractorApis: Array<ExtractorApi> = arrayOf(
     //AllProvider(),
     WcoStream(),
+    Vidstreamz(),
+    Vizcloud(),
+    Vizcloud2(),
+    VizcloudOnline(),
+    VizcloudXyz(),
+    VizcloudLive(),
+    VizcloudInfo(),
+    MwvnVizcloudInfo(),
     Mp4Upload(),
     StreamTape(),
     MixDrop(),
+    Mcloud(),
     XStreamCdn(),
     StreamSB(),
-    Streamhub(),
+    StreamSB1(),
+    StreamSB2(),
+    StreamSB3(),
+    StreamSB4(),
+    StreamSB5(),
+    StreamSB6(),
+    StreamSB7(),
+    StreamSB8(),
+    StreamSB9(),
+    StreamSB10(),
+   // Streamhub(), cause Streamhub2() works
+    Streamhub2(),
 
     FEmbed(),
     FeHD(),
     Fplayer(),
-    WatchSB(),
+  //  WatchSB(), 'cause StreamSB.kt works
     Uqload(),
     Uqload1(),
     Evoload(),
     Evoload1(),
     VoeExtractor(),
-    UpstreamExtractor(),
+   // UpstreamExtractor(), GenericM3U8.kt works
 
     Tomatomatela(),
     Cinestart(),
@@ -122,10 +144,19 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
 
     AsianLoad(),
 
-    SBPlay(),
-    SBPlay1(),
-    SBPlay2(),
-    SBPlay3(),
+   // GenericM3U8(),
+    Jawcloud(),
+    Zplayer(),
+    ZplayerV2(),
+    Upstream(),
+
+
+  // StreamSB.kt works
+  //  SBPlay(),
+  //  SBPlay1(),
+  //  SBPlay2(),
+
+    PlayerVoxzer(),
 )
 
 fun getExtractorApiFromName(name: String): ExtractorApi {

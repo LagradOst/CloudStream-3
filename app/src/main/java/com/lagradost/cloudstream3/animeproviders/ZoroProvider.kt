@@ -1,22 +1,28 @@
 package com.lagradost.cloudstream3.animeproviders
 
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.movieproviders.SflixProvider
-import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.toExtractorLink
-import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.toSubtitleFile
-import com.lagradost.cloudstream3.network.WebViewResolver
+import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
+import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.extractRabbitStream
+import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.runSflixExtractorVerifierJob
+import com.lagradost.cloudstream3.network.Requests.Companion.await
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import okhttp3.Interceptor
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.net.URI
-import java.util.*
+
+private const val OPTIONS = "OPTIONS"
 
 class ZoroProvider : MainAPI() {
-    override val mainUrl = "https://zoro.to"
-    override val name = "Zoro"
+    override var mainUrl = "https://zoro.to"
+    override var name = "Zoro"
     override val hasQuickSearch = false
     override val hasMainPage = true
     override val hasChromecastSupport = true
@@ -45,29 +51,30 @@ class ZoroProvider : MainAPI() {
         }
     }
 
+    val epRegex = Regex("Ep (\\d+)/")
     private fun Element.toSearchResult(): SearchResponse? {
         val href = fixUrl(this.select("a").attr("href"))
         val title = this.select("h3.film-name").text()
-        /*val episodes = this.select("div.fd-infor > span.fdi-item")?.get(1)?.text()?.let { eps ->
+            val dubSub = this.select(".film-poster > .tick.ltr").text()
+        //val episodes = this.selectFirst(".film-poster > .tick-eps")?.text()?.toIntOrNull()
+
+        val dubExist = dubSub.contains("dub", ignoreCase = true)
+        val subExist = dubSub.contains("sub", ignoreCase = true)
+        val episodes = this.selectFirst(".film-poster > .tick.rtl > .tick-eps")?.text()?.let { eps ->
+            //println("REGEX:::: $eps")
             // current episode / max episode
-            val epRegex = Regex("Ep (\\d+)/")//Regex("Ep (\\d+)/(\\d+)")
+            //Regex("Ep (\\d+)/(\\d+)")
             epRegex.find(eps)?.groupValues?.get(1)?.toIntOrNull()
-        }*/
+        }
         if (href.contains("/news/") || title.trim().equals("News", ignoreCase = true)) return null
         val posterUrl = fixUrl(this.select("img").attr("data-src"))
         val type = getType(this.select("div.fd-infor > span.fdi-item").text())
 
-        return AnimeSearchResponse(
-            title,
-            href,
-            this@ZoroProvider.name,
-            type,
-            posterUrl,
-            null,
-            null,
-        )
+        return newAnimeSearchResponse(title, href, type) {
+            this.posterUrl = posterUrl
+            addDubStatus(dubExist, subExist, episodes, episodes)
+        }
     }
-
 
     override suspend fun getMainPage(): HomePageResponse {
         val html = app.get("$mainUrl/home").text
@@ -145,30 +152,14 @@ class ZoroProvider : MainAPI() {
             val dubExist = dubsub?.contains("DUB") ?: false
             val subExist = dubsub?.contains("SUB") ?: false || dubsub?.contains("RAW") ?: false
 
-            val set = if (dubExist && subExist) {
-                EnumSet.of(DubStatus.Dubbed, DubStatus.Subbed)
-            } else if (dubExist) {
-                EnumSet.of(DubStatus.Dubbed)
-            } else {
-                EnumSet.of(DubStatus.Subbed)
-            }
-
             val tvType =
                 getType(it.selectFirst(".film-detail > .fd-infor > .fdi-item")?.text().toString())
             val href = fixUrl(it.selectFirst(".film-name a").attr("href"))
 
-            AnimeSearchResponse(
-                title,
-                href,
-                name,
-                tvType,
-                poster,
-                null,
-                set,
-                null,
-                if (dubExist) episodes else null,
-                if (subExist) episodes else null,
-            )
+            newAnimeSearchResponse(title, href, tvType) {
+                this.posterUrl = poster
+                addDubStatus(dubExist, subExist, episodes, episodes)
+            }
         }
     }
 
@@ -179,9 +170,16 @@ class ZoroProvider : MainAPI() {
         return Actor(name = name, image = image)
     }
 
+    data class ZoroSyncData(
+        @JsonProperty("mal_id") val malId: String?,
+        @JsonProperty("anilist_id") val aniListId: String?,
+    )
+
     override suspend fun load(url: String): LoadResponse {
         val html = app.get(url).text
         val document = Jsoup.parse(html)
+
+        val syncData = tryParseJson<ZoroSyncData>(document.selectFirst("#syncData")?.data())
 
         val title = document.selectFirst(".anisc-detail > .film-name")?.text().toString()
         val poster = document.selectFirst(".anisc-poster img")?.attr("src")
@@ -217,22 +215,16 @@ class ZoroProvider : MainAPI() {
                 ).text
             ).html
         ).select(".ss-list > a[href].ssl-item.ep-item").map {
-            val name = it?.attr("title")
-            AnimeEpisode(
-                fixUrl(it.attr("href")),
-                name,
-                null,
-                null,
-                null,
-                null,
-                it.selectFirst(".ssli-order")?.text()?.toIntOrNull()
-            )
+            newEpisode(it.attr("href")) {
+                this.name = it?.attr("title")
+                this.episode = it.selectFirst(".ssli-order")?.text()?.toIntOrNull()
+            }
         }
 
         val actors = document.select("div.block-actors-content > div.bac-list-wrap > div.bac-item")
             ?.mapNotNull { head ->
                 val subItems = head.select(".per-info") ?: return@mapNotNull null
-                if(subItems.isEmpty()) return@mapNotNull null
+                if (subItems.isEmpty()) return@mapNotNull null
                 var role: ActorRole? = null
                 val mainActor = subItems.first()?.let {
                     role = when (it.selectFirst(".pi-detail > .pi-cast")?.text()?.trim()) {
@@ -242,7 +234,7 @@ class ZoroProvider : MainAPI() {
                     }
                     it.getActor()
                 } ?: return@mapNotNull null
-                val voiceActor = if(subItems.size >= 2) subItems[1]?.getActor() else null
+                val voiceActor = if (subItems.size >= 2) subItems[1]?.getActor() else null
                 ActorData(actor = mainActor, role = role, voiceActor = voiceActor)
             }
 
@@ -279,28 +271,52 @@ class ZoroProvider : MainAPI() {
             this.tags = tags
             this.recommendations = recommendations
             this.actors = actors
+            addMalId(syncData?.malId?.toIntOrNull())
+            addAniListId(syncData?.aniListId?.toIntOrNull())
         }
-    }
-
-    private suspend fun getM3u8FromRapidCloud(url: String): String {
-        return Regex("""/(embed-\d+)/(.*?)\?z=""").find(url)?.groupValues?.let {
-            val jsonLink = "https://rapid-cloud.ru/ajax/${it[1]}/getSources?id=${it[2]}"
-            app.get(jsonLink).text
-        } ?: app.get(
-            "$url&autoPlay=1&oa=0",
-            headers = mapOf(
-                "Referer" to "https://zoro.to/",
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) Gecko/20100101 Firefox/94.0"
-            ),
-            interceptor = WebViewResolver(
-                Regex("""/getSources""")
-            )
-        ).text
     }
 
     private data class RapidCloudResponse(
         @JsonProperty("link") val link: String
     )
+
+    override suspend fun extractorVerifierJob(extractorData: String?) {
+        Log.d(this.name, "Starting ${this.name} job!")
+        runSflixExtractorVerifierJob(this, extractorData, "https://rapid-cloud.ru/")
+    }
+
+    /** Url hashcode to sid */
+    var sid: HashMap<Int, String?> = hashMapOf()
+
+    /**
+     * Makes an identical Options request before .ts request
+     * Adds an SID header to the .ts request.
+     * */
+    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor {
+        return Interceptor { chain ->
+            val request = chain.request()
+            if (request.url.toString().endsWith(".ts")
+                && request.method != OPTIONS
+                // No option requests on VidCloud
+                && !request.url.toString().contains("betterstream")
+            ) {
+                val newRequest =
+                    chain.request()
+                        .newBuilder().apply {
+                            sid[extractorLink.url.hashCode()]?.let { sid ->
+                                addHeader("SID", sid)
+                            }
+                        }
+                        .build()
+                val options = request.newBuilder().method(OPTIONS, request.body).build()
+                ioSafe { app.baseClient.newCall(options).await() }
+
+                return@Interceptor chain.proceed(newRequest)
+            } else {
+                return@Interceptor chain.proceed(chain.request())
+            }
+        }
+    }
 
     override suspend fun loadLinks(
         data: String,
@@ -319,6 +335,9 @@ class ZoroProvider : MainAPI() {
             )
         }
 
+        val extractorData =
+            "https://ws1.rapid-cloud.ru/socket.io/?EIO=4&transport=polling"
+
         // Prevent duplicates
         servers.distinctBy { it.second }.apmap {
             val link =
@@ -326,42 +345,18 @@ class ZoroProvider : MainAPI() {
             val extractorLink = app.get(
                 link,
             ).mapped<RapidCloudResponse>().link
-
-            // Loads the links in the appropriate extractor.
-            val hasLoadedExtractorLink = loadExtractor(extractorLink, mainUrl, callback)
+            val hasLoadedExtractorLink =
+                loadExtractor(extractorLink, "https://rapid-cloud.ru/", callback)
 
             if (!hasLoadedExtractorLink) {
-
-                // Not an extractor because:
-                // 1. No subtitle callback
-                // 2. Missing dub/sub status in parameter (might be substituted in the referer)
-
-                val response =
-                    getM3u8FromRapidCloud(
-                        extractorLink
-                    )
-
-                if (response.contains("<html")) return@apmap
-                val mapped = mapper.readValue<SflixProvider.SourceObject>(response)
-
-                mapped.tracks?.forEach { track ->
-                    track?.toSubtitleFile()?.let { subtitleFile ->
-                        subtitleCallback.invoke(subtitleFile)
-                    }
-                }
-
-                val list = listOf(
-                    mapped.sources to "source 1",
-                    mapped.sources1 to "source 2",
-                    mapped.sources2 to "source 3",
-                    mapped.sourcesBackup to "source backup"
-                )
-
-                list.forEach { subList ->
-                    subList.first?.forEach { a ->
-                        a?.toExtractorLink(this, subList.second + " - ${it.first}")
-                            ?.forEach(callback)
-                    }
+                extractRabbitStream(
+                    extractorLink,
+                    subtitleCallback,
+                    // Blacklist VidCloud for now
+                    { videoLink -> if (!videoLink.url.contains("betterstream")) callback(videoLink) },
+                    extractorData
+                ) { sourceName ->
+                    sourceName + " - ${it.first}"
                 }
             }
         }

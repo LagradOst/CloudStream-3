@@ -5,7 +5,6 @@ import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import java.util.*
-import kotlin.collections.ArrayList
 
 
 class DoramasYTProvider : MainAPI() {
@@ -15,10 +14,15 @@ class DoramasYTProvider : MainAPI() {
             else if (t.contains("Pelicula")) TvType.Movie
             else TvType.TvSeries
         }
+        fun getDubStatus(title: String): DubStatus {
+            return if (title.contains("Latino") || title.contains("Castellano"))
+                DubStatus.Dubbed
+            else DubStatus.Subbed
+        }
     }
 
-    override val mainUrl = "https://doramasyt.com"
-    override val name = "DoramasYT"
+    override var mainUrl = "https://doramasyt.com"
+    override var name = "DoramasYT"
     override val lang = "es"
     override val hasMainPage = true
     override val hasChromecastSupport = true
@@ -54,39 +58,22 @@ class DoramasYTProvider : MainAPI() {
                     val url = it.selectFirst("a").attr("href").replace("ver/", "dorama/")
                         .replace(epRegex, "sub-espanol")
                     val epNum = it.selectFirst("h3").text().toIntOrNull()
-                    AnimeSearchResponse(
-                        title,
-                        url,
-                        this.name,
-                        TvType.Anime,
-                        poster,
-                        null,
-                        if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
-                            DubStatus.Dubbed
-                        ) else EnumSet.of(DubStatus.Subbed),
-                        subEpisodes = epNum,
-                        dubEpisodes = epNum,
-                    )
+                    newAnimeSearchResponse(title,url) {
+                        this.posterUrl = fixUrl(poster)
+                        addDubStatus(getDubStatus(title), epNum)
+                    }
                 })
         )
 
         for (i in urls) {
             try {
-
                 val home = app.get(i.first, timeout = 120).document.select(".col-6").map {
                     val title = it.selectFirst(".animedtls p").text()
                     val poster = it.selectFirst(".anithumb img").attr("src")
-                    AnimeSearchResponse(
-                        title,
-                        it.selectFirst("a").attr("href"),
-                        this.name,
-                        TvType.Anime,
-                        poster,
-                        null,
-                        if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
-                            DubStatus.Dubbed
-                        ) else EnumSet.of(DubStatus.Subbed),
-                    )
+                    newAnimeSearchResponse(title, fixUrl(it.selectFirst("a").attr("href"))) {
+                        this.posterUrl = fixUrl(poster)
+                        addDubStatus(getDubStatus(title))
+                    }
                 }
 
                 items.add(HomePageList(i.second, home))
@@ -99,25 +86,23 @@ class DoramasYTProvider : MainAPI() {
         return HomePageResponse(items)
     }
 
-    override suspend fun search(query: String): ArrayList<SearchResponse> {
-        val search =
-            app.get("$mainUrl/buscar?q=$query", timeout = 120).document.select(".col-6").map {
-                val title = it.selectFirst(".animedtls p").text()
-                val href = it.selectFirst("a").attr("href")
-                val image = it.selectFirst(".animes img").attr("src")
-                AnimeSearchResponse(
-                    title,
-                    href,
-                    this.name,
-                    TvType.Anime,
-                    image,
-                    null,
-                    if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
-                        DubStatus.Dubbed
-                    ) else EnumSet.of(DubStatus.Subbed),
-                )
-            }
-        return ArrayList(search)
+    override suspend fun search(query: String): List<SearchResponse> {
+        return app.get("$mainUrl/buscar?q=$query", timeout = 120).document.select(".col-6").map {
+            val title = it.selectFirst(".animedtls p").text()
+            val href = it.selectFirst("a").attr("href")
+            val image = it.selectFirst(".animes img").attr("src")
+            AnimeSearchResponse(
+                title,
+                href,
+                this.name,
+                TvType.Anime,
+                image,
+                null,
+                if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
+                    DubStatus.Dubbed
+                ) else EnumSet.of(DubStatus.Subbed),
+            )
+        }
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -136,7 +121,7 @@ class DoramasYTProvider : MainAPI() {
             val name = it.selectFirst(".dtlsflim p").text()
             val link = it.selectFirst("a").attr("href")
             val epThumb = it.selectFirst(".flimimg img.img1").attr("src")
-            AnimeEpisode(link, name, posterUrl = epThumb)
+            Episode(link, name, posterUrl = epThumb)
         }
         return newAnimeLoadResponse(title, url, getType(type)) {
             posterUrl = poster

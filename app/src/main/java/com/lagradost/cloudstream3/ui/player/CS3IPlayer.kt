@@ -2,28 +2,29 @@ package com.lagradost.cloudstream3.ui.player
 
 import android.content.Context
 import android.net.Uri
+import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.FrameLayout
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
-import com.google.android.exoplayer2.extractor.ExtractorsFactory
+import com.google.android.exoplayer2.ext.okhttp.OkHttpDataSource
 import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
 import com.google.android.exoplayer2.source.MergingMediaSource
-import com.google.android.exoplayer2.source.ProgressiveMediaSource
-import com.google.android.exoplayer2.text.SubtitleDecoderFactory
-import com.google.android.exoplayer2.text.SubtitleExtractor
+import com.google.android.exoplayer2.source.SingleSampleMediaSource
+import com.google.android.exoplayer2.text.TextRenderer
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.ui.SubtitleView
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource
 import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor
 import com.google.android.exoplayer2.upstream.cache.SimpleCache
 import com.google.android.exoplayer2.util.MimeTypes
+import com.lagradost.cloudstream3.APIHolder.getApiFromName
 import com.lagradost.cloudstream3.USER_AGENT
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.ui.subtitles.SaveCaptionStyle
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -40,7 +41,9 @@ const val TAG = "CS3ExoPlayer"
 class CS3IPlayer : IPlayer {
     private var isPlaying = false
     private var exoPlayer: ExoPlayer? = null
-    var cacheSize = 300L * 1024L * 1024L // 300 mb
+    var cacheSize = 0L
+    var simpleCacheSize = 0L
+    var videoBufferMs = 0L
 
     private val seekActionTime = 30000L
 
@@ -75,6 +78,7 @@ class CS3IPlayer : IPlayer {
     private var updateIsPlaying: ((Pair<CSPlayerLoading, CSPlayerLoading>) -> Unit)? = null
     private var requestAutoFocus: (() -> Unit)? = null
     private var playerError: ((Exception) -> Unit)? = null
+    private var subtitlesUpdates: (() -> Unit)? = null
 
     /** width x height */
     private var playerDimensionsLoaded: ((Pair<Int, Int>) -> Unit)? = null
@@ -101,7 +105,8 @@ class CS3IPlayer : IPlayer {
         requestedListeningPercentages: List<Int>?,
         playerPositionChanged: ((Pair<Long, Long>) -> Unit)?,
         nextEpisode: (() -> Unit)?,
-        prevEpisode: (() -> Unit)?
+        prevEpisode: (() -> Unit)?,
+        subtitlesUpdates: (() -> Unit)?,
     ) {
         this.playerUpdated = playerUpdated
         this.updateIsPlaying = updateIsPlaying
@@ -112,6 +117,24 @@ class CS3IPlayer : IPlayer {
         this.playerPositionChanged = playerPositionChanged
         this.nextEpisode = nextEpisode
         this.prevEpisode = prevEpisode
+        this.subtitlesUpdates = subtitlesUpdates
+    }
+
+    // I know, this is not a perfect solution, however it works for fixing subs
+    private fun reloadSubs() {
+        exoPlayer?.applicationLooper?.let {
+            try {
+                Handler(it).post {
+                    try {
+                        seekTime(1L)
+                    } catch (e: Exception) {
+                        logError(e)
+                    }
+                }
+            } catch (e: Exception) {
+                logError(e)
+            }
+        }
     }
 
     fun initSubtitles(subView: SubtitleView?, subHolder: FrameLayout?, style: SaveCaptionStyle?) {
@@ -124,13 +147,14 @@ class CS3IPlayer : IPlayer {
         link: ExtractorLink?,
         data: ExtractorUri?,
         startPosition: Long?,
-        subtitles: Set<SubtitleData>
+        subtitles: Set<SubtitleData>,
+        subtitle: SubtitleData?
     ) {
         Log.i(TAG, "loadPlayer")
         if (sameEpisode) {
             saveData()
         } else {
-            currentSubtitles = null
+            currentSubtitles = subtitle
             playbackPosition = 0
         }
 
@@ -180,6 +204,13 @@ class CS3IPlayer : IPlayer {
                             trackSelector.buildUponParameters()
                                 .setPreferredTextLanguage("_$name")
                         )
+
+                        // ugliest code I have written, it seeks 1ms to *update* the subtitles
+                        //exoPlayer?.applicationLooper?.let {
+                        //    Handler(it).postDelayed({
+                        //        seekTime(1L)
+                        //    }, 1)
+                        //}
                     }
                     SubtitleStatus.NOT_FOUND -> {
                         // not found
@@ -190,6 +221,17 @@ class CS3IPlayer : IPlayer {
             }
             return false
         } ?: false
+    }
+
+    var currentSubtitleOffset: Long = 0
+
+    override fun setSubtitleOffset(offset: Long) {
+        currentSubtitleOffset = offset
+        currentTextRenderer?.setRenderOffsetMs(offset)
+    }
+
+    override fun getSubtitleOffset(): Long {
+        return currentSubtitleOffset//currentTextRenderer?.getRenderOffsetMs() ?: currentSubtitleOffset
     }
 
     override fun getCurrentPreferredSubtitle(): SubtitleData? {
@@ -228,6 +270,7 @@ class CS3IPlayer : IPlayer {
 
         exoPlayer?.release()
         simpleCache?.release()
+        currentTextRenderer = null
 
         exoPlayer = null
         simpleCache = null
@@ -263,9 +306,22 @@ class CS3IPlayer : IPlayer {
     }
 
     companion object {
+        var requestSubtitleUpdate: (() -> Unit)? = null
+
         private fun createOnlineSource(link: ExtractorLink): DataSource.Factory {
-            // Because Trailers.to seems to fail with http/1.1 the normal one uses.
-            return DefaultHttpDataSource.Factory().apply {
+            val provider = getApiFromName(link.source)
+            val interceptor = provider.getVideoInterceptor(link)
+
+            val client = app.baseClient
+                .let {
+                    if (interceptor != null)
+                        it.newBuilder()
+                            .addInterceptor(interceptor)
+                            .build()
+                    else it
+                }
+
+            return OkHttpDataSource.Factory(client).apply {
                 setUserAgent(USER_AGENT)
                 val headers = mapOf(
                     "referer" to link.referer,
@@ -279,7 +335,7 @@ class CS3IPlayer : IPlayer {
                 setDefaultRequestProperties(headers)
 
                 //https://stackoverflow.com/questions/69040127/error-code-io-bad-http-status-exoplayer-android
-                setAllowCrossProtocolRedirects(true)
+//                setAllowCrossProtocolRedirects(true)
             }
         }
 
@@ -370,20 +426,64 @@ class CS3IPlayer : IPlayer {
             return trackSelector
         }
 
+        var currentTextRenderer: CustomTextRenderer? = null
+
         private fun buildExoPlayer(
             context: Context,
             mediaItem: MediaItem,
-            subSources: List<ProgressiveMediaSource>,
+            subSources: List<SingleSampleMediaSource>,
             currentWindow: Int,
             playbackPosition: Long,
             playBackSpeed: Float,
+            subtitleOffset: Long,
+            cacheSize: Long,
+            videoBufferMs: Long,
             playWhenReady: Boolean = true,
             cacheFactory: CacheDataSource.Factory? = null,
             trackSelector: TrackSelector? = null,
         ): ExoPlayer {
             val exoPlayerBuilder =
                 ExoPlayer.Builder(context)
+                    .setRenderersFactory { eventHandler, videoRendererEventListener, audioRendererEventListener, textRendererOutput, metadataRendererOutput ->
+                        DefaultRenderersFactory(context).createRenderers(
+                            eventHandler,
+                            videoRendererEventListener,
+                            audioRendererEventListener,
+                            textRendererOutput,
+                            metadataRendererOutput
+                        ).map {
+                            if (it is TextRenderer) {
+                                currentTextRenderer = CustomTextRenderer(
+                                    subtitleOffset,
+                                    textRendererOutput,
+                                    eventHandler.looper,
+                                    CustomSubtitleDecoderFactory()
+                                )
+                                currentTextRenderer!!
+                            } else it
+                        }.toTypedArray()
+                    }
                     .setTrackSelector(trackSelector ?: getTrackSelector(context))
+                    .setLoadControl(
+                        DefaultLoadControl.Builder()
+                            .setTargetBufferBytes(
+                                if(cacheSize <= 0) {
+                                    DefaultLoadControl.DEFAULT_TARGET_BUFFER_BYTES
+                                } else {
+                                    if (cacheSize > Int.MAX_VALUE) Int.MAX_VALUE else cacheSize.toInt()
+                                }
+                            )
+                            .setBufferDurationsMs(
+                                DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+                                if(videoBufferMs <= 0) {
+                                    DefaultLoadControl.DEFAULT_MAX_BUFFER_MS
+                                } else {
+                                    videoBufferMs.toInt()
+                                },
+                                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
+                                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+                            ).build()
+                    )
 
             val videoMediaSource =
                 (if (cacheFactory == null) DefaultMediaSourceFactory(context) else DefaultMediaSourceFactory(
@@ -403,6 +503,7 @@ class CS3IPlayer : IPlayer {
                 )
                 setHandleAudioBecomingNoisy(true)
                 setPlaybackSpeed(playBackSpeed)
+
             }
         }
     }
@@ -472,7 +573,7 @@ class CS3IPlayer : IPlayer {
     private fun loadExo(
         context: Context,
         mediaItem: MediaItem,
-        subSources: List<ProgressiveMediaSource>,
+        subSources: List<SingleSampleMediaSource>,
         cacheFactory: CacheDataSource.Factory? = null
     ) {
         Log.i(TAG, "loadExo")
@@ -488,9 +589,14 @@ class CS3IPlayer : IPlayer {
                 currentWindow,
                 playbackPosition,
                 playBackSpeed,
+                cacheSize = cacheSize,
+                videoBufferMs = videoBufferMs,
                 playWhenReady = isPlaying, // this keep the current state of the player
-                cacheFactory = cacheFactory
+                cacheFactory = cacheFactory,
+                subtitleOffset = currentSubtitleOffset
             )
+
+            requestSubtitleUpdate = ::reloadSubs
 
             playerUpdated?.invoke(exoPlayer)
             exoPlayer?.prepare()
@@ -511,6 +617,7 @@ class CS3IPlayer : IPlayer {
                 override fun onTracksInfoChanged(tracksInfo: TracksInfo) {
                     exoPlayerSelectedTracks =
                         tracksInfo.trackGroupInfos.mapNotNull { it.trackGroup.getFormat(0).language?.let { lang -> lang to it.isSelected } }
+                    subtitlesUpdates?.invoke()
                     super.onTracksInfoChanged(tracksInfo)
                 }
 
@@ -550,8 +657,13 @@ class CS3IPlayer : IPlayer {
                     super.onPlayerError(error)
                 }
 
+                //override fun onCues(cues: MutableList<Cue>) {
+                //    super.onCues(cues.map { cue -> cue.buildUpon().setText("Hello world").setSize(Cue.DIMEN_UNSET).build() })
+                //}
+
                 override fun onRenderedFirstFrame() {
                     updatedTime()
+
                     if (!hasUsedFirstRender) { // this insures that we only call this once per player load
                         Log.i(TAG, "Rendered first frame")
 
@@ -595,68 +707,6 @@ class CS3IPlayer : IPlayer {
         }
     }
 
-    /**
-     * https://github.com/google/ExoPlayer/blob/029a2b27cbdc27cf9d51d4a73ebeb503968849f6/library/core/src/main/java/com/google/android/exoplayer2/source/DefaultMediaSourceFactory.java
-     * */
-    private fun createProgressiveMediaSources(
-        subHelper: PlayerSubtitleHelper,
-        offlineSourceFactory: DataSource.Factory?,
-        onlineSourceFactory: DataSource.Factory?,
-    ): Pair<List<SubtitleData>, List<ProgressiveMediaSource>> {
-        val activeSubtitles = ArrayList<SubtitleData>()
-
-        return Pair(activeSubtitles, subHelper.getAllSubtitles().mapNotNull { sub ->
-            val format = Format.Builder()
-                .setSampleMimeType(sub.mimeType)
-                .setLanguage("_${sub.name}")
-                .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
-                .build()
-
-            val ownFactory = CustomSubtitleDecoderFactory()
-            val extractorFactory = ExtractorsFactory {
-                arrayOf(
-                    if (ownFactory.supportsFormat(format)) {
-                        SubtitleExtractor(
-                            ownFactory.createDecoder(format), format
-                        )
-                    } else {
-                        if (SubtitleDecoderFactory.DEFAULT.supportsFormat(format)) {
-                            SubtitleExtractor(
-                                SubtitleDecoderFactory.DEFAULT.createDecoder(format), format
-                            )
-                        } else {
-                            // ye we guess if not found instead of using UnknownSubtitlesExtractor,
-                            // this way you can hopefully load a .txt file that is an srt and it will work
-                            SubtitleExtractor(
-                                ownFactory.createDecoder(format), format
-                            )
-                        }
-                    }
-                )
-            }
-
-            val factory = when (sub.origin) {
-                SubtitleOrigin.DOWNLOADED_FILE -> {
-                    activeSubtitles.add(sub)
-                    offlineSourceFactory
-                }
-                SubtitleOrigin.URL -> {
-                    activeSubtitles.add(sub)
-                    onlineSourceFactory
-                }
-                SubtitleOrigin.OPEN_SUBTITLES -> {
-                    null
-                }
-            } ?: return@mapNotNull null
-
-            return@mapNotNull ProgressiveMediaSource.Factory(factory, extractorFactory)
-                .createMediaSource(
-                    MediaItem.fromUri(sub.url)
-                )
-        })
-
-    }
-
     private fun loadOfflinePlayer(context: Context, data: ExtractorUri) {
         Log.i(TAG, "loadOfflinePlayer")
         try {
@@ -665,18 +715,58 @@ class CS3IPlayer : IPlayer {
             val mediaItem = getMediaItem(MimeTypes.VIDEO_MP4, data.uri)
             val offlineSourceFactory = context.createOfflineSource()
 
-            val (activeSubtitles, progressiveMediaSources) = createProgressiveMediaSources(
+            val (subSources, activeSubtitles) = getSubSources(
+                onlineSourceFactory = offlineSourceFactory,
+                offlineSourceFactory = offlineSourceFactory,
                 subtitleHelper,
-                offlineSourceFactory,
-                offlineSourceFactory,
             )
 
             subtitleHelper.setActiveSubtitles(activeSubtitles.toSet())
-            loadExo(context, mediaItem, progressiveMediaSources)
+            loadExo(context, mediaItem, subSources)
         } catch (e: Exception) {
             Log.e(TAG, "loadOfflinePlayer error", e)
             playerError?.invoke(e)
         }
+    }
+
+    private fun getSubSources(
+        onlineSourceFactory: DataSource.Factory?,
+        offlineSourceFactory: DataSource.Factory?,
+        subHelper: PlayerSubtitleHelper,
+    ): Pair<List<SingleSampleMediaSource>, List<SubtitleData>> {
+        val activeSubtitles = ArrayList<SubtitleData>()
+        val subSources = subHelper.getAllSubtitles().mapNotNull { sub ->
+            val subConfig = MediaItem.SubtitleConfiguration.Builder(Uri.parse(sub.url))
+                .setMimeType(sub.mimeType)
+                .setLanguage("_${sub.name}")
+                .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+                .build()
+            when (sub.origin) {
+                SubtitleOrigin.DOWNLOADED_FILE -> {
+                    if (offlineSourceFactory != null) {
+                        activeSubtitles.add(sub)
+                        SingleSampleMediaSource.Factory(offlineSourceFactory)
+                            .createMediaSource(subConfig, C.TIME_UNSET)
+                    } else {
+                        null
+                    }
+                }
+                SubtitleOrigin.URL -> {
+                    if (onlineSourceFactory != null) {
+                        activeSubtitles.add(sub)
+                        SingleSampleMediaSource.Factory(onlineSourceFactory)
+                            .createMediaSource(subConfig, C.TIME_UNSET)
+                    } else {
+                        null
+                    }
+                }
+                SubtitleOrigin.OPEN_SUBTITLES -> {
+                    // TODO
+                    throw NotImplementedError()
+                }
+            }
+        }
+        return Pair(subSources, activeSubtitles)
     }
 
     private fun loadOnlinePlayer(context: Context, link: ExtractorLink) {
@@ -705,23 +795,23 @@ class CS3IPlayer : IPlayer {
             val onlineSourceFactory = createOnlineSource(link)
             val offlineSourceFactory = context.createOfflineSource()
 
-            val (activeSubtitles, progressiveMediaSources) = createProgressiveMediaSources(
-                subtitleHelper,
-                offlineSourceFactory,
-                onlineSourceFactory,
+            val (subSources, activeSubtitles) = getSubSources(
+                onlineSourceFactory = onlineSourceFactory,
+                offlineSourceFactory = offlineSourceFactory,
+                subtitleHelper
             )
 
             subtitleHelper.setActiveSubtitles(activeSubtitles.toSet())
 
             if (simpleCache == null)
-                simpleCache = getCache(context, cacheSize)
+                simpleCache = getCache(context, simpleCacheSize)
 
             val cacheFactory = CacheDataSource.Factory().apply {
                 simpleCache?.let { setCache(it) }
                 setUpstreamDataSourceFactory(onlineSourceFactory)
             }
 
-            loadExo(context, mediaItem, progressiveMediaSources, cacheFactory)
+            loadExo(context, mediaItem, subSources, cacheFactory)
         } catch (e: Exception) {
             Log.e(TAG, "loadOnlinePlayer error", e)
             playerError?.invoke(e)

@@ -2,11 +2,10 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.AppUtils
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.getQualityFromName
-import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.mvvm.safeApiCall
+import com.lagradost.cloudstream3.utils.*
 import org.jsoup.Jsoup
+import java.net.URI
 import java.util.*
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -49,10 +48,115 @@ class GogoanimeProvider : MainAPI() {
                 base64Encode(cipher.doFinal(string.toByteArray()))
             }
         }
+
+        private fun String.decodeHex(): ByteArray {
+            check(length % 2 == 0) { "Must have an even length" }
+            return chunked(2)
+                .map { it.toInt(16).toByte() }
+                .toByteArray()
+        }
+
+        /**
+         * @param iframeUrl something like https://gogoplay4.com/streaming.php?id=XXXXXX
+         * @param mainApiName used for ExtractorLink names and source
+         * @param iv secret iv from site, required non-null
+         * @param secretKey secret key for decryption from site, required non-null
+         * */
+        suspend fun extractVidstream(
+            iframeUrl: String,
+            mainApiName: String,
+            callback: (ExtractorLink) -> Unit,
+            iv: ByteArray?,
+            secretKey: ByteArray?
+        ) = safeApiCall {
+            // https://github.com/saikou-app/saikou/blob/3e756bd8e876ad7a9318b17110526880525a5cd3/app/src/main/java/ani/saikou/anime/source/extractors/GogoCDN.kt
+            // No Licence on the following code
+            // Also modified of https://github.com/jmir1/aniyomi-extensions/blob/master/src/en/gogoanime/src/eu/kanade/tachiyomi/animeextension/en/gogoanime/extractors/GogoCdnExtractor.kt
+            // License on the code above  https://github.com/jmir1/aniyomi-extensions/blob/master/LICENSE
+
+            if (iv == null || secretKey == null)
+                return@safeApiCall
+
+            val uri = URI(iframeUrl)
+            val mainUrl = "https://" + uri.host
+
+            val id = Regex("id=([^&]+)").find(iframeUrl)!!.value.removePrefix("id=")
+            val encryptedId = cryptoHandler(id, iv, secretKey)
+            val jsonResponse =
+                app.get(
+                    "$mainUrl/encrypt-ajax.php?id=$encryptedId",
+                    headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                )
+            val dataencrypted =
+                jsonResponse.text.substringAfter("{\"data\":\"").substringBefore("\"}")
+            val datadecrypted = cryptoHandler(dataencrypted, iv, secretKey, false)
+            val sources = AppUtils.parseJson<GogoSources>(datadecrypted)
+
+            fun invokeGogoSource(
+                source: GogoSource,
+                sourceCallback: (ExtractorLink) -> Unit
+            ) {
+                when {
+                    source.file.contains("m3u8") -> {
+                        M3u8Helper().m3u8Generation(
+                            M3u8Helper.M3u8Stream(
+                                source.file,
+                                headers = mapOf("Referer" to "https://gogoplay4.com")
+                            ), true
+                        )
+                            .map { stream ->
+                                val qualityString =
+                                    if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
+                                sourceCallback(
+                                    ExtractorLink(
+                                        mainApiName,
+                                        "$mainApiName $qualityString",
+                                        stream.streamUrl,
+                                        mainUrl,
+                                        getQualityFromName(stream.quality.toString()),
+                                        true
+                                    )
+                                )
+                            }
+                    }
+                    source.file.contains("vidstreaming") -> {
+                        sourceCallback.invoke(
+                            ExtractorLink(
+                                mainApiName,
+                                "$mainApiName ${source.label?.replace("0 P", "0p") ?: ""}",
+                                source.file,
+                                mainUrl,
+                                getQualityFromName(source.label ?: ""),
+                                isM3u8 = source.type == "hls"
+                            )
+                        )
+                    }
+                    else -> {
+                        sourceCallback.invoke(
+                            ExtractorLink(
+                                mainApiName,
+                                "$mainApiName ${source.label?.replace("0 P", "0p") ?: ""}",
+                                source.file,
+                                mainUrl,
+                                getQualityFromName(source.label ?: ""),
+                                isM3u8 = source.type == "hls"
+                            )
+                        )
+                    }
+                }
+            }
+
+            sources.source?.forEach {
+                invokeGogoSource(it, callback)
+            }
+            sources.sourceBk?.forEach {
+                invokeGogoSource(it, callback)
+            }
+        }
     }
 
-    override val mainUrl = "https://gogoanime.wiki"
-    override val name = "GogoAnime"
+    override var mainUrl = "https://gogoanime.film"
+    override var name = "GogoAnime"
     override val hasQuickSearch = false
     override val hasMainPage = true
 
@@ -97,20 +201,10 @@ class GogoanimeProvider : MainAPI() {
                 items.add(HomePageList(i.second, (parseRegex.findAll(html.text).map {
                     val (link, epNum, title, poster) = it.destructured
                     val isSub = listOf(1, 3).contains(i.first.toInt())
-                    AnimeSearchResponse(
-                        title,
-                        link,
-                        this.name,
-                        TvType.Anime,
-                        poster,
-                        null,
-                        if (isSub) EnumSet.of(DubStatus.Subbed) else EnumSet.of(
-                            DubStatus.Dubbed
-                        ),
-                        null,
-                        if (!isSub) epNum.toIntOrNull() else null,
-                        if (isSub) epNum.toIntOrNull() else null,
-                    )
+                    newAnimeSearchResponse(title, link) {
+                        this.posterUrl = poster
+                        addDubStatus(!isSub, epNum.toIntOrNull())
+                    }
                 }).toList()))
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -199,7 +293,7 @@ class GogoanimeProvider : MainAPI() {
         val params = mapOf("ep_start" to "0", "ep_end" to "2000", "id" to animeId)
 
         val episodes = app.get(episodeloadApi, params = params).document.select("a").map {
-            AnimeEpisode(
+            Episode(
                 fixUrl(it.attr("href").trim()),
                 "Episode " + it.selectFirst(".name").text().replace("EP", "").trim()
             )
@@ -276,48 +370,10 @@ class GogoanimeProvider : MainAPI() {
                             loadExtractor(data, streamingResponse.url, callback)
                         }
                 }, {
-                    // https://github.com/saikou-app/saikou/blob/3e756bd8e876ad7a9318b17110526880525a5cd3/app/src/main/java/ani/saikou/anime/source/extractors/GogoCDN.kt
-                    // No Licence on the following code
-                    val encrypted =
-                        streamingDocument.select("script[data-name='crypto']").attr("data-value")
-                    val iv = streamingDocument.select("script[data-name='ts']").attr("data-value")
-                        .toByteArray()
-
-                    val id = Regex("id=([^&]+)").find(iframe)!!.value.removePrefix("id=")
-
-                    val secretKey = cryptoHandler(encrypted, iv, iv + iv, false)
-                    val encryptedId =
-                        cryptoHandler(id, "0000000000000000".toByteArray(), secretKey.toByteArray())
-
-                    val jsonResponse =
-                        app.get(
-                            "http://gogoplay.io/encrypt-ajax.php?id=$encryptedId&time=00000000000000000000",
-                            headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-                        )
-                    val sources = AppUtils.parseJson<GogoSources>(jsonResponse.text)
-
-                    fun invokeGogoSource(
-                        source: GogoSource,
-                        sourceCallback: (ExtractorLink) -> Unit
-                    ) {
-                        sourceCallback.invoke(
-                            ExtractorLink(
-                                this.name,
-                                "${this.name} ${source.label?.replace("0 P", "0p") ?: ""}",
-                                source.file,
-                                "",
-                                getQualityFromName(source.label ?: ""),
-                                isM3u8 = source.type == "hls"
-                            )
-                        )
-                    }
-
-                    sources.source?.forEach {
-                        invokeGogoSource(it, callback)
-                    }
-                    sources.sourceBk?.forEach {
-                        invokeGogoSource(it, callback)
-                    }
+                    val iv = "4786443969418267".toByteArray()
+                    val secretKey =
+                        "63976882873536819639922083275907".toByteArray()
+                    extractVidstream(iframe, this.name, callback, iv, secretKey)
                 })
             }
         )

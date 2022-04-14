@@ -81,6 +81,7 @@
                 app:tint="?attr/textColor"
                 android:contentDescription="@string/change_providers_img_des" />
     </FrameLayout>
+
     <HorizontalScrollView
             android:paddingStart="10dp"
             android:paddingEnd="10dp"
@@ -111,7 +112,7 @@
 
             <com.google.android.material.button.MaterialButton
                     android:nextFocusLeft="@id/search_select_tv_series"
-                    android:nextFocusRight="@id/search_select_cartoons"
+                    android:nextFocusRight="@id/search_select_asian"
 
                     android:id="@+id/search_select_anime"
                     android:text="@string/anime"
@@ -119,6 +120,14 @@
 
             <com.google.android.material.button.MaterialButton
                     android:nextFocusLeft="@id/search_select_anime"
+                    android:nextFocusRight="@id/search_select_cartoons"
+
+                    android:id="@+id/search_select_asian"
+                    android:text="@string/asian_drama"
+                    style="@style/RoundedSelectableButton" />
+
+            <com.google.android.material.button.MaterialButton
+                    android:nextFocusLeft="@id/search_select_asian"
                     android:nextFocusRight="@id/search_select_documentaries"
 
                     android:id="@+id/search_select_cartoons"
@@ -136,6 +145,7 @@
 
 
     <com.lagradost.cloudstream3.ui.AutofitRecyclerView
+            android:visibility="gone"
             android:nextFocusLeft="@id/nav_rail_view"
             android:descendantFocusability="afterDescendants"
 
@@ -152,6 +162,7 @@
             android:orientation="vertical" />
 
     <androidx.recyclerview.widget.RecyclerView
+            android:visibility="gone"
             android:nextFocusLeft="@id/nav_rail_view"
             android:descendantFocusability="afterDescendants"
 
@@ -160,4 +171,15 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             tools:listitem="@layout/homepage_parent" />
+
+    <androidx.recyclerview.widget.RecyclerView
+            android:visibility="visible"
+            android:nextFocusLeft="@id/nav_rail_view"
+            android:descendantFocusability="afterDescendants"
+
+            android:background="?attr/primaryBlackBackground"
+            android:id="@+id/search_history_recycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:listitem="@layout/search_history_item" />
 </LinearLayout>

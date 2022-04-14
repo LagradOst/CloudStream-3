@@ -7,8 +7,8 @@ import org.jsoup.Jsoup
 
 // referer = https://vf-film.org, USERAGENT ALSO REQUIRED
 class VfFilmProvider : MainAPI() {
-    override val mainUrl = "https://vf-film.me"
-    override val name = "vf-film.me"
+    override var mainUrl = "https://vf-film.me"
+    override var name = "vf-film.me"
     override val lang = "fr"
     override val hasQuickSearch = false
     override val hasMainPage = false
@@ -76,7 +76,6 @@ class VfFilmProvider : MainAPI() {
         val title = document?.selectFirst("div.SubTitle")?.text()
             ?: throw ErrorLoadingException("Service might be unavailable")
 
-
         val year = document.select("span.Date").text()?.toIntOrNull()
 
         val rating = document.select("span.AAIco-star").text()
@@ -87,7 +86,6 @@ class VfFilmProvider : MainAPI() {
             .replace("//image", "https://image")
 
         val descript = document.selectFirst("div.Description > p").text()
-
 
         val players = document.select("ul.TPlayerNv > li")
         var number_player = 0
@@ -108,17 +106,17 @@ class VfFilmProvider : MainAPI() {
 
         val data = getDirect("$mainUrl/?trembed=$i&trid=$trid&trtype=1")
 
-        return MovieLoadResponse(
+        return newMovieLoadResponse(
             title,
             url,
-            this.name,
             TvType.Movie,
-            data,
-            poster,
-            year,
-            descript,
-            rating,
-            duration
-        )
+            data
+        ) {
+            this.posterUrl = poster
+            this.year = year
+            this.plot = descript
+            //this.rating = rating
+            this.duration = duration
+        }
     }
 }

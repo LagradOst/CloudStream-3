@@ -16,7 +16,7 @@ import com.lagradost.cloudstream3.ui.download.DOWNLOAD_ACTION_DOWNLOAD
 import com.lagradost.cloudstream3.ui.download.DownloadButtonViewHolder
 import com.lagradost.cloudstream3.ui.download.DownloadClickEvent
 import com.lagradost.cloudstream3.ui.download.EasyDownloadButton
-import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
+import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTrueTvSettings
 import com.lagradost.cloudstream3.utils.UIHelper.setImage
 import com.lagradost.cloudstream3.utils.VideoDownloadHelper
 import com.lagradost.cloudstream3.utils.VideoDownloadManager
@@ -47,6 +47,9 @@ const val ACTION_SHOW_OPTIONS = 10
 
 const val ACTION_CLICK_DEFAULT = 11
 const val ACTION_SHOW_TOAST = 12
+
+const val ACTION_DOWNLOAD_EPISODE_SUBTITLE = 13
+const val ACTION_DOWNLOAD_EPISODE_SUBTITLE_MIRROR = 14
 
 data class EpisodeClickEvent(val action: Int, val data: ResultEpisode)
 
@@ -193,7 +196,7 @@ class EpisodeAdapter(
                 clickCallback.invoke(EpisodeClickEvent(ACTION_CLICK_DEFAULT, card))
             }
 
-            if (episodeHolder.context.isTvSettings()) {
+            if (episodeHolder.context.isTrueTvSettings()) {
                 episodeHolder.isFocusable = true
                 episodeHolder.isFocusableInTouchMode = true
                 episodeHolder.touchscreenBlocksFocus = false
@@ -223,7 +226,7 @@ class EpisodeAdapter(
                         card.episode,
                         card.season,
                         card.id,
-                        0,
+                        card.parentId,
                         card.rating,
                         card.description,
                         System.currentTimeMillis(),

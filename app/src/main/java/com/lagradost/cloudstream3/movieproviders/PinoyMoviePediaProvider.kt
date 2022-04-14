@@ -1,17 +1,17 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 
 class PinoyMoviePediaProvider : MainAPI() {
-    override val name = "Pinoy Moviepedia"
-    override val mainUrl = "https://pinoymoviepedia.ru"
+    override var name = "Pinoy Moviepedia"
+    override var mainUrl = "https://pinoymoviepedia.ru"
     override val lang = "tl"
-    override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
+    override val supportedTypes = setOf(TvType.AsianDrama)
     override val hasDownloadSupport = true
     override val hasMainPage = true
     override val hasQuickSearch = false
@@ -53,21 +53,22 @@ class PinoyMoviePediaProvider : MainAPI() {
                     name = urlTitle.select("h3")?.text() ?: ""
                     year = titleYear?.select("span")?.text()?.takeLast(4)?.toIntOrNull()
                 }
+                // Get year from name
                 if (year == null) {
-                    // Get year from name
                     val rex = Regex("\\((\\d+)")
                     year = rex.find(name)?.value?.replace("(", "")?.toIntOrNull()
                 }
+                //Get quality
+                val qual = getQualityFromString(it.selectFirst("span.quality")?.text())
 
-                val tvType = TvType.Movie
                 MovieSearchResponse(
-                    name,
-                    link,
-                    this.name,
-                    tvType,
-                    image,
-                    year,
-                    null,
+                    name = name,
+                    url = link,
+                    apiName = this.name,
+                    TvType.Movie,
+                    posterUrl = image,
+                    year = year,
+                    quality = qual
                 )
             }?.distinctBy { c -> c.url } ?: listOf()
             // Add
@@ -93,14 +94,16 @@ class PinoyMoviePediaProvider : MainAPI() {
             val title = details.select("div.title")?.text() ?: ""
             val year = details.select("div.meta > span.year")?.text()?.toIntOrNull()
             val image = inner.select("div.image > div > a > img")?.attr("src")
+            val qual = getQualityFromString(it.selectFirst("span.quality")?.text())
 
             MovieSearchResponse(
-                title,
-                link,
-                this.name,
+                name = title,
+                url = link,
+                apiName = this.name,
                 TvType.Movie,
-                image,
-                year
+                posterUrl = image,
+                year = year,
+                quality = qual
             )
         }?.distinctBy { c -> c.url } ?: listOf()
     }
@@ -115,9 +118,8 @@ class PinoyMoviePediaProvider : MainAPI() {
         // Video details
         val data = inner?.select("div.data")
         val poster = inner?.select("div.poster > img")?.attr("src")
-        val title = data?.select("h1")?.firstOrNull()?.text() ?: ""
-        val descript = body?.select("div#info > div.wp-content")
-            ?.select("p")?.get(0)?.text()
+        val title = data?.select("h1")?.firstOrNull()?.text()?.trim() ?: ""
+        val descript = body?.select("div#info > div.wp-content p")?.firstOrNull()?.text()
         val rex = Regex("\\((\\d+)")
         val yearRes = rex.find(title)?.value ?: ""
         //Log.i(this.name, "Result => (yearRes) ${yearRes}")
@@ -130,7 +132,10 @@ class PinoyMoviePediaProvider : MainAPI() {
             val aUrl = a.attr("href") ?: return@mapNotNull null
             val aImg = a.select("img")?.attr("src")
             val aName = a.select("img")?.attr("alt") ?: return@mapNotNull null
-            val aYear = aName.trim().takeLast(5).removeSuffix(")").toIntOrNull()
+            val aYear = try {
+                aName.trim().takeLast(5).removeSuffix(")").toIntOrNull()
+            } catch (e: Exception) { null }
+
             MovieSearchResponse(
                 url = aUrl,
                 name = aName,
@@ -145,16 +150,16 @@ class PinoyMoviePediaProvider : MainAPI() {
         val playcontainer = body?.select("div#playcontainer")
         val listOfLinks: MutableList<String> = mutableListOf()
         playcontainer?.select("iframe")?.forEach { item ->
-            val lnk = item?.attr("src")?.trim()
+            val lnk = item?.attr("src")?.trim() ?: ""
             //Log.i(this.name, "Result => (lnk) $lnk")
-            if (!lnk.isNullOrEmpty()) {
+            if (lnk.isNotEmpty()) {
                 listOfLinks.add(lnk)
             }
         }
 
         // Parse episodes if series
         if (isTvSeries) {
-            val episodeList = ArrayList<TvSeriesEpisode>()
+            val episodeList = ArrayList<Episode>()
             val epLinks = playcontainer?.select("div > div > div.source-box")
             //Log.i(this.name, "Result => (epList) ${epList}")
             body?.select("div#playeroptions > ul > li")?.forEach { ep ->
@@ -170,7 +175,7 @@ class PinoyMoviePediaProvider : MainAPI() {
                     val streamEpLink = listOf(href.trim()).toJson()
                     //Log.i(this.name, "Result => (streamEpLink $epNum) $streamEpLink")
                     episodeList.add(
-                        TvSeriesEpisode(
+                        Episode(
                             name = null,
                             season = null,
                             episode = epNum,
@@ -185,7 +190,7 @@ class PinoyMoviePediaProvider : MainAPI() {
                 name = title,
                 url = url,
                 apiName = this.name,
-                type = TvType.TvSeries,
+                type = TvType.AsianDrama,
                 episodes = episodeList,
                 posterUrl = poster,
                 year = year,
@@ -217,7 +222,7 @@ class PinoyMoviePediaProvider : MainAPI() {
     ): Boolean {
         // parse movie servers
         var count = 0
-        mapper.readValue<List<String>>(data).apmap { link ->
+        tryParseJson<List<String>>(data)?.apmap { link ->
             count++
             if (link.contains("fembed.com")) {
                 val extractor = FEmbed()

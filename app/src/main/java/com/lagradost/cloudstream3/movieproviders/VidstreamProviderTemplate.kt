@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.animeproviders.GogoanimeProvider.Companion.extractVidstream
 import com.lagradost.cloudstream3.extractors.Vidstream
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -13,6 +14,14 @@ import java.net.URI
 open class VidstreamProviderTemplate : MainAPI() {
     open val homePageUrlList = listOf<String>()
     open val vidstreamExtractorUrl: String? = null
+
+    /**
+     *  Used to generate encrypted video links.
+     *  Try keys from other providers before cracking
+     *  one yourself.
+     * */
+    open val iv: ByteArray? = null
+    open val secretKey: ByteArray? = null
 
 //    // mainUrl is good to have as a holder for the url to make future changes easier.
 //    override val mainUrl: String
@@ -76,6 +85,7 @@ open class VidstreamProviderTemplate : MainAPI() {
 
         val description = soup.selectFirst(".post-entry")?.text()?.trim()
         var poster: String? = null
+        var year: Int? = null
 
         val episodes =
             soup.select(".listing.items.lists > .video-block").withIndex().map { (_, li) ->
@@ -95,18 +105,15 @@ open class VidstreamProviderTemplate : MainAPI() {
 
                 val epNum = Regex("""Episode (\d+)""").find(epTitle)?.destructured?.component1()
                     ?.toIntOrNull()
-
-                TvSeriesEpisode(
-                    epTitle,
-                    null,
-                    epNum,
-                    fixUrl(li.selectFirst("a").attr("href")),
-                    epThumb,
-                    epDate
-                )
+                if (year == null) {
+                    year = epDate?.split("-")?.get(0)?.toIntOrNull()
+                }
+                newEpisode(li.selectFirst("a").attr("href")) {
+                    this.episode = epNum
+                    this.posterUrl = epThumb
+                    addDate(epDate)
+                }
             }.reversed()
-
-        val year = episodes.first().date?.split("-")?.get(0)?.toIntOrNull()
 
         // Make sure to get the type right to display the correct UI.
         val tvType =
@@ -166,25 +173,13 @@ open class VidstreamProviderTemplate : MainAPI() {
                     val isSeries = (name.contains("Season") || name.contains("Episode"))
 
                     if (isSeries) {
-                        TvSeriesSearchResponse(
-                            name,
-                            link,
-                            this.name,
-                            TvType.TvSeries,
-                            image,
-                            null,
-                            null,
-                        )
+                        newTvSeriesSearchResponse(name, link) {
+                            posterUrl = image
+                        }
                     } else {
-                        MovieSearchResponse(
-                            name,
-                            link,
-                            this.name,
-                            TvType.Movie,
-                            image,
-                            null,
-                            null,
-                        )
+                        newMovieSearchResponse(name, link) {
+                            posterUrl = image
+                        }
                     }
                 }
 
@@ -199,7 +194,7 @@ open class VidstreamProviderTemplate : MainAPI() {
     }
 
     // loadLinks gets the raw .mp4 or .m3u8 urls from the data parameter in the episodes class generated in load()
-    // See TvSeriesEpisode(...) in this provider.
+    // See Episode(...) in this provider.
     // The data are usually links, but can be any other string to help aid loading the links.
     override suspend fun loadLinks(
         data: String,
@@ -212,6 +207,7 @@ open class VidstreamProviderTemplate : MainAPI() {
         val iframeLink =
             Jsoup.parse(app.get(data).text).selectFirst("iframe")?.attr("src") ?: return false
 
+        extractVidstream(iframeLink, this.name, callback, iv, secretKey)
         // In this case the video player is a vidstream clone and can be handled by the vidstream extractor.
         // This case is a both unorthodox and you normally do not call extractors as they detect the url returned and does the rest.
         val vidstreamObject = Vidstream(vidstreamExtractorUrl ?: mainUrl)

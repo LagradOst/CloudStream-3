@@ -58,36 +58,5 @@ It merely scrapes 3rd-party websites that are publicly accessable via any regula
 
 
 ***Sites used:***
-<!-- Do not remove those two comments -->
-<!--SITE LIST START-->
-- [pelisplus.icu](https://pelisplus.icu) 
-- [pelismart.com](https://pelismart.com) 
-- [gogoanime.wiki](https://gogoanime.wiki) 
-- [allanime.site](https://allanime.site) 
-- [animeflick.net](https://animeflick.net) 
-- [m.animeflv.net](https://m.animeflv.net) 
-- [tenshi.moe](https://tenshi.moe) 
-- [wcostream.cc](https://wcostream.cc) 
-- [bestdubbedanime.com](https://bestdubbedanime.com) 
-- [doramasyt.com](https://doramasyt.com) 
-- [ihavenotv.com](https://ihavenotv.com) 
-- [vmovee.watch](https://www.vmovee.watch) 
-- [wcostream.com](https://www.wcostream.com) 
-- [allmoviesforyou.net](https://allmoviesforyou.net) 
-- [monoschinos2.com](https://monoschinos2.com) 
-- [vidembed.cc](https://vidembed.cc) 
-- [vf-film.me](https://vf-film.me) 
-- [vf-serie.org](https://vf-serie.org) 
-- [asianembed.io](https://asianembed.io) 
-- [filman.cc](https://filman.cc) 
-- [zoro.to](https://zoro.to) 
-- [pinoymoviepedia.ru](https://pinoymoviepedia.ru) 
-- [pinoy-hd.xyz](https://www.pinoy-hd.xyz) 
-- [pinoymovies.es](https://pinoymovies.es) 
-- [trailers.to](https://trailers.to) 
-- [dramasee.net](https://dramasee.net) 
-- [watchasian.sh](https://watchasian.sh) 
-- [kdramahood.com](https://kdramahood.com) 
-- [akwam.io](https://akwam.io) 
-- [asiaflix.app](https://asiaflix.app) 
-<!--SITE LIST END-->
+
+Look [here](https://lagradost.github.io/CloudStream-3/) for a comprehensive list

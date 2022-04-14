@@ -12,16 +12,14 @@ import android.content.res.Resources
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
-import android.view.Gravity
-import android.view.MenuItem
-import android.view.View
-import android.view.WindowManager
+import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
+import android.widget.ListAdapter
+import android.widget.ListView
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
 import androidx.annotation.IdRes
-import androidx.annotation.RequiresApi
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.PopupMenu
@@ -39,6 +37,7 @@ import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isEmulatorSettings
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
 import com.lagradost.cloudstream3.utils.GlideOptions.bitmapTransform
 import jp.wasabeef.glide.transformations.BlurTransformation
@@ -68,6 +67,36 @@ object UIHelper {
             ),
             1337
         )
+    }
+
+
+    /**
+     * Sets ListView height dynamically based on the height of the items.
+     *
+     * @param listView to be resized
+     * @return true if the listView is successfully resized, false otherwise
+     */
+    fun setListViewHeightBasedOnItems(listView: ListView?) {
+        val listAdapter: ListAdapter = listView?.adapter ?: return
+        val numberOfItems: Int = listAdapter.count
+
+        // Get total height of all items.
+        var totalItemsHeight = 0
+        for (itemPos in 0 until numberOfItems) {
+            val item: View = listAdapter.getView(itemPos, null, listView)
+            item.measure(0, 0)
+            totalItemsHeight += item.measuredHeight
+        }
+
+        // Get total height of all item dividers.
+        val totalDividersHeight: Int = listView.dividerHeight *
+                (numberOfItems - 1)
+
+        // Set list height.
+        val params: ViewGroup.LayoutParams = listView.layoutParams
+        params.height = totalItemsHeight + totalDividersHeight
+        listView.layoutParams = params
+        listView.requestLayout()
     }
 
     fun Activity?.getSpanCount(): Int? {
@@ -119,11 +148,11 @@ object UIHelper {
         return color
     }
 
-    fun ImageView?.setImage(url: String?) : Boolean {
+    fun ImageView?.setImage(url: String?, headers: Map<String, String>? = null): Boolean {
         if (this == null || url.isNullOrBlank()) return false
         return try {
             GlideApp.with(this.context)
-                .load(GlideUrl(url)).transition(
+                .load(GlideUrl(url) { headers ?: emptyMap() }).transition(
                     DrawableTransitionOptions.withCrossFade()
                 )
                 .into(this)
@@ -134,11 +163,17 @@ object UIHelper {
         }
     }
 
-    fun ImageView?.setImageBlur(url: String?, radius: Int, sample: Int = 3) {
+    fun ImageView?.setImageBlur(
+        url: String?,
+        radius: Int,
+        sample: Int = 3,
+        headers: Map<String, String>? = null
+    ) {
         if (this == null || url.isNullOrBlank()) return
         try {
             GlideApp.with(this.context)
-                .load(GlideUrl(url)).apply(bitmapTransform(BlurTransformation(radius, sample)))
+                .load(GlideUrl(url) { headers ?: emptyMap() })
+                .apply(bitmapTransform(BlurTransformation(radius, sample)))
                 .transition(
                     DrawableTransitionOptions.withCrossFade()
                 )
@@ -313,10 +348,12 @@ object UIHelper {
     // Shows the system bars by removing all the flags
     // except for the ones that make the content appear under the system bars.
     fun Activity.showSystemUI() {
-        window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                ) // or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+        window.decorView.systemUiVisibility =
+
+            (View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
+
+        changeStatusBarState(isEmulatorSettings())
+
         // window.clearFlags(View.KEEP_SCREEN_ON)
     }
 
@@ -333,15 +370,18 @@ object UIHelper {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     fun Context.hasPIPPermission(): Boolean {
         val appOps =
             getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        return appOps.checkOpNoThrow(
-            AppOpsManager.OPSTR_PICTURE_IN_PICTURE,
-            android.os.Process.myUid(),
-            packageName
-        ) == AppOpsManager.MODE_ALLOWED
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_PICTURE_IN_PICTURE,
+                android.os.Process.myUid(),
+                packageName
+            ) == AppOpsManager.MODE_ALLOWED
+        } else {
+            return true
+        }
     }
 
     fun hideKeyboard(view: View) {

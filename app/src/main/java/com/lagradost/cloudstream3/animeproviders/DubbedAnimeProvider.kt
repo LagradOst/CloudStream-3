@@ -11,8 +11,8 @@ import org.jsoup.Jsoup
 import java.util.*
 
 class DubbedAnimeProvider : MainAPI() {
-    override val mainUrl = "https://bestdubbedanime.com"
-    override val name = "DubbedAnime"
+    override var mainUrl = "https://bestdubbedanime.com"
+    override var name = "DubbedAnime"
     override val hasQuickSearch = true
     override val hasMainPage = true
 
@@ -73,7 +73,10 @@ class DubbedAnimeProvider : MainAPI() {
         }
     }
 
-    private suspend fun parseDocument(url: String, trimEpisode: Boolean = false): List<SearchResponse> {
+    private suspend fun parseDocument(
+        url: String,
+        trimEpisode: Boolean = false
+    ): List<SearchResponse> {
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         return document.select("a.grid__link").map {
@@ -109,7 +112,7 @@ class DubbedAnimeProvider : MainAPI() {
     }
 
 
-    private suspend fun getAnimeEpisode(slug: String, isMovie: Boolean): EpisodeInfo {
+    private suspend fun getEpisode(slug: String, isMovie: Boolean): EpisodeInfo {
         val url =
             mainUrl + (if (isMovie) "/movies/jsonMovie" else "/xz/v3/jsonEpi") + ".php?slug=$slug&_=$unixTime"
         val response = app.get(url).text
@@ -131,31 +134,28 @@ class DubbedAnimeProvider : MainAPI() {
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         val items = document.select("div.grid__item > a")
-        if (items.isEmpty()) return ArrayList()
-        val returnValue = ArrayList<SearchResponse>()
-        for (i in items) {
+        if (items.isEmpty()) return emptyList()
+        return items.map { i ->
             val href = fixUrl(i.attr("href"))
             val title = i.selectFirst("div.gridtitlek").text()
             val img = fixUrlNull(i.selectFirst("img.grid__img")?.attr("src"))
-            returnValue.add(
-                if (getIsMovie(href)) {
-                    MovieSearchResponse(
-                        title, href, this.name, TvType.AnimeMovie, img, null
-                    )
-                } else {
-                    AnimeSearchResponse(
-                        title,
-                        href,
-                        this.name,
-                        TvType.Anime,
-                        img,
-                        null,
-                        EnumSet.of(DubStatus.Dubbed),
-                    )
-                }
-            )
+
+            if (getIsMovie(href)) {
+                MovieSearchResponse(
+                    title, href, this.name, TvType.AnimeMovie, img, null
+                )
+            } else {
+                AnimeSearchResponse(
+                    title,
+                    href,
+                    this.name,
+                    TvType.Anime,
+                    img,
+                    null,
+                    EnumSet.of(DubStatus.Dubbed),
+                )
+            }
         }
-        return returnValue
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -164,33 +164,28 @@ class DubbedAnimeProvider : MainAPI() {
         val document = Jsoup.parse(response)
         val items = document.select("div.resultinner > a.resulta")
         if (items.isEmpty()) return ArrayList()
-        val returnValue = ArrayList<SearchResponse>()
-        for (i in items) {
+        return items.map { i ->
             val innerDiv = i.selectFirst("> div.result")
             val href = fixUrl(i.attr("href"))
             val img = fixUrl(innerDiv.selectFirst("> div.imgkz > img").attr("src"))
             val title = innerDiv.selectFirst("> div.titleresults").text()
 
-            returnValue.add(
-                if (getIsMovie(href)) {
-                    MovieSearchResponse(
-                        title, href, this.name, TvType.AnimeMovie, img, null
-                    )
-                } else {
-                    AnimeSearchResponse(
-                        title,
-                        href,
-                        this.name,
-                        TvType.Anime,
-                        img,
-                        null,
-                        EnumSet.of(DubStatus.Dubbed),
-                    )
-                }
-            )
+            if (getIsMovie(href)) {
+                MovieSearchResponse(
+                    title, href, this.name, TvType.AnimeMovie, img, null
+                )
+            } else {
+                AnimeSearchResponse(
+                    title,
+                    href,
+                    this.name,
+                    TvType.Anime,
+                    img,
+                    null,
+                    EnumSet.of(DubStatus.Dubbed),
+                )
+            }
         }
-
-        return returnValue
     }
 
     override suspend fun loadLinks(
@@ -201,7 +196,7 @@ class DubbedAnimeProvider : MainAPI() {
     ): Boolean {
         val serversHTML = (if (data.startsWith(mainUrl)) { // CLASSIC EPISODE
             val slug = getSlug(data)
-            getAnimeEpisode(slug, false).serversHTML
+            getEpisode(slug, false).serversHTML
         } else data).replace("\\", "")
 
         val hls = ArrayList("hl=\"(.*?)\"".toRegex().findAll(serversHTML).map {
@@ -233,7 +228,7 @@ class DubbedAnimeProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         if (getIsMovie(url)) {
             val realSlug = url.replace("movies/", "")
-            val episode = getAnimeEpisode(realSlug, true)
+            val episode = getEpisode(realSlug, true)
             val poster = episode.previewImg ?: episode.wideImg
             return MovieLoadResponse(
                 episode.title,
@@ -258,7 +253,7 @@ class DubbedAnimeProvider : MainAPI() {
 
             val episodes = document.select("a.epibloks").map {
                 val epTitle = it.selectFirst("> div.inwel > span.isgrxx")?.text()
-                AnimeEpisode(fixUrl(it.attr("href")), epTitle)
+                Episode(fixUrl(it.attr("href")), epTitle)
             }
 
             val img = fixUrl(document.select("div.fkimgs > img").attr("src"))

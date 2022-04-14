@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.lagradost.cloudstream3.HomePageList
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.ui.search.SearchClickCallback
+import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
 import kotlinx.android.synthetic.main.homepage_parent.view.*
 
 class ParentItemAdapter(
@@ -18,7 +19,8 @@ class ParentItemAdapter(
     private val moreInfoClickCallback: (HomePageList) -> Unit,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, i: Int): ParentViewHolder {
-        val layout = R.layout.homepage_parent
+        val layout =
+            if (parent.context.isTvSettings()) R.layout.homepage_parent_tv else R.layout.homepage_parent
         return ParentViewHolder(
             LayoutInflater.from(parent.context).inflate(layout, parent, false),
             clickCallback,
@@ -43,11 +45,24 @@ class ParentItemAdapter(
     }
 
     fun updateList(newList: List<HomePageList>) {
+        // this moves all bad results to the bottom
+        val endList = mutableListOf<HomePageList>()
+        val newFilteredList = mutableListOf<HomePageList>()
+        for (item in newList) {
+            if (item.list.isEmpty()) {
+                endList.add(item)
+            } else {
+                newFilteredList.add(item)
+            }
+        }
+        newFilteredList.addAll(endList)
+
         val diffResult = DiffUtil.calculateDiff(
-            SearchDiffCallback(this.items, newList))
+            SearchDiffCallback(this.items, newFilteredList)
+        )
 
         items.clear()
-        items.addAll(newList)
+        items.addAll(newFilteredList)
 
         diffResult.dispatchUpdatesTo(this)
     }
@@ -61,25 +76,28 @@ class ParentItemAdapter(
         RecyclerView.ViewHolder(itemView) {
         val title: TextView = itemView.home_parent_item_title
         val recyclerView: RecyclerView = itemView.home_child_recyclerview
-        private val moreInfo: FrameLayout = itemView.home_child_more_info
+        private val moreInfo: FrameLayout? = itemView.home_child_more_info
         fun bind(info: HomePageList) {
             title.text = info.name
             recyclerView.adapter = HomeChildItemAdapter(
-                info.list,
+                info.list.toMutableList(),
                 clickCallback = clickCallback,
                 nextFocusUp = recyclerView.nextFocusUpId,
                 nextFocusDown = recyclerView.nextFocusDownId
             )
-            (recyclerView.adapter as HomeChildItemAdapter).notifyDataSetChanged()
+            //(recyclerView.adapter as HomeChildItemAdapter).notifyDataSetChanged()
 
-            moreInfo.setOnClickListener {
+            moreInfo?.setOnClickListener {
                 moreInfoClickCallback.invoke(info)
             }
         }
     }
 }
 
-class SearchDiffCallback(private val oldList: List<HomePageList>, private val newList: List<HomePageList>) :
+class SearchDiffCallback(
+    private val oldList: List<HomePageList>,
+    private val newList: List<HomePageList>
+) :
     DiffUtil.Callback() {
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int) =
         oldList[oldItemPosition].name == newList[newItemPosition].name

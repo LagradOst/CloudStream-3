@@ -1,22 +1,30 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.*
+import com.lagradost.cloudstream3.extractors.XStreamCdn
 import com.lagradost.cloudstream3.extractors.helper.AsianEmbedHelper
+import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 
 class KdramaHoodProvider : MainAPI() {
-    override val mainUrl = "https://kdramahood.com"
-    override val name = "KDramaHood"
+    override var mainUrl = "https://kdramahood.com"
+    override var name = "KDramaHood"
     override val hasQuickSearch = false
     override val hasMainPage = true
     override val hasChromecastSupport = false
     override val hasDownloadSupport = true
-    override val supportedTypes = setOf(TvType.TvSeries, TvType.Movie)
+    override val supportedTypes = setOf(TvType.AsianDrama)
+
+    private data class ResponseDatas(
+        @JsonProperty("label") val label: String,
+        @JsonProperty("file") val file: String
+    )
 
     override suspend fun getMainPage(): HomePageResponse {
         val doc = app.get("$mainUrl/home2").document
@@ -154,8 +162,18 @@ class KdramaHoodProvider : MainAPI() {
                         }
                     }
                 }
+                //Fetch default source and subtitles
+                epVidLinkEl.select("div.embed2")?.forEach { defsrc ->
+                    if (defsrc == null) { return@forEach }
+                    val scriptstring = defsrc.toString()
+                    if (scriptstring.contains("sources: [{")) {
+                        "(?<=playerInstance2.setup\\()([\\s\\S]*?)(?=\\);)".toRegex().find(scriptstring)?.value?.let { itemjs ->
+                            listOfLinks.add("$mainUrl$itemjs")
+                        }
+                    }
+                }
             }
-            TvSeriesEpisode(
+            Episode(
                 name = null,
                 season = null,
                 episode = count,
@@ -183,7 +201,7 @@ class KdramaHoodProvider : MainAPI() {
             name = title,
             url = url,
             apiName = this.name,
-            type = TvType.TvSeries,
+            type = TvType.AsianDrama,
             episodes = episodeList.reversed(),
             posterUrl = poster,
             year = year,
@@ -199,27 +217,68 @@ class KdramaHoodProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         var count = 0
-        mapper.readValue<List<String>>(data).apmap { item ->
+        parseJson<List<String>>(data).apmap { item ->
             if (item.isNotBlank()) {
                 count++
-                var url = item.trim()
-                if (url.startsWith("//")) {
-                    url = "https:$url"
-                }
-                //Log.i(this.name, "Result => (url) ${url}")
-                when {
-                    url.startsWith("https://asianembed.io") -> {
-                        AsianEmbedHelper.getUrls(url, callback)
-                    }
-                    url.startsWith("https://embedsito.com") -> {
-                        val extractor = XStreamCdn()
-                        extractor.domainUrl = "embedsito.com"
-                        extractor.getUrl(url).forEach { link ->
-                            callback.invoke(link)
+                if (item.startsWith(mainUrl)) {
+                    val text = item.substring(mainUrl.length)
+                    //Log.i(this.name, "Result => (text) $text")
+                    //Find video files
+                    try {
+                        "(?<=sources: )([\\s\\S]*?)(?<=])".toRegex().find(text)?.value?.let { vid ->
+                            parseJson<List<ResponseDatas>>(vid).forEach { src ->
+                                //Log.i(this.name, "Result => (src) ${src.toJson()}")
+                                callback(
+                                    ExtractorLink(
+                                        name = "$name ${src.label}",
+                                        url = src.file,
+                                        quality = getQualityFromName(src.label),
+                                        referer = mainUrl,
+                                        source = name
+                                    )
+                                )
+                            }
                         }
+                    } catch (e: Exception) {
+                        logError(e)
                     }
-                    else -> {
-                        loadExtractor(url, mainUrl, callback)
+                    //Find subtitles
+                    try {
+                        "(?<=tracks: )([\\s\\S]*?)(?<=])".toRegex().find(text)?.value?.let { sub ->
+                            val subtext = sub.replace("file:", "\"file\":")
+                                .replace("label:", "\"label\":")
+                                .replace("kind:", "\"kind\":")
+                            parseJson<List<ResponseDatas>>(subtext).forEach { src ->
+                                //Log.i(this.name, "Result => (sub) ${src.toJson()}")
+                                subtitleCallback(
+                                    SubtitleFile(
+                                        lang = src.label,
+                                        url = src.file
+                                    )
+                                )
+                            }
+                        }
+                    } catch (e: Exception) {
+                        logError(e)
+                    }
+
+                } else {
+                    val url = fixUrl(item.trim())
+                    //Log.i(this.name, "Result => (url) $url")
+                    when {
+                        url.startsWith("https://asianembed.io") -> {
+                            AsianEmbedHelper.getUrls(url, callback)
+                        }
+                        url.startsWith("https://embedsito.com") -> {
+                            val extractor = XStreamCdn()
+                            extractor.domainUrl = "embedsito.com"
+                            extractor.getUrl(url).forEach { link ->
+                                callback.invoke(link)
+                            }
+                        }
+                        else -> {
+                            loadExtractor(url, mainUrl, callback)
+                        }
                     }
                 }
             }

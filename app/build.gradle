@@ -35,8 +35,8 @@ android {
         minSdkVersion 21
         targetSdkVersion 30
 
-        versionCode 42
-        versionName "2.6.10"
+        versionCode 45
+        versionName "2.9.18"
 
         resValue "string", "app_version",
                 "${defaultConfig.versionName}${versionNameSuffix ?: ""}"
@@ -53,8 +53,8 @@ android {
     buildTypes {
         release {
             debuggable false
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         prerelease {
@@ -62,9 +62,9 @@ android {
             buildConfigField("boolean", "BETA", "true")
             signingConfig signingConfigs.prerelease
             versionNameSuffix '-PRE'
-            minifyEnabled true
             debuggable false
-            shrinkResources true
+            minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
@@ -88,6 +88,7 @@ repositories {
 }
 
 dependencies {
+    implementation 'com.google.android.mediahome:video:1.0.0'
     testImplementation 'org.json:json:20180813'
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
@@ -95,10 +96,10 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.4.1'
     implementation 'com.google.android.material:material:1.5.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
-    implementation 'androidx.navigation:navigation-fragment-ktx:2.5.0-alpha01'
-    implementation 'androidx.navigation:navigation-ui-ktx:2.5.0-alpha01'
-    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.4.0'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.0'
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.5.0-alpha03'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.5.0-alpha03'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.4.1'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.1'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
@@ -111,11 +112,11 @@ dependencies {
 
     implementation "androidx.preference:preference-ktx:1.2.0"
 
-    implementation 'com.github.bumptech.glide:glide:4.12.0'
-    kapt 'com.github.bumptech.glide:compiler:4.12.0'
+    implementation 'com.github.bumptech.glide:glide:4.13.0'
+    kapt 'com.github.bumptech.glide:compiler:4.13.0'
     implementation 'com.github.bumptech.glide:okhttp3-integration:4.12.0'
 
-    implementation 'jp.wasabeef:glide-transformations:4.0.0'
+    implementation 'jp.wasabeef:glide-transformations:4.3.0'
 
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
 
@@ -167,4 +168,6 @@ dependencies {
 
     // for shimmer when loading
     implementation 'com.facebook.shimmer:shimmer:0.5.0'
+
+    implementation "androidx.tvprovider:tvprovider:1.0.0"
 }

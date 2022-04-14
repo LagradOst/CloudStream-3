@@ -100,6 +100,19 @@
                 android:textSize="40sp" />
     </RelativeLayout>
 
+    <FrameLayout
+            android:id="@+id/player_episode_filler_holder"
+            android:layout_margin="20dp"
+            android:layout_gravity="end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+        <com.google.android.material.button.MaterialButton
+                style="@style/SmallBlackButton"
+                android:text="@string/filler"
+                android:id="@+id/player_episode_filler" />
+    </FrameLayout>
+
     <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/player_video_holder"
             android:layout_width="match_parent"
@@ -136,6 +149,7 @@
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/player_video_title"
                     tools:text="1920x1080" />
+
 
             <!-- Removed as it has no use anymore-->
             <!--<androidx.mediarouter.app.MediaRouteButton
@@ -175,6 +189,8 @@
                         android:focusable="true"
                         android:contentDescription="@string/go_back_img_des" />
             </FrameLayout>
+
+
         </FrameLayout>
 
         <!--use for thinner app:trackThickness="3dp" com.google.android.material.progressindicator.CircularProgressIndicator-->
@@ -492,14 +508,25 @@
                                 style="@style/VideoButton"
                                 android:nextFocusLeft="@id/player_resize_btt"
 
-                                android:nextFocusRight="@id/player_sources_btt"
+                                android:nextFocusRight="@id/player_subtitle_offset_btt"
                                 app:icon="@drawable/ic_baseline_speed_24"
                                 tools:text="Speed" />
 
                         <com.google.android.material.button.MaterialButton
-                                android:id="@+id/player_sources_btt"
+                                android:visibility="gone"
+                                tools:visibility="visible"
+                                android:id="@+id/player_subtitle_offset_btt"
                                 style="@style/VideoButton"
                                 android:nextFocusLeft="@id/player_speed_btt"
+
+                                android:nextFocusRight="@id/player_sources_btt"
+                                app:icon="@drawable/ic_outline_subtitles_24"
+                                android:text="@string/subtitle_offset"/>
+
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/player_sources_btt"
+                                style="@style/VideoButton"
+                                android:nextFocusLeft="@id/player_subtitle_offset_btt"
 
                                 android:nextFocusRight="@id/player_skip_op"
                                 android:text="@string/video_source"
