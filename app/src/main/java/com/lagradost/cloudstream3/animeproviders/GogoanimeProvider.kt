@@ -201,20 +201,10 @@ class GogoanimeProvider : MainAPI() {
                 items.add(HomePageList(i.second, (parseRegex.findAll(html.text).map {
                     val (link, epNum, title, poster) = it.destructured
                     val isSub = listOf(1, 3).contains(i.first.toInt())
-                    AnimeSearchResponse(
-                        title,
-                        link,
-                        this.name,
-                        TvType.Anime,
-                        poster,
-                        null,
-                        if (isSub) EnumSet.of(DubStatus.Subbed) else EnumSet.of(
-                            DubStatus.Dubbed
-                        ),
-                        null,
-                        if (!isSub) epNum.toIntOrNull() else null,
-                        if (isSub) epNum.toIntOrNull() else null,
-                    )
+                    newAnimeSearchResponse(title, link) {
+                        this.posterUrl = poster
+                        addDubStatus(!isSub, epNum.toIntOrNull())
+                    }
                 }).toList()))
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -380,9 +370,9 @@ class GogoanimeProvider : MainAPI() {
                             loadExtractor(data, streamingResponse.url, callback)
                         }
                 }, {
-                    val iv = "4770478969418267".toByteArray()
+                    val iv = "4786443969418267".toByteArray()
                     val secretKey =
-                        "63976882873559819639988080820907".toByteArray()
+                        "63976882873536819639922083275907".toByteArray()
                     extractVidstream(iframe, this.name, callback, iv, secretKey)
                 })
             }
