@@ -68,7 +68,10 @@ enum class Qualities(var value: Int) {
     }
 }
 
-fun getQualityFromName(qualityName: String): Int {
+fun getQualityFromName(qualityName: String?): Int {
+    if (qualityName == null) {
+        return Qualities.Unknown.value
+    }
     return when (qualityName.replace("p", "").replace("P", "").trim()) {
         "360" -> Qualities.P360
         "480" -> Qualities.P480
