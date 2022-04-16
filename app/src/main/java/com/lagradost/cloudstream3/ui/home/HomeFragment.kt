@@ -7,12 +7,10 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
-import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
@@ -362,6 +360,7 @@ class HomeFragment : Fragment() {
     }
 
     private var currentApiName: String? = null
+    private var toggleRandomButton = false
 
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -371,27 +370,27 @@ class HomeFragment : Fragment() {
         home_change_api?.setOnClickListener(apiChangeClickListener)
         home_change_api_loading?.setOnClickListener(apiChangeClickListener)
         home_api_fab?.setOnClickListener(apiChangeClickListener)
+        home_random?.setOnClickListener {
+            if (listHomepageItems.isNotEmpty()) {
+                activity.loadSearchResult(listHomepageItems.random())
+            }
+        }
 
-        //TODO: Fix bug where Random button is hidden when View is first shown
-        // and applies setting only after switching it back from anywhere.
-        var toggleRandomButton = home_random?.isVisible ?: false
+        //Disable Random button, if its toggled off on settings
         context?.let {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(it)
             toggleRandomButton = settingsManager.getBoolean(getString(R.string.random_button_key), false)
+            home_random?.isVisible = toggleRandomButton
+            if (!toggleRandomButton) {
+                home_random?.visibility = View.GONE
+            }
         }
-        home_random?.isVisible = toggleRandomButton
-        home_random?.isGone = !toggleRandomButton
 
         observe(homeViewModel.apiName) { apiName ->
             currentApiName = apiName
             setKey(HOMEPAGE_API, apiName)
             home_provider_name?.text = apiName
             home_provider_meta_info?.isVisible = false
-            home_random?.setOnClickListener {
-                if (listHomepageItems.isNotEmpty()) {
-                    activity.loadSearchResult(listHomepageItems.random())
-                }
-            }
 
             getApiFromNameNull(apiName)?.let { currentApi ->
                 val typeChoices = listOf(
@@ -410,9 +409,6 @@ class HomeFragment : Fragment() {
         }
 
         observe(homeViewModel.randomItems) { items ->
-            if (toggleRandomButton) {
-                home_random?.isVisible = listHomepageItems.isNotEmpty()
-            }
             if (items.isNullOrEmpty()) {
                 toggleMainVisibility(false)
             } else {
@@ -480,6 +476,9 @@ class HomeFragment : Fragment() {
                     home_loading?.isVisible = false
                     home_loading_error?.isVisible = false
                     home_loaded?.isVisible = true
+                    if (toggleRandomButton) {
+                        home_random?.isVisible = listHomepageItems.isNotEmpty()
+                    }
                 }
                 is Resource.Failure -> {
                     home_loading_shimmer?.stopShimmer()
