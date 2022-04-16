@@ -13,6 +13,17 @@ class FEmbed: XStreamCdn() {
     override val mainUrl: String = "https://www.fembed.com"
 }
 
+class Fplayer: XStreamCdn() {
+    override val name: String = "Fplayer"
+    override val mainUrl: String = "https://fplayer.info"
+}
+
+class FeHD: XStreamCdn() {
+    override val name: String = "FeHD"
+    override val mainUrl: String = "https://fembed-hd.com"
+    override var domainUrl: String = "fembed-hd.com"
+}
+
 open class XStreamCdn : ExtractorApi() {
     override val name: String = "XStreamCdn"
     override val mainUrl: String = "https://embedsito.com"
