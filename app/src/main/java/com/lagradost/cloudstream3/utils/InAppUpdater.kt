@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
 import android.os.Environment
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
@@ -18,12 +19,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import io.karn.khttp.BuildConfig
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlin.concurrent.thread
@@ -83,75 +85,32 @@ class InAppUpdater {
         }
 
         private fun Activity.getReleaseUpdate(): Update {
-            val url = "https://api.github.com/repos/LagradOst/CloudStream-3/releases"
+            val url = "https://api.github.com/repos/KillerDogeEmpire/CloudStream-3/releases/latest"
             val headers = mapOf("Accept" to "application/vnd.github.v3+json")
             val response =
-                mapper.readValue<List<GithubRelease>>(runBlocking {
-                    app.get(
-                        url,
-                        headers = headers
-                    ).text
+                tryParseJson<GithubRelease>(runBlocking {
+                    app.get(url, headers = headers).text
                 })
 
-            val versionRegex = Regex("""(.*?((\d+)\.(\d+)\.(\d+))\.apk)""")
-            val versionRegexLocal = Regex("""(.*?((\d+)\.(\d+)\.(\d+)).*)""")
-            /*
-            val releases = response.map { it.assets }.flatten()
-                .filter { it.content_type == "application/vnd.android.package-archive" }
-            val found =
-                releases.sortedWith(compareBy {
-                    versionRegex.find(it.name)?.groupValues?.get(2)
-                }).toList().lastOrNull()*/
-            val found =
-                response.filter { rel ->
-                    !rel.prerelease
-                }.sortedWith(compareBy { release ->
-                    release.assets.filter { it.content_type == "application/vnd.android.package-archive" }
-                        .getOrNull(0)?.name?.let { it1 ->
-                            versionRegex.find(
-                                it1
-                            )?.groupValues?.get(2)
-                        }
-                }).toList().lastOrNull()
-            val foundAsset = found?.assets?.getOrNull(0)
+            val assetFound = response?.assets?.get(0)
+            val latestVer = response?.tag_name?.filter { it.isDigit() || it == '.' } ?: ""
             val currentVersion = packageName?.let {
                 packageManager.getPackageInfo(
                     it,
                     0
                 )
             }
-
-            foundAsset?.name?.let { assetName ->
-                val foundVersion = versionRegex.find(assetName)
-                val shouldUpdate =
-                    if (foundAsset.browser_download_url != "" && foundVersion != null) currentVersion?.versionName?.let { versionName ->
-                        versionRegexLocal.find(versionName)?.groupValues?.let {
-                            it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
-                        }
-                    }?.compareTo(
-                        foundVersion.groupValues.let {
-                            it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
-                        }
-                    )!! < 0 else false
-                return if (foundVersion != null) {
-                    Update(
-                        shouldUpdate,
-                        foundAsset.browser_download_url,
-                        foundVersion.groupValues[2],
-                        found.body,
-                        found.node_id
-                    )
-                } else {
-                    Update(false, null, null, null, null)
-                }
-            }
-            return Update(false, null, null, null, null)
+            val currentVer = currentVersion?.versionName?.filter { it.isDigit() || it == '.' } ?: ""
+            val updateUrl = assetFound?.browser_download_url
+            val shouldUpdate = latestVer != currentVer
+            Log.i("ApiError", "currentVer: $currentVer / LatestVer: $latestVer")
+            return Update(shouldUpdate, updateUrl, latestVer, response?.body, response?.node_id)
         }
 
         private fun Activity.getPreReleaseUpdate(): Update = runBlocking {
             val tagUrl =
-                "https://api.github.com/repos/LagradOst/CloudStream-3/git/ref/tags/pre-release"
-            val releaseUrl = "https://api.github.com/repos/LagradOst/CloudStream-3/releases"
+                "https://api.github.com/repos/KillerDogeEmpire/CloudStream-3/git/ref/tags/pre-release"
+            val releaseUrl = "https://api.github.com/repos/KillerDogeEmpire/CloudStream-3/releases"
             val headers = mapOf("Accept" to "application/vnd.github.v3+json")
             val response =
                 mapper.readValue<List<GithubRelease>>(app.get(releaseUrl, headers = headers).text)

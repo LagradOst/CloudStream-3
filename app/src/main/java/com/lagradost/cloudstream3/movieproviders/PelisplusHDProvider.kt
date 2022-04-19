@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 
 class PelisplusHDProvider:MainAPI() {
-    override var mainUrl = "https://pelisplushd.net"
+    override var mainUrl = "https://ww1.pelisplushd.nu"
     override var name = "PelisplusHD"
     override val lang = "es"
     override val hasMainPage = true
@@ -38,7 +38,7 @@ class PelisplusHDProvider:MainAPI() {
     private fun Element.toSearchResult(): SearchResponse {
         val title = this.select(".listing-content p").text()
         val href = this.select("a").attr("href")
-        val posterUrl = this.select(".Posters-img").attr("src")
+        val posterUrl = fixUrl(this.select(".Posters-img").attr("src"))
         val isMovie = href.contains("/pelicula/")
         return if (isMovie) {
             MovieSearchResponse(
@@ -63,13 +63,13 @@ class PelisplusHDProvider:MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "https://pelisplushd.net/search?s=${query}"
+        val url = "$mainUrl/search?s=${query}"
         val document = app.get(url).document
 
         return document.select("a.Posters-link").map {
             val title = it.selectFirst(".listing-content p").text()
             val href = it.selectFirst("a").attr("href")
-            val image = it.selectFirst(".Posters-img").attr("src")
+            val image = fixUrl(it.selectFirst(".Posters-img").attr("src"))
             val isMovie = href.contains("/pelicula/")
 
             if (isMovie) {
@@ -96,16 +96,17 @@ class PelisplusHDProvider:MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val soup = app.get(url, timeout = 120).document
+        val soup = app.get(url).document
 
         val title = soup.selectFirst(".m-b-5").text()
         val description = soup.selectFirst("div.text-large")?.text()?.trim()
         val poster: String? = soup.selectFirst(".img-fluid").attr("src")
         val episodes = soup.select("div.tab-pane .btn").map { li ->
             val href = li.selectFirst("a").attr("href")
-            val name = li.selectFirst(".btn-primary.btn-block").text()
-            val seasonid = href.replace("/capitulo/","-")
-                .replace(Regex("$mainUrl/.*/.*/temporada/"),"").let { str ->
+            val name = li.selectFirst(".btn-primary.btn-block").text().replace(Regex("(T(\\d+).*E(\\d+):)"),"").trim()
+            val seasoninfo = href.substringAfter("temporada/").replace("/capitulo/","-")
+            val seasonid =
+                seasoninfo.let { str ->
                     str.split("-").mapNotNull { subStr -> subStr.toIntOrNull() }
                 }
             val isValid = seasonid.size == 2
@@ -132,7 +133,7 @@ class PelisplusHDProvider:MainAPI() {
                     this.name,
                     tvType,
                     episodes,
-                    poster,
+                    fixUrl(poster!!),
                     year,
                     description,
                     null,
@@ -147,7 +148,7 @@ class PelisplusHDProvider:MainAPI() {
                     this.name,
                     tvType,
                     url,
-                    poster,
+                    fixUrl(poster!!),
                     year,
                     description,
                     null,
@@ -164,8 +165,20 @@ class PelisplusHDProvider:MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         app.get(data).document.select("div.player > script").map { script ->
-            fetchUrls(script.data().replace("https://pelisplushd.net/fembed.php?url=","https://www.fembed.com/v/")).apmap {
-                loadExtractor(it, data, callback)
+            fetchUrls(script.data()
+                .replace("https://api.mycdn.moe/furl.php?id=","https://www.fembed.com/v/")
+                .replace("https://api.mycdn.moe/sblink.php?id=","https://streamsb.net/e/"))
+                .apmap { link ->
+                    if (link.contains("https://api.mycdn.moe/video/")) {
+                        val doc = app.get(link).document
+                        doc.select("div.ODDIV li").apmap {
+                            val linkencoded = it.attr("data-r")
+                            val linkdecoded = base64Decode(linkencoded).replace("https://owodeuwu.xyz","https://embedsito.com")
+                                .replace(Regex(".poster.*"),"")
+                            loadExtractor(linkdecoded, link, callback)
+                        }
+                    }
+                loadExtractor(link, data, callback)
             }
         }
         return true
