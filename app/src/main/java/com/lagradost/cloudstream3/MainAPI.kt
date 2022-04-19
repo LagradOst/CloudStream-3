@@ -130,7 +130,7 @@ object APIHolder {
             MundoDonghuaProvider(),
             TioAnimeProvider(),
             StreamingcommunityProvider(),
-            TantifilmProvider(),
+            TantifilmProvider()
 
             // All of NSFW sources
             Javhdicu(),
