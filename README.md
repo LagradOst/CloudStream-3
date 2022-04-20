@@ -18,6 +18,10 @@ https://github.com/KillerDogeEmpire/CloudStream-3/releases
 + Download and stream movies, tv-shows and anime
 + Chromecast
 
+***NSFW Providers Disclaimer***
+All the NSFW providers are not made by me. If the NSFW providers break, or stop working please use JaceKun's Cs3 since he is the one who made them. here is JaceKun's Cs3 link:
+https://github.com/Jacekun/CloudStream-3XXX
+
 ***Screenshots:***
 
 <img src="./.github/home.jpg" height="400"/><img src="./.github/search.jpg" height="400"/><img src="./.github/downloads.jpg" height="400"/><img src="./.github/results.jpg" height="400"/>
