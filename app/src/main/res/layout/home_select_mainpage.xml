@@ -95,22 +95,6 @@
                     android:id="@+id/home_select_documentaries"
                     android:text="@string/documentaries"
                     style="@style/RoundedSelectableButton" />
-
-            <com.google.android.material.button.MaterialButton
-                android:nextFocusLeft="@id/home_select_documentaries"
-                android:nextFocusRight="@id/home_select_mirror"
-
-                android:id="@+id/home_select_mirror"
-                android:text="@string/mirror"
-                style="@style/RoundedSelectableButton" />
-
-            <com.google.android.material.button.MaterialButton
-                android:nextFocusLeft="@id/home_select_mirror"
-                android:nextFocusRight="@id/home_select_nsfw"
-
-                android:id="@+id/home_select_nsfw"
-                android:text="@string/nsfw"
-                style="@style/RoundedSelectableButton" />
         </LinearLayout>
     </HorizontalScrollView>
 
