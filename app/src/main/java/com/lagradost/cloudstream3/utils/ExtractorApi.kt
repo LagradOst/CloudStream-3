@@ -115,12 +115,11 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     VizcloudXyz(),
     VizcloudLive(),
     VizcloudInfo(),
-    MwvnVizcloudInfo(),
     VizcloudDigital(),
     Mp4Upload(),
     StreamTape(),
     MixDrop(),
-    Mcloud(),
+    MixDrop1(),
     XStreamCdn(),
     StreamSB(),
     StreamSB1(),
@@ -133,19 +132,43 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     StreamSB8(),
     StreamSB9(),
     StreamSB10(),
-    // Streamhub(), cause Streamhub2() works
+    //Streamhub(),
     Streamhub2(),
 
+    Tomatomatela(),
+    Cinestart(),
+
+    Solidfiles(),
+    Solidfiles1(),
+
+    Sendvid(),
+    Sendvid1(),
+
     FEmbed(),
+    Femax20(),
     FeHD(),
     Fplayer(),
-    //  WatchSB(), 'cause StreamSB.kt works
+    Suzihaza(),
+    // WatchSB(),
+    // Watchsb1(),
+    // Watchsb2(),
+    // Watchsb3(),
+    //  Watchsb4(),
     Uqload(),
     Uqload1(),
     Evoload(),
     Evoload1(),
     VoeExtractor(),
-    // UpstreamExtractor(), GenericM3U8.kt works
+    //  UpstreamExtractor(),
+    Upstream(),
+
+    Jawcloud(),
+
+
+    OkRu(),
+
+    Videobin(),
+    Videobin1(),
 
     Tomatomatela(),
     Cinestart(),
@@ -156,21 +179,23 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     DoodSoExtractor(),
     DoodLaExtractor(),
     DoodWsExtractor(),
+    DoodShExtractor(),
 
     AsianLoad(),
 
-    // GenericM3U8(),
-    Jawcloud(),
-    Zplayer(),
+    YourUpload(),
+    Mcloud(),
+
+    // Genericm3u8Extractor(),
     ZplayerV2(),
-    Upstream(),
+    Zplayer(),
 
+    PlayerVoxzer(),
 
-    // StreamSB.kt works
-    //  SBPlay(),
-    //  SBPlay1(),
-    //  SBPlay2(),
-
+    //Nsfw extractors
+    StreamLare(),
+    PlayLtXyz(),
+    JKhentaiExtractor(),
     PlayerVoxzer(),
 )
 
