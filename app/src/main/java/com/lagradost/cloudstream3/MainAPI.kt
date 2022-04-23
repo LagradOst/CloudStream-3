@@ -779,7 +779,7 @@ data class AnimeSearchResponse(
     var dubStatus: EnumSet<DubStatus>? = null,
 
     var otherName: String? = null,
-    var episodes: MutableMap<DubStatus, Int> = mutableMapOf(),
+    var episodes: MutableMap<DubStatus, Int>? = mutableMapOf(),
 
     override var id: Int? = null,
     override var quality: SearchQuality? = null,
