@@ -172,7 +172,6 @@ class SearchFragment : Fragment() {
                     val mirror = dialog.findViewById<MaterialButton>(R.id.home_select_mirror)
                     val nsfw = dialog.findViewById<MaterialButton>(R.id.home_select_nsfw)
 
-
                     val pairList = HomeFragment.getPairList(anime, cartoons, tvs, docs, movies, asian, mirror, nsfw)
 
                     cancelBtt?.setOnClickListener {

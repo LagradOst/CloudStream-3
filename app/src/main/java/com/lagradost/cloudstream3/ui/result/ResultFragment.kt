@@ -278,7 +278,7 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                 TvType.Documentary -> "Documentaries"
                 TvType.Mirror -> "Mirror"
                 TvType.Donghua -> "Donghua"
-                TvType.AsianDrama -> "Asian Drama"
+                TvType.AsianDrama -> "AsianDrama"
                 TvType.XXX -> "NSFW"
                 TvType.JAV -> "NSFW/JAV"
                 TvType.Hentai -> "NSFW/Hentai"
@@ -804,7 +804,8 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                 val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
 
                 builder.setTitle(title)
-                builder.setItems(links.map { "${it.name} ${Qualities.getStringByInt(it.quality)}" }.toTypedArray()) { dia, which ->
+                builder.setItems(links.map { "${it.name} ${Qualities.getStringByInt(it.quality)}" }
+                    .toTypedArray()) { dia, which ->
                     callback.invoke(links[which])
                     dia?.dismiss()
                 }
@@ -1307,14 +1308,25 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                 }
             }
         }
-        val imgAdapter = ImageAdapter(R.layout.result_mini_image)
+        val imgAdapter = ImageAdapter(
+            R.layout.result_mini_image,
+            nextFocusDown = R.id.result_sync_set_score,
+            clickCallback = { action ->
+                if (action == IMAGE_CLICK || action == IMAGE_LONG_CLICK) {
+                    if (result_overlapping_panels?.getSelectedPanel()?.ordinal == 1) {
+                        result_overlapping_panels?.openStartPanel()
+                    } else {
+                        result_overlapping_panels?.closePanels()
+                    }
+                }
+            })
         result_mini_sync?.adapter = imgAdapter
 
         observe(syncModel.synced) { list ->
             result_sync_names?.text =
                 list.filter { it.isSynced && it.hasAccount }.joinToString { it.name }
 
-            val newList = list.filter { it.isSynced }
+            val newList = list.filter { it.isSynced && it.hasAccount }
 
             result_mini_sync?.isVisible = newList.isNotEmpty()
             (result_mini_sync?.adapter as? ImageAdapter?)?.updateList(newList.map { it.icon })
@@ -1951,6 +1963,7 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                             TvType.JAV -> R.string.jav
                             TvType.Hentai -> R.string.hentai
                             TvType.XXX -> R.string.xxx
+
                         }
                     )?.let {
                         result_meta_type?.text = it
