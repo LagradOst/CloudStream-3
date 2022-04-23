@@ -1,12 +1,9 @@
 package com.lagradost.cloudstream3.animeproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.Vidstream
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.extractorApis
-import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.jsoup.Jsoup
-import java.net.URI
 import java.util.*
 import kotlin.collections.ArrayList
 
