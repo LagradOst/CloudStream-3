@@ -36,7 +36,7 @@ android {
         targetSdkVersion 30
 
         versionCode 45
-        versionName "1.0.2"
+        versionName "2.9.21"
 
         resValue "string", "app_version",
                 "${defaultConfig.versionName}${versionNameSuffix ?: ""}"
@@ -50,7 +50,8 @@ android {
         }
     }
 
-    buildTypes {ss
+    buildTypes {
+        release {
             applicationIdSuffix ".KillerDogeEmpiresfork"
             versionNameSuffix '-FORK'
             debuggable false
@@ -82,6 +83,7 @@ android {
         jvmTarget = '1.8'
         freeCompilerArgs = ['-Xjvm-default=compatibility']
     }
+}
 
 repositories {
     maven { url 'https://jitpack.io' }
