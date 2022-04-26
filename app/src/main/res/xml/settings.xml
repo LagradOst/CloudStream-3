@@ -6,16 +6,7 @@
             android:key="video"
             android:title="Player"
             app:isPreferenceVisible="true">
-
-    </PreferenceCategory>
-    <PreferenceCategory
-        android:key="account"
-        android:title="Accounts"
-        app:isPreferenceVisible="true">
         <SwitchPreference>
-            <Preference
-                android:key="@string/mal_key"
-                android:icon="@drawable/mal_logo" />
 
             <Preference
                 android:key="@string/anilist_key"
@@ -282,7 +273,9 @@
                 android:summary="@string/killswitch_settings_des"
                 android:title="@string/killswitch_settings" />
 
-
+        <Preference
+            android:key="@string/mal_key"
+            android:icon="@drawable/mal_logo" />
 
         <Preference
             android:title="@string/github"
