@@ -15,6 +15,10 @@ import com.lagradost.cloudstream3.metaproviders.CrossTmdbProvider
 import com.lagradost.cloudstream3.movieproviders.*
 import com.lagradost.cloudstream3.providersnsfw.*
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.providersnsfw.HahoMoe
+import com.lagradost.cloudstream3.providersnsfw.Hanime
+import com.lagradost.cloudstream3.providersnsfw.HentaiLa
+import com.lagradost.cloudstream3.providersnsfw.JKHentai
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.aniListApi
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.malApi
 import com.lagradost.cloudstream3.ui.player.SubtitleData
@@ -131,7 +135,6 @@ object APIHolder {
             TioAnimeProvider(),
             StreamingcommunityProvider(),
             TantifilmProvider(),
-
             // All of NSFW sources
             Javhdicu(),
             JavSubCo(),
@@ -311,7 +314,7 @@ object APIHolder {
     fun Context.filterProviderByPreferredMedia(hasHomePageIsRequired: Boolean = true): List<MainAPI> {
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
         val currentPrefMedia =
-            settingsManager.getInt(this.getString(R.string.prefer_media_type_key), 1)
+            settingsManager.getInt(this.getString(R.string.prefer_media_type_key), 0)
         val langs = this.getApiProviderLangSettings()
         val allApis = apis.filter { langs.contains(it.lang) }
             .filter { api -> api.hasMainPage || !hasHomePageIsRequired }
@@ -323,14 +326,11 @@ object APIHolder {
             val listEnumMovieTv =
                 listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror)
             val listEnumDoc = listOf(TvType.Documentary)
-            val listEnumAnimeMoviesTvDocNSFW = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua, TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror, TvType.Documentary, TvType.JAV, TvType.Hentai, TvType.XXX )
             val listEnumAnimeMoviesTvDoc = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua, TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror, TvType.Documentary  )
             val mediaTypeList = when (currentPrefMedia) {
-                2 -> listEnumAnimeMoviesTvDocNSFW
-                3 -> listEnumMovieTv
-                4 -> listEnumDoc
-                5 -> listEnumAnime
-                6 -> listOf(TvType.JAV, TvType.Hentai, TvType.XXX)
+                2-> listEnumMovieTv
+                3-> listEnumDoc
+                4-> listEnumAnime
                 else -> listEnumAnimeMoviesTvDoc
             }
             allApis.filter { api -> api.supportedTypes.any { it in mediaTypeList } }
@@ -577,11 +577,11 @@ enum class ShowStatus {
     Ongoing,
 }
 
-enum class DubStatus {
-    Subbed,
-    PremiumSub,
-    Dubbed,
-    PremiumDub,
+enum class DubStatus(val id: Int) {
+    Dubbed(1),
+    Subbed(0),
+    PremiumDub(2),
+    PremiumSub(3)
 }
 
 enum class TvType {
@@ -608,7 +608,7 @@ fun TvType.isMovieType(): Boolean {
 
 // returns if the type has an anime opening
 fun TvType.isAnimeOp(): Boolean {
-    return this == TvType.Anime || this == TvType.OVA
+    return this == TvType.Anime || this == TvType.OVA || this == TvType.Donghua
 }
 
 data class SubtitleFile(val lang: String, val url: String)
