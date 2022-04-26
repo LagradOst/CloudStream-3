@@ -15,6 +15,10 @@ import com.lagradost.cloudstream3.metaproviders.CrossTmdbProvider
 import com.lagradost.cloudstream3.movieproviders.*
 import com.lagradost.cloudstream3.providersnsfw.*
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.providersnsfw.HahoMoe
+import com.lagradost.cloudstream3.providersnsfw.Hanime
+import com.lagradost.cloudstream3.providersnsfw.HentaiLa
+import com.lagradost.cloudstream3.providersnsfw.JKHentai
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.aniListApi
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.malApi
 import com.lagradost.cloudstream3.ui.player.SubtitleData
@@ -150,7 +154,7 @@ object APIHolder {
             JavGuru(),
             HpJavTv(),
             JavMost(),
-            Javclcom(),
+            Javclcom()
         )
     }
 
