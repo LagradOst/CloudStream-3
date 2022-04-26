@@ -790,7 +790,7 @@ fun AnimeSearchResponse.addDubStatus(status: DubStatus, episodes: Int? = null) {
     this.dubStatus = dubStatus?.also { it.add(status) } ?: EnumSet.of(status)
     if (this.type?.isMovieType() != true)
         if (episodes != null && episodes > 0)
-            this.episodes[status] = episodes
+            this.episodes?.set(status, episodes)
 }
 
 fun AnimeSearchResponse.addDubStatus(isDub: Boolean, episodes: Int? = null) {

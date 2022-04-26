@@ -192,8 +192,8 @@ object SearchResultBuilder {
                     }
                 }
 
-                val dubEpisodes = card.episodes[DubStatus.Dubbed]
-                val subEpisodes = card.episodes[DubStatus.Subbed]
+                val dubEpisodes = card.episodes?.get(DubStatus.Dubbed)
+                val subEpisodes = card.episodes?.get(DubStatus.Subbed)
 
                 textIsDub?.apply {
                     val dubText = context.getString(R.string.app_dubbed_text)
