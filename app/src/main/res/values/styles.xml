@@ -91,6 +91,7 @@
         <item name="white">#000</item>
     </style>
 
+
     <style name="OverlayPrimaryColorNormal">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="android:colorPrimary">@color/colorPrimary</item>

@@ -29,16 +29,6 @@
         "status": 1,
         "url": "https://www.animeworld.tv"
     },
-    "AnimefenixProvider": {
-        "name": "Animefenix",
-        "status": 1,
-        "url": "https://animefenix.com"
-    },
-    "AnimeflvIOProvider": {
-        "name": "AnimeflvIO",
-        "status": 1,
-        "url": "https://animeflv.io"
-    },
     "AnimeflvProvider": {
         "name": "Animeflv",
         "status": 1,
@@ -53,11 +43,6 @@
         "name": "Animekisa",
         "status": 1,
         "url": "https://animekisa.in"
-    },
-    "AnimeonlineProvider": {
-        "name": "Animeonline",
-        "status": 1,
-        "url": "https://animeonline1.ninja"
     },
     "ApiMDBProvider": {
         "name": "ApiMDB",
@@ -83,11 +68,6 @@
         "name": "Cinecalidad",
         "status": 1,
         "url": "https://cinecalidad.lol"
-    },
-    "ComamosRamenProvider": {
-        "name": "ComamosRamen",
-        "status": 1,
-        "url": "https://m.comamosramen.com"
     },
     "CrossTmdbProvider": {
         "name": "MultiMovie",
@@ -124,11 +104,6 @@
         "status": 1,
         "url": "https://www.egy.best"
     },
-    "ElifilmsProvider": {
-        "name": "Elifilms",
-        "status": 1,
-        "url": "https://elifilms.net"
-    },
     "EntrePeliculasySeriesProvider": {
         "name": "EntrePeliculasySeries",
         "status": 1,
@@ -139,20 +114,10 @@
         "status": 1,
         "url": "https://entrepeliculasyseries.nu"
     },
-    "EstrenosDoramasProvider": {
-        "name": "EstrenosDoramas",
-        "status": 1,
-        "url": "https://www23.estrenosdoramas.net"
-    },
     "FilmanProvider": {
         "name": "filman.cc",
         "status": 1,
         "url": "https://filman.cc"
-    },
-    "FmoviesProvider": {
-        "name": "Fmovies",
-        "status": 1,
-        "url": "https://fmovies.app"
     },
     "FmoviesToProvider": {
         "name": "Fmovies.to",
@@ -174,20 +139,10 @@
         "status": 0,
         "url": "https://hdm.to"
     },
-    "HenaojaraProvider": {
-        "name": "Henaojara",
-        "status": 1,
-        "url": "https://henaojara.com"
-    },
     "IHaveNoTvProvider": {
         "name": "I Have No TV",
         "status": 1,
         "url": "https://ihavenotv.com"
-    },
-    "JKAnimeProvider": {
-        "name": "JKAnime",
-        "status": 1,
-        "url": "https://jkanime.net"
     },
     "KawaiifuProvider": {
         "name": "Kawaiifu",
@@ -198,11 +153,6 @@
         "name": "KDramaHood",
         "status": 1,
         "url": "https://kdramahood.com"
-    },
-    "KrunchyProvider": {
-        "name": "Krunchy",
-        "status": 1,
-        "url": "http://www.crunchyroll.com"
     },
     "LookMovieProvider": {
         "name": "LookMovie",
@@ -223,11 +173,6 @@
         "name": "MultiAnime",
         "status": 1,
         "url": ""
-    },
-    "MundoDonghuaProvider": {
-        "name": "MundoDonghua",
-        "status": 1,
-        "url": "https://www.mundodonghua.com"
     },
     "MyCimaProvider": {
         "name": "MyCima",
@@ -269,11 +214,6 @@
         "status": 1,
         "url": "https://pelisplus.icu"
     },
-    "PelisplusSOProvider": {
-        "name": "PelisplusSO",
-        "status": 1,
-        "url": "https://pelisplus.so"
-    },
     "PinoyHDXyzProvider": {
         "name": "Pinoy-HD",
         "status": 1,
@@ -314,16 +254,6 @@
         "status": 1,
         "url": "https://solarmovie.pe"
     },
-    "StreamingcommunityProvider": {
-        "name": "Streamingcommunity",
-        "status": 1,
-        "url": "https://streamingcommunity.bar"
-    },
-    "TantiFilmProvider": {
-        "name": "TantiFilm",
-        "status": 1,
-        "url": "https://www.tantifilm.rodeo"
-    },
     "TenshiProvider": {
         "name": "Tenshi.moe",
         "status": 1,
@@ -333,11 +263,6 @@
         "name": "TheFlix.to",
         "status": 0,
         "url": "https://theflix.to"
-    },
-    "TioAnimeProvider": {
-        "name": "TioAnime",
-        "status": 1,
-        "url": "https://tioanime.com"
     },
     "TmdbProvider": {
         "name": "Tmdb",

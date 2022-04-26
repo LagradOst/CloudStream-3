@@ -99,12 +99,12 @@
             android:icon="@drawable/ic_baseline_delete_outline_24" />
 
         <SwitchPreference
-            android:icon="@drawable/ic_baseline_brightness_7_24"
-            app:key="@string/use_system_brightness_key"
-            android:title="@string/use_system_brightness_settings"
-            android:summary="@string/use_system_brightness_settings_des"
-            app:defaultValue="false"
-            />
+                android:icon="@drawable/ic_baseline_brightness_7_24"
+                app:key="@string/use_system_brightness_key"
+                android:title="@string/use_system_brightness_settings"
+                android:summary="@string/use_system_brightness_settings_des"
+                app:defaultValue="false"
+        />
 
     </PreferenceCategory>
     <PreferenceCategory
@@ -159,6 +159,13 @@
             android:icon="@drawable/ic_baseline_color_lens_24"
             android:key="@string/app_theme_key"
             android:title="@string/app_theme_settings" />
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:icon="@drawable/baseline_grid_view_24"
+            android:key="@string/bottom_title_key"
+            android:summary="@string/bottom_title_settings_des"
+            android:title="@string/bottom_title_settings" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="search"
@@ -307,6 +314,9 @@
             android:title="@string/discord"
             android:icon="@drawable/ic_baseline_discord_24"
             app:summary="https://discord.gg/5Hus6fM">
+            <intent
+                android:action="android.intent.action.VIEW"
+                android:data="https://discord.gg/5Hus6fM" />
             <intent
                 android:action="android.intent.action.VIEW"
                 android:data="https://discord.gg/5Hus6fM" />

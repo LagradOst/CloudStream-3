@@ -1,14 +1,14 @@
 # CloudStream-3
 
 <!-- ![Maintenance](https://img.shields.io/maintenance/yes/2022?color=blue&style=for-the-badge) -->
-![GitHub release](https://img.shields.io/github/v/release/KillerDogeEmpire/cloudstream-3?sort=semver&style=for-the-badge)
-![Downloads](https://img.shields.io/github/downloads/KillerDogeEmpire/CloudStream-3/total?color=blue&style=for-the-badge)
-![Build](https://img.shields.io/github/workflow/status/KillerDogeEmpire/CloudStream-3/Pre-release?style=for-the-badge)
+![GitHub release](https://img.shields.io/github/v/release/LagradOst/cloudstream-3?sort=semver&style=for-the-badge)
+![Downloads](https://img.shields.io/github/downloads/lagradost/CloudStream-3/total?color=blue&style=for-the-badge)
+![Build](https://img.shields.io/github/workflow/status/lagradost/CloudStream-3/Pre-release?style=for-the-badge)
 [![Discord](https://img.shields.io/discord/737724143126052974?style=for-the-badge)](https://discord.gg/5Hus6fM)
 
 
 **DOWNLOAD:**
-https://github.com/KillerDogeEmpire/CloudStream-3/releases
+https://github.com/LagradOst/CloudStream-3/releases
 
 
 ***Features:***
@@ -17,10 +17,6 @@ https://github.com/KillerDogeEmpire/CloudStream-3/releases
 + Bookmarks
 + Download and stream movies, tv-shows and anime
 + Chromecast
-
-***NSFW Providers Disclaimer***
-All the NSFW providers are not made by me. If the NSFW providers break, or stop working please use JaceKun's Cs3 since he is the one who made them. here is JaceKun's Cs3 link:
-https://github.com/Jacekun/CloudStream-3XXX
 
 ***Screenshots:***
 
