@@ -30,20 +30,16 @@
     </array>
 
     <array name="media_type_pref">
-        <item>All but NSFW</item>
         <item>All</item>
         <item>Movies and TV</item>
         <item>Documentary</item>
         <item>Anime</item>
-        <item>NSFW</item>
     </array>
     <array name="media_type_pref_values">
         <item>1</item>
         <item>2</item>
         <item>3</item>
         <item>4</item>
-        <item>5</item>
-        <item>6</item>
     </array>
 
     <array name="limit_title_pref_names">

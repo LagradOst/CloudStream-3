@@ -17,6 +17,7 @@ import com.lagradost.cloudstream3.providersnsfw.*
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.providersnsfw.HahoMoe
 import com.lagradost.cloudstream3.providersnsfw.Hanime
+import com.lagradost.cloudstream3.providersnsfw.HentaiLa
 import com.lagradost.cloudstream3.providersnsfw.JKHentai
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.aniListApi
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.malApi
@@ -141,6 +142,7 @@ object APIHolder {
             Vlxx(),
             Xvideos(),
             Pornhub(),
+            HentaiLa(),
             JKHentai(),
             Hanime(),
             HahoMoe(),
@@ -324,14 +326,11 @@ object APIHolder {
             val listEnumMovieTv =
                 listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror)
             val listEnumDoc = listOf(TvType.Documentary)
-            val listEnumAnimeMoviesTvDocNSFW = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua, TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror, TvType.Documentary, TvType.JAV, TvType.Hentai, TvType.XXX )
             val listEnumAnimeMoviesTvDoc = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua, TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror, TvType.Documentary  )
             val mediaTypeList = when (currentPrefMedia) {
-                2 -> listEnumAnimeMoviesTvDocNSFW
-                3 -> listEnumMovieTv
-                4 -> listEnumDoc
-                5 -> listEnumAnime
-                6 -> listOf(TvType.JAV, TvType.Hentai, TvType.XXX)
+                2-> listEnumMovieTv
+                3-> listEnumDoc
+                4-> listEnumAnime
                 else -> listEnumAnimeMoviesTvDoc
             }
             allApis.filter { api -> api.supportedTypes.any { it in mediaTypeList } }
