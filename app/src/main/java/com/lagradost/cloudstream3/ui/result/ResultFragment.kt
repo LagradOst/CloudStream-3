@@ -279,9 +279,6 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                 TvType.Mirror -> "Mirror"
                 TvType.Donghua -> "Donghua"
                 TvType.AsianDrama -> "AsianDrama"
-                TvType.XXX -> "NSFW"
-                TvType.JAV -> "NSFW/JAV"
-                TvType.Hentai -> "NSFW/Hentai"
             }
         }
 
@@ -1951,9 +1948,6 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                             TvType.Mirror -> R.string.mirror_singular
                             TvType.Donghua -> R.string.donghua_singular
                             TvType.AsianDrama -> R.string.asian_drama_singular
-                            TvType.JAV -> R.string.jav
-                            TvType.Hentai -> R.string.hentai
-                            TvType.XXX -> R.string.xxx
                         }
                     )?.let {
                         result_meta_type?.text = it
