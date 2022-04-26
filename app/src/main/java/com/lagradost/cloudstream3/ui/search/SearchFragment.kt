@@ -170,9 +170,9 @@ class SearchFragment : Fragment() {
                     val cancelBtt = dialog.findViewById<MaterialButton>(R.id.cancel_btt)
                     val applyBtt = dialog.findViewById<MaterialButton>(R.id.apply_btt)
                     val mirror = dialog.findViewById<MaterialButton>(R.id.home_select_mirror)
-                    val nsfw = dialog.findViewById<MaterialButton>(R.id.home_select_nsfw)
 
-                    val pairList = HomeFragment.getPairList(anime, cartoons, tvs, docs, movies, asian, mirror, nsfw)
+
+                    val pairList = HomeFragment.getPairList(anime, cartoons, tvs, docs, movies, asian, mirror)
 
                     cancelBtt?.setOnClickListener {
                         dialog.dismissSafe()
@@ -289,7 +289,6 @@ class SearchFragment : Fragment() {
             search_select_movies,
             search_select_asian,
             search_select_mirror,
-            search_select_nsfw
         )
 
         val settingsManager = context?.let { PreferenceManager.getDefaultSharedPreferences(it) }
