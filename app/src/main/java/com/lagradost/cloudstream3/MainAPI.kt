@@ -41,95 +41,95 @@ object APIHolder {
 
     val allProviders by lazy {
         arrayListOf(
-            // Movie providers
-            PelisplusProvider(),
-            PelisplusHDProvider(),
-            PeliSmartProvider(),
-            MeloMovieProvider(), // Captcha for links
-            DoramasYTProvider(),
-            CinecalidadProvider(),
-            CuevanaProvider(),
-            EntrepeliculasyseriesProvider(),
-            PelisflixProvider(),
-            SeriesflixProvider(),
-            IHaveNoTvProvider(), // Documentaries provider
-            LookMovieProvider(), // RECAPTCHA (Please allow up to 5 seconds...)
-            VMoveeProvider(),
-            AllMoviesForYouProvider(),
-            VidEmbedProvider(),
-            VfFilmProvider(),
-            VfSerieProvider(),
-            FrenchStreamProvider(),
-            AsianLoadProvider(),
-            AsiaFlixProvider(), // restricted
-            BflixProvider(),
-            FmoviesToProvider(),
-            SflixProProvider(),
-            FilmanProvider(),
-            SflixProvider(),
-            DopeboxProvider(),
-            SolarmovieProvider(),
-            PinoyMoviePediaProvider(),
-            PinoyHDXyzProvider(),
-            PinoyMoviesEsProvider(),
-            TrailersTwoProvider(),
-            TwoEmbedProvider(),
-            DramaSeeProvider(),
-            WatchAsianProvider(),
-            KdramaHoodProvider(),
-            AkwamProvider(),
-            MyCimaProvider(),
-            EgyBestProvider(),
-            SoaptwoDayProvider(),
-            HDMProvider(),// disabled due to cloudflare
-            TheFlixToProvider(),
-            ComamosRamenProvider(),
-            HDTodayProvider(),
-            MoviesJoyProvider(),
-            MyflixerToProvider(),
-            EstrenosDoramasProvider(),
-            ElifilmsProvider(),
-            FmoviesProvider(),
-            PelisplusSOProvider(),
-            YesMoviesProviders(),
+        // Movie providers
+        PelisplusProvider(),
+        PelisplusHDProvider(),
+        PeliSmartProvider(),
+        MeloMovieProvider(), // Captcha for links
+        DoramasYTProvider(),
+        CinecalidadProvider(),
+        CuevanaProvider(),
+        EntrepeliculasyseriesProvider(),
+        PelisflixProvider(),
+        SeriesflixProvider(),
+        IHaveNoTvProvider(), // Documentaries provider
+        LookMovieProvider(), // RECAPTCHA (Please allow up to 5 seconds...)
+        VMoveeProvider(),
+        AllMoviesForYouProvider(),
+        VidEmbedProvider(),
+        VfFilmProvider(),
+        VfSerieProvider(),
+        FrenchStreamProvider(),
+        AsianLoadProvider(),
+        AsiaFlixProvider(), // restricted
+        BflixProvider(),
+        FmoviesToProvider(),
+        SflixProProvider(),
+        FilmanProvider(),
+        SflixProvider(),
+        DopeboxProvider(),
+        SolarmovieProvider(),
+        PinoyMoviePediaProvider(),
+        PinoyHDXyzProvider(),
+        PinoyMoviesEsProvider(),
+        TrailersTwoProvider(),
+        TwoEmbedProvider(),
+        DramaSeeProvider(),
+        WatchAsianProvider(),
+        KdramaHoodProvider(),
+        AkwamProvider(),
+        MyCimaProvider(),
+        EgyBestProvider(),
+        SoaptwoDayProvider(),
+        HDMProvider(),// disabled due to cloudflare
+        TheFlixToProvider(),
+        ComamosRamenProvider(),
+        HDTodayProvider(),
+        MoviesJoyProvider(),
+        MyflixerToProvider(),
+        EstrenosDoramasProvider(),
+        ElifilmsProvider(),
+        FmoviesProvider(),
+        PelisplusSOProvider(),
+        YesMoviesProviders(),
 
 // Metadata providers
 //TmdbProvider(),
-            CrossTmdbProvider(),
-            ApiMDBProvider(),
+        CrossTmdbProvider(),
+        ApiMDBProvider(),
 
 // Anime providers
-            WatchCartoonOnlineProvider(),
-            GogoanimeProvider(),
-            AllAnimeProvider(),
-            AnimekisaProvider(),
+        WatchCartoonOnlineProvider(),
+        GogoanimeProvider(),
+        AllAnimeProvider(),
+        AnimekisaProvider(),
 //ShiroProvider(), // v2 fucked me
-            AnimeFlickProvider(),
-            AnimeflvnetProvider(),
-            TenshiProvider(),
-            WcoProvider(),
-            AnimePaheProvider(),
-            NineAnimeProvider(),
-            AnimeWorldProvider(),
-            ZoroProvider(),
-            DubbedAnimeProvider(),
-            MonoschinosProvider(),
-            KawaiifuProvider(), // disabled due to cloudflare
-            //MultiAnimeProvider(),
-            NginxProvider(),
+        AnimeFlickProvider(),
+        AnimeflvnetProvider(),
+        TenshiProvider(),
+        WcoProvider(),
+        AnimePaheProvider(),
+        NineAnimeProvider(),
+        AnimeWorldProvider(),
+        ZoroProvider(),
+        DubbedAnimeProvider(),
+        MonoschinosProvider(),
+        KawaiifuProvider(), // disabled due to cloudflare
+        //MultiAnimeProvider(),
+        NginxProvider(),
 
-            // Additional providers
-            AnimefenixProvider(),
-            AnimeflvIOProvider(),
-            AnimeIDProvider(),
-            AnimeonlineProvider(),
-            HenaojaraProvider(),
-            JKAnimeProvider(),
-            KrunchyProvider(),
-            MundoDonghuaProvider(),
-            TioAnimeProvider(),
-            StreamingcommunityProvider(),
-            TantifilmProvider(),
+        // Additional providers
+        AnimefenixProvider(),
+        AnimeflvIOProvider(),
+        AnimeIDProvider(),
+        AnimeonlineProvider(),
+        HenaojaraProvider(),
+        JKAnimeProvider(),
+        KrunchyProvider(),
+        MundoDonghuaProvider(),
+        TioAnimeProvider(),
+        StreamingcommunityProvider(),
+        TantifilmProvider(),
         )
     }
 
@@ -290,7 +290,7 @@ object APIHolder {
     fun Context.filterProviderByPreferredMedia(hasHomePageIsRequired: Boolean = true): List<MainAPI> {
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
         val currentPrefMedia =
-            settingsManager.getInt(this.getString(R.string.prefer_media_type_key), 1)
+            settingsManager.getInt(this.getString(R.string.prefer_media_type_key), 0)
         val langs = this.getApiProviderLangSettings()
         val allApis = apis.filter { langs.contains(it.lang) }
             .filter { api -> api.hasMainPage || !hasHomePageIsRequired }
@@ -298,16 +298,14 @@ object APIHolder {
             allApis
         } else {
             // Filter API depending on preferred media type
-            val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua)
+            val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
             val listEnumMovieTv =
-                listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror)
+                listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama)
             val listEnumDoc = listOf(TvType.Documentary)
-            val listEnumAnimeMoviesTvDoc = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua, TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror, TvType.Documentary  )
             val mediaTypeList = when (currentPrefMedia) {
-                2 -> listEnumMovieTv
+                2 -> listEnumAnime
                 3 -> listEnumDoc
-                4 -> listEnumAnime
-                else -> listEnumAnimeMoviesTvDoc
+                else -> listEnumMovieTv
             }
             allApis.filter { api -> api.supportedTypes.any { it in mediaTypeList } }
         }
@@ -345,7 +343,7 @@ abstract class MainAPI {
     fun overrideWithNewData(data: ProvidersInfoJson) {
         this.name = data.name
         this.mainUrl = data.url
-	    this.storedCredentials = data.credentials
+        this.storedCredentials = data.credentials
     }
 
     init {
@@ -553,11 +551,11 @@ enum class ShowStatus {
     Ongoing,
 }
 
-enum class DubStatus {
-    Subbed,
-    PremiumSub,
-    Dubbed,
-    PremiumDub,
+enum class DubStatus(val id: Int) {
+    Dubbed(1),
+    Subbed(0),
+    PremiumDub(2),
+    PremiumSub(3),
 }
 
 enum class TvType {
@@ -569,12 +567,7 @@ enum class TvType {
     OVA,
     Torrent,
     Documentary,
-    Mirror,
-    Donghua,
     AsianDrama,
-    JAV,
-    Hentai,
-    XXX
 }
 
 // IN CASE OF FUTURE ANIME MOVIE OR SMTH
@@ -755,7 +748,7 @@ data class AnimeSearchResponse(
     var dubStatus: EnumSet<DubStatus>? = null,
 
     var otherName: String? = null,
-    var episodes: MutableMap<DubStatus, Int>? = mutableMapOf(),
+    var episodes: MutableMap<DubStatus, Int> = mutableMapOf(),
 
     override var id: Int? = null,
     override var quality: SearchQuality? = null,
@@ -766,7 +759,7 @@ fun AnimeSearchResponse.addDubStatus(status: DubStatus, episodes: Int? = null) {
     this.dubStatus = dubStatus?.also { it.add(status) } ?: EnumSet.of(status)
     if (this.type?.isMovieType() != true)
         if (episodes != null && episodes > 0)
-            this.episodes?.set(status, episodes)
+            this.episodes[status] = episodes
 }
 
 fun AnimeSearchResponse.addDubStatus(isDub: Boolean, episodes: Int? = null) {
