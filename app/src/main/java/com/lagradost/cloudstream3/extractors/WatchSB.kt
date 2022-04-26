@@ -6,11 +6,6 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 
-class JKhentaiExtractor : WatchSB() {
-    override var name = "JKhentai"
-    override var mainUrl = "https://stream.jkhentai.net"
-}
-
 open class WatchSB : ExtractorApi() {
     override var name = "WatchSB"
     override var mainUrl = "https://watchsb.com"

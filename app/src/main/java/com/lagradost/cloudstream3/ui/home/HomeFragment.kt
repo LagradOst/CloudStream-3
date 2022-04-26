@@ -101,6 +101,21 @@ class HomeFragment : Fragment() {
         var currentSpan = 1
         val listHomepageItems = mutableListOf<SearchResponse>()
 
+        private val errorProfilePics = listOf(
+            R.drawable.monke_benene,
+            R.drawable.monke_burrito,
+            R.drawable.monke_coco,
+            R.drawable.monke_cookie,
+            R.drawable.monke_flusdered,
+            R.drawable.monke_funny,
+            R.drawable.monke_like,
+            R.drawable.monke_party,
+            R.drawable.monke_sob,
+            R.drawable.monke_drink,
+        )
+
+        val errorProfilePic = errorProfilePics.random()
+
         fun Activity.loadHomepageList(item: HomePageList) {
             val context = this
             val bottomSheetDialogBuilder = BottomSheetDialog(context)
@@ -149,8 +164,6 @@ class HomeFragment : Fragment() {
             docs: MaterialButton?,
             movies: MaterialButton?,
             asian: MaterialButton?,
-            mirror: MaterialButton?,
-            nsfw: MaterialButton?
         ): List<Pair<MaterialButton?, List<TvType>>> {
             return listOf(
                 Pair(anime, listOf(TvType.Anime, TvType.OVA, TvType.AnimeMovie)),
@@ -159,8 +172,6 @@ class HomeFragment : Fragment() {
                 Pair(docs, listOf(TvType.Documentary)),
                 Pair(movies, listOf(TvType.Movie, TvType.Torrent)),
                 Pair(asian, listOf(TvType.AsianDrama)),
-                Pair(mirror, listOf(TvType.Mirror)),
-                Pair(nsfw, listOf(TvType.JAV, TvType.Hentai, TvType.XXX)),
             )
         }
 
@@ -194,12 +205,10 @@ class HomeFragment : Fragment() {
                 val docs = dialog.findViewById<MaterialButton>(R.id.home_select_documentaries)
                 val movies = dialog.findViewById<MaterialButton>(R.id.home_select_movies)
                 val asian = dialog.findViewById<MaterialButton>(R.id.home_select_asian)
-                val mirror = dialog.findViewById<MaterialButton>(R.id.home_select_mirror)
-                val nsfw = dialog.findViewById<MaterialButton>(R.id.home_select_nsfw)
                 val cancelBtt = dialog.findViewById<MaterialButton>(R.id.cancel_btt)
                 val applyBtt = dialog.findViewById<MaterialButton>(R.id.apply_btt)
 
-                val pairList = getPairList(anime, cartoons, tvs, docs, movies, asian, mirror, nsfw)
+                val pairList = getPairList(anime, cartoons, tvs, docs, movies, asian)
 
                 cancelBtt?.setOnClickListener {
                     dialog.dismissSafe()
@@ -388,7 +397,7 @@ class HomeFragment : Fragment() {
         context?.let {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(it)
             toggleRandomButton =
-                settingsManager.getBoolean(getString(R.string.random_button_key), true)
+                settingsManager.getBoolean(getString(R.string.random_button_key), false)
             home_random?.isVisible = toggleRandomButton
             if (!toggleRandomButton) {
                 home_random?.visibility = View.GONE
@@ -408,7 +417,7 @@ class HomeFragment : Fragment() {
                     Pair(R.string.tv_series, listOf(TvType.TvSeries)),
                     Pair(R.string.documentaries, listOf(TvType.Documentary)),
                     Pair(R.string.cartoons, listOf(TvType.Cartoon)),
-                    Pair(R.string.anime, listOf(TvType.Anime, TvType.OVA, TvType.AnimeMovie, TvType.Donghua)),
+                    Pair(R.string.anime, listOf(TvType.Anime, TvType.OVA, TvType.AnimeMovie)),
                     Pair(R.string.torrent, listOf(TvType.Torrent)),
                     Pair(R.string.asian_drama, listOf(TvType.AsianDrama)),
                 ).filter { item -> currentApi.supportedTypes.any { type -> item.second.contains(type) } }
@@ -871,7 +880,7 @@ class HomeFragment : Fragment() {
             for (syncApi in OAuth2API.OAuth2Apis) {
                 val login = syncApi.loginInfo()
                 val pic = login?.profilePicture
-                if (home_profile_picture?.setImage(pic) == true) {
+                if (home_profile_picture?.setImage(pic, errorImageDrawable = errorProfilePic) == true) {
                     home_profile_picture_holder?.isVisible = true
                     break
                 }

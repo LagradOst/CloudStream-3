@@ -160,12 +160,11 @@ object CommonActivity {
             when (settingsManager.getString(act.getString(R.string.primary_color_key), "Normal")) {
                 "Normal" -> R.style.OverlayPrimaryColorNormal
                 "CarnationPink" -> R.style.OverlayPrimaryColorCarnationPink
-                "Orange" -> R.style.OverlayPrimaryColorOrange
                 "DarkGreen" -> R.style.OverlayPrimaryColorDarkGreen
                 "Maroon" -> R.style.OverlayPrimaryColorMaroon
                 "NavyBlue" -> R.style.OverlayPrimaryColorNavyBlue
                 "Grey" -> R.style.OverlayPrimaryColorGrey
-                "CoolBlue" -> R.style.OverlayPrimaryColorCoolBlue
+                "White" -> R.style.OverlayPrimaryColorWhite
                 "Brown" -> R.style.OverlayPrimaryColorBrown
                 "Purple" -> R.style.OverlayPrimaryColorPurple
                 "Green" -> R.style.OverlayPrimaryColorGreen

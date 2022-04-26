@@ -13,6 +13,8 @@ open class Evoload : ExtractorApi() {
     //private val srcRegex = Regex("""video .*src="(.*)""""")  // would be possible to use the parse and find src attribute
     override val requiresReferer = true
 
+
+
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink> {
         val lang = url.substring(0, 2)
         val flag =

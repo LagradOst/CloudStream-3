@@ -18,10 +18,9 @@ open class VoeExtractor : ExtractorApi() {
         //val type: String // Mp4
     )
 
-    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink> {
         val extractedLinksList: MutableList<ExtractorLink> = mutableListOf()
         val doc = app.get(url).text
-        if (doc.contains("Error 404 - File not found")) return null
         if (doc.isNotBlank()) {
             val start = "const sources ="
             var src = doc.substring(doc.indexOf(start))
@@ -36,7 +35,7 @@ open class VoeExtractor : ExtractorApi() {
                 if (!linkUrl.isNullOrEmpty()) {
                     extractedLinksList.add(
                         ExtractorLink(
-                            name = "Voe $linkLabel",
+                            name = this.name,
                             source = this.name,
                             url = linkUrl,
                             quality = getQualityFromName(linkLabel),

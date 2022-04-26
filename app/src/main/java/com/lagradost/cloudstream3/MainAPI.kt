@@ -13,7 +13,6 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.lagradost.cloudstream3.animeproviders.*
 import com.lagradost.cloudstream3.metaproviders.CrossTmdbProvider
 import com.lagradost.cloudstream3.movieproviders.*
-import com.lagradost.cloudstream3.providersnsfw.*
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.aniListApi
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.malApi
@@ -84,27 +83,20 @@ object APIHolder {
             SoaptwoDayProvider(),
             HDMProvider(),// disabled due to cloudflare
             TheFlixToProvider(),
-            ComamosRamenProvider(),
-            HDTodayProvider(),
-            MoviesJoyProvider(),
-            MyflixerToProvider(),
-            EstrenosDoramasProvider(),
-            ElifilmsProvider(),
-            FmoviesProvider(),
-            PelisplusSOProvider(),
-            YesMoviesProviders(),
+            StreamingcommunityProvider(),
+            TantifilmProvider(),
 
-// Metadata providers
-//TmdbProvider(),
+            // Metadata providers
+            //TmdbProvider(),
             CrossTmdbProvider(),
             ApiMDBProvider(),
 
-// Anime providers
+            // Anime providers
             WatchCartoonOnlineProvider(),
             GogoanimeProvider(),
             AllAnimeProvider(),
             AnimekisaProvider(),
-//ShiroProvider(), // v2 fucked me
+            //ShiroProvider(), // v2 fucked me
             AnimeFlickProvider(),
             AnimeflvnetProvider(),
             TenshiProvider(),
@@ -117,40 +109,7 @@ object APIHolder {
             MonoschinosProvider(),
             KawaiifuProvider(), // disabled due to cloudflare
             //MultiAnimeProvider(),
-            NginxProvider(),
-
-            // Additional providers
-            AnimefenixProvider(),
-            AnimeflvIOProvider(),
-            AnimeIDProvider(),
-            AnimeonlineProvider(),
-            HenaojaraProvider(),
-            JKAnimeProvider(),
-            KrunchyProvider(),
-            MundoDonghuaProvider(),
-            TioAnimeProvider(),
-            StreamingcommunityProvider(),
-            TantifilmProvider(),
-
-            // All of NSFW sources
-            Javhdicu(),
-            JavSubCo(),
-            OpJavCom(),
-            Vlxx(),
-            Xvideos(),
-            Pornhub(),
-            HentaiLa(),
-            JKHentai(),
-            Hanime(),
-            HahoMoe(),
-
-            // No stream links fetched
-            JavTubeWatch(),
-            JavFreeSh(),
-            JavGuru(),
-            HpJavTv(),
-            JavMost(),
-            Javclcom()
+	        NginxProvider(),
         )
     }
 
@@ -311,7 +270,7 @@ object APIHolder {
     fun Context.filterProviderByPreferredMedia(hasHomePageIsRequired: Boolean = true): List<MainAPI> {
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
         val currentPrefMedia =
-            settingsManager.getInt(this.getString(R.string.prefer_media_type_key), 1)
+            settingsManager.getInt(this.getString(R.string.prefer_media_type_key), 0)
         val langs = this.getApiProviderLangSettings()
         val allApis = apis.filter { langs.contains(it.lang) }
             .filter { api -> api.hasMainPage || !hasHomePageIsRequired }
@@ -319,19 +278,14 @@ object APIHolder {
             allApis
         } else {
             // Filter API depending on preferred media type
-            val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua)
+            val listEnumAnime = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA)
             val listEnumMovieTv =
-                listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror)
+                listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama)
             val listEnumDoc = listOf(TvType.Documentary)
-            val listEnumAnimeMoviesTvDocNSFW = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua, TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror, TvType.Documentary, TvType.JAV, TvType.Hentai, TvType.XXX )
-            val listEnumAnimeMoviesTvDoc = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua, TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror, TvType.Documentary  )
             val mediaTypeList = when (currentPrefMedia) {
-                2 -> listEnumAnimeMoviesTvDocNSFW
-                3 -> listEnumMovieTv
-                4 -> listEnumDoc
-                5 -> listEnumAnime
-                6 -> listOf(TvType.JAV, TvType.Hentai, TvType.XXX)
-                else -> listEnumAnimeMoviesTvDoc
+                2 -> listEnumAnime
+                3 -> listEnumDoc
+                else -> listEnumMovieTv
             }
             allApis.filter { api -> api.supportedTypes.any { it in mediaTypeList } }
         }
@@ -577,11 +531,9 @@ enum class ShowStatus {
     Ongoing,
 }
 
-enum class DubStatus {
-    Subbed,
-    PremiumSub,
-    Dubbed,
-    PremiumDub,
+enum class DubStatus(val id: Int) {
+    Dubbed(1),
+    Subbed(0),
 }
 
 enum class TvType {
@@ -593,12 +545,7 @@ enum class TvType {
     OVA,
     Torrent,
     Documentary,
-    Mirror,
-    Donghua,
     AsianDrama,
-    JAV,
-    Hentai,
-    XXX
 }
 
 // IN CASE OF FUTURE ANIME MOVIE OR SMTH
@@ -779,7 +726,7 @@ data class AnimeSearchResponse(
     var dubStatus: EnumSet<DubStatus>? = null,
 
     var otherName: String? = null,
-    var episodes: MutableMap<DubStatus, Int>? = mutableMapOf(),
+    var episodes: MutableMap<DubStatus, Int> = mutableMapOf(),
 
     override var id: Int? = null,
     override var quality: SearchQuality? = null,
@@ -790,7 +737,7 @@ fun AnimeSearchResponse.addDubStatus(status: DubStatus, episodes: Int? = null) {
     this.dubStatus = dubStatus?.also { it.add(status) } ?: EnumSet.of(status)
     if (this.type?.isMovieType() != true)
         if (episodes != null && episodes > 0)
-            this.episodes?.set(status, episodes)
+            this.episodes[status] = episodes
 }
 
 fun AnimeSearchResponse.addDubStatus(isDub: Boolean, episodes: Int? = null) {

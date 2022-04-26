@@ -30,20 +30,16 @@
     </array>
 
     <array name="media_type_pref">
-        <item>All but NSFW</item>
         <item>All</item>
         <item>Movies and TV</item>
-        <item>Documentary</item>
         <item>Anime</item>
-        <item>NSFW</item>
+        <item>Documentary</item>
     </array>
     <array name="media_type_pref_values">
+        <item>0</item>
         <item>1</item>
         <item>2</item>
         <item>3</item>
-        <item>4</item>
-        <item>5</item>
-        <item>6</item>
     </array>
 
     <array name="limit_title_pref_names">
@@ -190,12 +186,11 @@
     <string-array name="themes_overlay_names">
         <item>Normal</item>
         <item>Carnation Pink</item>
-        <item>Orange</item>
         <item>Dark Green</item>
         <item>Maroon</item>
         <item>Navy Blue</item>
         <item>Grey</item>
-        <item>Teal Like Blue</item>
+        <item>White</item>
         <item>Brown</item>
         <item>Cool</item>
         <item>Fire</item>
@@ -209,12 +204,11 @@
     <string-array name="themes_overlay_names_values">
         <item>Normal</item>
         <item>CarnationPink</item>
-        <item>Orange</item>
         <item>DarkGreen</item>
         <item>Maroon</item>
         <item>NavyBlue</item>
         <item>Grey</item>
-        <item>CoolBlue</item>
+        <item>White</item>
         <item>Brown</item>
         <item>Blue</item>
         <item>Red</item>

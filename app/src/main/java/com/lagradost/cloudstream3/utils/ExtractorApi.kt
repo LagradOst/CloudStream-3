@@ -11,7 +11,7 @@ import org.jsoup.Jsoup
 
 data class ExtractorLink(
     val source: String,
-    var name: String,
+    val name: String,
     override val url: String,
     override val referer: String,
     val quality: Int,
@@ -115,11 +115,12 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     VizcloudXyz(),
     VizcloudLive(),
     VizcloudInfo(),
+    MwvnVizcloudInfo(),
     VizcloudDigital(),
     Mp4Upload(),
     StreamTape(),
     MixDrop(),
-    MixDrop1(),
+    Mcloud(),
     XStreamCdn(),
     StreamSB(),
     StreamSB1(),
@@ -132,43 +133,19 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     StreamSB8(),
     StreamSB9(),
     StreamSB10(),
-    //Streamhub(),
+    // Streamhub(), cause Streamhub2() works
     Streamhub2(),
 
-    Tomatomatela(),
-    Cinestart(),
-
-    Solidfiles(),
-    Solidfiles1(),
-
-    Sendvid(),
-    Sendvid1(),
-
     FEmbed(),
-    Femax20(),
     FeHD(),
     Fplayer(),
-    Suzihaza(),
-    // WatchSB(),
-    // Watchsb1(),
-    // Watchsb2(),
-    // Watchsb3(),
-    //  Watchsb4(),
+    //  WatchSB(), 'cause StreamSB.kt works
     Uqload(),
     Uqload1(),
     Evoload(),
     Evoload1(),
     VoeExtractor(),
-    //  UpstreamExtractor(),
-    Upstream(),
-
-    Jawcloud(),
-
-
-    OkRu(),
-
-    Videobin(),
-    Videobin1(),
+    // UpstreamExtractor(), GenericM3U8.kt works
 
     Tomatomatela(),
     Cinestart(),
@@ -179,23 +156,21 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     DoodSoExtractor(),
     DoodLaExtractor(),
     DoodWsExtractor(),
-    DoodShExtractor(),
 
     AsianLoad(),
 
-    YourUpload(),
-    Mcloud(),
-
-    // Genericm3u8Extractor(),
-    ZplayerV2(),
+    // GenericM3U8(),
+    Jawcloud(),
     Zplayer(),
+    ZplayerV2(),
+    Upstream(),
 
-    PlayerVoxzer(),
 
-    //Nsfw extractors
-    StreamLare(),
-    PlayLtXyz(),
-    JKhentaiExtractor(),
+    // StreamSB.kt works
+    //  SBPlay(),
+    //  SBPlay1(),
+    //  SBPlay2(),
+
     PlayerVoxzer(),
 )
 

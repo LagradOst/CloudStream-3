@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#FFFFFF</color>
+    <color name="colorPrimary">#3d50fa</color>
     <color name="colorPrimarySecond">@color/colorPrimary</color>
     <color name="colorSearch">#303135</color> <!--#3444D1 @color/itemBackground-->
     <color name="colorOngoing">#F53B66</color> <!--FF8181-->
-    <color name="colorPrimaryDark">#999999</color>
-    <color name="colorAccent">#FFFFFF</color> <!-- 818fff-->
+    <color name="colorPrimaryDark">#3700B3</color>
+    <color name="colorAccent">#3b65f5</color> <!-- 818fff-->
 
     <color name="primaryGrayBackground">#2B2C30</color> <!--0f0f10 0E0E10 303135 2B2C30-->
     <color name="primaryBlackBackground">#111111</color> <!--1C1C20 191a1f 19181E 202125 1C1C20-->
@@ -25,9 +25,9 @@
     <color name="dubColor">#3d50fa</color> <!--3b65f5 f18c82 8294F1-->
     <color name="amoledModeLight">#121213</color>
 
-    <color name="dubColorBg">#1D327A</color>
+    <color name="dubColorBg">#3B65F5</color>
     <color name="subColor">#F54A3B</color> <!--F53B66 FA3D79-->
-    <color name="subColorBg">#621728</color>
+    <color name="subColorBg">#F53B66</color>
     <color name="typeColor">#3BF585</color>
     <color name="typeColorBg">?attr/colorPrimaryDark</color>
 
@@ -69,7 +69,6 @@
     <color name="colorPrimaryMaroon">#451010</color>
     <color name="colorPrimaryNavyBlue">#000080</color>
     <color name="colorPrimaryGrey">#515151</color>
-    <color name="colorPrimaryCoolBlue">#408cac</color>
+    <color name="colorPrimaryWhite">#FFFFFF</color>
     <color name="colorPrimaryBrown">#622C00</color>
-    <color name="colorPrimaryOrange">#CE8500</color>
 </resources>
