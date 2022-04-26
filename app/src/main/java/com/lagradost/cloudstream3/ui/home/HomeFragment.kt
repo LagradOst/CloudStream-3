@@ -149,6 +149,8 @@ class HomeFragment : Fragment() {
             docs: MaterialButton?,
             movies: MaterialButton?,
             asian: MaterialButton?,
+            mirror: MaterialButton?,
+            nsfw: MaterialButton?
         ): List<Pair<MaterialButton?, List<TvType>>> {
             return listOf(
                 Pair(anime, listOf(TvType.Anime, TvType.OVA, TvType.AnimeMovie)),
@@ -157,6 +159,8 @@ class HomeFragment : Fragment() {
                 Pair(docs, listOf(TvType.Documentary)),
                 Pair(movies, listOf(TvType.Movie, TvType.Torrent)),
                 Pair(asian, listOf(TvType.AsianDrama)),
+                Pair(mirror, listOf(TvType.Mirror)),
+                Pair(nsfw, listOf(TvType.JAV, TvType.Hentai, TvType.XXX)),
             )
         }
 
@@ -190,10 +194,12 @@ class HomeFragment : Fragment() {
                 val docs = dialog.findViewById<MaterialButton>(R.id.home_select_documentaries)
                 val movies = dialog.findViewById<MaterialButton>(R.id.home_select_movies)
                 val asian = dialog.findViewById<MaterialButton>(R.id.home_select_asian)
+                val mirror = dialog.findViewById<MaterialButton>(R.id.home_select_mirror)
+                val nsfw = dialog.findViewById<MaterialButton>(R.id.home_select_nsfw)
                 val cancelBtt = dialog.findViewById<MaterialButton>(R.id.cancel_btt)
                 val applyBtt = dialog.findViewById<MaterialButton>(R.id.apply_btt)
 
-                val pairList = getPairList(anime, cartoons, tvs, docs, movies, asian)
+                val pairList = getPairList(anime, cartoons, tvs, docs, movies, asian, mirror, nsfw)
 
                 cancelBtt?.setOnClickListener {
                     dialog.dismissSafe()
@@ -382,7 +388,7 @@ class HomeFragment : Fragment() {
         context?.let {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(it)
             toggleRandomButton =
-                settingsManager.getBoolean(getString(R.string.random_button_key), false)
+                settingsManager.getBoolean(getString(R.string.random_button_key), true)
             home_random?.isVisible = toggleRandomButton
             if (!toggleRandomButton) {
                 home_random?.visibility = View.GONE
@@ -402,7 +408,7 @@ class HomeFragment : Fragment() {
                     Pair(R.string.tv_series, listOf(TvType.TvSeries)),
                     Pair(R.string.documentaries, listOf(TvType.Documentary)),
                     Pair(R.string.cartoons, listOf(TvType.Cartoon)),
-                    Pair(R.string.anime, listOf(TvType.Anime, TvType.OVA, TvType.AnimeMovie)),
+                    Pair(R.string.anime, listOf(TvType.Anime, TvType.OVA, TvType.AnimeMovie, TvType.Donghua)),
                     Pair(R.string.torrent, listOf(TvType.Torrent)),
                     Pair(R.string.asian_drama, listOf(TvType.AsianDrama)),
                 ).filter { item -> currentApi.supportedTypes.any { type -> item.second.contains(type) } }

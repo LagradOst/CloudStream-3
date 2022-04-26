@@ -36,7 +36,7 @@ android {
         targetSdkVersion 30
 
         versionCode 46
-        versionName "2.9.22"
+        versionName "1.0.2"
 
         resValue "string", "app_version",
                 "${defaultConfig.versionName}${versionNameSuffix ?: ""}"
@@ -52,13 +52,15 @@ android {
 
     buildTypes {
         release {
+            applicationIdSuffix ".KillerDogeEmpiresfork"
+            versionNameSuffix '-FORK'
             debuggable false
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         prerelease {
-            applicationIdSuffix ".prerelease"
+            applicationIdSuffix ".prerelease.KillerDogeEmpiresfork"
             buildConfigField("boolean", "BETA", "true")
             signingConfig signingConfigs.prerelease
             versionNameSuffix '-PRE'

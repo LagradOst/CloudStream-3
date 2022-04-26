@@ -2,11 +2,13 @@ package com.lagradost.cloudstream3.extractors
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+
 
 class FEmbed: XStreamCdn() {
     override val name: String = "FEmbed"
@@ -23,6 +25,15 @@ class FeHD: XStreamCdn() {
     override val mainUrl: String = "https://fembed-hd.com"
     override var domainUrl: String = "fembed-hd.com"
 }
+
+class Suzihaza: XStreamCdn() {
+    override val mainUrl: String = "https://suzihaza.com"
+}
+
+class Femax20: XStreamCdn() {
+    override val mainUrl: String = "https://femax20.com"
+}
+
 
 open class XStreamCdn : ExtractorApi() {
     override val name: String = "XStreamCdn"
@@ -60,11 +71,11 @@ open class XStreamCdn : ExtractorApi() {
             if (text == """{"success":false,"data":"Video not found or has been removed"}""") return listOf()
             mapper.readValue<ResponseJson?>(text)?.let {
                 if (it.success && it.data != null) {
-                    it.data.forEach { data ->
+                    it.data.apmap { data ->
                         extractedLinksList.add(
                             ExtractorLink(
                                 name,
-                                name = name,
+                                "$name ${data.label}",
                                 data.file,
                                 url,
                                 getQualityFromName(data.label),
