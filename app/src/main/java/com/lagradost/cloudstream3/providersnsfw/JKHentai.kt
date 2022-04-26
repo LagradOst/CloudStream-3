@@ -1,4 +1,4 @@
-package com.lagradost.cloudstream3.providersnsfw
+package com.lagradost.cloudstream3.animeproviders
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -34,8 +34,7 @@ class JKHentai:MainAPI() {
                         TvType.Hentai,
                         fixUrl(poster),
                         null,
-                        if (title.contains("Latino") || title.contains("Castellano"))
-                            EnumSet.of(DubStatus.Dubbed) else EnumSet.of(DubStatus.Subbed),
+                        if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(DubStatus.Subbed),
                     )
                 }
 

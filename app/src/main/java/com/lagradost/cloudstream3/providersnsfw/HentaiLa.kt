@@ -1,4 +1,4 @@
-package com.lagradost.cloudstream3.providersnsfw
+package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
@@ -44,6 +44,8 @@ class HentaiLa:MainAPI() {
                         if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
                             DubStatus.Dubbed
                         ) else EnumSet.of(DubStatus.Subbed),
+                        subEpisodes = epNum,
+                        dubEpisodes = epNum,
                     )
                 })
         )

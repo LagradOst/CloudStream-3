@@ -1,4 +1,4 @@
-package com.lagradost.cloudstream3.providersnsfw
+package com.lagradost.cloudstream3.animeproviders
 
 import android.annotation.SuppressLint
 import com.lagradost.cloudstream3.*
