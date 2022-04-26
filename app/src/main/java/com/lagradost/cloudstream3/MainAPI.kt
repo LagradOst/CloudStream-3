@@ -568,6 +568,8 @@ enum class TvType {
     Torrent,
     Documentary,
     AsianDrama,
+    Mirror,
+    Donghua,
 }
 
 // IN CASE OF FUTURE ANIME MOVIE OR SMTH
