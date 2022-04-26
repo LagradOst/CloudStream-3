@@ -288,6 +288,10 @@
 
     <string name="status_ongoing">Ongoing</string>
     <string name="status_completed">Completed</string>
+    <string name="dub_status_subbed">Subbed</string>
+    <string name="dub_status_dubbed">Dubbed</string>
+    <string name="dub_status_premium">Dubbed (Premium)</string>
+    <string name="sub_status_premium">Subbed (Premium)</string>
     <string name="status">Status</string>
     <string name="year">Year</string>
     <string name="rating">Rating</string>
@@ -308,20 +312,29 @@
     <string name="tv_series">TV Series</string>
     <string name="cartoons">Cartoons</string>
     <string name="anime">Anime</string>
+    <string name="donghua">Donghua</string>
+    <string name="asian_drama">Asian Dramas</string>
     <string name="torrent">Torrents</string>
     <string name="documentaries">Documentaries</string>
+    <string name="mirror">Mirrors</string>
     <string name="ova">OVA</string>
-    <string name="asian_drama">Asian Dramas</string>
+    <string name="jav">JAV</string>
+    <string name="hentai">Hentai</string>
+    <string name="nsfw">NSFW</string>
+    <string name="xxx">XXX</string>
 
     <!--singular-->
     <string name="movies_singular">Movie</string>
     <string name="tv_series_singular">Series</string>
     <string name="cartoons_singular">Cartoon</string>
     <string name="anime_singular">@string/anime</string>
-    <string name="ova_singular">@string/ova</string>
+    <string name="anime_fillerlist">Using animefillerlist.com</string>
+    <string name="donghua_singular">Donghua</string>
+    <string name="asian_drama_singular">Asian Drama</string>
     <string name="torrent_singular">Torrent</string>
     <string name="documentaries_singular">Documentary</string>
-    <string name="asian_drama_singular">Asian Drama</string>
+    <string name="mirror_singular">Mirror</string>
+    <string name="ova_singular">@string/ova</string>
 
     <string name="source_error">Source error</string>
     <string name="remote_error">Remote error</string>

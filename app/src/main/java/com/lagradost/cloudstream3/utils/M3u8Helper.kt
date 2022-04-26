@@ -50,7 +50,7 @@ class M3u8Helper {
     private val TS_EXTENSION_REGEX =
         Regex("""(.*\.ts.*|.*\.jpg.*)""") //.jpg here 'case vizcloud uses .jpg instead of .ts
 
-    private fun absoluteExtensionDetermination(url: String): String? {
+    fun absoluteExtensionDetermination(url: String): String? {
         val split = url.split("/")
         val gg: String = split[split.size - 1].split("?")[0]
         return if (gg.contains(".")) {
