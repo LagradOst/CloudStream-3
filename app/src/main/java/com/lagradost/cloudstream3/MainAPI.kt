@@ -14,6 +14,7 @@ import com.lagradost.cloudstream3.animeproviders.*
 import com.lagradost.cloudstream3.metaproviders.CrossTmdbProvider
 import com.lagradost.cloudstream3.movieproviders.*
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.providersnsfw.*
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.aniListApi
 import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.malApi
 import com.lagradost.cloudstream3.ui.player.SubtitleData
@@ -130,6 +131,26 @@ object APIHolder {
         TioAnimeProvider(),
         StreamingcommunityProvider(),
         TantifilmProvider(),
+
+            // All of NSFW sources
+            Javhdicu(),
+            JavSubCo(),
+            OpJavCom(),
+            Vlxx(),
+            Xvideos(),
+            Pornhub(),
+            HentaiLa(),
+            JKHentai(),
+            Hanime(),
+            HahoMoe(),
+
+            // No stream links fetched
+            JavTubeWatch(),
+            JavFreeSh(),
+            JavGuru(),
+            HpJavTv(),
+            JavMost(),
+            Javclcom()
         )
     }
 
@@ -302,11 +323,14 @@ object APIHolder {
             val listEnumMovieTv =
                 listOf(TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror)
             val listEnumDoc = listOf(TvType.Documentary)
+            val listEnumAnimeMoviesTvDocNSFW = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua, TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror, TvType.Documentary, TvType.JAV, TvType.Hentai, TvType.XXX )
             val listEnumAnimeMoviesTvDoc = listOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA, TvType.Donghua, TvType.Movie, TvType.TvSeries, TvType.Cartoon, TvType.AsianDrama, TvType.Mirror, TvType.Documentary  )
             val mediaTypeList = when (currentPrefMedia) {
-                2 -> listEnumMovieTv
-                3 -> listEnumDoc
-                4 -> listEnumAnime
+                2 -> listEnumAnimeMoviesTvDocNSFW
+                3 -> listEnumMovieTv
+                4 -> listEnumDoc
+                5 -> listEnumAnime
+                6 -> listOf(TvType.JAV, TvType.Hentai, TvType.XXX)
                 else -> listEnumAnimeMoviesTvDoc
             }
             allApis.filter { api -> api.supportedTypes.any { it in mediaTypeList } }
@@ -572,6 +596,9 @@ enum class TvType {
     AsianDrama,
     Mirror,
     Donghua,
+    JAV,
+    Hentai,
+    XXX
 }
 
 // IN CASE OF FUTURE ANIME MOVIE OR SMTH
@@ -752,7 +779,7 @@ data class AnimeSearchResponse(
     var dubStatus: EnumSet<DubStatus>? = null,
 
     var otherName: String? = null,
-    var episodes: MutableMap<DubStatus, Int> = mutableMapOf(),
+    var episodes: MutableMap<DubStatus, Int>? = mutableMapOf(),
 
     override var id: Int? = null,
     override var quality: SearchQuality? = null,
@@ -763,7 +790,7 @@ fun AnimeSearchResponse.addDubStatus(status: DubStatus, episodes: Int? = null) {
     this.dubStatus = dubStatus?.also { it.add(status) } ?: EnumSet.of(status)
     if (this.type?.isMovieType() != true)
         if (episodes != null && episodes > 0)
-            this.episodes[status] = episodes
+            this.episodes?.set(status, episodes)
 }
 
 fun AnimeSearchResponse.addDubStatus(isDub: Boolean, episodes: Int? = null) {
