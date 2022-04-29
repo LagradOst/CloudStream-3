@@ -145,17 +145,17 @@ fun ResultEpisode.getDisplayPosition(): Long {
 
 fun buildResultEpisode(
     headerName: String,
-    name: String?,
-    poster: String?,
+    name: String? = null,
+    poster: String? = null,
     episode: Int,
-    season: Int?,
+    season: Int? = null,
     data: String,
     apiName: String,
     id: Int,
     index: Int,
-    rating: Int?,
-    description: String?,
-    isFiller: Boolean?,
+    rating: Int? = null,
+    description: String? = null,
+    isFiller: Boolean? = null,
     tvType: TvType,
     parentId: Int,
 ): ResultEpisode {
@@ -673,7 +673,7 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
         result_cast_items?.let {
             PanelsChildGestureRegionObserver.Provider.get().register(it)
         }
-        result_cast_items?.adapter = ActorAdaptor(mutableListOf())
+        result_cast_items?.adapter = ActorAdaptor()
         fixGrid()
         result_recommendations?.spanCount = 3
         result_overlapping_panels?.setStartPanelLockState(OverlappingPanelsLayout.LockState.CLOSE)
@@ -799,7 +799,8 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                 val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
 
                 builder.setTitle(title)
-                builder.setItems(links.map { "${it.name} ${Qualities.getStringByInt(it.quality)}" }.toTypedArray()) { dia, which ->
+                builder.setItems(links.map { "${it.name} ${Qualities.getStringByInt(it.quality)}" }
+                    .toTypedArray()) { dia, which ->
                     callback.invoke(links[which])
                     dia?.dismiss()
                 }
@@ -1302,14 +1303,25 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                 }
             }
         }
-        val imgAdapter = ImageAdapter(R.layout.result_mini_image)
+        val imgAdapter = ImageAdapter(
+            R.layout.result_mini_image,
+            nextFocusDown = R.id.result_sync_set_score,
+            clickCallback = { action ->
+                if (action == IMAGE_CLICK || action == IMAGE_LONG_CLICK) {
+                    if (result_overlapping_panels?.getSelectedPanel()?.ordinal == 1) {
+                        result_overlapping_panels?.openStartPanel()
+                    } else {
+                        result_overlapping_panels?.closePanels()
+                    }
+                }
+            })
         result_mini_sync?.adapter = imgAdapter
 
         observe(syncModel.synced) { list ->
             result_sync_names?.text =
                 list.filter { it.isSynced && it.hasAccount }.joinToString { it.name }
 
-            val newList = list.filter { it.isSynced }
+            val newList = list.filter { it.isSynced && it.hasAccount }
 
             result_mini_sync?.isVisible = newList.isNotEmpty()
             (result_mini_sync?.adapter as? ImageAdapter?)?.updateList(newList.map { it.icon })
@@ -1466,6 +1478,7 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
             when (startAction) {
                 START_ACTION_RESUME_LATEST -> {
                     for (ep in episodeList) {
+                        println("WATCH STATUS::: S${ep.season} E ${ep.episode} - ${ep.getWatchProgress()}")
                         if (ep.getWatchProgress() > 0.90f) { // watched too much
                             continue
                         }
@@ -1476,6 +1489,7 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                 START_ACTION_LOAD_EP -> {
                     for (ep in episodeList) {
                         if (ep.id == startValue) { // watched too much
+                            println("WATCH STATUS::: START_ACTION_LOAD_EP S${ep.season} E ${ep.episode} - ${ep.getWatchProgress()}")
                             handleAction(EpisodeClickEvent(ACTION_PLAY_EPISODE_IN_PLAYER, ep))
                             break
                         }

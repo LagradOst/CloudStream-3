@@ -12,7 +12,7 @@
         android:layout_marginBottom="2dp"
         android:elevation="10dp"
         app:cardCornerRadius="@dimen/rounded_image_radius"
-        android:id="@+id/backgroundCard"
+        android:id="@+id/background_card"
         app:cardBackgroundColor="?attr/primaryGrayBackground">
 
     <ImageView
@@ -35,6 +35,7 @@
             tools:ignore="ContentDescription" />
 
     <TextView
+            tools:text="The Perfect Run"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
