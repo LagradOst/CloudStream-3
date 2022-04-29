@@ -105,7 +105,7 @@ class TantifilmProvider : MainAPI() {
                 null
             )
 
-        }.toList()
+        }
 
 
 
@@ -124,8 +124,8 @@ class TantifilmProvider : MainAPI() {
 
             val episodeList = ArrayList<Episode>()
 
-            for (season in list) {
-                val seasonDocument = app.get(season.second).document
+            for ((season,seasonurl) in list) {
+                val seasonDocument = app.get(seasonurl).document
                 val episodes = seasonDocument.select("nav.second_nav > select > option")
                 if (episodes.isNotEmpty()) {
                     episodes.forEach { episode ->
@@ -135,7 +135,7 @@ class TantifilmProvider : MainAPI() {
                             Episode(
                                 href,
                                 title,
-                                season.first,
+                                season,
                                 epNum,
                             )
                         )

@@ -262,7 +262,7 @@ class StreamingcommunityProvider : MainAPI() {
                 )
             }
 
-        }.toList()
+        }
 
     }
 
