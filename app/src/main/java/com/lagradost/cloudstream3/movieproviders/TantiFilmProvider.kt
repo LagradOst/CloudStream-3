@@ -1,4 +1,5 @@
 package com.lagradost.cloudstream3.movieproviders
+
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.app
@@ -22,9 +23,9 @@ class TantifilmProvider : MainAPI() {
             Pair("$mainUrl/watch-genre/azione/", "Azione"),
             Pair("$mainUrl/watch-genre/avventura/", "Avventura"),
         )
-        for (i in urls) {
+        for ((url, name) in urls) {
             try {
-                val soup = app.get(i.first).document
+                val soup = app.get(url).document
                 val home = soup.select("div.media3").map {
                     val title = it.selectFirst("p").text().substringBefore("(")
                     val link = it.selectFirst("a").attr("href")
@@ -39,7 +40,7 @@ class TantifilmProvider : MainAPI() {
                     )
                 }
 
-                items.add(HomePageList(i.second, home))
+                items.add(HomePageList(name, home))
             } catch (e: Exception) {
                 logError(e)
             }
@@ -65,28 +66,36 @@ class TantifilmProvider : MainAPI() {
                 null
             )
 
-        }.toList()
+        }
     }
 
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        val type = if (document.selectFirst("div.category-film").text().contains("Serie").not()) TvType.Movie else TvType.TvSeries
+        val type = if (document.selectFirst("div.category-film").text().contains("Serie")
+                .not()
+        ) TvType.Movie else TvType.TvSeries
         val title = document.selectFirst("div.title-film-left").text().substringBefore("(")
         val descipt = document.select("div.content-left-film > p").map { it.text() }
         val rating =
-            document.selectFirst("div.star-rating.star-rating-f > span > span").attr("data-rateit-value")?.toFloatOrNull()
-                ?.times(2857)?.toInt()?.let { minOf(it,10000) }
+            document.selectFirst("div.star-rating.star-rating-f > span > span")
+                .attr("data-rateit-value")?.toFloatOrNull()
+                ?.times(2857)?.toInt()?.let { minOf(it, 10000) }
 
-        var year = document.selectFirst("div.title-film-left").text().substringAfter("(").filter { it.isDigit() }
-        if (year.length > 4){ year =  year.dropLast(4)} else { year = year}
+        var year = document.selectFirst("div.title-film-left").text().substringAfter("(")
+            .filter { it.isDigit() }
+        if (year.length > 4) {
+            year = year.dropLast(4)
+        } else {
+            year = year
+        }
         // ?: does not wor
         val poster = document.selectFirst("div.image-right-film > img").attr("src")
 
         val recomm = document.select("div.mediaWrap.mediaWrapAlt.recomended_videos").map {
             val href = it.selectFirst("a").attr("href")
             val poster = it.selectFirst("img").attr("src")
-            val name = it.selectFirst("a").text().substringBefore("(")
+            val name = it.selectFirst("a").attr("title").substringBeforeLast("(")
             MovieSearchResponse(
                 name,
                 href,
@@ -151,38 +160,51 @@ class TantifilmProvider : MainAPI() {
             )
         } else {
             val url2 = document.selectFirst("iframe").attr("src")
-            val actorpagelink = document.select("div.content-left-film > p:nth-child(2) > a").attr("href")
+            val actorpagelink =
+                document.select("div.content-left-film > p:nth-child(2) > a").attr("href")
             val actorpagelink2 = document.select("div.content-left-film > p > a").attr("href")
-            val Linkactor :String = if (actorpagelink.isNotEmpty()) {actorpagelink}
-            else{actorpagelink2}
+            val Linkactor: String = if (actorpagelink.isNotEmpty()) {
+                actorpagelink
+            } else {
+                actorpagelink2
+            }
 
-            val actors : List<ActorData>? = if (Linkactor.isNotEmpty()) {
-                val actorpage = app.get(Linkactor+"cast/").document
-                actorpage.select("article.membro-cast")?.filter { it.selectFirst("img")?.attr("src") != "https://www.filmtv.it/imgbank/DUMMY/no_portrait.jpg"  }?.mapNotNull { it ->
+            val actors: List<ActorData>? = if (Linkactor.isNotEmpty()) {
+                val actorpage = app.get(Linkactor + "cast/").document
+                actorpage.select("article.membro-cast")?.filter {
+                    it.selectFirst("img")
+                        ?.attr("src") != "https://www.filmtv.it/imgbank/DUMMY/no_portrait.jpg"
+                }?.mapNotNull { it ->
                     val name = it.selectFirst("div.info > h3").text()
                     val image = it.selectFirst("img")?.attr("src")
-                    val roleString : String = if(it.selectFirst("h2")?.text()=="Regia") {"Regia"} else{"Attore"}
+                    val roleString: String = if (it.selectFirst("h2")?.text() == "Regia") {
+                        "Regia"
+                    } else {
+                        "Attore"
+                    }
                     val mainActor = Actor(name, image)
                     ActorData(actor = mainActor, roleString = roleString)
                 }
+            } else {
+                null
             }
-            else {null}
 
 
-
-
-            val duratio : Int? = if (descipt.size == 2){
+            val duratio: Int? = if (descipt.size == 2) {
                 descipt[0].filter { it.isDigit() }.toInt()
+            } else {
+                null
             }
-            else{null}
-            val tags : List<String>? = if (descipt.size == 2){
+            val tags: List<String>? = if (descipt.size == 2) {
                 descipt[0].let { mutableListOf(it.substringBefore(" ")) }
+            } else {
+                null
             }
-            else{null}
-            val plot : String = if (descipt.size == 2){
+            val plot: String = if (descipt.size == 2) {
                 descipt[1]
+            } else {
+                descipt[0]
             }
-            else{descipt[0]}
             return newMovieLoadResponse(
                 title,
                 url2,
@@ -209,8 +231,9 @@ class TantifilmProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val doc = app.get(data).document
-        val iframe = doc.select("option").map { fixUrl(it.attr("value")) }.filter { it.contains("label") }
-        iframe.forEach{ id ->
+        val iframe =
+            doc.select("option").map { fixUrl(it.attr("value")) }.filter { it.contains("label") }
+        iframe.forEach { id ->
             val doc2 = app.get(id).document
             val id2 = app.get(doc2.selectFirst("iframe").attr("src")).url
             loadExtractor(id2, data, callback)
