@@ -1,24 +1,35 @@
----
-name: "[Feature Request] Title"
-about: 'Suggest enhancement for the App. '
-title: ''
-labels: ''
-assignees: ''
+name: ⭐ Feature request
+description: Suggest a feature to improve a source
+labels: [feature request]
+body:
 
----
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Describe your suggested feature
+      description: How can an existing source be improved?
+      placeholder: |
+        Example:
+          "It should work like this..."
+    validations:
+      required: true
 
-**Guidelines:**
-- [ ] It **is not** a duplicate issue.
-- [ ] It **is not** a request to add a website. Write it here instead https://github.com/LagradOst/CloudStream-3/issues/24
+  - type: textarea
+    id: other-details
+    attributes:
+      label: Other details
+      placeholder: |
+        Additional details and attachments.
 
-**Choose one of the following:**
-- UI/UX enhancement
-- New feature
-- Other
-
-**Describe your request here** *(fill this up)*
-- [ ] How it works.
-- [ ] Issues it solves.
-- [ ] Why it is needed.
-
-**Other related info**
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Acknowledgements
+      description: Your issue will be closed if you haven't done these steps.
+      options:
+        - label: I have searched the existing issues and this is a new ticket, **NOT** a duplicate or related to another open issue.
+          required: true
+        - label: I have written a short but informative title.
+          required: true
+        - label: I will fill out all of the requested information in this form.
+          required: true
