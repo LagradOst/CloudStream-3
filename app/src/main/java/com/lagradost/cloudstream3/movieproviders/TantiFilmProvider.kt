@@ -56,7 +56,7 @@ class TantifilmProvider : MainAPI() {
         return doc.select("div.film.film-2").map {
             val href = it.selectFirst("a").attr("href")
             val poster = it.selectFirst("img").attr("src")
-            val name = it.selectFirst("a").text().substringBefore("(")
+            val name = it.selectFirst("p").text().substringBefore("(")
             MovieSearchResponse(
                 name,
                 href,
@@ -196,7 +196,7 @@ class TantifilmProvider : MainAPI() {
                 null
             }
             val tags: List<String>? = if (descipt.size == 2) {
-                descipt[0].let { mutableListOf(it.substringBefore(" ")) }
+                mutableListOf(descipt[0].substringBefore(" ").lowercase().replaceFirstChar { it.uppercase() })
             } else {
                 null
             }
