@@ -1,5 +1,5 @@
-name: 🐞 Issue report
-description: Report a issue in Cloudstream
+name: 🐞 Application Issue Report
+description: Report a issue in CloudStream
 labels: [bug]
 body:
 
