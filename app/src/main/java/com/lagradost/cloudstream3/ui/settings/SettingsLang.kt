@@ -181,5 +181,25 @@ class SettingsLang : PreferenceFragmentCompat() {
 
             return@setOnPreferenceClickListener true
         }
+
+        getPref(R.string.pref_filter_search_quality_key)?.setOnPreferenceClickListener {
+            val names = enumValues<SearchQuality>().sorted().map { it.name }
+            val currentList = settingsManager.getStringSet(getString(R.string.pref_filter_search_quality_key), setOf())?.map {
+                it.toInt()
+            } ?: listOf()
+
+            activity?.showMultiDialog(
+                names,
+                currentList,
+                getString(R.string.pref_filter_search_quality),
+                {}) { selectedList ->
+                settingsManager.edit().putStringSet(
+                    this.getString(R.string.pref_filter_search_quality_key),
+                    selectedList.map { it.toString() }.toMutableSet()
+                ).apply()
+            }
+
+            return@setOnPreferenceClickListener true
+        }
     }
 }

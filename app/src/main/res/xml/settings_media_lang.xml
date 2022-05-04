@@ -18,4 +18,9 @@
             android:key="@string/display_sub_key"
             android:title="@string/display_subbed_dubbed_settings"
             android:icon="@drawable/ic_outline_voice_over_off_24" />
+
+    <Preference
+        android:icon="@drawable/ic_baseline_filter_list_24"
+        android:key="@string/pref_filter_search_quality_key"
+        android:title="@string/pref_filter_search_quality" />
 </PreferenceScreen>
