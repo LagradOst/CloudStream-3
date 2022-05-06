@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="cast_mini_controller_control_buttons">
+        <item>@id/cast_button_type_rewind_30_seconds</item>
+        <item>@id/cast_button_type_play_pause_toggle</item>
+        <item>@id/cast_button_type_forward_30_seconds</item>
+    </array>
+    <array name="cast_expanded_controller_control_buttons">
+        <!-- Fake sources button -->
+        <item>@id/cast_button_type_rewind_30_seconds</item>
+        <item>@id/cast_button_type_rewind_30_seconds</item>
+        <item>@id/cast_button_type_forward_30_seconds</item>
+        <!-- Actually fake to make the skip op button the same style -->
+        <item>@id/cast_button_type_forward_30_seconds</item>
+    </array>
+
+    <array name="dns_pref">
+        <item>@string/none</item>
+        <item>Google</item>
+        <item>Cloudflare</item>
+        <!--        <item>OpenDns</item>-->
+        <item>AdGuard</item>
+    </array>
+    <array name="dns_pref_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <!--        <item>3</item>-->
+        <item>4</item>
+    </array>
+
+    <array name="media_type_pref">
+        <item>All</item>
+        <item>Movies and TV</item>
+        <item>Anime</item>
+        <item>Documentary</item>
+    </array>
+    <array name="media_type_pref_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </array>
+
+    <array name="limit_title_pref_names">
+        <item>@string/none</item>
+        <item>16 characters</item>
+        <item>32 characters</item>
+        <item>64 characters</item>
+        <item>128 characters</item>
+        <item>Hide Title</item>
+    </array>
+    <array name="limit_title_pref_values">
+        <item>0</item>
+        <item>16</item>
+        <item>32</item>
+        <item>64</item>
+        <item>128</item>
+        <item>-1</item>
+    </array>
+
+    <array name="video_buffer_length_names">
+        <item>@string/automatic</item>
+        <item>1min</item>
+        <item>1min 30s</item>
+        <item>2min</item>
+        <item>2min 30s</item>
+        <item>3min</item>
+        <item>3min 30s</item>
+        <item>4min</item>
+        <item>5min</item>
+        <item>6min</item>
+        <item>7min</item>
+        <item>8min</item>
+        <item>9min</item>
+        <item>10min</item>
+        <item>15min</item>
+        <item>20min</item>
+        <item>30min</item>
+    </array>
+
+    <array name="video_buffer_length_values">
+        <item>0</item>
+        <item>60</item>
+        <item>90</item>
+        <item>120</item>
+        <item>150</item>
+        <item>180</item>
+        <item>210</item>
+        <item>240</item>
+        <item>300</item>
+        <item>360</item>
+        <item>420</item>
+        <item>480</item>
+        <item>540</item>
+        <item>600</item>
+        <item>900</item>
+        <item>1200</item>
+        <item>1800</item>
+    </array>
+
+    <array name="video_buffer_size_names">
+        <item>@string/automatic</item>
+        <item>10MB</item>
+        <item>20MB</item>
+        <item>30MB</item>
+        <item>40MB</item>
+        <item>50MB</item>
+        <item>60MB</item>
+        <item>70MB</item>
+        <item>80MB</item>
+        <item>90MB</item>
+        <item>100MB</item>
+        <item>150MB</item>
+        <item>200MB</item>
+        <item>250MB</item>
+        <item>300MB</item>
+        <item>350MB</item>
+        <item>400MB</item>
+        <item>450MB</item>
+        <item>500MB</item>
+    </array>
+
+    <array name="video_buffer_size_values">
+        <item>0</item>
+        <item>10</item>
+        <item>20</item>
+        <item>30</item>
+        <item>40</item>
+        <item>50</item>
+        <item>60</item>
+        <item>70</item>
+        <item>80</item>
+        <item>90</item>
+        <item>100</item>
+        <item>150</item>
+        <item>200</item>
+        <item>250</item>
+        <item>300</item>
+        <item>350</item>
+        <item>400</item>
+        <item>450</item>
+        <item>500</item>
+    </array>
+
+    <array name="poster_ui_options">
+        <item>@string/show_hd</item>
+        <item>@string/show_dub</item>
+        <item>@string/show_sub</item>
+        <item>@string/show_title</item>
+    </array>
+
+    <array name="poster_ui_options_values">
+        <item>@string/show_hd_key</item>
+        <item>@string/show_dub_key</item>
+        <item>@string/show_sub_key</item>
+        <item>@string/show_title_key</item>
+    </array>
+
+    <array name="episode_long_click_options">
+        <item>@string/episode_action_chromecast_episode</item>
+        <item>@string/episode_action_chromecast_mirror</item>
+        <item>@string/episode_action_play_in_app</item>
+        <item>@string/episode_action_play_in_vlc</item>
+        <item>@string/episode_action_play_in_browser</item>
+        <item>@string/episode_action_copy_link</item>
+        <item>@string/episode_action_auto_download</item>
+        <item>@string/episode_action_download_mirror</item>
+        <item>@string/episode_action_download_subtitle</item>
+        <item>@string/episode_action_reload_links</item>
+    </array>
+
+    <array name="episode_long_click_options_values">
+        <item>4</item>
+        <item>5</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>9</item>
+        <item>6</item>
+        <item>7</item>
+        <item>13</item>
+        <item>8</item>
+    </array>
+
+    <array name="app_layout">
+        <item>@string/automatic</item>
+        <item>@string/phone_layout</item>
+        <item>@string/tv_layout</item>
+        <item>@string/emulator_layout</item>
+    </array>
+
+    <array name="app_layout_values">
+        <item>-1</item>
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </array>
+
+    <string-array name="themes_overlay_names">
+        <item>Normal</item>
+        <item>Carnation Pink</item>
+        <item>Dark Green</item>
+        <item>Maroon</item>
+        <item>Navy Blue</item>
+        <item>Grey</item>
+        <item>White</item>
+        <item>Brown</item>
+        <item>Cool</item>
+        <item>Fire</item>
+        <item>Burple</item>
+        <item>Green</item>
+        <item>Apple</item>
+        <item>Banana</item>
+        <item>Party</item>
+        <item>Pink Pain</item>
+    </string-array>
+    <string-array name="themes_overlay_names_values">
+        <item>Normal</item>
+        <item>CarnationPink</item>
+        <item>DarkGreen</item>
+        <item>Maroon</item>
+        <item>NavyBlue</item>
+        <item>Grey</item>
+        <item>White</item>
+        <item>Brown</item>
+        <item>Blue</item>
+        <item>Red</item>
+        <item>Purple</item>
+        <item>Green</item>
+        <item>GreenApple</item>
+        <item>Banana</item>
+        <item>Party</item>
+        <item>Pink</item>
+    </string-array>
+
+    <string-array name="themes_names">
+        <item>Dark</item>
+        <item>Gray</item>
+        <item>Amoled</item>
+        <item>Flashbang</item>
+    </string-array>
+    <string-array name="themes_names_values">
+        <item>AmoledLight</item>
+        <item>Black</item>
+        <item>Amoled</item>
+        <item>Light</item>
+    </string-array>
+</resources>

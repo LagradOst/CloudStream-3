@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/searchRoot"
+        tools:context=".ui.search.SearchFragment"
+        android:orientation="vertical"
+        android:background="?attr/primaryGrayBackground"
+        android:layout_marginTop="@dimen/navbar_height">
+
+    <FrameLayout
+            android:visibility="visible"
+            android:layout_margin="10dp"
+            android:background="@drawable/search_background"
+            android:layout_width="match_parent"
+            android:layout_height="40dp">
+
+        <FrameLayout
+                android:layout_gravity="center_vertical"
+                android:layout_width="match_parent"
+                android:layout_marginEnd="30dp"
+                android:layout_height="30dp">
+
+            <androidx.appcompat.widget.SearchView
+                    android:nextFocusUp="@id/nav_rail_view"
+                    android:nextFocusRight="@id/search_filter"
+                    android:nextFocusLeft="@id/nav_rail_view"
+                    android:nextFocusDown="@id/search_autofit_results"
+
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+
+                    android:id="@+id/main_search"
+                    app:queryBackground="@color/transparent"
+
+                    app:searchIcon="@drawable/search_icon"
+                    android:paddingStart="-10dp"
+                    android:iconifiedByDefault="false"
+                    app:queryHint="@string/search_hint"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_vertical"
+                    app:iconifiedByDefault="false"
+                    tools:ignore="RtlSymmetry">
+
+                <requestFocus />
+
+                <androidx.core.widget.ContentLoadingProgressBar
+                        android:id="@+id/search_loading_bar"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginStart="-35dp"
+                        style="@style/Widget.AppCompat.ProgressBar"
+                        android:foregroundTint="@color/white"
+                        android:progressTint="@color/white"
+                        android:layout_gravity="center">
+
+                </androidx.core.widget.ContentLoadingProgressBar>
+                <!--app:queryHint="@string/search_hint"
+                 android:background="@color/grayBackground" @color/itemBackground
+                            app:searchHintIcon="@drawable/search_white"
+                            -->
+            </androidx.appcompat.widget.SearchView>
+        </FrameLayout>
+
+        <ImageView
+                android:nextFocusUp="@id/nav_rail_view"
+                android:nextFocusRight="@id/main_search"
+                android:nextFocusLeft="@id/main_search"
+                android:nextFocusDown="@id/search_autofit_results"
+
+                android:id="@+id/search_filter"
+                android:background="?selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_baseline_tune_24"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
+                android:layout_margin="10dp"
+                android:layout_gravity="end|center_vertical"
+                app:tint="?attr/textColor"
+                android:contentDescription="@string/change_providers_img_des" />
+    </FrameLayout>
+
+    <HorizontalScrollView
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:fadingEdge="horizontal"
+            android:requiresFadingEdge="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+        <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+            <com.google.android.material.button.MaterialButton
+                    android:nextFocusRight="@id/search_select_tv_series"
+
+                    android:id="@+id/search_select_movies"
+                    android:text="@string/movies"
+                    style="@style/RoundedSelectableButton" />
+
+            <com.google.android.material.button.MaterialButton
+                    android:nextFocusLeft="@id/search_select_movies"
+                    android:nextFocusRight="@id/search_select_anime"
+
+                    android:id="@+id/search_select_tv_series"
+                    android:text="@string/tv_series"
+                    style="@style/RoundedSelectableButton" />
+
+            <com.google.android.material.button.MaterialButton
+                    android:nextFocusLeft="@id/search_select_tv_series"
+                    android:nextFocusRight="@id/search_select_asian"
+
+                    android:id="@+id/search_select_anime"
+                    android:text="@string/anime"
+                    style="@style/RoundedSelectableButton" />
+
+            <com.google.android.material.button.MaterialButton
+                    android:nextFocusLeft="@id/search_select_anime"
+                    android:nextFocusRight="@id/search_select_cartoons"
+
+                    android:id="@+id/search_select_asian"
+                    android:text="@string/asian_drama"
+                    style="@style/RoundedSelectableButton" />
+
+            <com.google.android.material.button.MaterialButton
+                    android:nextFocusLeft="@id/search_select_asian"
+                    android:nextFocusRight="@id/search_select_documentaries"
+
+                    android:id="@+id/search_select_cartoons"
+                    android:text="@string/cartoons"
+                    style="@style/RoundedSelectableButton" />
+
+            <com.google.android.material.button.MaterialButton
+                    android:nextFocusLeft="@id/search_select_cartoons"
+
+                    android:id="@+id/search_select_documentaries"
+                    android:text="@string/documentaries"
+                    style="@style/RoundedSelectableButton" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+
+    <com.lagradost.cloudstream3.ui.AutofitRecyclerView
+            android:visibility="gone"
+            android:nextFocusLeft="@id/nav_rail_view"
+            android:descendantFocusability="afterDescendants"
+
+            android:background="?attr/primaryBlackBackground"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingStart="8dp"
+            android:paddingTop="5dp"
+            app:spanCount="3"
+            android:paddingEnd="8dp"
+            android:id="@+id/search_autofit_results"
+            tools:listitem="@layout/search_result_grid"
+            android:orientation="vertical" />
+
+    <androidx.recyclerview.widget.RecyclerView
+            android:visibility="gone"
+            android:nextFocusLeft="@id/nav_rail_view"
+            android:descendantFocusability="afterDescendants"
+
+            android:background="?attr/primaryBlackBackground"
+            android:id="@+id/search_master_recycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:listitem="@layout/homepage_parent" />
+
+    <androidx.recyclerview.widget.RecyclerView
+            android:visibility="visible"
+            android:nextFocusLeft="@id/nav_rail_view"
+            android:descendantFocusability="afterDescendants"
+
+            android:background="?attr/primaryBlackBackground"
+            android:id="@+id/search_history_recycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:listitem="@layout/search_history_item" />
+</LinearLayout>

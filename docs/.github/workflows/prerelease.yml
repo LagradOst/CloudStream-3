@@ -1,0 +1,54 @@
+name: Pre-release
+
+on:
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - '*.md'
+      - '*.json'
+
+concurrency: 
+  group: "pre-release"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 11
+      uses: actions/setup-java@v2
+      with:
+        java-version: '11'
+        distribution: 'adopt'
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Set checks for prerelease updates to true by default
+      run: |
+        sed -i "s/R\.string\.prerelease_update_key), false))/R\.string\.prerelease_update_key), true))/" app/src/main/java/com/lagradost/cloudstream3/utils/InAppUpdater.kt
+    - name: Update prerelease_commit_hash
+      run: |
+        COMMIT_HASH="$(git log -1 --format='%H')"
+        sed -i "s/<string name=\"prerelease_commit_hash\" translatable=\"false\">unknown_prerelease<\/string>/<string name=\"prerelease_commit_hash\">$COMMIT_HASH<\/string>/g" app/src/main/res/values/strings.xml
+    - name: Decode Keystore
+      env:
+        ENCODED_STRING: ${{ secrets.KEYSTORE }}
+      run: |
+        TMP_KEYSTORE_FILE_PATH="${RUNNER_TEMP}"/keystore
+        mkdir -p "${TMP_KEYSTORE_FILE_PATH}"
+        echo $ENCODED_STRING | base64 -di > "${TMP_KEYSTORE_FILE_PATH}"/prerelease_keystore.keystore
+    - name: Run Gradle
+      run: ./gradlew app:assemblePrerelease
+      env:
+        SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+    - name: Create pre-release
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "pre-release"
+        prerelease: true
+        title: "Pre-release Build"
+        files: |
+          app/build/outputs/apk/prerelease/*.apk
