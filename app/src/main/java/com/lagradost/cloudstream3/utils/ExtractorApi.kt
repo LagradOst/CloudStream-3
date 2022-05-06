@@ -121,8 +121,6 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     StreamTape(),
     MixDrop(),
     Mcloud(),
-    MaxstreamExtractor(),
-    TantifilmExtractor(),
     XStreamCdn(),
     StreamSB(),
     StreamSB1(),

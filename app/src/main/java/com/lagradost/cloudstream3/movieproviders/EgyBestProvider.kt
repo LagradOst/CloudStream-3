@@ -46,7 +46,7 @@ class EgyBestProvider : MainAPI() {
         val pages = arrayListOf<HomePageList>()
         doc.select("#mainLoad div.mbox").apmap {
             val name = it.select(".bdb.pda > strong").text()
-            if (it.select(".movie").first().attr("href").contains("season-(.....)|ep-(.....)".toRegex())) return@apmap
+            if (it.select(".movie").first()?.attr("href")?.contains("season-(.....)|ep-(.....)".toRegex()) == true) return@apmap
             val list = arrayListOf<SearchResponse>()
             it.select(".movie").map { element ->
                 list.add(element.toSearchResponse()!!)
@@ -87,16 +87,16 @@ class EgyBestProvider : MainAPI() {
             it.text().contains("النوع")
         }?.select("a")?.map { it.text() }
 
-        val actors = doc.select("div.cast_list .cast_item")?.mapNotNull {
+        val actors = doc.select("div.cast_list .cast_item").mapNotNull {
             val name = it.selectFirst("div > a > img")?.attr("alt") ?: return@mapNotNull null
             val image = it.selectFirst("div > a > img")?.attr("src") ?: return@mapNotNull null
-            val roleString = it.selectFirst("div > span").text()
+            val roleString = it.selectFirst("div > span")!!.text()
             val mainActor = Actor(name, image)
             ActorData(actor = mainActor, roleString = roleString)
         }
 
         return if (isMovie) {
-            val recommendations = doc.select(".movies_small .movie")?.mapNotNull { element ->
+            val recommendations = doc.select(".movies_small .movie").mapNotNull { element ->
                 element.toSearchResponse()
             }
 
@@ -160,12 +160,55 @@ class EgyBestProvider : MainAPI() {
         @JsonProperty("quality") val quality: Int?,
         @JsonProperty("link") val link: String
     )
+
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        /*val baseURL = data.split("/")[0] + "//" + data.split("/")[2]
+        val episodeSoup = app.get(data).document
+
+        val vidstreamURL = fixUrlNull(episodeSoup.selectFirst("iframe.auto-size")?.attr("src") ) ?: throw ErrorLoadingException("No iframe")
+        val videoSoup = app.get(vidstreamURL).document
+        fixUrlNull( videoSoup.select("source").firstOrNull { it.hasAttr("src") }?.attr("src"))?.let {
+            callback.invoke(ExtractorLink(this.name,this.name,it,"",Qualities.Unknown.value,it.contains(".m3u8")))
+        } ?: run {
+            var jsCode = videoSoup.select("script")[1].data()
+
+            val verificationToken = Regex("{'[0-9a-zA-Z_]*':'ok'}").findAll(jsCode)[0][2:-7]
+            val encodedAdLinkVar = Regex("([0-9a-zA-Z_]{2,12}\[Math").findAll(jsCode)[0][1:-5]
+            val encodingArraysRegEx = Regex(",[0-9a-zA-Z_]{2,12}=\[\]").findAll(jsCode)
+            val firstEncodingArray = encodingArraysRegEx[1][1:-3]
+            val secondEncodingArray = encodingArraysRegEx[2][1:-3]
+
+            jsCode = Regex("^<script type=\"text/javascript\">", "", jsCode)
+            jsCode = Regex("[;,]\$\('\*'\)(.*)$", ";", jsCode)
+            jsCode = Regex(",ismob=(.*)\(navigator\[(.*)\]\)[,;]", ";", jsCode)
+            jsCode = Regex("var a0b=function\(\)(.*)a0a\(\);",).findAll( jsCode)
+            jsCode += "var link = ''; for (var i = 0; i <= $secondEncodingArray['length']; i++) { link += $firstEncodingArray[$secondEncodingArray[i]] || ''; } return [link, $encodedAdLinkVar[0]] }"
+
+            val jsCodeReturn = executeJS(jsCode)()
+            val verificationPath = jsCodeReturn[0]
+            val encodedAdPath = jsCodeReturn[1]
+
+            val adLink = baseURL + "/" + str(decode(encodedAdPath + "=" * (-len(encodedAdPath) % 4)), "utf-8")
+            val session.get(adLink)
+
+            val verificationLink = baseURL + "/tvc.php?verify=" + verificationPath
+            val session.post(verificationLink, data={verificationToken: "ok"})
+
+            val vidstreamResponseText = session.get(vidstreamURL).text
+            val videoSoup = BeautifulSoup(vidstreamResponseText, features="html.parser")
+
+            val qualityLinksFileURL = baseURL + videoSoup.body.find("source").get("src")
+        }
+
+
+        return true*/
+
         val requestJSON = app.get("https://api.zr5.repl.co/egybest?url=$data").text
         val jsonArray = parseJson<List<Sources>>(requestJSON)
         for (i in jsonArray) {
