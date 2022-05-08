@@ -1,10 +1,10 @@
 const count = document.getElementById("count")
-const mainContainer = document.getElementById("siteList");
+const mainContainer = document.getElementById("siteList")
+const regionNamesInEnglish = new Intl.DisplayNames(['en'], { type: 'language' });
 fetch("providers.json" + "?v=" + Date.now())
     .then(r => r.json())
     .then(function (data) {
         count.innerHTML = Object.keys(data).length;
-        const regionNamesInEnglish = new Intl.DisplayNames(['en'], { type: 'language' });
         for (var key in data) {
             if (data.hasOwnProperty(key)) {
                 var value = data[key];
