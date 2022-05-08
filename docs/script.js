@@ -21,10 +21,17 @@ fetch("providers.json" + "?v=" + Date.now())
                 _a.innerHTML = value.name
 
                 var _langEl = document.createElement("span");
-                _langEl.innerHTML = "Language: " + regionNamesInEnglish.of(_lang)
-                _a.appendChild(_langEl);
-                console.log("Language: " + regionNamesInEnglish.of(_lang));
+                var _langName = "Unknown";
+                try {
+                    _langName = regionNamesInEnglish.of(_lang);
+                } catch (langerr) {
+                    _langName = "Unknown";
+                    console.log("Error on parsing language code => " + langerr);
+                }
+                _langEl.innerHTML = ", Language: " + _langName
+                console.log("Language: " + _langName);
                 console.log("innerHTML: " + _langEl.innerHTML);
+                _a.appendChild(_langEl);
 
                 var _statusText = "Unknown";
                 var _buttonText = "yellow";
