@@ -23,6 +23,8 @@ fetch("providers.json" + "?v=" + Date.now())
                 var _langEl = document.createElement("span");
                 _langEl.innerHTML = "Language: " + regionNamesInEnglish.of(_lang)
                 _a.appendChild(_langEl);
+                console.log("Language: " + regionNamesInEnglish.of(_lang));
+                console.log("innerHTML: " + _langEl.innerHTML);
 
                 var _statusText = "Unknown";
                 var _buttonText = "yellow";
