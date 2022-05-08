@@ -6,11 +6,11 @@ from json import dump, load
 from typing import List, Dict
 
 # Globals
-URL_REGEX = compile(
-    "override\sva[lr]\smainUrl[^\"']+[\"'](https?://[a-zA-Z0-9\.-]+)[\"']")
+URL_REGEX = compile("override\sva[lr]\smainUrl[^\"']+[\"'](https?://[a-zA-Z0-9\.-]+)[\"']")
 NAME_REGEX = compile("([A-Za-z0-9]+)(?:.kt)$")
 JSON_PATH = "docs/providers.json"
 GLOB = "app/src/main/java/com/lagradost/cloudstream3/*providers/*Provider.kt"
+LANG_REGEX = compile("override\sva[lr]\slang[^\"']+[\"']([a-zA-Z]+)")
 
 old_sites: Dict[str, Dict] = load(open(JSON_PATH, "r", encoding="utf-8"))
 sites: Dict[str, Dict] = {}
@@ -22,12 +22,14 @@ for path in glob(GLOB):
             site_text: str = file.read()
             name: str = findall(NAME_REGEX, path)[0]
             provider_url: str = [*findall(URL_REGEX, site_text), ""][0]
+            lang: str = [*findall(LANG_REGEX, site_text), "en"][0]
 
             if name in old_sites.keys():  # if already in previous list use old status and name
                 sites[name] = {
                     "name": old_sites[name]['name'],
                     "url": provider_url if provider_url else old_sites[name]['url'],
-                    "status": old_sites[name]['status']
+                    "status": old_sites[name]['status'],
+                    "language": old_sites[name]['language']
                 }
             else: # if not in previous list add with new data
                 display_name = name
@@ -36,7 +38,8 @@ for path in glob(GLOB):
                 sites[name] = {
                     "name": display_name,
                     "url": provider_url if provider_url else "",
-                    "status": 1
+                    "status": 1,
+                    "language": lang
                 }
 
         except Exception as ex:
