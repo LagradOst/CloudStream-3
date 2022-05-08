@@ -4,12 +4,14 @@ fetch("providers.json" + "?v=" + Date.now())
     .then(r => r.json())
     .then(function (data) {
         count.innerHTML = Object.keys(data).length;
+        const regionNamesInEnglish = new Intl.DisplayNames(['en'], { type: 'language' });
         for (var key in data) {
             if (data.hasOwnProperty(key)) {
                 var value = data[key];
                 if (value.url == "NONE") { continue; }
 
                 var _status = value.status
+                var _lang = value.language
 
                 var node = document.createElement("tr");
                 node.classList.add("row");
@@ -17,6 +19,10 @@ fetch("providers.json" + "?v=" + Date.now())
                 var _a = document.createElement("a");
                 _a.setAttribute('href', value.url);
                 _a.innerHTML = value.name
+
+                var _langEl = document.createElement("span");
+                _langEl.innerHTML = "Language: " + regionNamesInEnglish.of(_lang)
+                _a.appendChild(_langEl);
 
                 var _statusText = "Unknown";
                 var _buttonText = "yellow";
