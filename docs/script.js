@@ -20,7 +20,7 @@ fetch("providers.json" + "?v=" + Date.now())
                 _a.setAttribute('href', value.url);
                 _a.innerHTML = value.name
 
-                var _langEl = document.createElement("span");
+                var _langEl = document.createElement("sup");
                 var _langName = "Unknown";
                 try {
                     _langName = regionNamesInEnglish.of(_lang);
@@ -28,9 +28,7 @@ fetch("providers.json" + "?v=" + Date.now())
                     _langName = "Unknown";
                     console.log("Error on parsing language code => " + langerr);
                 }
-                _langEl.innerHTML = ", Language: " + _langName
-                console.log("Language: " + _langName);
-                console.log("innerHTML: " + _langEl.innerHTML);
+                _langEl.innerHTML = " " + _langName
                 _a.appendChild(_langEl);
 
                 var _statusText = "Unknown";
