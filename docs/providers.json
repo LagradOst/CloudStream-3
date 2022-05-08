@@ -35,13 +35,8 @@
         "status": 1,
         "url": "https://www.animeworld.tv"
     },
-    "AnimeflvProvider": {
-        "language": "es",
-        "name": "Animeflv",
-        "status": 1,
-        "url": "https://www3.animeflv.net"
-    },
     "AnimeflvnetProvider": {
+        "language": "es",
         "name": "Animeflv.net",
         "status": 1,
         "url": "https://www3.animeflv.net"
@@ -81,12 +76,6 @@
         "name": "Cinecalidad",
         "status": 1,
         "url": "https://cinecalidad.lol"
-    },
-    "CrossTmdbProvider": {
-        "language": "en",
-        "name": "MultiMovie",
-        "status": 1,
-        "url": "NONE"
     },
     "CuevanaProvider": {
         "language": "es",
@@ -131,12 +120,12 @@
         "url": "https://www.egy.best"
     },
     "EntrePeliculasySeriesProvider": {
-        "language": "es",
         "name": "EntrePeliculasySeries",
         "status": 1,
         "url": "https://entrepeliculasyseries.nu"
     },
     "EntrepeliculasyseriesProvider": {
+        "language": "es",
         "name": "EntrePeliculasySeries",
         "status": 1,
         "url": "https://entrepeliculasyseries.nu"
@@ -160,6 +149,7 @@
         "url": "https://fmovies.to"
     },
     "FrenchStreamProvider": {
+        "language": "fr",
         "name": "French Stream",
         "status": 1,
         "url": "https://french-stream.re"
@@ -212,12 +202,6 @@
         "status": 1,
         "url": "https://monoschinos2.com"
     },
-    "MultiAnimeProvider": {
-        "language": "en",
-        "name": "MultiAnime",
-        "status": 1,
-        "url": ""
-    },
     "MyCimaProvider": {
         "language": "ar",
         "name": "MyCima",
@@ -235,12 +219,6 @@
         "name": "9Anime",
         "status": 1,
         "url": "https://9anime.id"
-    },
-    "NyaaProvider": {
-        "language": "en",
-        "name": "Nyaa",
-        "status": 1,
-        "url": "https://nyaa.si"
     },
     "PeliSmartProvider": {
         "language": "es",
@@ -320,9 +298,9 @@
         "status": 1,
         "url": "https://streamingcommunity.top"
     },
-    "TantiFilmProvider": {
+    "TantifilmProvider": {
         "language": "it",
-        "name": "TantiFilm",
+        "name": "Tantifilm",
         "status": 1,
         "url": "https://www.tantifilm.rodeo"
     },
@@ -337,12 +315,6 @@
         "name": "TheFlix.to",
         "status": 0,
         "url": "https://theflix.to"
-    },
-    "TmdbProvider": {
-        "language": "en",
-        "name": "Tmdb",
-        "status": 1,
-        "url": ""
     },
     "TrailersTwoProvider": {
         "language": "en",
