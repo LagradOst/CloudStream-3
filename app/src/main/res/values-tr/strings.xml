@@ -1,53 +1,5 @@
 <!--https://newbedev.com/concatenate-multiple-strings-in-xml-->
 <resources>
-    <!-- KEYS DON'T TRANSLATE -->
-    <string name="search_providers_list_key" translatable="false">search_providers_list</string>
-    <string name="locale_key" translatable="false">app_locale</string>
-    <string name="search_types_list_key" translatable="false">search_type_list</string>
-    <string name="grid_format_key" translatable="false">grid_format</string>
-    <string name="auto_update_key" translatable="false">auto_update</string>
-    <string name="prerelease_update_key" translatable="false">prerelease_update</string>
-    <string name="manual_check_update_key" translatable="false">manual_check_update</string>
-    <string name="fast_forward_button_time_key" translatable="false">fast_forward_button_time</string>
-    <string name="benene_count" translatable="false">benene_count</string>
-    <string name="subtitle_settings_key" translatable="false">subtitle_settings_key</string>
-    <string name="subtitle_settings_chromecast_key" translatable="false">subtitle_settings_chromecast_key</string>
-    <string name="quality_pref_key" translatable="false">quality_pref_key</string>
-    <string name="prefer_limit_title_key" translatable="false">prefer_limit_title_key</string>
-    <string name="video_buffer_size_key" translatable="false">video_buffer_size_key</string>
-    <string name="video_buffer_length_key" translatable="false">video_buffer_length_key</string>
-    <string name="video_buffer_clear_key" translatable="false">video_buffer_clear_key</string>
-    <string name="video_buffer_disk_key" translatable="false">video_buffer_disk_key</string>
-    <string name="prerelease_commit_hash" translatable="false">unknown_prerelease</string>
-    <string name="use_system_brightness_key" translatable="false">use_system_brightness_key</string>
-    <string name="swipe_enabled_key" translatable="false">swipe_enabled_key</string>
-    <string name="playback_speed_enabled_key" translatable="false">playback_speed_enabled_key</string>
-    <string name="player_resize_enabled_key" translatable="false">player_resize_enabled_key</string>
-    <string name="pip_enabled_key" translatable="false">pip_enabled_key</string>
-    <string name="double_tap_enabled_key" translatable="false">double_tap_enabled_key</string>
-    <string name="double_tap_pause_enabled_key" translatable="false">double_tap_pause_enabled_key</string>
-    <string name="swipe_vertical_enabled_key" translatable="false">swipe_vertical_enabled_key</string>
-    <string name="display_sub_key" translatable="false">display_sub_key</string>
-    <string name="show_fillers_key" translatable="false">show_fillers_key</string>
-    <string name="provider_lang_key" translatable="false">provider_lang_key</string>
-    <string name="dns_key" translatable="false">dns_key</string>
-    <string name="download_path_key" translatable="false">download_path_key</string>
-    <string name="nginx_url_key" translatable="false">nginx_url_key</string>
-    <string name="nginx_credentials" translatable="false">nginx_credentials</string>
-    <string name="nginx_info" translatable="false">nginx_info</string>
-    <string name="app_name_download_path" translatable="false">Cloudstream</string>
-    <string name="app_layout_key" translatable="false">app_layout_key</string>
-    <string name="primary_color_key" translatable="false">primary_color_key</string>
-    <string name="restore_key" translatable="false">restore_key</string>
-    <string name="killswitch_key" translatable="false">killswitch_key</string>
-    <string name="backup_key" translatable="false">backup_key</string>
-    <string name="prefer_media_type_key" translatable="false">prefer_media_type_key</string>
-    <string name="app_theme_key" translatable="false">app_theme_key</string>
-    <string name="episode_sync_enabled_key" translatable="false">episode_sync_enabled_key</string>
-    <string name="log_enabled_key" translatable="false">log_enabled_key</string>
-    <string name="show_logcat_key" translatable="false">show_logcat_key</string>
-
-
     <!-- FORMAT MIGHT TRANSLATE, WILL CAUSE CRASH IF APPLIED WRONG -->
     <string name="extra_info_format" translatable="false" formatted="true">%d %s | %sMB</string>
     <string name="storage_size_format" translatable="false" formatted="true">%s • %sGB</string>
@@ -189,7 +141,7 @@
     <string name="normal_no_plot">Senaryo bulunamadı</string>
     <string name="torrent_no_plot">Açıklama bulunamadı</string>
 
-    <string name="show_log_cat">logcat'i göster 🐈</string>
+    <string name="show_log_cat">logcat\'i göster 🐈</string>
 
     <string name="picture_in_picture">Resim-içinde-resim</string>
     <string name="picture_in_picture_des">Diğer uygulamaların üzerinde minyatür oynatıcıyı çalıştırır</string>
@@ -219,7 +171,7 @@
     <string name="episode_sync_settings_des">Mevcut bölüm ilerlemesini otomatik güncelle</string>
 
     <string name="restore_settings">Yedekten veri iade et</string>
-    <string name="killswitch_settings">Github'dan en son metadata'yı indir</string>
+    <string name="killswitch_settings">Github\'dan en son metadata\'yı indir</string>
     <string name="killswitch_settings_des">If you want access to all providers (even broken ones) turn this off Tüm sağlayıcılara erişim istiyorsan (bozuk olanlar dahil) bunu kapat</string>
 
     <string name="backup_settings">Veri Yedekle</string>
@@ -249,7 +201,7 @@
     <string name="github">Github</string>
     <string name="lightnovel">Aynı geliştiricilerden LightNovel uygulaması</string>
     <string name="anim">Aynı geliştiricilerden anime uygulaması</string>
-    <string name="discord">Discord'a katıl</string>
+    <string name="discord">Discord\'a katıl</string>
     <string name="benene">Geliştiricilere muz ver</string>
     <string name="benene_des">Verilen muzlar</string>
 
@@ -358,7 +310,7 @@
     <string name="video_buffer_disk_settings">Video disk önbelleği</string>
     <string name="video_buffer_clear_settings">Video ve resim önbelleğini temizle</string>
 
-    <string name="video_ram_description">Android TV cihazları veya eski telefonlar gibi RAM'i düşük olan sistemlerde çok yüksek ayarlarsanız sorun çıkarabilir</string>
+    <string name="video_ram_description">Android TV cihazları veya eski telefonlar gibi RAM\'i düşük olan sistemlerde çok yüksek ayarlarsanız sorun çıkarabilir</string>
     <string name="video_disk_description">Çok yükseğe ayarlarsanız, Android TV cihazları gibi düşük depolama alanına sahip sistemlerde sorunlara neden olabilir</string>
 
     <string name="dns_pref">HTTPS üzeri DNS</string>
