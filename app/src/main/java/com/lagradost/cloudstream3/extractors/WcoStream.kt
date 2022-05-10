@@ -1,15 +1,18 @@
 package com.lagradost.cloudstream3.extractors
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.mapper
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.getQualityFromName
 
 class Vidstreamz : WcoStream() {
     override var mainUrl = "https://vidstreamz.online"
 }
+
 class Vizcloud : WcoStream() {
     override var mainUrl = "https://vizcloud2.ru"
 }
@@ -38,23 +41,27 @@ class MwvnVizcloudInfo : WcoStream() {
     override var mainUrl = "https://mwvn.vizcloud.info"
 }
 
+class VizcloudDigital : WcoStream() {
+    override var mainUrl = "https://vizcloud.digital"
+}
+
 open class WcoStream : ExtractorApi() {
-    override var name = "VidStream" //Cause works for animekisa and wco
+    override var name = "VidStream" // Cause works for animekisa and wco
     override var mainUrl = "https://vidstream.pro"
     override val requiresReferer = false
-    private val hlsHelper = M3u8Helper()
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink> {
         val baseUrl = url.split("/e/")[0]
 
         val html = app.get(url, headers = mapOf("Referer" to "https://wcostream.cc/")).text
-        val (Id) = (Regex("/e/(.*?)?domain").find(url)?.destructured ?: Regex("""/e/(.*)""").find(url)?.destructured) ?: return emptyList()
-        val (skey) = Regex("""skey\s=\s['"](.*?)['"];""").find(html)?.destructured ?: return emptyList()
+        val (Id) = (Regex("/e/(.*?)?domain").find(url)?.destructured ?: Regex("""/e/(.*)""").find(
+            url
+        )?.destructured) ?: return emptyList()
+        val (skey) = Regex("""skey\s=\s['"](.*?)['"];""").find(html)?.destructured
+            ?: return emptyList()
 
         val apiLink = "$baseUrl/info/$Id?domain=wcostream.cc&skey=$skey"
         val referrer = "$baseUrl/e/$Id?domain=wcostream.cc"
-
-        val response = app.get(apiLink, headers = mapOf("Referer" to referrer)).text
 
         data class Sources(
             @JsonProperty("file") val file: String,
@@ -70,36 +77,39 @@ open class WcoStream : ExtractorApi() {
             @JsonProperty("media") val media: Media
         )
 
-        val mapped = response.let { mapper.readValue<WcoResponse>(it) }
+        val mapped = app.get(apiLink, headers = mapOf("Referer" to referrer)).parsed<WcoResponse>()
         val sources = mutableListOf<ExtractorLink>()
 
         if (mapped.success) {
             mapped.media.sources.forEach {
                 if (mainUrl == "https://vizcloud2.ru" || mainUrl == "https://vizcloud.online") {
                     if (it.file.contains("vizcloud2.ru") || it.file.contains("vizcloud.online")) {
-                        //Had to do this thing 'cause "list.m3u8#.mp4" gives 404 error so no quality is added
-                        val link1080 = it.file.replace("list.m3u8#.mp4","H4/v.m3u8")
-                        val link720 = it.file.replace("list.m3u8#.mp4","H3/v.m3u8")
-                        val link480 = it.file.replace("list.m3u8#.mp4","H2/v.m3u8")
-                        val link360 = it.file.replace("list.m3u8#.mp4","H1/v.m3u8")
-                        val linkauto = it.file.replace("#.mp4","")
+                        // Had to do this thing 'cause "list.m3u8#.mp4" gives 404 error so no quality is added
+                        val link1080 = it.file.replace("list.m3u8#.mp4", "H4/v.m3u8")
+                        val link720 = it.file.replace("list.m3u8#.mp4", "H3/v.m3u8")
+                        val link480 = it.file.replace("list.m3u8#.mp4", "H2/v.m3u8")
+                        val link360 = it.file.replace("list.m3u8#.mp4", "H1/v.m3u8")
+                        val linkauto = it.file.replace("#.mp4", "")
                         listOf(
                             link1080,
                             link720,
                             link480,
                             link360,
-                            linkauto).apmap { serverurl ->
+                            linkauto
+                        ).apmap { serverurl ->
                             val testurl = app.get(serverurl, headers = mapOf("Referer" to url)).text
                             if (testurl.contains("EXTM3")) {
-                                val quality = if (serverurl.contains("H4")) "1080p"
-                                else if (serverurl.contains("H3")) "720p"
-                                else if (serverurl.contains("H2")) "480p"
-                                else if (serverurl.contains("H1")) "360p"
-                                else "Auto"
+                                val quality = when {
+                                    serverurl.contains("H4") -> "1080p"
+                                    serverurl.contains("H3") -> "720p"
+                                    serverurl.contains("H2") -> "480p"
+                                    serverurl.contains("H1") -> "360p"
+                                    else -> "Auto"
+                                }
                                 sources.add(
                                     ExtractorLink(
                                         "VidStream",
-                                        "VidStream $quality",
+                                        "VidStream",
                                         serverurl,
                                         url,
                                         getQualityFromName(quality),
@@ -109,39 +119,39 @@ open class WcoStream : ExtractorApi() {
                             }
                         }
                     }
-                }
-                if (mainUrl == "https://vidstream.pro" || mainUrl == "https://vidstreamz.online" || mainUrl == "https://vizcloud2.online"
-                    || mainUrl == "https://vizcloud.xyz" || mainUrl == "https://vizcloud.live" || mainUrl == "https://vizcloud.info"
-                     || mainUrl == "https://mwvn.vizcloud.info") {
-                 if (it.file.contains("m3u8")) {
-                    hlsHelper.m3u8Generation(M3u8Helper.M3u8Stream(it.file.replace("#.mp4",""), null,
-                    headers = mapOf("Referer" to url)), true)
-                        .forEach { stream ->
-                            val qualityString =
-                                if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
-                            sources.add(
-                                ExtractorLink(
-                                    name,
-                                    "$name $qualityString",
-                                    stream.streamUrl,
-                                    url,
-                                    getQualityFromName(stream.quality.toString()),
-                                    true,
-                                )
+                } else if (
+                    arrayOf(
+                        "https://vidstream.pro",
+                        "https://vidstreamz.online",
+                        "https://vizcloud2.online",
+                        "https://vizcloud.xyz",
+                        "https://vizcloud.live",
+                        "https://vizcloud.info",
+                        "https://mwvn.vizcloud.info",
+                        "https://vizcloud.digital"
+                    ).contains(mainUrl)
+                ) {
+                    if (it.file.contains("m3u8")) {
+                        sources.addAll(
+                            generateM3u8(
+                                name,
+                                it.file.replace("#.mp4", ""),
+                                url,
+                                headers = mapOf("Referer" to url)
                             )
-                        }
-                } else {
-                    sources.add(
-                        ExtractorLink(
-                            name,
-                            name + if (it.label != null) " - ${it.label}" else "",
-                            it.file,
-                            "",
-                            Qualities.P720.value,
-                            false
                         )
-                    )
-                }
+                    } else {
+                        sources.add(
+                            ExtractorLink(
+                                name,
+                                name = name,
+                                it.file,
+                                "",
+                                Qualities.P720.value,
+                                false
+                            )
+                        )
+                    }
                 }
             }
         }

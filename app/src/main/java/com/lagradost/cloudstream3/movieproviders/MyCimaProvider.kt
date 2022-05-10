@@ -24,7 +24,7 @@ class MyCimaProvider : MainAPI() {
     }
 
     private fun Element.toSearchResponse(): SearchResponse? {
-        val url = select("div.Thumb--GridItem a")?.attr("href") ?: return null
+        val url = select("div.Thumb--GridItem a")
         val posterUrl = select("span.BG--GridItem")?.attr("data-lazy-style")
             ?.getImageURL()
         val year = select("div.GridItem span.year")?.text()
@@ -35,9 +35,9 @@ class MyCimaProvider : MainAPI() {
         // If you need to differentiate use the url.
         return MovieSearchResponse(
             title,
-            url,
+            url.attr("href"),
             this@MyCimaProvider.name,
-            TvType.TvSeries,
+            if(url.attr("title").contains("فيلم")) TvType.Movie else TvType.TvSeries,
             posterUrl,
             year?.getIntFromText(),
             null,
@@ -153,7 +153,7 @@ class MyCimaProvider : MainAPI() {
             if (moreButton.isNotEmpty()) {
                 val n = doc.select("div.Seasons--Episodes div.Episodes--Seasons--Episodes a").size
                 val totals =
-                    doc.select("div.Episodes--Seasons--Episodes a").first().text().getIntFromText()
+                    doc.select("div.Episodes--Seasons--Episodes a").first()!!.text().getIntFromText()
                 val mEPS = arrayListOf(
                     n,
                     n + 40,
@@ -229,7 +229,7 @@ class MyCimaProvider : MainAPI() {
                         val n =
                             seasonsite.select("div.Seasons--Episodes div.Episodes--Seasons--Episodes a").size
                         val totals =
-                            seasonsite.select("div.Episodes--Seasons--Episodes a").first().text()
+                            seasonsite.select("div.Episodes--Seasons--Episodes a").first()!!.text()
                                 .getIntFromText()
                         val mEPS = arrayListOf(
                             n,
@@ -314,12 +314,10 @@ class MyCimaProvider : MainAPI() {
                     callback.invoke(
                         ExtractorLink(
                             this.name,
-                            this.name + " - ${
-                                linkElement.select("resolution").text().getIntFromText()
-                            }p",
+                            this.name,
                             linkElement.attr("href"),
                             this.mainUrl,
-                            2
+                            quality = linkElement.select("resolution").text().getIntFromText() ?: 0
                         )
                     )
                 }

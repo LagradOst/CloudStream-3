@@ -298,9 +298,16 @@ object AppUtils {
     fun Activity?.loadSearchResult(
         card: SearchResponse,
         startAction: Int = 0,
-        startValue: Int = 0
+        startValue: Int? = null,
     ) {
-        (this as? AppCompatActivity?)?.loadResult(card.url, card.apiName, startAction, startValue)
+        this?.runOnUiThread {
+            // viewModelStore.clear()
+            this.navigate(
+                R.id.global_to_navigation_results,
+                ResultFragment.newInstance(card, startAction, startValue)
+            )
+        }
+        //(this as? AppCompatActivity?)?.loadResult(card.url, card.apiName, startAction, startValue)
     }
 
     fun Activity.requestLocalAudioFocus(focusRequest: AudioFocusRequest?) {
@@ -477,14 +484,13 @@ object AppUtils {
 
     fun Context.isAppInstalled(uri: String): Boolean {
         val pm = Wrappers.packageManager(this)
-        var appInstalled = false
-        appInstalled = try {
-            pm.getPackageInfo(uri, PackageManager.GET_ACTIVITIES)
+
+        return try {
+            pm.getPackageInfo(uri, 0) // PackageManager.GET_ACTIVITIES
             true
         } catch (e: PackageManager.NameNotFoundException) {
             false
         }
-        return appInstalled
     }
 
     fun getFocusRequest(): AudioFocusRequest? {

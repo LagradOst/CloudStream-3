@@ -3,7 +3,6 @@ package com.lagradost.cloudstream3.movieproviders
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
-import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 
@@ -45,11 +44,11 @@ open class PelisplusProviderTemplate : MainAPI() {
 
         return ArrayList(soup.select(".listing.items > .video-block").map { li ->
             // Selects the href in <a href="...">
-            val href = fixUrl(li.selectFirst("a").attr("href"))
-            val poster = fixUrl(li.selectFirst("img").attr("src"))
+            val href = fixUrl(li.selectFirst("a")!!.attr("href"))
+            val poster = fixUrl(li.selectFirst("img")!!.attr("src"))
 
             // .text() selects all the text in the element, be careful about doing this while too high up in the html hierarchy
-            val title = cleanName(li.selectFirst(".name").text())
+            val title = cleanName(li.selectFirst(".name")!!.text())
             // Use get(0) and toIntOrNull() to prevent any possible crashes, [0] or toInt() will error the search on unexpected values.
             val year = li.selectFirst(".date")?.text()?.split("-")?.get(0)?.toIntOrNull()
 
@@ -74,13 +73,13 @@ open class PelisplusProviderTemplate : MainAPI() {
         val html = app.get(url).text
         val soup = Jsoup.parse(html)
 
-        val title = cleanName(soup.selectFirst("h1,h2,h3").text())
+        val title = cleanName(soup.selectFirst("h1,h2,h3")!!.text())
         val description = soup.selectFirst(".post-entry")?.text()?.trim()
-        val poster = soup.selectFirst("head meta[property=og:image]").attr("content")
+        val poster = soup.selectFirst("head meta[property=og:image]")!!.attr("content")
 
         var year : Int? = null
         val episodes = soup.select(".listing.items.lists > .video-block").map { li ->
-            val href = fixUrl(li.selectFirst("a").attr("href"))
+            val href = fixUrl(li.selectFirst("a")!!.attr("href"))
             val regexseason = Regex("(-[Tt]emporada-(\\d+)-[Cc]apitulo-(\\d+))")
             val aaa = regexseason.find(href)?.destructured?.component1()?.replace(Regex("(-[Tt]emporada-|[Cc]apitulo-)"),"")
             val seasonid = aaa.let { str ->
@@ -89,14 +88,14 @@ open class PelisplusProviderTemplate : MainAPI() {
             val isValid = seasonid?.size == 2
             val episode = if (isValid) seasonid?.getOrNull(1) else null
             val season = if (isValid) seasonid?.getOrNull(0) else null
-            val epThumb = fixUrl(li.selectFirst("img").attr("src"))
-            val epDate = li.selectFirst(".meta > .date").text()
+            val epThumb = fixUrl(li.selectFirst("img")!!.attr("src"))
+            val epDate = li.selectFirst(".meta > .date")!!.text()
 
             if(year == null) {
                 year = epDate?.split("-")?.get(0)?.toIntOrNull()
             }
 
-            newEpisode(li.selectFirst("a").attr("href")) {
+            newEpisode(li.selectFirst("a")!!.attr("href")) {
                 this.season = season
                 this.episode = episode
                 this.posterUrl = epThumb
@@ -204,25 +203,14 @@ open class PelisplusProviderTemplate : MainAPI() {
         val soup = app.get(link).text
         val m3u8regex = Regex("((https:|http:)\\/\\/.*m3u8.*expiry=(\\d+))")
         val m3u8 = m3u8regex.find(soup)?.value ?: return false
-        M3u8Helper().m3u8Generation(
-            M3u8Helper.M3u8Stream(
-                m3u8,
-                headers = mapOf("Referer" to mainUrl)
-            ), true
-        )
-            .map { stream ->
-                val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
-                callback(
-                    ExtractorLink(
-                        name,
-                        "$name $qualityString",
-                        stream.streamUrl,
-                        mainUrl,
-                        getQualityFromName(stream.quality.toString()),
-                        true
-                    )
-                )
-            }
+
+        M3u8Helper.generateM3u8(
+            name,
+            m3u8,
+            mainUrl,
+            headers = mapOf("Referer" to mainUrl)
+        ).forEach (callback)
+
         return true
     }
 

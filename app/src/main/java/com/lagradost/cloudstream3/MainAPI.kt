@@ -19,7 +19,6 @@ import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.malApi
 import com.lagradost.cloudstream3.ui.player.SubtitleData
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import okhttp3.Headers
 import okhttp3.Interceptor
 import java.text.SimpleDateFormat
 import java.util.*
@@ -81,9 +80,12 @@ object APIHolder {
             AkwamProvider(),
             MyCimaProvider(),
             EgyBestProvider(),
+            FaselHDProvider(),
             SoaptwoDayProvider(),
             HDMProvider(),// disabled due to cloudflare
             TheFlixToProvider(),
+            StreamingcommunityProvider(),
+            TantifilmProvider(),
 
             // Metadata providers
             //TmdbProvider(),
@@ -101,6 +103,7 @@ object APIHolder {
             TenshiProvider(),
             WcoProvider(),
             AnimePaheProvider(),
+            DreamSubProvider(),
             NineAnimeProvider(),
             AnimeWorldProvider(),
             ZoroProvider(),
@@ -140,10 +143,13 @@ object APIHolder {
         return null
     }
 
-    fun LoadResponse.getId(): Int {
+    fun getLoadResponseIdFromUrl(url : String, apiName: String) : Int {
         return url.replace(getApiFromName(apiName).mainUrl, "").replace("/", "").hashCode()
     }
 
+    fun LoadResponse.getId(): Int {
+        return getLoadResponseIdFromUrl(url,apiName)
+    }
 
     /**
      * Gets the website captcha token
@@ -530,9 +536,9 @@ enum class ShowStatus {
     Ongoing,
 }
 
-enum class DubStatus {
-    Dubbed,
-    Subbed,
+enum class DubStatus(val id: Int) {
+    Dubbed(1),
+    Subbed(0),
 }
 
 enum class TvType {

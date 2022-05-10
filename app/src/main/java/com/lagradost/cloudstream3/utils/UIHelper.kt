@@ -19,6 +19,7 @@ import android.widget.ListAdapter
 import android.widget.ListView
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
+import androidx.annotation.DrawableRes
 import androidx.annotation.IdRes
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.view.menu.MenuBuilder
@@ -100,10 +101,10 @@ object UIHelper {
     }
 
     fun Activity?.getSpanCount(): Int? {
-        val compactView = this?.getGridIsCompact() ?: return null
+        val compactView = false
         val spanCountLandscape = if (compactView) 2 else 6
         val spanCountPortrait = if (compactView) 1 else 3
-        val orientation = this.resources?.configuration?.orientation ?: return null
+        val orientation = this?.resources?.configuration?.orientation ?: return null
 
         return if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
             spanCountLandscape
@@ -148,14 +149,24 @@ object UIHelper {
         return color
     }
 
-    fun ImageView?.setImage(url: String?, headers: Map<String, String>? = null): Boolean {
+    fun ImageView?.setImage(
+        url: String?,
+        headers: Map<String, String>? = null,
+        @DrawableRes
+        errorImageDrawable: Int? = null
+    ): Boolean {
         if (this == null || url.isNullOrBlank()) return false
         return try {
-            GlideApp.with(this.context)
+            val builder = GlideApp.with(this.context)
                 .load(GlideUrl(url) { headers ?: emptyMap() }).transition(
                     DrawableTransitionOptions.withCrossFade()
                 )
-                .into(this)
+
+            if (errorImageDrawable != null)
+                builder.error(errorImageDrawable).into(this)
+            else
+                builder.into(this)
+
             true
         } catch (e: Exception) {
             logError(e)
@@ -315,21 +326,10 @@ object UIHelper {
         return result
     }
 
-    private fun Context.getGridFormat(): String {
+    fun Context?.IsBottomLayout(): Boolean {
+        if (this == null) return true
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
-        return settingsManager.getString(getString(R.string.grid_format_key), "grid")!!
-    }
-
-    fun Context.getGridFormatId(): Int {
-        return when (getGridFormat()) {
-            "list" -> R.layout.search_result_compact
-            "compact_list" -> R.layout.search_result_super_compact
-            else -> R.layout.search_result_grid
-        }
-    }
-
-    fun Context.getGridIsCompact(): Boolean {
-        return getGridFormat() != "grid"
+        return settingsManager.getBoolean(getString(R.string.bottom_title_key), true)
     }
 
     fun Activity.changeStatusBarState(hide: Boolean): Int {
@@ -384,7 +384,9 @@ object UIHelper {
         }
     }
 
-    fun hideKeyboard(view: View) {
+    fun hideKeyboard(view: View?) {
+        if(view == null) return
+
         val inputMethodManager =
             view.context.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager?
         inputMethodManager?.hideSoftInputFromWindow(view.windowToken, 0)

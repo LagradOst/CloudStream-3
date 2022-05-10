@@ -2,9 +2,11 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 import java.net.URI
 import java.util.*
 import javax.crypto.Cipher
@@ -27,18 +29,31 @@ class GogoanimeProvider : MainAPI() {
             }
         }
 
+        /**
+         * @param id base64Decode(show_id) + IV
+         * @return the encryption key
+         * */
+        private fun getKey(id: String): String? {
+            return normalSafeApiCall {
+                id.map {
+                    it.code.toString(16)
+                }.joinToString("").substring(0, 32)
+            }
+        }
+
         val qualityRegex = Regex("(\\d+)P")
 
         // https://github.com/saikou-app/saikou/blob/3e756bd8e876ad7a9318b17110526880525a5cd3/app/src/main/java/ani/saikou/anime/source/extractors/GogoCDN.kt#L60
         // No Licence on the function
         private fun cryptoHandler(
             string: String,
-            iv: ByteArray,
-            secretKeyString: ByteArray,
+            iv: String,
+            secretKeyString: String,
             encrypt: Boolean = true
         ): String {
-            val ivParameterSpec = IvParameterSpec(iv)
-            val secretKey = SecretKeySpec(secretKeyString, "AES")
+            println("IV: $iv, Key: $secretKeyString, encrypt: $encrypt, Message: $string")
+            val ivParameterSpec = IvParameterSpec(iv.toByteArray())
+            val secretKey = SecretKeySpec(secretKeyString.toByteArray(), "AES")
             val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
             return if (!encrypt) {
                 cipher.init(Cipher.DECRYPT_MODE, secretKey, ivParameterSpec)
@@ -59,37 +74,64 @@ class GogoanimeProvider : MainAPI() {
         /**
          * @param iframeUrl something like https://gogoplay4.com/streaming.php?id=XXXXXX
          * @param mainApiName used for ExtractorLink names and source
-         * @param iv secret iv from site, required non-null
-         * @param secretKey secret key for decryption from site, required non-null
+         * @param iv secret iv from site, required non-null if isUsingAdaptiveKeys is off
+         * @param secretKey secret key for decryption from site, required non-null if isUsingAdaptiveKeys is off
+         * @param secretDecryptKey secret key to decrypt the response json, required non-null if isUsingAdaptiveKeys is off
+         * @param isUsingAdaptiveKeys generates keys from IV and ID, see getKey()
+         * @param isUsingAdaptiveData generate encrypt-ajax data based on $("script[data-name='episode']")[0].dataset.value
          * */
         suspend fun extractVidstream(
             iframeUrl: String,
             mainApiName: String,
             callback: (ExtractorLink) -> Unit,
-            iv: ByteArray?,
-            secretKey: ByteArray?
+            iv: String?,
+            secretKey: String?,
+            secretDecryptKey: String?,
+            // This could be removed, but i prefer it verbose
+            isUsingAdaptiveKeys: Boolean,
+            isUsingAdaptiveData: Boolean
         ) = safeApiCall {
             // https://github.com/saikou-app/saikou/blob/3e756bd8e876ad7a9318b17110526880525a5cd3/app/src/main/java/ani/saikou/anime/source/extractors/GogoCDN.kt
             // No Licence on the following code
             // Also modified of https://github.com/jmir1/aniyomi-extensions/blob/master/src/en/gogoanime/src/eu/kanade/tachiyomi/animeextension/en/gogoanime/extractors/GogoCdnExtractor.kt
             // License on the code above  https://github.com/jmir1/aniyomi-extensions/blob/master/LICENSE
 
-            if (iv == null || secretKey == null)
+            if ((iv == null || secretKey == null || secretDecryptKey == null) && !isUsingAdaptiveKeys)
                 return@safeApiCall
+
+            val id = Regex("id=([^&]+)").find(iframeUrl)!!.value.removePrefix("id=")
+
+            var document: Document? = null
+            val foundIv =
+                iv ?: app.get(iframeUrl).document.also { document = it }
+                    .select("""div.wrapper[class*=container]""")
+                    .attr("class").split("-").lastOrNull() ?: return@safeApiCall
+            val foundKey = secretKey ?: getKey(base64Decode(id) + foundIv) ?: return@safeApiCall
+            val foundDecryptKey = secretDecryptKey ?: foundKey
 
             val uri = URI(iframeUrl)
             val mainUrl = "https://" + uri.host
 
-            val id = Regex("id=([^&]+)").find(iframeUrl)!!.value.removePrefix("id=")
-            val encryptedId = cryptoHandler(id, iv, secretKey)
+            val encryptedId = cryptoHandler(id, foundIv, foundKey)
+            val encryptRequestData = if (isUsingAdaptiveData) {
+                // Only fetch the document if necessary
+                val realDocument = document ?: app.get(iframeUrl).document
+                val dataEncrypted =
+                    realDocument.select("script[data-name='episode']").attr("data-value")
+                val headers = cryptoHandler(dataEncrypted, foundIv, foundKey, false)
+                "id=$encryptedId&alias=$id&" + headers.substringAfter("&")
+            } else {
+                "id=$encryptedId&alias=$id"
+            }
+
             val jsonResponse =
                 app.get(
-                    "$mainUrl/encrypt-ajax.php?id=$encryptedId",
+                    "$mainUrl/encrypt-ajax.php?$encryptRequestData",
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 )
             val dataencrypted =
                 jsonResponse.text.substringAfter("{\"data\":\"").substringBefore("\"}")
-            val datadecrypted = cryptoHandler(dataencrypted, iv, secretKey, false)
+            val datadecrypted = cryptoHandler(dataencrypted, foundIv, foundDecryptKey, false)
             val sources = AppUtils.parseJson<GogoSources>(datadecrypted)
 
             fun invokeGogoSource(
@@ -98,35 +140,21 @@ class GogoanimeProvider : MainAPI() {
             ) {
                 when {
                     source.file.contains("m3u8") -> {
-                        M3u8Helper().m3u8Generation(
-                            M3u8Helper.M3u8Stream(
-                                source.file,
-                                headers = mapOf("Referer" to "https://gogoplay4.com")
-                            ), true
-                        )
-                            .map { stream ->
-                                val qualityString =
-                                    if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
-                                sourceCallback(
-                                    ExtractorLink(
-                                        mainApiName,
-                                        "$mainApiName $qualityString",
-                                        stream.streamUrl,
-                                        mainUrl,
-                                        getQualityFromName(stream.quality.toString()),
-                                        true
-                                    )
-                                )
-                            }
+                        M3u8Helper.generateM3u8(
+                            mainApiName,
+                            source.file,
+                            mainUrl,
+                            headers = mapOf("Referer" to "https://gogoplay4.com")
+                        ).forEach(sourceCallback)
                     }
                     source.file.contains("vidstreaming") -> {
                         sourceCallback.invoke(
                             ExtractorLink(
                                 mainApiName,
-                                "$mainApiName ${source.label?.replace("0 P", "0p") ?: ""}",
+                                mainApiName,
                                 source.file,
                                 mainUrl,
-                                getQualityFromName(source.label ?: ""),
+                                getQualityFromName(source.label),
                                 isM3u8 = source.type == "hls"
                             )
                         )
@@ -135,10 +163,10 @@ class GogoanimeProvider : MainAPI() {
                         sourceCallback.invoke(
                             ExtractorLink(
                                 mainApiName,
-                                "$mainApiName ${source.label?.replace("0 P", "0p") ?: ""}",
+                                mainApiName,
                                 source.file,
                                 mainUrl,
-                                getQualityFromName(source.label ?: ""),
+                                getQualityFromName(source.label),
                                 isM3u8 = source.type == "hls"
                             )
                         )
@@ -219,17 +247,17 @@ class GogoanimeProvider : MainAPI() {
         val html = app.get(link).text
         val doc = Jsoup.parse(html)
 
-        val episodes = doc.select(""".last_episodes li""").map {
+        val episodes = doc.select(""".last_episodes li""").mapNotNull {
             AnimeSearchResponse(
-                it.selectFirst(".name").text().replace(" (Dub)", ""),
-                fixUrl(it.selectFirst(".name > a").attr("href")),
+                it.selectFirst(".name")?.text()?.replace(" (Dub)", "") ?: return@mapNotNull null,
+                fixUrl(it.selectFirst(".name > a")?.attr("href") ?: return@mapNotNull null),
                 this.name,
                 TvType.Anime,
-                it.selectFirst("img").attr("src"),
+                it.selectFirst("img")?.attr("src"),
                 it.selectFirst(".released")?.text()?.split(":")?.getOrNull(1)?.trim()
                     ?.toIntOrNull(),
-                if (it.selectFirst(".name").text()
-                        .contains("Dub")
+                if (it.selectFirst(".name")?.text()
+                        ?.contains("Dub") == true
                 ) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(
                     DubStatus.Subbed
                 ),
@@ -255,8 +283,8 @@ class GogoanimeProvider : MainAPI() {
         val doc = Jsoup.parse(html)
 
         val animeBody = doc.selectFirst(".anime_info_body_bg")
-        val title = animeBody.selectFirst("h1").text()
-        val poster = animeBody.selectFirst("img").attr("src")
+        val title = animeBody?.selectFirst("h1")!!.text()
+        val poster = animeBody.selectFirst("img")?.attr("src")
         var description: String? = null
         val genre = ArrayList<String>()
         var year: Int? = null
@@ -265,7 +293,7 @@ class GogoanimeProvider : MainAPI() {
         var type: String? = null
 
         animeBody.select("p.type").forEach { pType ->
-            when (pType.selectFirst("span").text().trim()) {
+            when (pType.selectFirst("span")?.text()?.trim()) {
                 "Plot Summary:" -> {
                     description = pType.text().replace("Plot Summary:", "").trim()
                 }
@@ -289,13 +317,13 @@ class GogoanimeProvider : MainAPI() {
             }
         }
 
-        val animeId = doc.selectFirst("#movie_id").attr("value")
+        val animeId = doc.selectFirst("#movie_id")!!.attr("value")
         val params = mapOf("ep_start" to "0", "ep_end" to "2000", "id" to animeId)
 
         val episodes = app.get(episodeloadApi, params = params).document.select("a").map {
             Episode(
                 fixUrl(it.attr("href").trim()),
-                "Episode " + it.selectFirst(".name").text().replace("EP", "").trim()
+                "Episode " + it.selectFirst(".name")?.text()?.replace("EP", "")?.trim()
             )
         }.reversed()
 
@@ -330,7 +358,7 @@ class GogoanimeProvider : MainAPI() {
     private suspend fun extractVideos(uri: String, callback: (ExtractorLink) -> Unit) {
         val doc = app.get(uri).document
 
-        val iframe = fixUrlNull(doc.selectFirst("div.play-video > iframe").attr("src")) ?: return
+        val iframe = fixUrlNull(doc.selectFirst("div.play-video > iframe")?.attr("src")) ?: return
 
         argamap(
             {
@@ -346,7 +374,7 @@ class GogoanimeProvider : MainAPI() {
                         callback(
                             ExtractorLink(
                                 "Gogoanime",
-                                if (qual == "null") "Gogoanime" else "Gogoanime - " + qual + "p",
+                                "Gogoanime",
                                 it.attr("href"),
                                 page.url,
                                 getQualityFromName(qual),
@@ -370,10 +398,19 @@ class GogoanimeProvider : MainAPI() {
                             loadExtractor(data, streamingResponse.url, callback)
                         }
                 }, {
-                    val iv = "4786443969418267".toByteArray()
-                    val secretKey =
-                        "63976882873536819639922083275907".toByteArray()
-                    extractVidstream(iframe, this.name, callback, iv, secretKey)
+                    val iv = "3134003223491201"
+                    val secretKey = "37911490979715163134003223491201"
+                    val secretDecryptKey = "54674138327930866480207815084989"
+                    extractVidstream(
+                        iframe,
+                        this.name,
+                        callback,
+                        iv,
+                        secretKey,
+                        secretDecryptKey,
+                        isUsingAdaptiveKeys = false,
+                        isUsingAdaptiveData = true
+                    )
                 })
             }
         )

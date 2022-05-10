@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addDuration
 import com.lagradost.cloudstream3.LoadResponse.Companion.addRating
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.TvType
@@ -36,13 +37,13 @@ class NginxProvider : MainAPI() {
 
         val isMovie = !nfoUrl.contains("tvshow.nfo")
 
-        val title = metadataDocument.selectFirst("title").text()
+        val title = metadataDocument.selectFirst("title")!!.text()
 
-        val description = metadataDocument.selectFirst("plot").text()
+        val description = metadataDocument.selectFirst("plot")!!.text()
 
         if (isMovie) {
-            val poster = metadataDocument.selectFirst("thumb").text()
-            val trailer = metadataDocument.select("trailer")?.mapNotNull {
+            val poster = metadataDocument.selectFirst("thumb")!!.text()
+            val trailer = metadataDocument.select("trailer").mapNotNull {
                it?.text()?.replace(
                    "plugin://plugin.video.youtube/play/?video_id=",
                    "https://www.youtube.com/watch?v="
@@ -65,23 +66,19 @@ class NginxProvider : MainAPI() {
 
             val data = url + dataList.firstNotNullOf { item -> item.takeIf { (!it.attr("href").contains(".nfo") &&  !it.attr("href").contains(".jpg"))} }.attr("href").toString()  // exclude poster and nfo (metadata) file
 
-
-            return MovieLoadResponse(
+            return newMovieLoadResponse(
                 title,
-                data,
-                this.name,
+                url,
                 TvType.Movie,
-                data,
-                poster,
-                date,
-                description,
-                ratingAverage,
-                tagsList,
-                null,
-                trailer,
-                null,
-                null,
-            )
+                data
+            ) {
+                this.year = date
+                this.plot = description
+                this.rating = ratingAverage
+                this.tags = tagsList
+                this.trailers = trailer
+                addPoster(poster, authHeader)
+            }
         } else  // a tv serie
         {
 
@@ -128,7 +125,7 @@ class NginxProvider : MainAPI() {
                         val epNum = nfoDocument.selectFirst("episode")?.text()?.toIntOrNull()
                         val poster =
                             seasonString + episode.attr("href").replace(".nfo", "-thumb.jpg")
-                        val name = nfoDocument.selectFirst("title").text()
+                        val name = nfoDocument.selectFirst("title")!!.text()
                         // val seasonInt = nfoDocument.selectFirst("season").text().toIntOrNull()
                         val date = nfoDocument.selectFirst("aired")?.text()
                         val plot = nfoDocument.selectFirst("plot")?.text()
@@ -144,9 +141,9 @@ class NginxProvider : MainAPI() {
                                     this.name = name
                                     this.season = seasonInt
                                     this.episode = epNum
-                                    this.posterUrl = poster
-                                    addDate(date)
+                                    this.posterUrl = poster  // will require headers too
                                     this.description = plot
+                                    addDate(date)
                             }
                         )
                     }
@@ -154,10 +151,10 @@ class NginxProvider : MainAPI() {
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodeList) {
                 this.name = title
                 this.url = url
-                this.posterUrl = posterUrl
                 this.episodes = episodeList
                 this.plot = description
                 this.tags = tagsList
+                addPoster(posterUrl, authHeader)
             }
         }
 
@@ -189,7 +186,7 @@ class NginxProvider : MainAPI() {
 
 
 
-    override suspend fun getMainPage(): HomePageResponse? {
+    override suspend fun getMainPage(): HomePageResponse {
         val authHeader = getAuthHeader(storedCredentials)  // call again because it isn't reloaded if in main class and storedCredentials loads after
         if (mainUrl == "NONE"){
             throw ErrorLoadingException("No nginx url specified in the settings: Nginx Settigns > Nginx server url, try again in a few seconds")
@@ -221,31 +218,26 @@ class NginxProvider : MainAPI() {
 
                             if (isMovieType) {
                                 val movieName = nfoContent.select("title").text()
-
                                 val posterUrl = mediaRootUrl + "poster.jpg"
-
-                                return@mapNotNull MovieSearchResponse(
+                                return@mapNotNull newMovieSearchResponse(
                                     movieName,
                                     mediaRootUrl,
-                                    this.name,
                                     TvType.Movie,
-                                    posterUrl,
-                                    null,
-                                )
+                                ) {
+                                    addPoster(posterUrl, authHeader)
+                                }
                             } else {  // tv serie
                                 val serieName = nfoContent.select("title").text()
 
                                 val posterUrl = mediaRootUrl + "poster.jpg"
 
-                                TvSeriesSearchResponse(
+                                newTvSeriesSearchResponse(
                                     serieName,
                                     nfoPath,
-                                    this.name,
                                     TvType.TvSeries,
-                                    posterUrl,
-                                    null,
-                                    null,
-                                )
+                                ) {
+                                    addPoster(posterUrl, authHeader)
+                                }
 
 
                             }

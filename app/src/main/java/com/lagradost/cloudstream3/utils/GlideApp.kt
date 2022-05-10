@@ -12,8 +12,10 @@ import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.AppGlideModule
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.signature.ObjectKey
+import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.network.DdosGuardKiller
-import com.lagradost.cloudstream3.network.Requests
+import com.lagradost.cloudstream3.network.initClient
+import com.lagradost.nicehttp.Requests
 import java.io.InputStream
 
 @GlideModule
@@ -32,7 +34,9 @@ class GlideModule : AppGlideModule() {
     // https://stackoverflow.com/a/61634041
     override fun registerComponents(context: Context, glide: Glide, registry: Registry) {
         val client =
-            Requests().initClient(context)
+            Requests().apply {
+                defaultHeaders = mapOf("user-agent" to USER_AGENT)
+            }.initClient(context)
                 .newBuilder()
                 .addInterceptor(DdosGuardKiller(false))
                 .build()

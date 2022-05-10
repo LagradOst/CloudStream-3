@@ -11,10 +11,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.appcompat.widget.SearchView
 import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSnapHelper
@@ -36,6 +38,7 @@ import com.lagradost.cloudstream3.ui.APIRepository.Companion.noneApi
 import com.lagradost.cloudstream3.ui.APIRepository.Companion.randomApi
 import com.lagradost.cloudstream3.ui.AutofitRecyclerView
 import com.lagradost.cloudstream3.ui.WatchType
+import com.lagradost.cloudstream3.ui.quicksearch.QuickSearchFragment
 import com.lagradost.cloudstream3.ui.result.START_ACTION_RESUME_LATEST
 import com.lagradost.cloudstream3.ui.search.*
 import com.lagradost.cloudstream3.ui.search.SearchFragment.Companion.filterSearchResponse
@@ -64,7 +67,6 @@ import kotlinx.android.synthetic.main.fragment_home.*
 import kotlinx.android.synthetic.main.fragment_home.home_api_fab
 import kotlinx.android.synthetic.main.fragment_home.home_bookmarked_child_recyclerview
 import kotlinx.android.synthetic.main.fragment_home.home_bookmarked_holder
-import kotlinx.android.synthetic.main.fragment_home.home_change_api
 import kotlinx.android.synthetic.main.fragment_home.home_change_api_loading
 import kotlinx.android.synthetic.main.fragment_home.home_loaded
 import kotlinx.android.synthetic.main.fragment_home.home_loading
@@ -97,6 +99,22 @@ class HomeFragment : Fragment() {
     companion object {
         val configEvent = Event<Int>()
         var currentSpan = 1
+        val listHomepageItems = mutableListOf<SearchResponse>()
+
+        private val errorProfilePics = listOf(
+            R.drawable.monke_benene,
+            R.drawable.monke_burrito,
+            R.drawable.monke_coco,
+            R.drawable.monke_cookie,
+            R.drawable.monke_flusdered,
+            R.drawable.monke_funny,
+            R.drawable.monke_like,
+            R.drawable.monke_party,
+            R.drawable.monke_sob,
+            R.drawable.monke_drink,
+        )
+
+        val errorProfilePic = errorProfilePics.random()
 
         fun Activity.loadHomepageList(item: HomePageList) {
             val context = this
@@ -228,7 +246,8 @@ class HomeFragment : Fragment() {
                     }.sortedBy { it.name.lowercase() }.toMutableList()
                     currentValidApis.addAll(0, validAPIs.subList(0, 2))
 
-                    val names = currentValidApis.map { if(isMultiLang) "${getFlagFromIso(it.lang)?.plus(" ") ?: ""}${it.name}" else it.name }
+                    val names =
+                        currentValidApis.map { if (isMultiLang) "${getFlagFromIso(it.lang)?.plus(" ") ?: ""}${it.name}" else it.name }
                     val index = currentValidApis.map { it.name }.indexOf(currentApiName)
                     listView?.setItemChecked(index, true)
                     arrayAdapter.addAll(names)
@@ -358,6 +377,7 @@ class HomeFragment : Fragment() {
     }
 
     private var currentApiName: String? = null
+    private var toggleRandomButton = false
 
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -367,11 +387,33 @@ class HomeFragment : Fragment() {
         home_change_api?.setOnClickListener(apiChangeClickListener)
         home_change_api_loading?.setOnClickListener(apiChangeClickListener)
         home_api_fab?.setOnClickListener(apiChangeClickListener)
+        home_random?.setOnClickListener {
+            if (listHomepageItems.isNotEmpty()) {
+                activity.loadSearchResult(listHomepageItems.random())
+            }
+        }
+
+        //Disable Random button, if its toggled off on settings
+        context?.let {
+            val settingsManager = PreferenceManager.getDefaultSharedPreferences(it)
+            toggleRandomButton =
+                settingsManager.getBoolean(getString(R.string.random_button_key), false)
+            home_random?.isVisible = toggleRandomButton
+            if (!toggleRandomButton) {
+                home_random?.visibility = View.GONE
+            }
+        }
 
         observe(homeViewModel.apiName) { apiName ->
             currentApiName = apiName
             setKey(HOMEPAGE_API, apiName)
+            home_api_fab?.text = apiName
             home_provider_name?.text = apiName
+            try {
+                home_search?.queryHint = getString(R.string.search_hint_site).format(apiName)
+            } catch (e: Exception) {
+                logError(e)
+            }
             home_provider_meta_info?.isVisible = false
 
             getApiFromNameNull(apiName)?.let { currentApi ->
@@ -435,17 +477,32 @@ class HomeFragment : Fragment() {
             }
         }
 
+        home_search?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String): Boolean {
+                QuickSearchFragment.pushSearch(activity, query, currentApiName?.let { arrayOf(it) })
+
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String): Boolean {
+                //searchViewModel.quickSearch(newText)
+                return true
+            }
+        })
+
         observe(homeViewModel.page) { data ->
             when (data) {
                 is Resource.Success -> {
                     home_loading_shimmer?.stopShimmer()
 
                     val d = data.value
+                    listHomepageItems.clear()
 
                     currentHomePage = d
                     (home_master_recycler?.adapter as? ParentItemAdapter?)?.updateList(
                         d?.items?.mapNotNull {
                             try {
+                                listHomepageItems.addAll(it.list.filterSearchResponse())
                                 HomePageList(it.name, it.list.filterSearchResponse())
                             } catch (e: Exception) {
                                 logError(e)
@@ -456,6 +513,9 @@ class HomeFragment : Fragment() {
                     home_loading?.isVisible = false
                     home_loading_error?.isVisible = false
                     home_loaded?.isVisible = true
+                    if (toggleRandomButton) {
+                        home_random?.isVisible = listHomepageItems.isNotEmpty()
+                    }
                 }
                 is Resource.Failure -> {
                     home_loading_shimmer?.stopShimmer()
@@ -791,9 +851,11 @@ class HomeFragment : Fragment() {
             val dy = scrollY - oldScrollY
             if (dy > 0) { //check for scroll down
                 home_api_fab?.shrink() // hide
+                home_random?.shrink()
             } else if (dy < -5) {
                 if (view?.context?.isTvSettings() == false) {
                     home_api_fab?.extend() // show
+                    home_random?.extend()
                 }
             }
         })
@@ -823,7 +885,11 @@ class HomeFragment : Fragment() {
             for (syncApi in OAuth2API.OAuth2Apis) {
                 val login = syncApi.loginInfo()
                 val pic = login?.profilePicture
-                if (home_profile_picture?.setImage(pic) == true) {
+                if (home_profile_picture?.setImage(
+                        pic,
+                        errorImageDrawable = errorProfilePic
+                    ) == true
+                ) {
                     home_profile_picture_holder?.isVisible = true
                     break
                 }
