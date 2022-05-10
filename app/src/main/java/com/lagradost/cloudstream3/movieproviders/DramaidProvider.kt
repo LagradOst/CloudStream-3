@@ -1,0 +1,213 @@
+package com.lagradost.cloudstream3.movieproviders
+
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.animeproviders.OploverzProvider
+import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.getQualityFromName
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Element
+import java.util.ArrayList
+
+class DramaidProvider : MainAPI() {
+    override var mainUrl = "https://185.224.83.103"
+    override var name = "DramaId"
+    override val hasQuickSearch = false
+    override val hasMainPage = true
+    override val lang = "id"
+    override val hasDownloadSupport = true
+    override val hasChromecastSupport = false
+    override val supportedTypes = setOf(TvType.AsianDrama)
+
+    companion object {
+        fun getStatus(t: String): ShowStatus {
+            return when (t) {
+                "Completed" -> ShowStatus.Completed
+                "Ongoing" -> ShowStatus.Ongoing
+                else -> ShowStatus.Completed
+            }
+        }
+    }
+
+    override suspend fun getMainPage(): HomePageResponse {
+        val html = app.get(
+            url = mainUrl,
+//            cookies = mapOf("_ga_NBHKWL247E" to "GS1.1.1652100493.1.1.1652106159.0")
+        ).text
+        val document = Jsoup.parse(html)
+
+        val homePageList = ArrayList<HomePageList>()
+
+        document.select(".bixbox").forEach { block ->
+            val header = block.selectFirst(".releases > h3")!!.text().trim()
+            val dramas = block.select("article[itemscope=itemscope]").mapNotNull {
+                it.toSearchResult()
+            }
+            if (dramas.isNotEmpty()) homePageList.add(HomePageList(header, dramas))
+        }
+
+        return HomePageResponse(homePageList)
+    }
+
+    private suspend fun getProperDramaLink(uri: String): String {
+        return when {
+            (uri.contains("/series")) -> uri
+            else -> app.get(uri).document.select(".ts-breadcrumb.bixbox").joinToString {
+                it.select("li:nth-child(2) > a").attr("href")
+            }
+        }
+    }
+
+    private suspend fun Element.toSearchResult(): SearchResponse? {
+        val href = getProperDramaLink(this.selectFirst("a.tip")!!.attr("href"))
+        val title = this.selectFirst("h2[itemprop=headline]")!!.text().trim()
+        val posterUrl = this.selectFirst(".limit > noscript > img")!!.attr("src")
+
+        return newTvSeriesSearchResponse(title, href, TvType.AsianDrama) {
+            this.posterUrl = posterUrl
+        }
+    }
+
+    override suspend fun search(query: String): List<SearchResponse> {
+        val link = "$mainUrl/?s=$query"
+        val html = app.get(link).text
+        val document = Jsoup.parse(html)
+
+        return document.select("article[itemscope=itemscope]").apmap {
+            val title = it.selectFirst("h2[itemprop=headline]")!!.text().trim()
+            val poster = it.selectFirst(".limit > noscript > img")!!.attr("src")
+            val href = it.selectFirst("a.tip")!!.attr("href")
+
+            newTvSeriesSearchResponse(title, href, TvType.AsianDrama) {
+                this.posterUrl = poster
+            }
+        }
+    }
+
+    override suspend fun load(url: String): LoadResponse {
+        val html = app.get(url).text
+        val document = Jsoup.parse(html)
+
+        val title = document.selectFirst("h1.entry-title")!!.text().trim()
+        val poster = document.select(".thumb > noscript > img").attr("src")
+        val tags = document.select(".genxed > a").map { it.text() }
+
+        val year = Regex("\\d, ([0-9]*)").find(
+            document.selectFirst(".info-content > .spe > span > time")!!.text().trim()
+        )?.groupValues?.get(1).toString().toIntOrNull()
+        val status = getStatus(
+            document.select(".info-content > .spe > span:nth-child(1)")
+                .text().trim().replace("Status: ", "")
+        )
+        val description = document.select(".entry-content > p").text().trim()
+
+        val episodes = document.select(".eplister > ul > li").mapNotNull {
+            //TODO episode name didn't show
+            val name = it.select(".epl-title").text().trim()
+            val link = it.select("a").attr("href")
+            newEpisode(link) {
+                this.name = name
+            }
+        }.reversed()
+
+        val recommendations =
+            document.select(".listupd > article[itemscope=itemscope]").apmap { rec ->
+                val epTitle = rec.selectFirst("h2[itemprop=headline]")!!.text().trim()
+                val epPoster = rec.selectFirst(".limit > noscript > img")!!.attr("src")
+                val epHref = fixUrl(rec.selectFirst("a.tip")!!.attr("href"))
+
+                newTvSeriesSearchResponse(epTitle, epHref, TvType.AsianDrama) {
+                    this.posterUrl = epPoster
+                }
+            }
+
+        if (episodes.size == 1) {
+            return newMovieLoadResponse(title, url, TvType.Movie, episodes[0].data) {
+                posterUrl = poster
+                this.year = year
+                plot = description
+                this.tags = tags
+                this.recommendations = recommendations
+            }
+        } else {
+            return newTvSeriesLoadResponse(title, url, TvType.AsianDrama, episodes = episodes) {
+                posterUrl = poster
+                this.year = year
+                showStatus = status
+                plot = description
+                this.tags = tags
+                this.recommendations = recommendations
+            }
+        }
+
+    }
+
+    private data class Sources(
+        @JsonProperty("file") val file: String,
+        @JsonProperty("label") val label: String,
+        @JsonProperty("type") val type: String,
+        @JsonProperty("default") val default: Boolean?
+    )
+
+    private data class Tracks(
+        @JsonProperty("file") val file: String,
+        @JsonProperty("label") val label: String,
+        @JsonProperty("kind") val type: String,
+        @JsonProperty("default") val default: Boolean?
+    )
+
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val document = app.get(data).document
+
+        val server = app.get(document.select("#pembed").joinToString {
+            fixUrl(it.select("iframe").attr("src"))
+        }).document.selectFirst(".picasa")?.nextElementSibling()?.data()
+
+        val source = "[${server!!.substringAfter("sources: [").substringBefore("],")}]".trimIndent()
+        val tracksource = server.substringAfter("tracks:[").substringBefore("],")
+            .replace("//language", "")
+            .replace("file", "\"file\"")
+            .replace("label", "\"label\"")
+            .replace("kind", "\"kind\"").trimIndent()
+
+        try {
+            mapper.readValue<List<Sources>>(source).apmap {
+                callback(
+                    ExtractorLink(
+                        name,
+                        name,
+                        fixUrl(it.file),
+                        referer = "https://motonews.club/",
+                        quality = getQualityFromName(it.label)
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            logError(e)
+        }
+
+        try {
+            mapper.readValue<Tracks>(tracksource).let {
+                subtitleCallback(
+                    SubtitleFile(
+                        if(it.label.contains("Indonesia")) "${it.label}n" else it.label,
+                        it.file
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            logError(e)
+        }
+
+        return true
+    }
+
+}
