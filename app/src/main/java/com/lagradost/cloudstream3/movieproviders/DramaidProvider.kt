@@ -5,6 +5,8 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.animeproviders.OploverzProvider
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.mvvm.safeApiCall
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -33,11 +35,7 @@ class DramaidProvider : MainAPI() {
     }
 
     override suspend fun getMainPage(): HomePageResponse {
-        val html = app.get(
-            url = mainUrl,
-//            cookies = mapOf("_ga_NBHKWL247E" to "GS1.1.1652100493.1.1.1652106159.0")
-        ).text
-        val document = Jsoup.parse(html)
+        val document = app.get(mainUrl).document
 
         val homePageList = ArrayList<HomePageList>()
 
@@ -52,16 +50,15 @@ class DramaidProvider : MainAPI() {
         return HomePageResponse(homePageList)
     }
 
-    private suspend fun getProperDramaLink(uri: String): String {
-        return when {
-            (uri.contains("/series")) -> uri
-            else -> app.get(uri).document.select(".ts-breadcrumb.bixbox").joinToString {
-                it.select("li:nth-child(2) > a").attr("href")
-            }
+    private fun getProperDramaLink(uri: String): String {
+        return if (uri.contains("/series/")) {
+            uri
+        } else {
+            "$mainUrl/series/" + Regex("$mainUrl/(.+)-ep.+").find(uri)?.groupValues?.get(1).toString()
         }
     }
 
-    private suspend fun Element.toSearchResult(): SearchResponse? {
+    private fun Element.toSearchResult(): SearchResponse? {
         val href = getProperDramaLink(this.selectFirst("a.tip")!!.attr("href"))
         val title = this.selectFirst("h2[itemprop=headline]")!!.text().trim()
         val posterUrl = this.selectFirst(".limit > noscript > img")!!.attr("src")
@@ -73,10 +70,9 @@ class DramaidProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val link = "$mainUrl/?s=$query"
-        val html = app.get(link).text
-        val document = Jsoup.parse(html)
+        val document = app.get(link).document
 
-        return document.select("article[itemscope=itemscope]").apmap {
+        return document.select("article[itemscope=itemscope]").map {
             val title = it.selectFirst("h2[itemprop=headline]")!!.text().trim()
             val poster = it.selectFirst(".limit > noscript > img")!!.attr("src")
             val href = it.selectFirst("a.tip")!!.attr("href")
@@ -88,8 +84,7 @@ class DramaidProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val html = app.get(url).text
-        val document = Jsoup.parse(html)
+        val document = app.get(url).document
 
         val title = document.selectFirst("h1.entry-title")!!.text().trim()
         val poster = document.select(".thumb > noscript > img").attr("src")
@@ -104,7 +99,7 @@ class DramaidProvider : MainAPI() {
         )
         val description = document.select(".entry-content > p").text().trim()
 
-        val episodes = document.select(".eplister > ul > li").mapNotNull {
+        val episodes = document.select(".eplister > ul > li").map {
             //TODO episode name didn't show
             val name = it.select(".epl-title").text().trim()
             val link = it.select("a").attr("href")
@@ -114,7 +109,7 @@ class DramaidProvider : MainAPI() {
         }.reversed()
 
         val recommendations =
-            document.select(".listupd > article[itemscope=itemscope]").apmap { rec ->
+            document.select(".listupd > article[itemscope=itemscope]").map { rec ->
                 val epTitle = rec.selectFirst("h2[itemprop=headline]")!!.text().trim()
                 val epPoster = rec.selectFirst(".limit > noscript > img")!!.attr("src")
                 val epHref = fixUrl(rec.selectFirst("a.tip")!!.attr("href"))
@@ -178,8 +173,8 @@ class DramaidProvider : MainAPI() {
             .replace("label", "\"label\"")
             .replace("kind", "\"kind\"").trimIndent()
 
-        try {
-            mapper.readValue<List<Sources>>(source).apmap {
+        safeApiCall {
+            parseJson<List<Sources>>(source).map {
                 callback(
                     ExtractorLink(
                         name,
@@ -190,21 +185,15 @@ class DramaidProvider : MainAPI() {
                     )
                 )
             }
-        } catch (e: Exception) {
-            logError(e)
-        }
 
-        try {
-            mapper.readValue<Tracks>(tracksource).let {
+            parseJson<Tracks>(tracksource).let {
                 subtitleCallback(
                     SubtitleFile(
-                        if(it.label.contains("Indonesia")) "${it.label}n" else it.label,
+                        if (it.label.contains("Indonesia")) "${it.label}n" else it.label,
                         it.file
                     )
                 )
             }
-        } catch (e: Exception) {
-            logError(e)
         }
 
         return true

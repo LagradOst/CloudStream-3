@@ -1,6 +1,9 @@
 package com.lagradost.cloudstream3.animeproviders
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -47,8 +50,7 @@ class OploverzProvider : MainAPI() {
     }
 
     override suspend fun getMainPage(): HomePageResponse {
-        val html = app.get(mainUrl).text
-        val document = Jsoup.parse(html)
+        val document = app.get(mainUrl).document
 
         val homePageList = ArrayList<HomePageList>()
 
@@ -108,10 +110,9 @@ class OploverzProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val link = "$mainUrl/?s=$query"
-        val html = app.get(link).text
-        val document = Jsoup.parse(html)
+        val document = app.get(link).document
 
-        return document.select("article[itemscope=itemscope]").apmap {
+        return document.select("article[itemscope=itemscope]").map {
             val title = it.selectFirst(".tt")!!.ownText().trim()
             val poster = it.selectFirst("img")!!.attr("src")
             val tvType = getType(it.selectFirst(".typez")?.text().toString())
@@ -125,8 +126,7 @@ class OploverzProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val html = app.get(url).text
-        val document = Jsoup.parse(html)
+        val document = app.get(url).document
 
         val title = document.selectFirst("h1.entry-title")!!.text().trim()
         val poster = document.select(".thumb > img")?.attr("src")
@@ -150,7 +150,7 @@ class OploverzProvider : MainAPI() {
         val type = getType(typeCheck)
         val description = document.select(".entry-content > p").text().trim()
 
-        val episodes = document.select(".eplister > ul > li").apmap {
+        val episodes = document.select(".eplister > ul > li").map {
             val name = it.select(".epl-title").text().trim()
             val link = fixUrl(it.select("a").attr("href"))
             Episode(link, name)
@@ -182,6 +182,11 @@ class OploverzProvider : MainAPI() {
 
     }
 
+    data class Source(
+        @JsonProperty("play_url") val play_url: String,
+        @JsonProperty("format_id") val format_id: Int
+    )
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -189,16 +194,18 @@ class OploverzProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        val iframeLink = Jsoup.parse(app.get(data).text).selectFirst(".player-embed > iframe")?.attr("src") ?: return false
-        val source = Jsoup.parse(app.get(fixUrl(iframeLink)).text).toString().substringAfter("\"streams\":[")
+        val iframeLink = app.get(data).document.selectFirst(".player-embed > iframe")?.attr("src") ?: return false
+        val source = app.get(fixUrl(iframeLink)).document.selectFirst("script")?.data()!!.substringAfter("\"streams\":[")
             .substringBefore("]")
-        source.split("},").reversed().apmap {
-            val url = it.substringAfter("{\"play_url\":\"").substringBefore("\"")
-            val quality = when (it.substringAfter("\"format_id\":").substringBefore("}")) {
-                "18" -> 360
-                "22" -> 720
+
+        parseJson<List<Source>>("[$source]").map {
+            val url = it.play_url
+            val quality = when (it.format_id) {
+                18 -> 360
+                22 -> 720
                 else -> Qualities.Unknown.value
             }
+
             callback.invoke(
                 ExtractorLink(
                     name,

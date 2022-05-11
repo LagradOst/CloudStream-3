@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.network.DdosGuardKiller
+import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -43,8 +45,7 @@ class NeonimeProvider : MainAPI() {
     }
 
     override suspend fun getMainPage(): HomePageResponse {
-        val html = app.get(mainUrl).text
-        val document = Jsoup.parse(html)
+        val document = app.get(mainUrl).document
 
         val homePageList = ArrayList<HomePageList>()
 
@@ -59,23 +60,23 @@ class NeonimeProvider : MainAPI() {
         return HomePageResponse(homePageList)
     }
 
-    private suspend fun getProperAnimeLink(uri: String): String {
+    private fun getProperAnimeLink(uri: String): String {
         return when {
             uri.contains("/episode") -> {
-//                val href = "$mainUrl/tvshows/" + Regex("episode/(.*)").find(uri)?.groupValues?.get(1).toString().replace(Regex("-[0-9]x[0-9]"), "")
-//                when {
-//                    href.contains("boruto") -> href.replace(Regex("[0-9]+"), "")
-//                    href.contains("-special") -> href.replace(Regex("-[a-z]\\d.+"), "")
-//                    href.contains("one-piece") -> href.replace(Regex("-\\d.+[a-z]\\d.+-"), "-")
-//                    else -> href
-//                }
-                app.get(uri).document.select(".epinav > a:nth-child(3)").attr("href")
+                val href = "$mainUrl/tvshows/" + Regex("episode/(.*)").find(uri)?.groupValues?.get(1).toString().replace(Regex("-[0-9]x[0-9]"), "")
+                when {
+                    href.contains("boruto") -> href.replace(Regex("[0-9]+"), "")
+                    href.contains("-special") -> href.replace(Regex("-[a-z]\\d.+"), "")
+                    href.contains("one-piece") -> href.replace(Regex("-\\d.+[a-z]\\d.+-"), "-")
+                    else -> href
+                }
+//                app.get(uri).document.select(".epinav > a:nth-child(3)").attr("href")
             }
             else -> uri
         }
     }
 
-    private suspend fun Element.toSearchResult(): SearchResponse? {
+    private fun Element.toSearchResult(): SearchResponse? {
         val href = getProperAnimeLink(fixUrl(this.select("a").attr("href")))
         val title = this.select("span.tt.title-episode,h2.title-episode-movie").text()
         val posterUrl = fixUrl(this.select("img").attr("data-src"))
@@ -90,14 +91,13 @@ class NeonimeProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val link = "$mainUrl/?s=$query"
-        val html = app.get(link).text
-        val document = Jsoup.parse(html)
+        val document = app.get(link).document
 
-        return document.select("div.item.episode-home").apmap {
+        return document.select("div.item.episode-home").map {
             val title = it.selectFirst("div.judul-anime > span")!!.text()
             val poster = it.selectFirst("img")!!.attr("data-src")
             val episodes = it.selectFirst("div.fixyear > h2.text-center")!!
-                .text()?.replace(Regex("[^0-9]"), "")?.trim()?.toIntOrNull()
+                .text().replace(Regex("[^0-9]"), "").trim().toIntOrNull()
             val tvType = getType(it.selectFirst("span.calidad2.episode")?.text().toString())
             val href = getProperAnimeLink(fixUrl(it.selectFirst("a")!!.attr("href")))
 
@@ -114,19 +114,7 @@ class NeonimeProvider : MainAPI() {
     )
 
     override suspend fun load(url: String): LoadResponse {
-        val html = app.get(url, interceptor = DdosGuardKiller(true)).text
-        val document = Jsoup.parse(html)
-
-//        var title: String = ""
-//        var poster: String? = null
-//        var tags: List<String>? = null
-//        var year: Int? = null
-//        var japaneseTitle: String? = null
-//        var checkStatus: String? = null
-//        var status: ShowStatus? = null
-//        var description: String? = null
-//        var rating: Int? = null
-//        var episodes: List<Episode>? = null
+        val document = app.get(url).document
 
             if (url.contains("movie") || url.contains("live-action")) {
                 val mTitle = document.selectFirst(".sbox > .data > h1[itemprop = name]")?.text().toString().trim()
@@ -158,7 +146,7 @@ class NeonimeProvider : MainAPI() {
                 val status = getStatus(document.select("div.metadatac > span").last()!!.text().trim())
                 val description = document.select("div[itemprop = description] > p").text().trim()
 
-                val episodes = document.select("ul.episodios > li").apmap {
+                val episodes = document.select("ul.episodios > li").map {
                     val name = it.selectFirst(".episodiotitle > a")!!.ownText().trim()
                     val link = fixUrl(it.selectFirst(".episodiotitle > a")!!.attr("href"))
                     Episode(link, name)
@@ -206,13 +194,13 @@ class NeonimeProvider : MainAPI() {
         val url = "https://suzihaza.com/api/source/$fid"
         val referer = "https://suzihaza.com/v/$fid"
 
-        mapper.readValue<Server>(
+        parseJson<Server>(
             app.post(
                 url = url,
                 headers = mapOf("Referer" to referer),
                 data = mapOf("r" to "", "d" to "suzihaza.com")
             ).text
-        ).data.apmap {
+        ).data.map {
             callback(
                 ExtractorLink(
                     name,
