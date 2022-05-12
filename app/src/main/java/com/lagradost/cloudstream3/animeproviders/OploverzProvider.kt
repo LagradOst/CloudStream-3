@@ -2,19 +2,11 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.loadExtractor
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import java.lang.RuntimeException
-import java.lang.StringBuilder
-import java.net.URI
-import java.net.URLDecoder
 import java.util.ArrayList
-import kotlin.math.roundToInt
 
 class OploverzProvider : MainAPI() {
     override var mainUrl = "https://oploverz.asia"
@@ -66,34 +58,29 @@ class OploverzProvider : MainAPI() {
     }
 
     private fun getProperAnimeLink(uri: String): String {
-        return when {
-            (uri.contains("-episode")) -> {
-                val href =
-                    "$mainUrl/anime/" + Regex("asia/(.+)-episode.+").find(uri)?.groupValues?.get(1)
-                        .toString()
-                when {
-                    href.contains("kaguya") -> href.replace(Regex("-s\\d+"), "")
-                    else -> href
-                }
+
+        return if (uri.contains("/anime/")) {
+            uri
+        } else {
+            var title = uri.substringAfter("$mainUrl/")
+            title = when {
+                (title.contains("-episode")) && !(title.contains("-ova")) -> Regex("(.+)-episode").find(
+                    title
+                )?.groupValues?.get(1).toString()
+                (title.contains("-ova")) -> Regex("(.+)-ova").find(title)?.groupValues?.get(1)
+                    .toString()
+                else -> Regex("(.+)-subtitle").find(title)?.groupValues?.get(1).toString()
+                    .replace(Regex("-\\d+"), "")
             }
-            (uri.contains("-movie")) -> "$mainUrl/anime/" + Regex("asia/(.+)-subtitle.+").find(uri)?.groupValues?.get(
-                1
-            )
-            (uri.contains("-spesial")) -> "$mainUrl/anime/" + Regex("asia/(.+)-\\d.+").find(uri)?.groupValues?.get(
-                1
-            ).toString().replace("spesial", "special")
-            (uri.contains("-ova")) -> "$mainUrl/anime/" + Regex("asia/(.+)-subtitle.+").find(uri)?.groupValues?.get(
-                1
-            ).toString()
-            (uri.contains("-season")) -> "$mainUrl/anime/" + Regex("asia/(.+-\\d+)-\\d.+").find(uri)?.groupValues?.get(
-                1
-            ).toString()
-            else -> "$mainUrl/anime/" + Regex("asia/(.+)-\\d.+").find(uri)?.groupValues?.get(1)
-                .toString()
+            if (title.contains("overlord")) {
+                title = title.replace("s", "season-")
+            }
+            "$mainUrl/anime/$title"
         }
+
     }
 
-    private fun Element.toSearchResult(): SearchResponse? {
+    private fun Element.toSearchResult(): SearchResponse {
         val href = getProperAnimeLink(this.selectFirst("a.tip")!!.attr("href"))
         val title = this.selectFirst("h2[itemprop=headline]")!!.text().trim()
         val posterUrl = fixUrl(this.selectFirst("img")!!.attr("src"))
@@ -129,7 +116,7 @@ class OploverzProvider : MainAPI() {
         val document = app.get(url).document
 
         val title = document.selectFirst("h1.entry-title")!!.text().trim()
-        val poster = document.select(".thumb > img")?.attr("src")
+        val poster = document.select(".thumb > img").attr("src")
         val tags = document.select(".genxed > a").map { it.text() }
 
         val year = Regex("\\d, ([0-9]*)").find(
@@ -194,8 +181,10 @@ class OploverzProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        val iframeLink = app.get(data).document.selectFirst(".player-embed > iframe")?.attr("src") ?: return false
-        val source = app.get(fixUrl(iframeLink)).document.selectFirst("script")?.data()!!.substringAfter("\"streams\":[")
+        val iframeLink = app.get(data).document.selectFirst(".player-embed > iframe")?.attr("src")
+            ?: return false
+        val source = app.get(fixUrl(iframeLink)).document.selectFirst("script")?.data()!!
+            .substringAfter("\"streams\":[")
             .substringBefore("]")
 
         parseJson<List<Source>>("[$source]").map {

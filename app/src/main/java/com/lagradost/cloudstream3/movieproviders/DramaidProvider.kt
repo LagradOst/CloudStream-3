@@ -1,16 +1,10 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.animeproviders.OploverzProvider
-import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.ArrayList
 
@@ -58,7 +52,7 @@ class DramaidProvider : MainAPI() {
         }
     }
 
-    private fun Element.toSearchResult(): SearchResponse? {
+    private fun Element.toSearchResult(): SearchResponse {
         val href = getProperDramaLink(this.selectFirst("a.tip")!!.attr("href"))
         val title = this.selectFirst("h2[itemprop=headline]")!!.text().trim()
         val posterUrl = this.selectFirst(".limit > noscript > img")!!.attr("src")
@@ -101,10 +95,12 @@ class DramaidProvider : MainAPI() {
 
         val episodes = document.select(".eplister > ul > li").map {
             //TODO episode name didn't show
-            val name = it.select(".epl-title").text().trim()
+            val name = it.selectFirst("a > .epl-title")!!.text().trim()
             val link = it.select("a").attr("href")
+            val epNum = it.selectFirst("a > .epl-num")!!.text().trim().toIntOrNull()
             newEpisode(link) {
                 this.name = name
+                this.episode = epNum
             }
         }.reversed()
 
@@ -173,7 +169,6 @@ class DramaidProvider : MainAPI() {
             .replace("label", "\"label\"")
             .replace("kind", "\"kind\"").trimIndent()
 
-        safeApiCall {
             parseJson<List<Sources>>(source).map {
                 callback(
                     ExtractorLink(
@@ -194,7 +189,6 @@ class DramaidProvider : MainAPI() {
                     )
                 )
             }
-        }
 
         return true
     }

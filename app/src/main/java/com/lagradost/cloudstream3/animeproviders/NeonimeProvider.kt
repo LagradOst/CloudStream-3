@@ -1,15 +1,10 @@
 package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.network.DdosGuardKiller
-import com.lagradost.cloudstream3.utils.AppUtils
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import org.jsoup.Jsoup
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
-import java.net.URL
 import java.util.*
 
 class NeonimeProvider : MainAPI() {
@@ -39,6 +34,7 @@ class NeonimeProvider : MainAPI() {
                 "Ended"  -> ShowStatus.Completed
                 "OnGoing" -> ShowStatus.Ongoing
                 "In Production" -> ShowStatus.Ongoing
+                "Returning Series" -> ShowStatus.Ongoing
                 else -> ShowStatus.Completed
             }
         }
@@ -63,20 +59,18 @@ class NeonimeProvider : MainAPI() {
     private fun getProperAnimeLink(uri: String): String {
         return when {
             uri.contains("/episode") -> {
-                val href = "$mainUrl/tvshows/" + Regex("episode/(.*)").find(uri)?.groupValues?.get(1).toString().replace(Regex("-[0-9]x[0-9]"), "")
+                val href = "$mainUrl/tvshows/" + Regex("episode/(.*)-\\d{1,2}x\\d+").find(uri)?.groupValues?.get(1).toString()
                 when {
-                    href.contains("boruto") -> href.replace(Regex("[0-9]+"), "")
-                    href.contains("-special") -> href.replace(Regex("-[a-z]\\d.+"), "")
-                    href.contains("one-piece") -> href.replace(Regex("-\\d.+[a-z]\\d.+-"), "-")
+                    !href.contains("-subtitle-indonesia") -> "$href-subtitle-indonesia"
+                    href.contains("-special") -> href.replace(Regex("-x\\d+"), "")
                     else -> href
                 }
-//                app.get(uri).document.select(".epinav > a:nth-child(3)").attr("href")
             }
             else -> uri
         }
     }
 
-    private fun Element.toSearchResult(): SearchResponse? {
+    private fun Element.toSearchResult(): SearchResponse {
         val href = getProperAnimeLink(fixUrl(this.select("a").attr("href")))
         val title = this.select("span.tt.title-episode,h2.title-episode-movie").text()
         val posterUrl = fixUrl(this.select("img").attr("data-src"))
@@ -93,9 +87,9 @@ class NeonimeProvider : MainAPI() {
         val link = "$mainUrl/?s=$query"
         val document = app.get(link).document
 
-        return document.select("div.item.episode-home").map {
+        return document.select("div.item.episode-home").mapNotNull {
             val title = it.selectFirst("div.judul-anime > span")!!.text()
-            val poster = it.selectFirst("img")!!.attr("data-src")
+            val poster = it.select("img").attr("data-src")
             val episodes = it.selectFirst("div.fixyear > h2.text-center")!!
                 .text().replace(Regex("[^0-9]"), "").trim().toIntOrNull()
             val tvType = getType(it.selectFirst("span.calidad2.episode")?.text().toString())
@@ -164,16 +158,6 @@ class NeonimeProvider : MainAPI() {
             }
     }
 
-    data class Server(
-        @JsonProperty("data") val data: List<Datum>,
-    )
-
-    data class Datum(
-        @JsonProperty("file") val file: String,
-        @JsonProperty("label") val label: String,
-        @JsonProperty("type") val type: String
-    )
-
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -181,35 +165,19 @@ class NeonimeProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val source = if(data.contains("movie") || data.contains("live-action")) {
-            app.get(data).document.select("#player2-1 > div[id*=div]").joinToString {
+            app.get(data).document.select("#player2-1 > div[id*=div]").mapNotNull {
                 fixUrl(it.select("iframe").attr("data-src"))
             }
         } else {
-            app.get(data).document.select(".player2 > .embed2 > div[id*=player]").joinToString {
+            app.get(data).document.select(".player2 > .embed2 > div[id*=player]").mapNotNull {
                 fixUrl(it.select("iframe").attr("data-src"))
             }
         }
 
-        val fid = source.substringAfter("https://www.fembed.com/v/").substringBefore(",")
-        val url = "https://suzihaza.com/api/source/$fid"
-        val referer = "https://suzihaza.com/v/$fid"
-
-        parseJson<Server>(
-            app.post(
-                url = url,
-                headers = mapOf("Referer" to referer),
-                data = mapOf("r" to "", "d" to "suzihaza.com")
-            ).text
-        ).data.map {
-            callback(
-                ExtractorLink(
-                    name,
-                    name,
-                    it.file,
-                    referer = "",
-                    quality = it.label.replace("p", "").toInt()
-                )
-            )
+        source.map {
+            it.replace("https://ok.ru", "http://ok.ru")
+        }.apmap {
+            loadExtractor(it, data, callback)
         }
 
         return true

@@ -5,7 +5,6 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.ArrayList
 
@@ -79,7 +78,7 @@ class NontonAnimeIDProvider : MainAPI() {
         }
     }
 
-    private fun Element.toSearchResult(): SearchResponse? {
+    private fun Element.toSearchResult(): SearchResponse {
         val href = getProperAnimeLink(fixUrl(this.selectFirst("a")!!.attr("href")))
         val title = this.selectFirst("h3.title")!!.text()
         val posterUrl = fixUrl(this.select("img").attr("data-src"))
@@ -91,7 +90,7 @@ class NontonAnimeIDProvider : MainAPI() {
 
     }
 
-    private fun Element.toSearchResultPopular(): SearchResponse? {
+    private fun Element.toSearchResultPopular(): SearchResponse {
         val href = getProperAnimeLink(fixUrl(this.selectFirst("a")!!.attr("href")))
         val title = this.select("h4").text().trim()
         val posterUrl = fixUrl(this.select("img").attr("data-src"))
@@ -145,7 +144,7 @@ class NontonAnimeIDProvider : MainAPI() {
                 val name = it.select("a").text().trim()
                 val link = it.select("a").attr("href")
                 Episode(link, name)
-            }
+            }.reversed()
 
         val recommendations = document.select(".result > li").mapNotNull {
             val epHref = it.selectFirst("a")!!.attr("href")
@@ -166,7 +165,7 @@ class NontonAnimeIDProvider : MainAPI() {
                 showStatus = status
                 this.rating = rating
                 plot = description
-//                this.trailers = listOf(trailer)
+                this.trailers = listOf(trailer)
                 this.tags = tags
                 this.recommendations = recommendations
             }
