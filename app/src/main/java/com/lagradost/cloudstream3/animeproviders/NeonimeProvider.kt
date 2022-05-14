@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
@@ -177,7 +178,10 @@ class NeonimeProvider : MainAPI() {
         source.map {
             it.replace("https://ok.ru", "http://ok.ru")
         }.apmap {
-            loadExtractor(it, data, callback)
+                when {
+                    it.contains("blogger.com") -> invokeBloggerSource(it, this.name, callback)
+                    else -> loadExtractor(it, data, callback)
+                }
         }
 
         return true

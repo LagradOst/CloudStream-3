@@ -3,6 +3,7 @@ package com.lagradost.cloudstream3.movieproviders
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.jsoup.nodes.Element
@@ -163,32 +164,32 @@ class DramaidProvider : MainAPI() {
         }).document.selectFirst(".picasa")?.nextElementSibling()?.data()
 
         val source = "[${server!!.substringAfter("sources: [").substringBefore("],")}]".trimIndent()
-        val tracksource = server.substringAfter("tracks:[").substringBefore("],")
+        val trackers = server.substringAfter("tracks:[").substringBefore("],")
             .replace("//language", "")
             .replace("file", "\"file\"")
             .replace("label", "\"label\"")
             .replace("kind", "\"kind\"").trimIndent()
 
-            parseJson<List<Sources>>(source).map {
-                callback(
-                    ExtractorLink(
-                        name,
-                        name,
-                        fixUrl(it.file),
-                        referer = "https://motonews.club/",
-                        quality = getQualityFromName(it.label)
-                    )
+        tryParseJson<List<Sources>>(source)?.map {
+            callback(
+                ExtractorLink(
+                    name,
+                    name,
+                    fixUrl(it.file),
+                    referer = "https://motonews.club/",
+                    quality = getQualityFromName(it.label)
                 )
-            }
+            )
+        }
 
-            parseJson<Tracks>(tracksource).let {
-                subtitleCallback(
-                    SubtitleFile(
-                        if (it.label.contains("Indonesia")) "${it.label}n" else it.label,
-                        it.file
-                    )
+        tryParseJson<Tracks>(trackers)?.let {
+            subtitleCallback(
+                SubtitleFile(
+                    if (it.label.contains("Indonesia")) "${it.label}n" else it.label,
+                    it.file
                 )
-            }
+            )
+        }
 
         return true
     }

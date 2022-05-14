@@ -69,7 +69,7 @@ class GomunimeProvider : MainAPI() {
                 val home = Jsoup.parse(
                     parseJson<Response>(
                         app.post(
-                            url = "https://185.231.223.76/wp-admin/admin-ajax.php/wp-admin/admin-ajax.php",
+                            url = "$mainUrl/wp-admin/admin-ajax.php/wp-admin/admin-ajax.php",
                             headers = mapOf("Referer" to mainUrl),
                             data = mapOf("action" to "home_ajax", "fungsi" to payload, "pag" to "1")
                         ).text
@@ -88,7 +88,7 @@ class GomunimeProvider : MainAPI() {
                 }
                 items.add(HomePageList(name, home))
             } catch (e: Exception) {
-                e.printStackTrace()
+                logError(e)
             }
         }
 
@@ -233,10 +233,10 @@ class GomunimeProvider : MainAPI() {
                             callback(
                                 ExtractorLink(
                                     source = name,
-                                    name = "Mobi SD - 480p",
+                                    name = "Mobi SD",
                                     url = it.file,
                                     referer = "$mainUrl/",
-                                    quality = 360
+                                    quality = 480
                                 )
                             )
                         }

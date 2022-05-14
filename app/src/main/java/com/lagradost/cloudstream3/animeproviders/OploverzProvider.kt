@@ -2,9 +2,7 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
 import org.jsoup.nodes.Element
 import java.util.ArrayList
 
@@ -183,28 +181,8 @@ class OploverzProvider : MainAPI() {
 
         val iframeLink = app.get(data).document.selectFirst(".player-embed > iframe")?.attr("src")
             ?: return false
-        val source = app.get(fixUrl(iframeLink)).document.selectFirst("script")?.data()!!
-            .substringAfter("\"streams\":[")
-            .substringBefore("]")
 
-        parseJson<List<Source>>("[$source]").map {
-            val url = it.play_url
-            val quality = when (it.format_id) {
-                18 -> 360
-                22 -> 720
-                else -> Qualities.Unknown.value
-            }
-
-            callback.invoke(
-                ExtractorLink(
-                    name,
-                    name,
-                    url,
-                    referer = "https://www.youtube.com/",
-                    quality = quality
-                )
-            )
-        }
+        invokeBloggerSource(iframeLink, this.name, callback)
 
         return true
     }

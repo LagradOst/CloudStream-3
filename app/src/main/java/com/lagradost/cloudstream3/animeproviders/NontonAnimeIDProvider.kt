@@ -2,9 +2,8 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.jsoup.nodes.Element
 import java.util.ArrayList
 
@@ -157,24 +156,50 @@ class NontonAnimeIDProvider : MainAPI() {
             }
         }
 
-            return newAnimeLoadResponse(title, url, type) {
-                engName = title
-                posterUrl = poster
-                this.year = year
-                addEpisodes(DubStatus.Subbed, episodes)
-                showStatus = status
-                this.rating = rating
-                plot = description
-                this.trailers = listOf(trailer)
-                this.tags = tags
-                this.recommendations = recommendations
-            }
+        return newAnimeLoadResponse(title, url, type) {
+            engName = title
+            posterUrl = poster
+            this.year = year
+            addEpisodes(DubStatus.Subbed, episodes)
+            showStatus = status
+            this.rating = rating
+            plot = description
+            this.trailers = listOf(trailer)
+            this.tags = tags
+            this.recommendations = recommendations
+        }
 
     }
 
-    data class Source(
-        @JsonProperty("play_url") val play_url: String,
-        @JsonProperty("format_id") val format_id: Int
+    private suspend fun invokeKotakSource(
+        source: String,
+        sourceCallback: (ExtractorLink) -> Unit
+    ) {
+        val doc = app.get(source).document
+
+        doc.select("script").map { script ->
+            if (script.data().contains("eval(function(p,a,c,k,e,d)")) {
+                val data = getAndUnpack(script.data())
+                val server = data.substringAfter("sources:[").substringBefore("]")
+                tryParseJson<List<KotakSource>>("[$server]")?.map {
+                    sourceCallback.invoke(
+                        ExtractorLink(
+                            name,
+                            "AnimeId",
+                            it.file,
+                            referer = "https://kotakanimeid.com/",
+                            quality = getQualityFromName(it.label)
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    data class KotakSource(
+        @JsonProperty("file") val file: String,
+        @JsonProperty("type") val type: String,
+        @JsonProperty("label") val label: String
     )
 
     override suspend fun loadLinks(
@@ -184,32 +209,69 @@ class NontonAnimeIDProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        val iframeLink = app.get(data).document.select("#pembed").joinToString {
-            fixUrl(it.select("iframe").attr("data-litespeed-src"))
-        }
-        val source = app.get(fixUrl(iframeLink)).document.selectFirst("script")?.data()!!.substringAfter("\"streams\":[")
-            .substringBefore("]")
+        val document = app.get(data).document
+        val sources = ArrayList<String>()
 
-        parseJson<List<Source>>("[$source]").map {
-            val url = it.play_url
-            val quality = when (it.format_id) {
-                18 -> 360
-                22 -> 720
-                else -> Qualities.Unknown.value
-            }
+        document.select(".container1 > ul > li").apmap {
+            val dataPost = it.attr("data-post")
+            val dataNume = it.attr("data-nume")
+            val dataType = it.attr("data-type")
 
-            callback.invoke(
-                ExtractorLink(
-                    name,
-                    name,
-                    url,
-                    referer = "https://www.youtube.com/",
-                    quality = quality
+            val iframe = app.post(
+                url = "$mainUrl/wp-admin/admin-ajax.php",
+                data = mapOf(
+                    "action" to "player_ajax",
+                    "post" to dataPost,
+                    "nume" to dataNume,
+                    "type" to dataType
                 )
-            )
+            ).document.select("iframe").attr("src")
+
+            sources.add(fixUrl(iframe))
+        }
+
+        sources.map {
+            it.replace("https://ok.ru", "http://ok.ru")
+        }.apmap {
+                when {
+                    it.contains("blogger.com") -> invokeBloggerSource(it, this.name, callback)
+                    it.contains("kotakanimeid.com") -> invokeKotakSource(it, callback)
+                    else -> loadExtractor(it, data, callback)
+                }
         }
 
         return true
     }
-
 }
+
+// re-use as extractorApis
+suspend fun invokeBloggerSource(
+    url: String,
+    name: String,
+    sourceCallback: (ExtractorLink) -> Unit
+) {
+    val doc = app.get(url).document
+
+    val server =
+        doc.selectFirst("script")?.data()!!.substringAfter("\"streams\":[").substringBefore("]")
+    tryParseJson<List<BloggerSource>>("[$server]")?.map {
+        sourceCallback.invoke(
+            ExtractorLink(
+                name,
+                "Blogger",
+                it.play_url,
+                referer = "https://www.youtube.com/",
+                quality = when (it.format_id) {
+                    18 -> 360
+                    22 -> 720
+                    else -> Qualities.Unknown.value
+                }
+            )
+        )
+    }
+}
+
+data class BloggerSource(
+    @JsonProperty("play_url") val play_url: String,
+    @JsonProperty("format_id") val format_id: Int
+)
