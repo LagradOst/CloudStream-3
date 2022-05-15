@@ -6,6 +6,10 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import kotlinx.coroutines.delay
 
+class DoodPmExtractor : DoodLaExtractor() {
+    override var mainUrl = "https://dood.pm"
+}
+
 class DoodToExtractor : DoodLaExtractor() {
     override var mainUrl = "https://dood.to"
 }

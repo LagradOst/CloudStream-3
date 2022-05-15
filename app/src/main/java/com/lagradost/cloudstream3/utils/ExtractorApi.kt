@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.*
+import com.lagradost.cloudstream3.extractors.helper.BullStream
 import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
 import kotlinx.coroutines.delay
 import org.jsoup.Jsoup
@@ -150,8 +151,10 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     Tomatomatela(),
     Cinestart(),
     OkRu(),
+    OkRuHttps(),
 
     // dood extractors
+    DoodPmExtractor(),
     DoodToExtractor(),
     DoodSoExtractor(),
     DoodLaExtractor(),
@@ -172,6 +175,7 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     //  SBPlay2(),
 
     PlayerVoxzer(),
+    BullStream()
 )
 
 fun getExtractorApiFromName(name: String): ExtractorApi {
