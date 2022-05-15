@@ -116,6 +116,7 @@ object APIHolder {
             OploverzProvider(),
             GomunimeProvider(),
             NontonAnimeIDProvider(),
+            KuronimeProvider(),
             //MultiAnimeProvider(),
 	        NginxProvider(),
         )

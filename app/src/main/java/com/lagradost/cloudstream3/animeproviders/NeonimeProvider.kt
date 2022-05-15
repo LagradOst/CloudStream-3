@@ -15,7 +15,6 @@ class NeonimeProvider : MainAPI() {
     override val hasMainPage = true
     override val lang = "id"
     override val hasDownloadSupport = true
-    override val usesWebView = true
 
     override val supportedTypes = setOf(
         TvType.Anime,
@@ -141,7 +140,7 @@ class NeonimeProvider : MainAPI() {
                 val status = getStatus(document.select("div.metadatac > span").last()!!.text().trim())
                 val description = document.select("div[itemprop = description] > p").text().trim()
 
-                val episodes = document.select("ul.episodios > li").map {
+                val episodes = document.select("ul.episodios > li").mapNotNull {
                     val name = it.selectFirst(".episodiotitle > a")!!.ownText().trim()
                     val link = fixUrl(it.selectFirst(".episodiotitle > a")!!.attr("href"))
                     Episode(link, name)
@@ -180,6 +179,7 @@ class NeonimeProvider : MainAPI() {
         }.apmap {
                 when {
                     it.contains("blogger.com") -> invokeBloggerSource(it, this.name, callback)
+                    it.contains("7njctn.neonime.watch") || it.contains("8njctn.neonime.net") -> invokeLocalSource(it, this.name, mainUrl, redirect = false, callback)
                     else -> loadExtractor(it, data, callback)
                 }
         }

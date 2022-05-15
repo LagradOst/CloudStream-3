@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.jsoup.nodes.Element
+import java.net.URI
 import java.util.ArrayList
 
 class NontonAnimeIDProvider : MainAPI() {
@@ -14,7 +15,6 @@ class NontonAnimeIDProvider : MainAPI() {
     override val hasMainPage = true
     override val lang = "id"
     override val hasDownloadSupport = true
-    override val usesWebView = true
 
     override val supportedTypes = setOf(
         TvType.Anime,
@@ -171,37 +171,6 @@ class NontonAnimeIDProvider : MainAPI() {
 
     }
 
-    private suspend fun invokeKotakSource(
-        source: String,
-        sourceCallback: (ExtractorLink) -> Unit
-    ) {
-        val doc = app.get(source).document
-
-        doc.select("script").map { script ->
-            if (script.data().contains("eval(function(p,a,c,k,e,d)")) {
-                val data = getAndUnpack(script.data())
-                val server = data.substringAfter("sources:[").substringBefore("]")
-                tryParseJson<List<KotakSource>>("[$server]")?.map {
-                    sourceCallback.invoke(
-                        ExtractorLink(
-                            name,
-                            "AnimeId",
-                            it.file,
-                            referer = "https://kotakanimeid.com/",
-                            quality = getQualityFromName(it.label)
-                        )
-                    )
-                }
-            }
-        }
-    }
-
-    data class KotakSource(
-        @JsonProperty("file") val file: String,
-        @JsonProperty("type") val type: String,
-        @JsonProperty("label") val label: String
-    )
-
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -233,11 +202,16 @@ class NontonAnimeIDProvider : MainAPI() {
         sources.map {
             it.replace("https://ok.ru", "http://ok.ru")
         }.apmap {
-                when {
-                    it.contains("blogger.com") -> invokeBloggerSource(it, this.name, callback)
-                    it.contains("kotakanimeid.com") -> invokeKotakSource(it, callback)
-                    else -> loadExtractor(it, data, callback)
-                }
+            when {
+                it.contains("blogger.com") -> invokeBloggerSource(it, this.name, callback)
+                it.contains("kotakanimeid.com") -> invokeLocalSource(
+                    it,
+                    this.name,
+                    mainUrl,
+                    sourceCallback = callback
+                )
+                else -> loadExtractor(it, data, callback)
+            }
         }
 
         return true
@@ -245,12 +219,14 @@ class NontonAnimeIDProvider : MainAPI() {
 }
 
 // re-use as extractorApis
+
 suspend fun invokeBloggerSource(
     url: String,
     name: String,
     sourceCallback: (ExtractorLink) -> Unit
 ) {
     val doc = app.get(url).document
+    val sourceName = Regex("[^w{3}]\\.?(.+)\\.").find(URI(url).host)?.groupValues?.get(1).toString().replaceFirstChar { it.uppercase() }
 
     val server =
         doc.selectFirst("script")?.data()!!.substringAfter("\"streams\":[").substringBefore("]")
@@ -258,7 +234,7 @@ suspend fun invokeBloggerSource(
         sourceCallback.invoke(
             ExtractorLink(
                 name,
-                "Blogger",
+                sourceName,
                 it.play_url,
                 referer = "https://www.youtube.com/",
                 quality = when (it.format_id) {
@@ -274,4 +250,57 @@ suspend fun invokeBloggerSource(
 data class BloggerSource(
     @JsonProperty("play_url") val play_url: String,
     @JsonProperty("format_id") val format_id: Int
+)
+
+suspend fun invokeLocalSource(
+    source: String,
+    name: String,
+    ref: String,
+    redirect: Boolean = true,
+    sourceCallback: (ExtractorLink) -> Unit
+) {
+    val doc = app.get(source, allowRedirects = redirect).document
+    val sourceName = Regex("[^w{3}]\\.?(.+)\\.").find(URI(source).host)?.groupValues?.get(1).toString().replace(Regex("\\w+\\."), "").replaceFirstChar { it.uppercase() }
+
+    doc.select("script").map { script ->
+        if (script.data().contains("eval(function(p,a,c,k,e,d)")) {
+            val data = getAndUnpack(script.data())
+            val server = data.substringAfter("sources:[").substringBefore("]")
+            tryParseJson<List<ResponseSource>>("[$server]")?.map {
+                sourceCallback.invoke(
+                    ExtractorLink(
+                        name,
+                        sourceName,
+                        it.file,
+                        referer = ref,
+                        quality = getQualityFromName(it.label),
+
+                        )
+                )
+            }
+        } else {
+            if (script.data().contains("\"sources\":[")) {
+                val server = script.data().substringAfter("\"sources\":[").substringBefore("]")
+                tryParseJson<List<ResponseSource>>("[$server]")?.map {
+                    sourceCallback.invoke(
+                        ExtractorLink(
+                            name,
+                            sourceName,
+                            it.file,
+                            referer = ref,
+                            quality = getQualityFromName(it.label)
+                            )
+                    )
+                }
+            } else {
+                // skip for now
+            }
+        }
+    }
+}
+
+data class ResponseSource(
+    @JsonProperty("file") val file: String,
+    @JsonProperty("type") val type: String?,
+    @JsonProperty("label") val label: String?
 )

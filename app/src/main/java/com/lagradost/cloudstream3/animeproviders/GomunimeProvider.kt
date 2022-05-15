@@ -25,7 +25,6 @@ class GomunimeProvider : MainAPI() {
     override val hasMainPage = true
     override val lang = "id"
     override val hasDownloadSupport = true
-    override val usesWebView = true
 
     override val supportedTypes = setOf(
         TvType.Anime,
@@ -177,7 +176,7 @@ class GomunimeProvider : MainAPI() {
             source = this.name,
             streamUrl = source,
             referer = "$mainUrl/",
-            name = "${this.name} - ${Qualities.Unknown.value}",
+            name = this.name,
         ).forEach(sourceCallback)
     }
 
@@ -219,10 +218,10 @@ class GomunimeProvider : MainAPI() {
                         app.post(
                             url = "https://path.gomuni.me/app/vapi.php",
                             data = mapOf("fid" to it.first, "func" to "hls")
-                        ).text.let { link ->
+                        ).text.also { link ->
                             //TODO IO BAD HTTP STATUS (2004) : PLEASE HELP...!!!!
-                            val extractorData = "https://io.mirrordrive.club:7443/"
-                            invokeSource(link, callback)
+                            val extractorData = "https://io.onicdn.xyz:7443/"
+//                            invokeSource(link, callback)
                         }
                     }
                     else -> {
@@ -236,7 +235,7 @@ class GomunimeProvider : MainAPI() {
                                     name = "Mobi SD",
                                     url = it.file,
                                     referer = "$mainUrl/",
-                                    quality = 480
+                                    quality = Qualities.Unknown.value
                                 )
                             )
                         }

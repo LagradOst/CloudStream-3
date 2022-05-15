@@ -14,7 +14,6 @@ class KuramanimeProvider : MainAPI() {
     override val hasMainPage = true
     override val lang = "id"
     override val hasDownloadSupport = true
-    override val usesWebView = true
 
     override val supportedTypes = setOf(
         TvType.Anime,

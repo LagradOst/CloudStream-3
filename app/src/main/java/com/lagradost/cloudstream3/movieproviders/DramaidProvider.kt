@@ -2,10 +2,12 @@ package com.lagradost.cloudstream3.movieproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.animeproviders.invokeBloggerSource
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.loadExtractor
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.ArrayList
 
@@ -49,7 +51,8 @@ class DramaidProvider : MainAPI() {
         return if (uri.contains("/series/")) {
             uri
         } else {
-            "$mainUrl/series/" + Regex("$mainUrl/(.+)-ep.+").find(uri)?.groupValues?.get(1).toString()
+            "$mainUrl/series/" + Regex("$mainUrl/(.+)-ep.+").find(uri)?.groupValues?.get(1)
+                .toString()
         }
     }
 
@@ -95,7 +98,6 @@ class DramaidProvider : MainAPI() {
         val description = document.select(".entry-content > p").text().trim()
 
         val episodes = document.select(".eplister > ul > li").map {
-            //TODO episode name didn't show
             val name = it.selectFirst("a > .epl-title")!!.text().trim()
             val link = it.select("a").attr("href")
             val epNum = it.selectFirst("a > .epl-num")!!.text().trim().toIntOrNull()
@@ -151,17 +153,13 @@ class DramaidProvider : MainAPI() {
         @JsonProperty("default") val default: Boolean?
     )
 
-    override suspend fun loadLinks(
-        data: String,
-        isCasting: Boolean,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        val document = app.get(data).document
-
-        val server = app.get(document.select("#pembed").joinToString {
-            fixUrl(it.select("iframe").attr("src"))
-        }).document.selectFirst(".picasa")?.nextElementSibling()?.data()
+    private suspend fun invokeDriveSource(
+        url: String,
+        name: String,
+        subCallback: (SubtitleFile) -> Unit,
+        sourceCallback: (ExtractorLink) -> Unit
+    ) {
+        val server = app.get(url).document.selectFirst(".picasa")?.nextElementSibling()?.data()
 
         val source = "[${server!!.substringAfter("sources: [").substringBefore("],")}]".trimIndent()
         val trackers = server.substringAfter("tracks:[").substringBefore("],")
@@ -171,10 +169,10 @@ class DramaidProvider : MainAPI() {
             .replace("kind", "\"kind\"").trimIndent()
 
         tryParseJson<List<Sources>>(source)?.map {
-            callback(
+            sourceCallback(
                 ExtractorLink(
                     name,
-                    name,
+                    "Drive",
                     fixUrl(it.file),
                     referer = "https://motonews.club/",
                     quality = getQualityFromName(it.label)
@@ -183,12 +181,34 @@ class DramaidProvider : MainAPI() {
         }
 
         tryParseJson<Tracks>(trackers)?.let {
-            subtitleCallback(
+            subCallback(
                 SubtitleFile(
                     if (it.label.contains("Indonesia")) "${it.label}n" else it.label,
                     it.file
                 )
             )
+        }
+
+    }
+
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val document = app.get(data).document
+        val iframeLink = document.select(".mobius > .mirror > option").mapNotNull {
+            fixUrl(Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src"))
+        }
+
+        iframeLink.map {
+            it.replace("https://ndrama.xyz", "https://www.fembed.com")
+        }.apmap {
+            when {
+                it.contains("motonews.club") -> invokeDriveSource(it, this.name, subtitleCallback, callback)
+                else -> loadExtractor(it, data, callback)
+            }
         }
 
         return true

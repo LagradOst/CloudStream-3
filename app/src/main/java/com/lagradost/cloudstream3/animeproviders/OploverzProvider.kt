@@ -3,6 +3,8 @@ package com.lagradost.cloudstream3.animeproviders
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.ArrayList
 
@@ -13,7 +15,6 @@ class OploverzProvider : MainAPI() {
     override val hasMainPage = true
     override val lang = "id"
     override val hasDownloadSupport = true
-    override val usesWebView = true
 
     override val supportedTypes = setOf(
         TvType.Anime,
@@ -70,9 +71,16 @@ class OploverzProvider : MainAPI() {
                 else -> Regex("(.+)-subtitle").find(title)?.groupValues?.get(1).toString()
                     .replace(Regex("-\\d+"), "")
             }
-            if (title.contains("overlord")) {
-                title = title.replace("s", "season-")
+
+            when {
+                title.contains("overlord") -> {
+                    title = title.replace("s", "season-")
+                }
+                title.contains("kaguya-sama") -> {
+                    title = title.replace("s3", "ultra-romantic")
+                }
             }
+
             "$mainUrl/anime/$title"
         }
 
@@ -178,11 +186,19 @@ class OploverzProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        val document = app.get(data).document
+        val iframeLink = document.select(".mobius > .mirror > option").mapNotNull {
+            fixUrl(Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src"))
+        }
 
-        val iframeLink = app.get(data).document.selectFirst(".player-embed > iframe")?.attr("src")
-            ?: return false
-
-        invokeBloggerSource(iframeLink, this.name, callback)
+        iframeLink.map {
+            it.replace("https://ok.ru", "http://ok.ru")
+        }.apmap {
+            when {
+                it.contains("blogger.com") -> invokeBloggerSource(it, this.name, callback)
+                else -> loadExtractor(it, data, callback)
+            }
+        }
 
         return true
     }
