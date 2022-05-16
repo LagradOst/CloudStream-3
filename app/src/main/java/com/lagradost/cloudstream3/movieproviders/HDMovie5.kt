@@ -10,8 +10,8 @@ import org.jsoup.Jsoup
 
 class HDMovie5 : MainAPI() {
     override var mainUrl = "https://hdmovie5.tv"
-    override var name = "HDMovie5"
-    override val lang: String = "hi"
+    override var name = "HDMovie"
+    override val lang = "hi"
 
     override val hasQuickSearch = true
     override val hasMainPage = true

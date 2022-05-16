@@ -12,9 +12,18 @@ class BullStream : ExtractorApi() {
     val regex = Regex("(?<=sniff\\()(.*)(?=\\)\\);)")
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val data = regex.find(app.get(url).text)?.value?.replace("\"","")?.split(",")?:return null
+        val data = regex.find(app.get(url).text)?.value
+                ?.replace("\"", "")
+                ?.split(",")
+                ?: return null
+
         val m3u8 = "$mainUrl/m3u8/${data[1]}/${data[2]}/master.txt"
-        return M3u8Helper.generateM3u8(name, m3u8, url, headers = mapOf("referer" to url,"accept" to "*/*"))
+        return M3u8Helper.generateM3u8(
+            name,
+            m3u8,
+            url,
+            headers = mapOf("referer" to url, "accept" to "*/*")
+        )
     }
 
 
