@@ -1,4 +1,4 @@
-package com.lagradost.cloudstream3.extractors.helper
+package com.lagradost.cloudstream3.extractors
 
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
@@ -13,9 +13,9 @@ class BullStream : ExtractorApi() {
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val data = regex.find(app.get(url).text)?.value
-                ?.replace("\"", "")
-                ?.split(",")
-                ?: return null
+            ?.replace("\"", "")
+            ?.split(",")
+            ?: return null
 
         val m3u8 = "$mainUrl/m3u8/${data[1]}/${data[2]}/master.txt"
         return M3u8Helper.generateM3u8(
@@ -25,6 +25,4 @@ class BullStream : ExtractorApi() {
             headers = mapOf("referer" to url, "accept" to "*/*")
         )
     }
-
-
 }
