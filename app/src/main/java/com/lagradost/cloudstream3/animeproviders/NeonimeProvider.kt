@@ -178,8 +178,8 @@ class NeonimeProvider : MainAPI() {
             it.replace("https://ok.ru", "http://ok.ru")
         }.apmap {
                 when {
-                    it.contains("blogger.com") -> invokeBloggerSource(it, this.name, callback)
-                    it.contains("7njctn.neonime.watch") || it.contains("8njctn.neonime.net") -> invokeLocalSource(it, this.name, mainUrl, redirect = false, callback)
+                    it.contains("blogger.com") -> invokeBloggerSource(it, callback)
+                    it.contains("7njctn.neonime.watch") || it.contains("8njctn.neonime.net") -> invokeLocalSource(it, mainUrl, redirect = false, callback)
                     else -> loadExtractor(it, data, callback)
                 }
         }

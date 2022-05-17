@@ -2,12 +2,11 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import java.net.URI
 import java.util.ArrayList
 
 class KuronimeProvider : MainAPI() {
@@ -33,10 +32,8 @@ class KuronimeProvider : MainAPI() {
 
         fun getStatus(t: String): ShowStatus {
             return when (t) {
-                "Ended"  -> ShowStatus.Completed
+                "Completed"  -> ShowStatus.Completed
                 "Ongoing" -> ShowStatus.Ongoing
-                "In Production" -> ShowStatus.Ongoing
-                "Returning Series" -> ShowStatus.Ongoing
                 else -> ShowStatus.Completed
             }
         }
@@ -116,11 +113,11 @@ class KuronimeProvider : MainAPI() {
         val year = Regex("\\d, ([0-9]*)").find(
             document.select(".infodetail > ul > li:nth-child(5)").text()
         )?.groupValues?.get(1)?.toIntOrNull()
-        val status = getStatus(document.selectFirst(".infodetail > ul > li:nth-child(3)")!!.ownText())
+        val status = getStatus(document.selectFirst(".infodetail > ul > li:nth-child(3)")!!.ownText().replace(Regex("\\W"), ""))
         val description = document.select("span.const > p").text()
 
         val episodes = document.select("div.bixbox.bxcl > ul > li").map {
-            val name = it.selectFirst("a")?.text()?.trim()
+            val name = it.selectFirst("a")?.text()?.trim()?.replace("Episode", title)
             val link = it.selectFirst("a")!!.attr("href")
             Episode(link, name)
         }.reversed()
@@ -132,6 +129,7 @@ class KuronimeProvider : MainAPI() {
             addEpisodes(DubStatus.Subbed, episodes)
             showStatus = status
             plot = description
+            addTrailer(trailer)
             this.tags = tags
             trailers = listOf(trailer)
         }
@@ -139,7 +137,6 @@ class KuronimeProvider : MainAPI() {
 
     private suspend fun invokeKuroSource(
         url: String,
-        name: String,
         sourceCallback: (ExtractorLink) -> Unit
     ) {
         val doc = app.get(url).document
@@ -154,12 +151,12 @@ class KuronimeProvider : MainAPI() {
 
                 sourceCallback.invoke(
                     ExtractorLink(
-                        name,
-                        name,
+                        this.name,
+                        this.name,
                         link,
                         referer = "https://animeku.org/",
                         quality = Qualities.Unknown.value,
-                        isM3u8 = true
+                        isM3u8 = link.contains(".m3u8")
                     )
                 )
             }
@@ -185,11 +182,10 @@ class KuronimeProvider : MainAPI() {
                     it.contains("hxfile.co") -> invokeLocalSource(
                         it,
                         this.name,
-                        mainUrl,
                         sourceCallback = callback
                     )
-//                    it.contains("animeku.org") -> invokeKuroSource(it, this.name, callback)
-                    else -> loadExtractor(it, data, callback)
+//                    it.contains("animeku.org") -> invokeKuroSource(it, callback)
+                    else -> loadExtractor(it, mainUrl, callback)
                 }
             }
         }

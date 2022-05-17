@@ -218,10 +218,8 @@ class GomunimeProvider : MainAPI() {
                         app.post(
                             url = "https://path.gomuni.me/app/vapi.php",
                             data = mapOf("fid" to it.first, "func" to "hls")
-                        ).text.also { link ->
-                            //TODO IO BAD HTTP STATUS (2004) : PLEASE HELP...!!!!
-                            val extractorData = "https://io.onicdn.xyz:7443/"
-//                            invokeSource(link, callback)
+                        ).text.let { link ->
+                            invokeSource(link, callback)
                         }
                     }
                     else -> {
@@ -235,7 +233,7 @@ class GomunimeProvider : MainAPI() {
                                     name = "Mobi SD",
                                     url = it.file,
                                     referer = "$mainUrl/",
-                                    quality = Qualities.Unknown.value
+                                    quality = Qualities.P360.value
                                 )
                             )
                         }

@@ -195,7 +195,7 @@ class OploverzProvider : MainAPI() {
             it.replace("https://ok.ru", "http://ok.ru")
         }.apmap {
             when {
-                it.contains("blogger.com") -> invokeBloggerSource(it, this.name, callback)
+                it.contains("blogger.com") -> invokeBloggerSource(it, callback)
                 else -> loadExtractor(it, data, callback)
             }
         }

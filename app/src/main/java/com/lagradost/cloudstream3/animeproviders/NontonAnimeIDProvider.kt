@@ -2,8 +2,10 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.net.URI
 import java.util.ArrayList
@@ -120,6 +122,13 @@ class NontonAnimeIDProvider : MainAPI() {
         }
     }
 
+    private data class EpResponse(
+        @JsonProperty("posts") val posts: String?,
+        @JsonProperty("max_page") val max_page: Int?,
+        @JsonProperty("found_posts") val found_posts: Int?,
+        @JsonProperty("content") val content: String
+    )
+
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
@@ -138,12 +147,37 @@ class NontonAnimeIDProvider : MainAPI() {
         val description = document.select(".entry-content.seriesdesc > p").text().trim()
         val trailer = document.select("a.ytp-impression-link").attr("href")
 
-        val episodes =
+        val episodes = if (document.select("button.buttfilter").isNotEmpty()) {
+            val id = document.select("input[name=series_id]").attr("value")
+            val numEp =
+                document.selectFirst(".latestepisode > a")?.text()?.replace(Regex("[^0-9]"), "")
+                    .toString()
+            Jsoup.parse(
+                app.post(
+                    url = "$mainUrl/wp-admin/admin-ajax.php",
+                    data = mapOf(
+                        "misha_number_of_results" to numEp,
+                        "misha_order_by" to "date-DESC",
+                        "action" to "mishafilter",
+                        "series_id" to id
+                    )
+                ).parsed<EpResponse>().content
+            ).select("li").map {
+                val engName =
+                    document.selectFirst("div.bottomtitle:nth-child(4) > span:nth-child(1)")
+                        ?.ownText()
+                val name = it.selectFirst("span.t1")!!.text().trim().replace("Episode", "$engName")
+                val link = it.selectFirst("a")!!.attr("href")
+                Episode(link, name)
+            }.reversed()
+        } else {
             document.select("ul.misha_posts_wrap2 > li").map {
-                val name = it.select("a").text().trim()
+                val name = it.select("span.t1").text().trim()
                 val link = it.select("a").attr("href")
                 Episode(link, name)
             }.reversed()
+        }
+
 
         val recommendations = document.select(".result > li").mapNotNull {
             val epHref = it.selectFirst("a")!!.attr("href")
@@ -164,7 +198,7 @@ class NontonAnimeIDProvider : MainAPI() {
             showStatus = status
             this.rating = rating
             plot = description
-            this.trailers = listOf(trailer)
+            addTrailer(trailer)
             this.tags = tags
             this.recommendations = recommendations
         }
@@ -203,11 +237,10 @@ class NontonAnimeIDProvider : MainAPI() {
             it.replace("https://ok.ru", "http://ok.ru")
         }.apmap {
             when {
-                it.contains("blogger.com") -> invokeBloggerSource(it, this.name, callback)
+                it.contains("blogger.com") -> invokeBloggerSource(it, callback)
                 it.contains("kotakanimeid.com") -> invokeLocalSource(
                     it,
                     this.name,
-                    mainUrl,
                     sourceCallback = callback
                 )
                 else -> loadExtractor(it, data, callback)
@@ -222,18 +255,18 @@ class NontonAnimeIDProvider : MainAPI() {
 
 suspend fun invokeBloggerSource(
     url: String,
-    name: String,
     sourceCallback: (ExtractorLink) -> Unit
 ) {
     val doc = app.get(url).document
-    val sourceName = Regex("[^w{3}]\\.?(.+)\\.").find(URI(url).host)?.groupValues?.get(1).toString().replaceFirstChar { it.uppercase() }
+    val sourceName = Regex("[^w{3}]\\.?(.+)\\.").find(URI(url).host)?.groupValues?.get(1).toString()
+        .replace(Regex("\\w+\\."), "").replaceFirstChar { it.uppercase() }
 
     val server =
         doc.selectFirst("script")?.data()!!.substringAfter("\"streams\":[").substringBefore("]")
     tryParseJson<List<BloggerSource>>("[$server]")?.map {
         sourceCallback.invoke(
             ExtractorLink(
-                name,
+                sourceName,
                 sourceName,
                 it.play_url,
                 referer = "https://www.youtube.com/",
@@ -254,13 +287,14 @@ data class BloggerSource(
 
 suspend fun invokeLocalSource(
     source: String,
-    name: String,
     ref: String,
     redirect: Boolean = true,
     sourceCallback: (ExtractorLink) -> Unit
 ) {
     val doc = app.get(source, allowRedirects = redirect).document
-    val sourceName = Regex("[^w{3}]\\.?(.+)\\.").find(URI(source).host)?.groupValues?.get(1).toString().replace(Regex("\\w+\\."), "").replaceFirstChar { it.uppercase() }
+    val sourceName =
+        Regex("[^w{3}]\\.?(.+)\\.").find(URI(source).host)?.groupValues?.get(1).toString()
+            .replace(Regex("\\w+\\."), "").replaceFirstChar { it.uppercase() }
 
     doc.select("script").map { script ->
         if (script.data().contains("eval(function(p,a,c,k,e,d)")) {
@@ -269,13 +303,20 @@ suspend fun invokeLocalSource(
             tryParseJson<List<ResponseSource>>("[$server]")?.map {
                 sourceCallback.invoke(
                     ExtractorLink(
-                        name,
+                        sourceName,
                         sourceName,
                         it.file,
                         referer = ref,
-                        quality = getQualityFromName(it.label),
+                        quality = when {
+                            source.contains("hxfile.co") -> getQualityFromName(
+                                Regex("\\d\\.(.*?).mp4").find(
+                                    doc.select("title").text()
+                                )?.groupValues?.get(1).toString()
+                            )
+                            else -> getQualityFromName(it.label)
+                        }
 
-                        )
+                    )
                 )
             }
         } else {
@@ -284,12 +325,12 @@ suspend fun invokeLocalSource(
                 tryParseJson<List<ResponseSource>>("[$server]")?.map {
                     sourceCallback.invoke(
                         ExtractorLink(
-                            name,
+                            sourceName,
                             sourceName,
                             it.file,
                             referer = ref,
                             quality = getQualityFromName(it.label)
-                            )
+                        )
                     )
                 }
             } else {
