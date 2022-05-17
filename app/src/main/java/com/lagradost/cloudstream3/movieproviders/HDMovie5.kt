@@ -148,31 +148,7 @@ class HDMovie5 : MainAPI() {
             ).parsed<PlayerAjaxResponse>().embedURL ?: return@apmapIndexed false
             val doc = Jsoup.parse(html)
             val link = doc.select("iframe").attr("src")
-            // Needs source name modified as source is used to fetch the interceptor :(
-            loadExtractor(httpsify(link), null) { callback.invoke(it.copy(source = this.name)) }
+            loadExtractor(httpsify(link), "$mainUrl/",callback)
         }.contains(true)
-    }
-
-    override fun getVideoInterceptor(extractorLink: ExtractorLink): Interceptor {
-        // Used for Bullstream
-        return Interceptor { chain ->
-            val request = chain.request()
-            val requestUrl = request.url.toString()
-
-            if (requestUrl.endsWith(".ts")
-                && requestUrl.startsWith("https://ts")
-            ) {
-                val newRequest =
-                    chain.request()
-                        .newBuilder().apply {
-                            // Hardcoded CDN :(
-                            url(requestUrl.replace("https://", "https://cdnstreamembed2.xyz/"))
-                        }
-                        .build()
-                return@Interceptor chain.proceed(newRequest)
-            } else {
-                return@Interceptor chain.proceed(chain.request())
-            }
-        }
     }
 }

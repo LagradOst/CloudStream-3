@@ -120,9 +120,15 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     VizcloudDigital(),
     Mp4Upload(),
     StreamTape(),
+
+    //mixdrop extractors
+    MixDropBz(),
+    MixDropCh(),
     MixDrop(),
+
     Mcloud(),
     XStreamCdn(),
+
     StreamSB(),
     StreamSB1(),
     StreamSB2(),
@@ -154,6 +160,7 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     OkRuHttps(),
 
     // dood extractors
+    DoodCxExtractor(),
     DoodPmExtractor(),
     DoodToExtractor(),
     DoodSoExtractor(),
@@ -175,7 +182,9 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     //  SBPlay2(),
 
     PlayerVoxzer(),
-    BullStream()
+
+    BullStream(),
+    GMPlayer()
 )
 
 fun getExtractorApiFromName(name: String): ExtractorApi {

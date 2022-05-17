@@ -17,7 +17,8 @@ class BullStream : ExtractorApi() {
             ?.split(",")
             ?: return null
 
-        val m3u8 = "$mainUrl/m3u8/${data[1]}/${data[2]}/master.txt"
+        val m3u8 = "$mainUrl/m3u8/${data[1]}/${data[2]}/master.txt?s=1&cache=${data[4]}"
+        println("shiv : $m3u8")
         return M3u8Helper.generateM3u8(
             name,
             m3u8,
