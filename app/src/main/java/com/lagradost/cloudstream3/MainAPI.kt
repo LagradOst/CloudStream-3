@@ -87,6 +87,7 @@ object APIHolder {
             TheFlixToProvider(),
             StreamingcommunityProvider(),
             TantifilmProvider(),
+            HDMovie5(),
 
             // Metadata providers
             //TmdbProvider(),
