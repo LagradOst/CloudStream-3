@@ -82,6 +82,10 @@ class GeneratorPlayer : FullScreenPlayer() {
         return player.setPreferredSubtitles(sub)
     }
 
+    override fun embeddedSubtitlesFetched(subtitles: List<SubtitleData>) {
+        viewModel.addSubtitles(subtitles.toSet())
+    }
+
     private fun noSubtitles(): Boolean {
         return setSubtitles(null)
     }
@@ -258,7 +262,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                 var startSource = 0
 
                 val sortedUrls = sortLinks(useQualitySettings = false)
-                if (sortedUrls.isNullOrEmpty()) {
+                if (sortedUrls.isEmpty()) {
                     sourceDialog.findViewById<LinearLayout>(R.id.sort_sources_holder)?.isGone = true
                 } else {
                     startSource = sortedUrls.indexOf(currentSelectedLink)
@@ -267,9 +271,9 @@ class GeneratorPlayer : FullScreenPlayer() {
                     val sourcesArrayAdapter =
                         ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
 
-                    sourcesArrayAdapter.addAll(sortedUrls.map {
-                        val name = it.first?.name ?: it.second?.name ?: "NULL"
-                        "$name ${Qualities.getStringByInt(it.first?.quality)}"
+                    sourcesArrayAdapter.addAll(sortedUrls.map { (link, uri) ->
+                        val name = link?.name ?: uri?.name ?: "NULL"
+                        "$name ${Qualities.getStringByInt(link?.quality)}"
                     })
 
                     providerList.choiceMode = AbsListView.CHOICE_MODE_SINGLE
