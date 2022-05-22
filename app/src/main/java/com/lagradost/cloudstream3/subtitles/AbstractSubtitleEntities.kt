@@ -1,11 +1,11 @@
 package com.lagradost.cloudstream3.subtitles
 
-public class AbstractSubtitleEntities {
+class AbstractSubtitleEntities {
     data class SubtitleEntity(
-        var id: Int? = null,
-        var name: String = "",
+        var name: String = "", //Title of movie/series. This is the one to be displayed when choosing.
         var lang: String = "en",
-        var data: String = ""
+        var data: String = "", //Id or link, depends on provider how to process
+        var type: String = "" //Movie, TV series, etc..
     )
     data class SubtitleOAuthEntity(
         var user: String = "",

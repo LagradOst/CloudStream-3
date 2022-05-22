@@ -37,7 +37,6 @@ class OpenSubtitles: AbstractSubProvider() {
     )
     data class ResultFiles(
         @JsonProperty("file_id") var fileId: Int? = null,
-        @JsonProperty("cd_number") var cdNumber: Int? = null,
         @JsonProperty("file_name") var fileName: String? = null
     )
 
@@ -64,7 +63,7 @@ class OpenSubtitles: AbstractSubProvider() {
                     Pair("password", _ouath.pass)
                 )
             )
-            if (data.code != 401) {
+            if (data.isSuccessful) {
                 Log.i(TAG, "Result => ${data.text}")
                 tryParseJson<OAuthToken>(data.text)?.let {
                     _ouath.access_token = it.token ?: _ouath.access_token
@@ -82,6 +81,7 @@ class OpenSubtitles: AbstractSubProvider() {
         Returns list of Subtitles which user can select to download (see load).
      */
     override suspend fun search(query: SubtitleSearch): List<SubtitleEntity> {
+        val results = mutableListOf<SubtitleEntity>()
         val imdb_id = query.imdb ?: 0
         val search_query_url = when (imdb_id > 0) {
             //Use imdb_id to search if its valid
@@ -97,11 +97,26 @@ class OpenSubtitles: AbstractSubProvider() {
                 )
             )
             Log.i(TAG, "Search Req => ${req.text}")
-            tryParseJson<Results>(req.text)?.let {
-                it.data?.forEach { item ->
-                    Log.i(TAG, "Result id/name => ${item.id} / ${item.attributes?.release}")
-                    item.attributes?.files?.forEach { file ->
-                        Log.i(TAG, "Result file => ${file.fileId} / ${file.fileName}")
+            if (req.isSuccessful) {
+                tryParseJson<Results>(req.text)?.let {
+                    it.data?.forEach { item ->
+                        val attr = item.attributes ?: return@forEach
+                        val name = attr.release ?: ""
+                        val lang = attr.language ?: ""
+                        val type = item.type ?: ""
+                        //Log.i(TAG, "Result id/name => ${item.id} / $name")
+                        item.attributes?.files?.forEach { file ->
+                            val resultData = file.fileId?.toString() ?: ""
+                            //Log.i(TAG, "Result file => ${file.fileId} / ${file.fileName}")
+                            results.add(
+                                SubtitleEntity(
+                                    name = name,
+                                    lang = lang,
+                                    data = resultData,
+                                    type = type
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -109,7 +124,7 @@ class OpenSubtitles: AbstractSubProvider() {
             logError(e)
             Log.i(TAG, "search^")
         }
-        return listOf()
+        return results
     }
     /*
         Process data returned from search.
