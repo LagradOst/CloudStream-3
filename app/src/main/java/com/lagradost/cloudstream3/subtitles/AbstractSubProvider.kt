@@ -12,12 +12,12 @@ abstract class AbstractSubProvider{
     }
 
     @WorkerThread
-    open suspend fun search(ouath: SubtitleOAuthEntity): List<SubtitleEntity> {
+    open suspend fun search(query: SubtitleSearch): List<SubtitleEntity> {
         throw NotImplementedError()
     }
 
     @WorkerThread
-    open suspend fun load(data: SubtitleEntity): String {
+    open suspend fun load(ouath: SubtitleOAuthEntity, data: SubtitleEntity): String {
         throw NotImplementedError()
     }
 }

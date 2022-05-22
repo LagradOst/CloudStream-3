@@ -2,14 +2,19 @@ package com.lagradost.cloudstream3.subtitles
 
 public class AbstractSubtitleEntities {
     data class SubtitleEntity(
-        val id: Int? = null,
-        val name: String = "",
-        val lang: String = "en",
-        val data: String = ""
+        var id: Int? = null,
+        var name: String = "",
+        var lang: String = "en",
+        var data: String = ""
     )
     data class SubtitleOAuthEntity(
-        val user: String = "",
-        val pass: String = "",
-        val access_token: String = ""
+        var user: String = "",
+        var pass: String = "",
+        var access_token: String = "",
+    )
+    data class SubtitleSearch(
+        var query: String = "",
+        var imdb: Long? = null,
+        var lang: String = "en"
     )
 }
