@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.ui.player
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -35,6 +36,7 @@ import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.hideSystemUI
 import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
+import kotlinx.android.synthetic.main.dialog_online_subtitles.*
 import kotlinx.android.synthetic.main.fragment_player.*
 import kotlinx.android.synthetic.main.player_custom_layout.*
 import kotlinx.coroutines.Job
@@ -161,6 +163,25 @@ class GeneratorPlayer : FullScreenPlayer() {
         }
     }
 
+    private fun openOnlineSubPicker(context: Context, query: String, imdbId: Long?) {
+        val dialog = AlertDialog.Builder(context, R.style.AlertDialogCustomBlack)
+            .setView(R.layout.dialog_online_subtitles).create()
+
+        dialog.subtitles_search?.setOnQueryTextListener(object :
+            androidx.appcompat.widget.SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                return true
+            }
+        })
+
+        dialog.show()
+        dialog.subtitles_search?.setQuery(query, true)
+    }
+
     private fun openSubPicker() {
         try {
             subsPathPicker.launch(
@@ -250,13 +271,26 @@ class GeneratorPlayer : FullScreenPlayer() {
                 val cancelButton =
                     sourceDialog.findViewById<MaterialButton>(R.id.cancel_btt)!!
 
-                val footer: TextView =
+                val loadFromFileFooter: TextView =
                     layoutInflater.inflate(R.layout.sort_bottom_footer_add_choice, null) as TextView
-                footer.text = ctx.getString(R.string.player_load_subtitles)
-                footer.setOnClickListener {
+
+                loadFromFileFooter.text = ctx.getString(R.string.player_load_subtitles)
+                loadFromFileFooter.setOnClickListener {
                     openSubPicker()
                 }
-                subtitleList.addFooterView(footer)
+                subtitleList.addFooterView(loadFromFileFooter)
+                val loadFromOpenSubsFooter: TextView =
+                    layoutInflater.inflate(R.layout.sort_bottom_footer_add_choice, null) as TextView
+
+                loadFromOpenSubsFooter.text =
+                    "Load from Internet" //ctx.getString(R.string.player_load_subtitles)
+
+                loadFromOpenSubsFooter.setOnClickListener {
+                    println("VIDEO TITLE ${getPlayerVideoTitle()}")
+                    openOnlineSubPicker(it.context, getPlayerVideoTitle(), null)
+                }
+                subtitleList.addFooterView(loadFromOpenSubsFooter)
+
 
                 var sourceIndex = 0
                 var startSource = 0
@@ -531,18 +565,15 @@ class GeneratorPlayer : FullScreenPlayer() {
         }
     }
 
-    @SuppressLint("SetTextI18n")
-    fun setTitle() {
+    private fun getPlayerVideoTitle(): String {
         var headerName: String? = null
         var subName: String? = null
         var episode: Int? = null
         var season: Int? = null
         var tvType: TvType? = null
 
-        var isFiller: Boolean? = null
         when (val meta = currentMeta) {
             is ResultEpisode -> {
-                isFiller = meta.isFiller
                 headerName = meta.headerName
                 subName = meta.name
                 episode = meta.episode
@@ -559,7 +590,7 @@ class GeneratorPlayer : FullScreenPlayer() {
         }
 
         //Generate video title
-        var playerVideoTitle = if (headerName != null) {
+        val playerVideoTitle = if (headerName != null) {
             (headerName +
                     if (tvType.isEpisodeBased() && episode != null)
                         if (season == null)
@@ -570,6 +601,13 @@ class GeneratorPlayer : FullScreenPlayer() {
         } else {
             ""
         }
+        return playerVideoTitle
+    }
+
+
+    @SuppressLint("SetTextI18n")
+    fun setTitle() {
+        var playerVideoTitle = getPlayerVideoTitle()
 
         //Hide title, if set in setting
         if (limitTitle < 0) {
@@ -582,6 +620,8 @@ class GeneratorPlayer : FullScreenPlayer() {
                 playerVideoTitle = playerVideoTitle.substring(0, limitTitle - 1) + "..."
             }
         }
+
+        val isFiller: Boolean? = (currentMeta as? ResultEpisode)?.isFiller
 
         player_episode_filler_holder?.isVisible = isFiller ?: false
         player_video_title?.text = playerVideoTitle
