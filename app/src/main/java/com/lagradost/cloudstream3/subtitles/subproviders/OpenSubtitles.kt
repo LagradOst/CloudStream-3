@@ -39,6 +39,15 @@ class OpenSubtitles: AbstractSubProvider() {
         @JsonProperty("file_id") var fileId: Int? = null,
         @JsonProperty("file_name") var fileName: String? = null
     )
+    data class ResultDownloadLink(
+        @JsonProperty("link") var link: String? = null,
+        @JsonProperty("file_name") var fileName: String? = null,
+        @JsonProperty("requests") var requests: Int? = null,
+        @JsonProperty("remaining") var remaining: Int? = null,
+        @JsonProperty("message") var message: String? = null,
+        @JsonProperty("reset_time") var resetTime: String? = null,
+        @JsonProperty("reset_time_utc") var resetTimeUtc: String? = null
+    )
 
     /*
         Authorize app to connect to API, using username/password.
@@ -83,14 +92,15 @@ class OpenSubtitles: AbstractSubProvider() {
     override suspend fun search(query: SubtitleSearch): List<SubtitleEntity> {
         val results = mutableListOf<SubtitleEntity>()
         val imdb_id = query.imdb ?: 0
+        val queryText = query.query.replace(" ", "+")
         val search_query_url = when (imdb_id > 0) {
             //Use imdb_id to search if its valid
             true -> "$host/subtitles?imdb_id=$imdb_id&languages=${query.lang}"
-            false -> "$host/subtitles?query=${query.query}&languages=${query.lang}"
+            false -> "$host/subtitles?query=$queryText&languages=${query.lang}"
         }
         try {
             val req = app.get(
-                url =search_query_url,
+                url = search_query_url,
                 headers = mapOf(
                     Pair("Api-Key", apiKey),
                     Pair("Content-Type", "application/json")
@@ -131,6 +141,33 @@ class OpenSubtitles: AbstractSubProvider() {
         Returns string url for the subtitle file.
      */
     override suspend fun load(ouath: SubtitleOAuthEntity, data: SubtitleEntity): String {
+        try {
+            val req = app.post(
+                url = "$host/download",
+                headers = mapOf(
+                    Pair("Authorization", "Bearer ${ouath.access_token}"),
+                    Pair("Api-Key", apiKey),
+                    Pair("Content-Type", "application/json"),
+                    Pair("Accept", "*/*")
+                ),
+                data = mapOf(
+                    Pair("file_id", data.data)
+                )
+            )
+            Log.i(TAG, "Request result  => (${req.code}) ${req.text}")
+            //Log.i(TAG, "Request headers => ${req.headers}")
+            if (req.isSuccessful) {
+                tryParseJson<ResultDownloadLink>(req.text)?.let {
+                    val link = it.link ?: ""
+                    Log.i(TAG, "Request load link => $link")
+                    if (link.isNotEmpty()) {
+                        return link
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            logError(e)
+        }
         return ""
     }
 }
