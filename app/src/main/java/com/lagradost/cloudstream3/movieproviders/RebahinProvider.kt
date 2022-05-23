@@ -213,8 +213,13 @@ class RebahinProvider : MainAPI() {
         @JsonProperty("label") val label: String,
     )
 
+    private data class Player(
+        @JsonProperty("poster_file") val poster_file: String,
+    )
+
     private data class ResponseKotakAjair(
         @JsonProperty("success") val success: Boolean,
+        @JsonProperty("player") val player: Player,
         @JsonProperty("data") val data: List<Data>?,
         @JsonProperty("captions") val captions: List<Captions>?
     )
@@ -242,12 +247,12 @@ class RebahinProvider : MainAPI() {
                 )
             )
         }
-
+        val userData = sources.player.poster_file.split("/")[2]
         sources.captions?.map {
             subCallback(
                 SubtitleFile(
                     if (it.language.lowercase().contains("eng")) it.language else "Indonesian",
-                    "$domainUrl/asset/userdata/301862/caption/${it.hash}/${it.id}.srt"
+                    "$domainUrl/asset/userdata/$userData/caption/${it.hash}/${it.id}.srt"
                 )
             )
         }
