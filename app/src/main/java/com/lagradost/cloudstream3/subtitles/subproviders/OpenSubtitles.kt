@@ -33,7 +33,8 @@ class OpenSubtitles: AbstractSubProvider() {
         @JsonProperty("language") var language: String? = null,
         @JsonProperty("release") var release: String? = null,
         @JsonProperty("url") var url: String? = null,
-        @JsonProperty("files") var files: List<ResultFiles>? = listOf()
+        @JsonProperty("files") var files: List<ResultFiles>? = listOf(),
+        @JsonProperty("feature_details") var featDetails: ResultFeatureDetails? = ResultFeatureDetails()
     )
     data class ResultFiles(
         @JsonProperty("file_id") var fileId: Int? = null,
@@ -47,6 +48,19 @@ class OpenSubtitles: AbstractSubProvider() {
         @JsonProperty("message") var message: String? = null,
         @JsonProperty("reset_time") var resetTime: String? = null,
         @JsonProperty("reset_time_utc") var resetTimeUtc: String? = null
+    )
+    data class ResultFeatureDetails(
+        @JsonProperty("year") var year: Int? = null,
+        @JsonProperty("title") var title: String? = null,
+        @JsonProperty("movie_name") var movieName: String? = null,
+        @JsonProperty("imdb_id") var imdbId: Int? = null,
+        @JsonProperty("tmdb_id") var tmdbId: Int? = null,
+        @JsonProperty("season_number") var seasonNumber: Int? = null,
+        @JsonProperty("episode_number") var episodeNumber: Int? = null,
+        @JsonProperty("parent_imdb_id") var parentImdbId: Int? = null,
+        @JsonProperty("parent_title") var parentTitle: String? = null,
+        @JsonProperty("parent_tmdb_id") var parentTmdbId: Int? = null,
+        @JsonProperty("parent_feature_id") var parentFeatureId: Int? = null
     )
 
     /*
@@ -93,10 +107,17 @@ class OpenSubtitles: AbstractSubProvider() {
         val results = mutableListOf<SubtitleEntity>()
         val imdb_id = query.imdb ?: 0
         val queryText = query.query.replace(" ", "+")
+        val epNum = query.epNumber ?: 0
+        val seasonNum = query.seasonNumber ?: 0
+        val yearNum = query.year ?: 0
+        val epQuery = if (epNum > 0) "&episode_number=$epNum" else ""
+        val seasonQuery = if (seasonNum > 0) "&season_number=$seasonNum" else ""
+        val yearQuery = if (yearNum > 0) "&year=$yearNum" else ""
+
         val search_query_url = when (imdb_id > 0) {
             //Use imdb_id to search if its valid
-            true -> "$host/subtitles?imdb_id=$imdb_id&languages=${query.lang}"
-            false -> "$host/subtitles?query=$queryText&languages=${query.lang}"
+            true -> "$host/subtitles?imdb_id=$imdb_id&languages=${query.lang}$yearQuery$epQuery$seasonQuery"
+            false -> "$host/subtitles?query=$queryText&languages=${query.lang}$yearQuery$epQuery$seasonQuery"
         }
         try {
             val req = app.get(
@@ -111,9 +132,17 @@ class OpenSubtitles: AbstractSubProvider() {
                 tryParseJson<Results>(req.text)?.let {
                     it.data?.forEach { item ->
                         val attr = item.attributes ?: return@forEach
-                        val name = attr.release ?: ""
+                        val featureDetails = attr.featDetails
+                        //Use any valid name/title in hierarchy
+                        val name = featureDetails?.movieName ?:
+                            featureDetails?.title ?:
+                            featureDetails?.parentTitle ?:
+                            attr.release ?: ""
                         val lang = attr.language ?: ""
                         val type = item.type ?: ""
+                        val resEpNum = featureDetails?.episodeNumber
+                        val resSeasonNum = featureDetails?.seasonNumber
+                        val year = featureDetails?.year
                         //Log.i(TAG, "Result id/name => ${item.id} / $name")
                         item.attributes?.files?.forEach { file ->
                             val resultData = file.fileId?.toString() ?: ""
@@ -123,7 +152,10 @@ class OpenSubtitles: AbstractSubProvider() {
                                     name = name,
                                     lang = lang,
                                     data = resultData,
-                                    type = type
+                                    type = type,
+                                    epNumber = resEpNum,
+                                    seasonNumber = resSeasonNum,
+                                    year = year
                                 )
                             )
                         }

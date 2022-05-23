@@ -5,7 +5,10 @@ class AbstractSubtitleEntities {
         var name: String = "", //Title of movie/series. This is the one to be displayed when choosing.
         var lang: String = "en",
         var data: String = "", //Id or link, depends on provider how to process
-        var type: String = "" //Movie, TV series, etc..
+        var type: String = "", //Movie, TV series, etc..
+        var epNumber: Int? = null,
+        var seasonNumber: Int? = null,
+        var year: Int? = null
     )
     data class SubtitleOAuthEntity(
         var user: String = "",
@@ -15,6 +18,9 @@ class AbstractSubtitleEntities {
     data class SubtitleSearch(
         var query: String = "",
         var imdb: Long? = null,
-        var lang: String = "en"
+        var lang: String = "en",
+        var epNumber: Int? = null,
+        var seasonNumber: Int? = null,
+        var year: Int? = null
     )
 }
