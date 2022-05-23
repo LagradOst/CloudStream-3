@@ -1,11 +1,13 @@
 package com.lagradost.cloudstream3.subtitles
 
+import com.lagradost.cloudstream3.TvType
+
 class AbstractSubtitleEntities {
     data class SubtitleEntity(
         var name: String = "", //Title of movie/series. This is the one to be displayed when choosing.
         var lang: String = "en",
         var data: String = "", //Id or link, depends on provider how to process
-        var type: String = "", //Movie, TV series, etc..
+        var type: TvType = TvType.Movie, //Movie, TV series, etc..
         var epNumber: Int? = null,
         var seasonNumber: Int? = null,
         var year: Int? = null

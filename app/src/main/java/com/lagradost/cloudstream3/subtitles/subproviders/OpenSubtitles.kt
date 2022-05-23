@@ -75,6 +75,7 @@ class OpenSubtitles: AbstractSubProvider() {
             pass = ouath.pass,
             access_token = ouath.access_token
         )
+        Log.i(TAG, "OAuth => ${_ouath.toJson()}")
         try {
             val data = app.post(
                 url = "$host/login",
@@ -92,7 +93,6 @@ class OpenSubtitles: AbstractSubProvider() {
                 tryParseJson<OAuthToken>(data.text)?.let {
                     _ouath.access_token = it.token ?: _ouath.access_token
                 }
-                Log.i(TAG, "OAuth => ${_ouath.toJson()}")
             }
         } catch (e: Exception) {
             logError(e)
@@ -143,7 +143,7 @@ class OpenSubtitles: AbstractSubProvider() {
                         val resEpNum = featureDetails?.episodeNumber
                         val resSeasonNum = featureDetails?.seasonNumber
                         val year = featureDetails?.year
-                        val type = if (resSeasonNum > 0) TvType.TvSeries else TvType.Movie
+                        val type = if (resSeasonNum ?: 0 > 0) TvType.TvSeries else TvType.Movie
                         //Log.i(TAG, "Result id/name => ${item.id} / $name")
                         item.attributes?.files?.forEach { file ->
                             val resultData = file.fileId?.toString() ?: ""
