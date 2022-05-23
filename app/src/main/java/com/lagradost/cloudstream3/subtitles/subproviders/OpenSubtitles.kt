@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.subtitles.subproviders
 
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.subtitles.AbstractSubProvider
@@ -139,10 +140,10 @@ class OpenSubtitles: AbstractSubProvider() {
                             featureDetails?.parentTitle ?:
                             attr.release ?: ""
                         val lang = attr.language ?: ""
-                        val type = item.type ?: ""
                         val resEpNum = featureDetails?.episodeNumber
                         val resSeasonNum = featureDetails?.seasonNumber
                         val year = featureDetails?.year
+                        val type = if (resSeasonNum > 0) TvType.TvSeries else TvType.Movie
                         //Log.i(TAG, "Result id/name => ${item.id} / $name")
                         item.attributes?.files?.forEach { file ->
                             val resultData = file.fileId?.toString() ?: ""
