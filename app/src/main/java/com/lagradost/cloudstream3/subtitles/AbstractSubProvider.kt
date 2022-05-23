@@ -5,9 +5,14 @@ import com.lagradost.cloudstream3.subtitles.AbstractSubtitleEntities.*
 
 abstract class AbstractSubProvider{
     open val name = ""
+    open var ouath: SubtitleOAuthEntity = SubtitleOAuthEntity()
+
+    fun overrideCredentials(data: SubtitleOAuthEntity) {
+        this.ouath = data
+    }
 
     @WorkerThread
-    open suspend fun authorize(ouath: SubtitleOAuthEntity): SubtitleOAuthEntity {
+    open suspend fun authorize() {
         throw NotImplementedError()
     }
 
@@ -17,7 +22,7 @@ abstract class AbstractSubProvider{
     }
 
     @WorkerThread
-    open suspend fun load(ouath: SubtitleOAuthEntity, data: SubtitleEntity): String {
+    open suspend fun load(data: SubtitleEntity): String {
         throw NotImplementedError()
     }
 }

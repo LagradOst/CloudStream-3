@@ -64,18 +64,17 @@ class OpenSubtitles: AbstractSubProvider() {
         @JsonProperty("parent_feature_id") var parentFeatureId: Int? = null
     )
 
+    init {
+        Log.i(TAG, "Initialize ${this.name}.")
+    }
+
     /*
         Authorize app to connect to API, using username/password.
         Required to run at startup.
         Returns OAuth entity with valid access token.
      */
-    override suspend fun authorize(ouath: SubtitleOAuthEntity): SubtitleOAuthEntity {
-        val _ouath = SubtitleOAuthEntity(
-            user = ouath.user,
-            pass = ouath.pass,
-            access_token = ouath.access_token
-        )
-        Log.i(TAG, "OAuth => ${_ouath.toJson()}")
+    override suspend fun authorize() {
+        Log.i(TAG, "OAuth => ${ouath.toJson()}")
         try {
             val data = app.post(
                 url = "$host/login",
@@ -84,20 +83,19 @@ class OpenSubtitles: AbstractSubProvider() {
                     Pair("Content-Type", "application/json")
                 ),
                 data = mapOf(
-                    Pair("username", _ouath.user),
-                    Pair("password", _ouath.pass)
+                    Pair("username", ouath.user),
+                    Pair("password", ouath.pass)
                 )
             )
             if (data.isSuccessful) {
                 Log.i(TAG, "Result => ${data.text}")
                 tryParseJson<OAuthToken>(data.text)?.let {
-                    _ouath.access_token = it.token ?: _ouath.access_token
+                    ouath.access_token = it.token ?: ouath.access_token
                 }
             }
         } catch (e: Exception) {
             logError(e)
         }
-        return _ouath
     }
 
     /*
@@ -172,7 +170,7 @@ class OpenSubtitles: AbstractSubProvider() {
         Process data returned from search.
         Returns string url for the subtitle file.
      */
-    override suspend fun load(ouath: SubtitleOAuthEntity, data: SubtitleEntity): String {
+    override suspend fun load(data: SubtitleEntity): String {
         try {
             val req = app.post(
                 url = "$host/download",
