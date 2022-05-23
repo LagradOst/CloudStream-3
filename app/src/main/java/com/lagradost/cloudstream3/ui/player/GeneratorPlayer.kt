@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.ui.player
 
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -33,6 +34,8 @@ import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSet
 import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
+import com.lagradost.cloudstream3.utils.SingleSelectionHelper.showDialog
+import com.lagradost.cloudstream3.utils.SubtitleHelper.languages
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.hideSystemUI
 import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
@@ -164,12 +167,51 @@ class GeneratorPlayer : FullScreenPlayer() {
     }
 
     private fun openOnlineSubPicker(context: Context, query: String, imdbId: Long?) {
-        val dialog = AlertDialog.Builder(context, R.style.AlertDialogCustomBlack)
-            .setView(R.layout.dialog_online_subtitles).create()
+        val dialog = Dialog(context, R.style.AlertDialogCustomBlack)
+        dialog.setContentView(R.layout.dialog_online_subtitles)
 
-        dialog.subtitles_search?.setOnQueryTextListener(object :
+        val arrayAdapter =
+            ArrayAdapter<String>(dialog.context, R.layout.sort_bottom_single_choice)
+
+        dialog.show()
+
+        dialog.cancel_btt.setOnClickListener {
+            dialog.dismissSafe()
+        }
+
+        dialog.subtitle_adapter.choiceMode = AbsListView.CHOICE_MODE_SINGLE
+        dialog.subtitle_adapter.adapter = arrayAdapter
+        val adapter = dialog.subtitle_adapter.adapter as? ArrayAdapter<String>
+
+        var currentSubtitles: List<SubtitleData> = emptyList()
+        var currentSubtitle: SubtitleData? = null
+
+        dialog.subtitle_adapter.setOnItemClickListener { parent, view, position, id ->
+            currentSubtitle = currentSubtitles.getOrNull(position) ?: return@setOnItemClickListener
+        }
+
+        var currentLanguageTwoLetters: String? = null
+
+        fun setSubtitles(list: List<SubtitleData>) {
+            currentSubtitles = list
+            adapter?.clear()
+            adapter?.addAll(currentSubtitles.map { it.name })
+        }
+
+        dialog.subtitles_search.setOnQueryTextListener(object :
             androidx.appcompat.widget.SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
+                dialog.search_loading_bar?.show()
+                val subs =
+                    listOf(
+                        // Testing
+                        SubtitleData(query.toString(), "URL", SubtitleOrigin.OPEN_SUBTITLES, ""),
+                        SubtitleData(query.toString(), "URL", SubtitleOrigin.OPEN_SUBTITLES, ""),
+                        SubtitleData(query.toString(), "URL", SubtitleOrigin.OPEN_SUBTITLES, ""),
+                        SubtitleData(query.toString(), "URL", SubtitleOrigin.OPEN_SUBTITLES, ""),
+                    )
+                setSubtitles(subs)
+                dialog.search_loading_bar?.hide()
                 return true
             }
 
@@ -178,8 +220,35 @@ class GeneratorPlayer : FullScreenPlayer() {
             }
         })
 
+        dialog.search_filter.setOnClickListener {
+            val names = languages.map {
+                val emoji = SubtitleHelper.getFlagFromIso(it.ISO_639_1)
+                val name = it.languageName //SubtitleHelper.fromTwoLettersToLanguage(it)
+                val fullName = "${emoji?.let { "$it " } ?: ""}$name"
+                Pair(it, fullName)
+            }
+
+            activity?.let { act ->
+                act.showDialog(
+                    names.map { it.second },
+                    -1,
+                    "Subtitle Language",
+                    true,
+                    {}) { index ->
+                    currentLanguageTwoLetters = languages[index].ISO_639_1
+                }
+            }
+        }
+
+        dialog.apply_btt.setOnClickListener {
+            currentSubtitle?.let { currentSubtitle ->
+                viewModel.addSubtitles(setOf(currentSubtitle))
+            }
+            dialog.dismissSafe()
+        }
+
         dialog.show()
-        dialog.subtitles_search?.setQuery(query, true)
+        dialog.subtitles_search.setQuery(query, true)
     }
 
     private fun openSubPicker() {

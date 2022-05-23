@@ -67,6 +67,8 @@
                                 android:layout_gravity="center"
                                 android:layout_marginStart="-70dp"
                                 android:foregroundTint="@color/white"
+                                android:visibility="gone"
+                                tools:visibility="visible"
                                 android:progressTint="@color/white">
 
                             </androidx.core.widget.ContentLoadingProgressBar>
@@ -98,7 +100,7 @@
             </LinearLayout>
 
             <ListView
-                android:id="@+id/sort_subtitles"
+                android:id="@+id/subtitle_adapter"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
 
