@@ -183,9 +183,7 @@ class KuronimeProvider : MainAPI() {
             fixUrl(Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src"))
         }
 
-        sources.map {
-            it.replace("https://ok.ru", "http://ok.ru")
-        }.apmap {
+        sources.apmap {
             safeApiCall {
                 when {
                     it.contains("animeku.org") -> invokeKuroSource(it, callback)

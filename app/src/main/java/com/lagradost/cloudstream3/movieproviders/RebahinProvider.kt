@@ -2,7 +2,6 @@ package com.lagradost.cloudstream3.movieproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.Blogger
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.WebViewResolver
@@ -119,11 +118,13 @@ class RebahinProvider : MainAPI() {
         return if (tvType == TvType.TvSeries) {
             val baseLink = document.select("div#mv-info > a").attr("href")
             val episodes = app.get(baseLink).document.select("div#list-eps > a").map {
-                it.text()
+                val name = it.text().replace(Regex("Server\\s?\\d"), "").trim()
+                name
             }.distinct().map {
                 val name = it
-                val link = "$baseLink?ep=${it.replace(Regex("[^0-9]"), "")}"
+//                val epNum = Regex("[^r|R]\\s(\\d+)").find(it)?.groupValues?.get(1)?.toIntOrNull()
                 val epNum = it.replace(Regex("[^0-9]"), "").toIntOrNull()
+                val link = "$baseLink?ep=$epNum"
                 newEpisode(link) {
                     this.name = name
                     this.episode = epNum
@@ -152,15 +153,22 @@ class RebahinProvider : MainAPI() {
         }
     }
 
-    private data class ResponseLocalSource(
+    private data class ResponseLocal(
         @JsonProperty("file") val file: String,
         @JsonProperty("label") val label: String,
         @JsonProperty("type") val type: String?
     )
 
+    private data class Tracks(
+        @JsonProperty("file") val file: String,
+        @JsonProperty("label") val label: String?,
+        @JsonProperty("kind") val kind: String?
+    )
+
     private suspend fun invokeLokalSource(
         url: String,
         name: String,
+        subCallback: (SubtitleFile) -> Unit,
         sourceCallback: (ExtractorLink) -> Unit
     ) {
         val document = app.get(
@@ -172,13 +180,24 @@ class RebahinProvider : MainAPI() {
 
         document.select("script").map { script ->
             if (script.data().contains("sources: [")) {
-                val source = tryParseJson<ResponseLocalSource>(
+                val source = tryParseJson<ResponseLocal>(
                     script.data().substringAfter("sources: [").substringBefore("],"))
                 M3u8Helper.generateM3u8(
                     name,
                     source!!.file,
                     "http://172.96.161.72",
                 ).forEach(sourceCallback)
+
+                val trackJson = script.data().substringAfter("tracks: [").substringBefore("],")
+                val track = tryParseJson<List<Tracks>>("[$trackJson]")
+                track?.map {
+                    subCallback(
+                        SubtitleFile(
+                            "Indonesian",
+                            (if (it.file.contains(".srt")) it.file else null)!!
+                        )
+                    )
+                }
             }
         }
     }
@@ -194,7 +213,7 @@ class RebahinProvider : MainAPI() {
         @JsonProperty("label") val label: String,
     )
 
-    private data class ResponseJson(
+    private data class ResponseKotakAjair(
         @JsonProperty("success") val success: Boolean,
         @JsonProperty("data") val data: List<Data>?,
         @JsonProperty("captions") val captions: List<Captions>?
@@ -207,12 +226,12 @@ class RebahinProvider : MainAPI() {
     ) {
         val domainUrl = "https://kotakajair.xyz"
         val id = url.trimEnd('/').split("/").last()
-        val jsonData = app.post(
+        val sources = app.post(
             url = "$domainUrl/api/source/$id",
             data = mapOf("r" to mainUrl, "d" to URI(url).host)
-        ).parsed<ResponseJson>()
+        ).parsed<ResponseKotakAjair>()
 
-        jsonData.data?.map {
+        sources.data?.map {
             sourceCallback.invoke(
                 ExtractorLink(
                     name,
@@ -224,10 +243,10 @@ class RebahinProvider : MainAPI() {
             )
         }
 
-        jsonData.captions?.map {
+        sources.captions?.map {
             subCallback(
                 SubtitleFile(
-                    if (it.language.contains("Indonesia")) "${it.language}n" else it.language,
+                    if (it.language.lowercase().contains("eng")) it.language else "Indonesian",
                     "$domainUrl/asset/userdata/301862/caption/${it.hash}/${it.id}.srt"
                 )
             )
@@ -252,10 +271,9 @@ class RebahinProvider : MainAPI() {
             val fixData = Regex("(.*?)\\?ep").find(data)?.groupValues?.get(1).toString()
             val document = app.get(fixData).document
             val ep = Regex("\\?ep=([0-9]+)").find(data)?.groupValues?.get(1).toString()
-            val title =
-                document.selectFirst("div#list-eps > a")?.text()?.replace(Regex("[\\d]"), "")
-                    ?.trim()
-            document.select("div#list-eps > a:matches(^${title} ${ep}$)").mapNotNull {
+            val title = document.selectFirst("div#list-eps > a")?.text()?.replace(Regex("[\\d]"), "")
+                    ?.trim()?.replace("Server", "")?.trim()
+            document.select("div#list-eps > a:matches(${title}\\s?${ep}$)").mapNotNull {
                 val iframeLink = "${mainUrl}/iembed/?source=${it.attr("data-iframe")}"
                 app.get(iframeLink).document.select("iframe")
                     .attr("src")
@@ -268,6 +286,7 @@ class RebahinProvider : MainAPI() {
                     it.startsWith("http://172.96.161.72") -> invokeLokalSource(
                         it,
                         this.name,
+                        subtitleCallback,
                         callback
                     )
                     it.startsWith("https://kotakajair.xyz") -> invokeKotakAjairSource(

@@ -74,7 +74,11 @@ class NontonAnimeIDProvider : MainAPI() {
             if (name.contains("movie")) {
                 return "$mainUrl/anime/" + name.replace("-movie", "")
             } else {
-                "$mainUrl/anime/$name"
+                if (name.contains("kokurasetai-season-3")) {
+                    "$mainUrl/anime/${name.replace("season-3", "ultra-romantic")}"
+                } else {
+                    "$mainUrl/anime/$name"
+                }
             }
         }
     }
