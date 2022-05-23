@@ -140,9 +140,9 @@ class OpenSubtitles: AbstractSubProvider() {
                             featureDetails?.parentTitle ?:
                             attr.release ?: ""
                         val lang = attr.language ?: ""
-                        val resEpNum = featureDetails?.episodeNumber
-                        val resSeasonNum = featureDetails?.seasonNumber
-                        val year = featureDetails?.year
+                        val resEpNum = featureDetails?.episodeNumber ?: query.epNumber
+                        val resSeasonNum = featureDetails?.seasonNumber ?: query.seasonNumber
+                        val year = featureDetails?.year ?: query.year
                         val type = if (resSeasonNum ?: 0 > 0) TvType.TvSeries else TvType.Movie
                         //Log.i(TAG, "Result id/name => ${item.id} / $name")
                         item.attributes?.files?.forEach { file ->
@@ -165,7 +165,6 @@ class OpenSubtitles: AbstractSubProvider() {
             }
         } catch (e: Exception) {
             logError(e)
-            Log.i(TAG, "search^")
         }
         return results
     }
@@ -193,9 +192,7 @@ class OpenSubtitles: AbstractSubProvider() {
                 tryParseJson<ResultDownloadLink>(req.text)?.let {
                     val link = it.link ?: ""
                     Log.i(TAG, "Request load link => $link")
-                    if (link.isNotEmpty()) {
-                        return link
-                    }
+                    return link
                 }
             }
         } catch (e: Exception) {
