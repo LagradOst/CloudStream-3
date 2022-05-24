@@ -20,6 +20,8 @@ class RebahinProvider : MainAPI() {
     override val supportedTypes = setOf(
         TvType.Movie,
         TvType.TvSeries,
+        TvType.Anime,
+        TvType.AsianDrama
     )
 
     override suspend fun getMainPage(): HomePageResponse {
