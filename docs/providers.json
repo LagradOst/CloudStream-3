@@ -212,7 +212,7 @@
         "language": "id",
         "name": "LayarKaca",
         "status": 1,
-        "url": ""
+        "url": "https://149.56.24.226/"
     },
     "LookMovieProvider": {
         "language": "en",
@@ -261,6 +261,12 @@
         "name": "NontonAnimeID",
         "status": 1,
         "url": "https://75.119.159.228"
+    },
+    "OlgplyProvider": {
+        "language": "en",
+        "name": "Olgply",
+        "status": 1,
+        "url": "https://olgply.com"
     },
     "OploverzProvider": {
         "language": "id",
