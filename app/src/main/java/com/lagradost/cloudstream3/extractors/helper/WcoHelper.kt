@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.app
 class WcoHelper {
     companion object {
         suspend fun getWcoKey(): String {
-            val i = app.get("https://raw.githubusercontent.com/Stormunblessed/CloudStream-3/master/docs/wcokey.txt").text
+            val i = app.get("https://raw.githubusercontent.com/LagradOst/CloudStream-3/master/docs/wcokey.txt").text
             return i
         }
     }
