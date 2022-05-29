@@ -14,6 +14,7 @@ import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import com.lagradost.cloudstream3.APIHolder.filterProviderByPreferredMedia
 import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
@@ -70,6 +71,7 @@ class QuickSearchFragment : Fragment() {
 
     private var providers: Set<String>? = null
     private lateinit var searchViewModel: SearchViewModel
+    private val filteredSearchQuality = mutableListOf<Int>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -80,7 +82,13 @@ class QuickSearchFragment : Fragment() {
             WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
         )
         searchViewModel = ViewModelProvider(this)[SearchViewModel::class.java]
-
+        context?.let {
+            val settingsManager = PreferenceManager.getDefaultSharedPreferences(it)
+            settingsManager.getStringSet(getString(R.string.pref_filter_search_quality_key), setOf())?.forEach{ entry ->
+                filteredSearchQuality.add(entry.toInt())
+                //Log.i("ApiError", "filteredSearchQuality $entry")
+            }
+        }
         return inflater.inflate(R.layout.quick_search, container, false)
     }
 
@@ -215,8 +223,13 @@ class QuickSearchFragment : Fragment() {
                 is Resource.Success -> {
                     it.value.let { data ->
                         println("DATA: $data")
+                        //Log.i("ApiError", "QuickSearch filterList => ${filteredSearchQuality.toJson()}")
                         (quick_search_autofit_results?.adapter as? SearchAdapter?)?.updateList(
-                            data
+                            data.filter { item ->
+                                val searchQualVal = item.quality?.ordinal ?: -1
+                                //Log.i("ApiError", "QuickSearch item => ${item.toJson()}")
+                                !filteredSearchQuality.contains(searchQualVal)
+                            }
                         )
                     }
                     searchExitIcon?.alpha = 1f
