@@ -231,7 +231,7 @@
     <string name="use_system_brightness_settings_des">Use system brightness in the app player instead of a dark
         overlay
     </string>
-    <string name="pref_filter_search_quality">Hide search quality on results</string>
+    <string name="pref_filter_search_quality">Hide selected video quality on Search results</string>
 
     <string name="episode_sync_settings">Update watch progress</string>
     <string name="episode_sync_settings_des">Automatically sync your current episode progress</string>
