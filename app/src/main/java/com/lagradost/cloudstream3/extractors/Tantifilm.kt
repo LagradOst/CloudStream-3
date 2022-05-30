@@ -18,7 +18,6 @@ open class Tantifilm : ExtractorApi() {
         @JsonProperty("is_vr") val is_vr : Boolean
     )
 
-
     data class TantifilmData (
         @JsonProperty("file") val file : String,
         @JsonProperty("label") val label : String,
