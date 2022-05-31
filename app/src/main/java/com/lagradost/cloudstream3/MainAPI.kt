@@ -110,7 +110,6 @@ object APIHolder {
             AnimePaheProvider(),
             DreamSubProvider(),
             NineAnimeProvider(),
-            NineAnimeProvider(),
             AnimeWorldProvider(),
             ZoroProvider(),
             DubbedAnimeProvider(),
