@@ -181,7 +181,9 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     ZplayerV2(),
     Upstream(),
 
-
+    Maxstream(),
+    Tantifilm(),
+    Userload(),
     // StreamSB.kt works
     //  SBPlay(),
     //  SBPlay1(),
