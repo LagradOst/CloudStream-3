@@ -23,7 +23,7 @@ data class Files(
         val extractedUrl = unpacjed?.let { Regex("""sources:((.|\n)*?)image""").find(it) }?.groups?.get(1)?.value.toString().replace("file",""""file"""").replace("label",""""label"""").substringBeforeLast(",")
         val parsedlinks = parseJson<List<Files>>(extractedUrl)
         parsedlinks.forEach { data ->
-            if (data.label.isNullOrBlank()){
+            if (data.label.isNullOrBlank()){ // mp4 links (with labels) are slow
                 M3u8Helper.generateM3u8(
                     name,
                     data.id,
@@ -32,16 +32,6 @@ data class Files(
                 ).forEach { link ->
                     extractedLinksList.add(link)
                 }
-            }
-            else{
-                extractedLinksList.add(ExtractorLink(
-                    data.id,
-                    this.name,
-                    data.id,
-                    mainUrl,
-                    getQualityFromName(data.label),
-                    false
-                ))
             }
         }
 
