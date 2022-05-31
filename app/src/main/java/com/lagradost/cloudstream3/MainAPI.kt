@@ -88,6 +88,7 @@ object APIHolder {
             StreamingcommunityProvider(),
             TantifilmProvider(),
             Cb01Provider(),
+            AltadefinizioneProvider(),
             HDMovie5(),
             RebahinProvider(),
             LayarKacaProvider(),
