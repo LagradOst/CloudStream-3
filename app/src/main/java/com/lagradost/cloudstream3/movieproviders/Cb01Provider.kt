@@ -19,7 +19,7 @@ class Cb01Provider : MainAPI() {
     override suspend fun getMainPage(): HomePageResponse {
         val items = ArrayList<HomePageList>()
         val urls = listOf(
-            Pair("$mainUrl/genere/animazione/", "Azione"),
+            Pair("$mainUrl/genere/azione/", "Azione"),
             Pair("$mainUrl/genere/avventura/", "Avventura"),
         )
         for ((url, name) in urls) {
