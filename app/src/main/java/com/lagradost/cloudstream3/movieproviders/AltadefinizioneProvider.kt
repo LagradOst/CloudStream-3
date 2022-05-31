@@ -85,7 +85,7 @@ class AltadefinizioneProvider : MainAPI() {
 
         val year = document.selectFirst("#details > li:nth-child(2)")!!.childNode(2).toString().filter { it.isDigit() }.toInt()
 
-        val poster = mainUrl+document.selectFirst("div.thumbphoto > img")!!.attr("src")
+        val poster = fixUrl(document.selectFirst("div.thumbphoto > img")!!.attr("src"))
 
         val recomm = document.select("ul.related-list > li").map {
             val href = it.selectFirst("a")!!.attr("href")

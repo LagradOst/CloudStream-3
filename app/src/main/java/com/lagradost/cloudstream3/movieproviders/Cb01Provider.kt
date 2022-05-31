@@ -7,7 +7,7 @@ import com.lagradost.cloudstream3.utils.*
 
 class Cb01Provider : MainAPI() {
     override val lang = "it"
-    override var mainUrl = "https://cb01.rip/"
+    override var mainUrl = "https://cb01.rip"
     override var name = "Cineblog01"
     override val hasMainPage = true
     override val hasChromecastSupport = true
@@ -187,7 +187,7 @@ class Cb01Provider : MainAPI() {
         val doc = app.get(data).document
         val type = if( data.contains("film") ){"movie"} else {"tv"}
         val idpost=doc.select("#player-option-1").attr("data-post")
-        val test = app.post("https://cb01.rip/wp-admin/admin-ajax.php", headers = mapOf(
+        val test = app.post("$mainUrl/wp-admin/admin-ajax.php", headers = mapOf(
             "content-type" to "application/x-www-form-urlencoded; charset=UTF-8",
             "accept" to "*/*",
             "X-Requested-With" to "XMLHttpRequest",

@@ -13,9 +13,10 @@ open class Userload : ExtractorApi() {
         val response = app.get(url).text
         val jstounpack = Regex("ext/javascript\">eval((.|\\n)*?)</script>").find(response)?.groups?.get(1)?.value
         val unpacjed = JsUnpacker(jstounpack).unpack()
-        val morocco = unpacjed?.let { Regex("""cbbdeffb="((.|\n)*?)"""").find(it) }?.groups?.get(1)?.value.toString()
-        val mycountry = unpacjed?.let { Regex("""aaedaebdcbfa="((.|\n)*?)"""").find(it) }?.groups?.get(1)?.value.toString()
-        val videoLinkPage = app.post("https://userload.co/api/request/", data = mapOf(
+        val valuesfordata= unpacjed?.split(";")?.map { it.substringAfter('"').substringBefore('"') }
+        val morocco = valuesfordata!![1]
+        val mycountry = valuesfordata!![7]
+        val videoLinkPage = app.post("$mainUrl/api/request/", data = mapOf(
             "morocco" to morocco,
             "mycountry" to mycountry
         ))
