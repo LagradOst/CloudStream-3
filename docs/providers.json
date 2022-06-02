@@ -77,9 +77,9 @@
         "status": 1,
         "url": "https://bflix.ru"
     },
-    "Cb01Provider": {
+    "CineblogProvider": {
         "language": "it",
-        "name": "Cineblog",
+        "name": "CineBlog",
         "status": 1,
         "url": "https://cb01.rip"
     },
