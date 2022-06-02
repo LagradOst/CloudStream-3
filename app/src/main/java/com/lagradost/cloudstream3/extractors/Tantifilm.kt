@@ -12,7 +12,10 @@ open class Tantifilm : ExtractorApi() {
     override val requiresReferer = false
 
     data class TantifilmJsonData (
+        @JsonProperty("success") val success : Boolean,
         @JsonProperty("data") val data : List<TantifilmData>,
+        @JsonProperty("captions")val captions : List<String>,
+        @JsonProperty("is_vr") val is_vr : Boolean
     )
 
     data class TantifilmData (
