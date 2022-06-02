@@ -5,10 +5,10 @@ import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
 
-class CineblogProvider : MainAPI() {
+class CB01Provider : MainAPI() {
     override val lang = "it"
     override var mainUrl = "https://cb01.rip"
-    override var name = "CineBlog01"
+    override var name = "CB01"
     override val hasMainPage = true
     override val hasChromecastSupport = true
     override val supportedTypes = setOf(
