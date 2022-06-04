@@ -204,7 +204,7 @@ class RebahinProvider : MainAPI() {
                 val trackJson = script.data().substringAfter("tracks: [").substringBefore("],")
                 val track = tryParseJson<List<Tracks>>("[$trackJson]")
                 track?.map {
-                    subCallback(
+                    subCallback.invoke(
                         SubtitleFile(
                             "Indonesian",
                             (if (it.file.contains(".srt")) it.file else null)!!
@@ -262,7 +262,7 @@ class RebahinProvider : MainAPI() {
         }
         val userData = sources.player.poster_file.split("/")[2]
         sources.captions?.map {
-            subCallback(
+            subCallback.invoke(
                 SubtitleFile(
                     if (it.language.lowercase().contains("eng")) it.language else "Indonesian",
                     "$domainUrl/asset/userdata/$userData/caption/${it.hash}/${it.id}.srt"

@@ -12,7 +12,6 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 class GomunimeProvider : MainAPI() {
     override var mainUrl = "https://185.231.223.76"
     override var name = "Gomunime"
-    override val hasQuickSearch = false
     override val hasMainPage = true
     override val lang = "id"
     override val hasDownloadSupport = true

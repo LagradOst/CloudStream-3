@@ -92,6 +92,7 @@ object APIHolder {
             HDMovie5(),
             RebahinProvider(),
             LayarKacaProvider(),
+            IdlixProvider(),
 
             // Metadata providers
             //TmdbProvider(),
@@ -122,6 +123,8 @@ object APIHolder {
             GomunimeProvider(),
             NontonAnimeIDProvider(),
             KuronimeProvider(),
+            OtakudesuProvider(),
+            AnimeIndo(),
             //MultiAnimeProvider(),
             NginxProvider(),
             OlgplyProvider(),
@@ -523,6 +526,11 @@ fun capitalizeStringNullable(str: String?): String? {
     } catch (e: Exception) {
         str
     }
+}
+
+fun fixHeader(str: String): String {
+    return str.split(" ").joinToString(" ") { it.lowercase()
+        .replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else it } }
 }
 
 /** https://www.imdb.com/title/tt2861424/ -> tt2861424 */
@@ -927,7 +935,7 @@ interface LoadResponse {
         }
 
         fun LoadResponse.addRating(value: Int?) {
-            if (value ?: return < 0 || value > 1000) {
+            if ((value ?: return) < 0 || value > 1000) {
                 return
             }
             this.rating = value

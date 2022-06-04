@@ -25,7 +25,7 @@ class LayarKacaProvider : MainAPI() {
         val homePageList = ArrayList<HomePageList>()
 
         document.select("section.hot-block,section#newseries").forEach { block ->
-            val header = block.select("footer.load-more > a").text().trim()
+            val header = fixHeader(block.select("footer.load-more > a").text().trim())
             val items = block.select("div.slider-item").mapNotNull {
                 it.toTopSearchResult()
             }
@@ -33,7 +33,7 @@ class LayarKacaProvider : MainAPI() {
         }
 
         document.select("div#newest").forEach { block ->
-            val header = block.select(".header > h2 > a").text()
+            val header = fixHeader(block.select(".header > h2 > a").text())
             val items = block.select("div.item").mapNotNull {
                 it.toMainSearchResult()
             }
@@ -42,7 +42,7 @@ class LayarKacaProvider : MainAPI() {
 
         document.select("section#recomendation,section#populer,section#seriespopuler")
             .forEach { block ->
-                val header = block.select(".header > h2 > a").text()
+                val header = fixHeader(block.select(".header > h2 > a").text())
                 val items = block.select("div.item").mapNotNull {
                     it.toBottomSearchResult()
                 }

@@ -133,11 +133,10 @@ class OploverzProvider : MainAPI() {
                 .text().trim().replace("Status: ", "")
         )
         val typeCheck =
-            when {
-                document.select(".info-content > .spe > span:nth-child(5), .info-content > .spe > span")
-                    .text().trim().contains("TV") -> "TV"
-                document.select(".info-content > .spe > span:nth-child(5), .info-content > .spe > span")
-                    .text().trim().contains("TV") -> "Movie"
+            when (document.select(".info-content > .spe > span:nth-child(5), .info-content > .spe > span")
+                .text().trim()) {
+                "TV" -> "TV"
+                "Movie" -> "Movie"
                 else -> "OVA"
             }
         val type = getType(typeCheck)
