@@ -299,7 +299,7 @@
     <string name="site">Sitio</string> 
     <string name="synopsis">Sinopsis</string> 
  
-    <string name="Puesto en cola">Puesto en cola</string> 
+    <string name="queued">Puesto en cola</string> 
     <string name="no_subtitles">Sin subtítulos</string> 
     <string name="default_subtitles">Predeterminados</string> 
  
@@ -309,7 +309,7 @@
  
     <!--plural--> 
     <string name="movies">Películas</string> 
-    <string name="tv_series">Series de televisión</string> 
+    <string name="tv_series">Series de TV</string> 
     <string name="cartoons">Dibujos animados</string> 
     <string name="anime">Anime</string> 
     <string name="torrent">Torrents</string> 
