@@ -8,14 +8,21 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.StringRes
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.syncproviders.OAuth2API
+import com.lagradost.cloudstream3.ui.home.HomeFragment
+import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
+import com.lagradost.cloudstream3.utils.UIHelper.setImage
 import kotlinx.android.synthetic.main.main_settings.*
+import kotlinx.android.synthetic.main.settings_title_top.*
 import java.io.File
 
 class SettingsFragment : Fragment() {
@@ -31,6 +38,18 @@ class SettingsFragment : Fragment() {
                 logError(e)
                 null
             }
+        }
+
+        fun PreferenceFragmentCompat?.setUpToolbar(@StringRes title : Int) {
+            if (this == null) return
+            settings_toolbar?.apply {
+                setTitle(title)
+                setNavigationIcon(R.drawable.ic_baseline_arrow_back_24)
+                setNavigationOnClickListener {
+                    activity?.onBackPressed()
+                }
+            }
+            context.fixPaddingStatusbar(settings_toolbar)
         }
 
         fun getFolderSize(dir: File): Long {
@@ -96,6 +115,20 @@ class SettingsFragment : Fragment() {
         }
 
         val isTrueTv = context?.isTrueTvSettings() == true
+
+        for (syncApi in OAuth2API.OAuth2Apis) {
+            val login = syncApi.loginInfo()
+            val pic = login?.profilePicture ?: continue
+            if (settings_profile_pic?.setImage(
+                    pic,
+                    errorImageDrawable = HomeFragment.errorProfilePic
+                ) == true
+            ) {
+                settings_profile_text?.text = login.name
+                settings_profile?.isVisible = true
+                break
+            }
+        }
 
         listOf(
             Pair(settings_player, R.id.action_navigation_settings_to_navigation_settings_player),
