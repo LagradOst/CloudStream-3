@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.subtitles.subproviders
 
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.subtitles.AbstractSubProvider
@@ -33,7 +34,8 @@ class OpenSubtitles: AbstractSubProvider() {
         @JsonProperty("language") var language: String? = null,
         @JsonProperty("release") var release: String? = null,
         @JsonProperty("url") var url: String? = null,
-        @JsonProperty("files") var files: List<ResultFiles>? = listOf()
+        @JsonProperty("files") var files: List<ResultFiles>? = listOf(),
+        @JsonProperty("feature_details") var featDetails: ResultFeatureDetails? = ResultFeatureDetails()
     )
     data class ResultFiles(
         @JsonProperty("file_id") var fileId: Int? = null,
@@ -48,18 +50,31 @@ class OpenSubtitles: AbstractSubProvider() {
         @JsonProperty("reset_time") var resetTime: String? = null,
         @JsonProperty("reset_time_utc") var resetTimeUtc: String? = null
     )
+    data class ResultFeatureDetails(
+        @JsonProperty("year") var year: Int? = null,
+        @JsonProperty("title") var title: String? = null,
+        @JsonProperty("movie_name") var movieName: String? = null,
+        @JsonProperty("imdb_id") var imdbId: Int? = null,
+        @JsonProperty("tmdb_id") var tmdbId: Int? = null,
+        @JsonProperty("season_number") var seasonNumber: Int? = null,
+        @JsonProperty("episode_number") var episodeNumber: Int? = null,
+        @JsonProperty("parent_imdb_id") var parentImdbId: Int? = null,
+        @JsonProperty("parent_title") var parentTitle: String? = null,
+        @JsonProperty("parent_tmdb_id") var parentTmdbId: Int? = null,
+        @JsonProperty("parent_feature_id") var parentFeatureId: Int? = null
+    )
+
+    init {
+        Log.i(TAG, "Initialize ${this.name}.")
+    }
 
     /*
         Authorize app to connect to API, using username/password.
         Required to run at startup.
         Returns OAuth entity with valid access token.
      */
-    override suspend fun authorize(ouath: SubtitleOAuthEntity): SubtitleOAuthEntity {
-        val _ouath = SubtitleOAuthEntity(
-            user = ouath.user,
-            pass = ouath.pass,
-            access_token = ouath.access_token
-        )
+    override suspend fun authorize() {
+        Log.i(TAG, "OAuth => ${ouath.toJson()}")
         try {
             val data = app.post(
                 url = "$host/login",
@@ -68,21 +83,19 @@ class OpenSubtitles: AbstractSubProvider() {
                     Pair("Content-Type", "application/json")
                 ),
                 data = mapOf(
-                    Pair("username", _ouath.user),
-                    Pair("password", _ouath.pass)
+                    Pair("username", ouath.user),
+                    Pair("password", ouath.pass)
                 )
             )
             if (data.isSuccessful) {
                 Log.i(TAG, "Result => ${data.text}")
                 tryParseJson<OAuthToken>(data.text)?.let {
-                    _ouath.access_token = it.token ?: _ouath.access_token
+                    ouath.access_token = it.token ?: ouath.access_token
                 }
-                Log.i(TAG, "OAuth => ${_ouath.toJson()}")
             }
         } catch (e: Exception) {
             logError(e)
         }
-        return _ouath
     }
 
     /*
@@ -93,10 +106,17 @@ class OpenSubtitles: AbstractSubProvider() {
         val results = mutableListOf<SubtitleEntity>()
         val imdb_id = query.imdb ?: 0
         val queryText = query.query.replace(" ", "+")
+        val epNum = query.epNumber ?: 0
+        val seasonNum = query.seasonNumber ?: 0
+        val yearNum = query.year ?: 0
+        val epQuery = if (epNum > 0) "&episode_number=$epNum" else ""
+        val seasonQuery = if (seasonNum > 0) "&season_number=$seasonNum" else ""
+        val yearQuery = if (yearNum > 0) "&year=$yearNum" else ""
+
         val search_query_url = when (imdb_id > 0) {
             //Use imdb_id to search if its valid
-            true -> "$host/subtitles?imdb_id=$imdb_id&languages=${query.lang}"
-            false -> "$host/subtitles?query=$queryText&languages=${query.lang}"
+            true -> "$host/subtitles?imdb_id=$imdb_id&languages=${query.lang}$yearQuery$epQuery$seasonQuery"
+            false -> "$host/subtitles?query=$queryText&languages=${query.lang}$yearQuery$epQuery$seasonQuery"
         }
         try {
             val req = app.get(
@@ -111,9 +131,17 @@ class OpenSubtitles: AbstractSubProvider() {
                 tryParseJson<Results>(req.text)?.let {
                     it.data?.forEach { item ->
                         val attr = item.attributes ?: return@forEach
-                        val name = attr.release ?: ""
+                        val featureDetails = attr.featDetails
+                        //Use any valid name/title in hierarchy
+                        val name = featureDetails?.movieName ?:
+                            featureDetails?.title ?:
+                            featureDetails?.parentTitle ?:
+                            attr.release ?: ""
                         val lang = attr.language ?: ""
-                        val type = item.type ?: ""
+                        val resEpNum = featureDetails?.episodeNumber ?: query.epNumber
+                        val resSeasonNum = featureDetails?.seasonNumber ?: query.seasonNumber
+                        val year = featureDetails?.year ?: query.year
+                        val type = if (resSeasonNum ?: 0 > 0) TvType.TvSeries else TvType.Movie
                         //Log.i(TAG, "Result id/name => ${item.id} / $name")
                         item.attributes?.files?.forEach { file ->
                             val resultData = file.fileId?.toString() ?: ""
@@ -123,7 +151,10 @@ class OpenSubtitles: AbstractSubProvider() {
                                     name = name,
                                     lang = lang,
                                     data = resultData,
-                                    type = type
+                                    type = type,
+                                    epNumber = resEpNum,
+                                    seasonNumber = resSeasonNum,
+                                    year = year
                                 )
                             )
                         }
@@ -132,7 +163,6 @@ class OpenSubtitles: AbstractSubProvider() {
             }
         } catch (e: Exception) {
             logError(e)
-            Log.i(TAG, "search^")
         }
         return results
     }
@@ -140,7 +170,7 @@ class OpenSubtitles: AbstractSubProvider() {
         Process data returned from search.
         Returns string url for the subtitle file.
      */
-    override suspend fun load(ouath: SubtitleOAuthEntity, data: SubtitleEntity): String {
+    override suspend fun load(data: SubtitleEntity): String {
         try {
             val req = app.post(
                 url = "$host/download",
@@ -160,9 +190,7 @@ class OpenSubtitles: AbstractSubProvider() {
                 tryParseJson<ResultDownloadLink>(req.text)?.let {
                     val link = it.link ?: ""
                     Log.i(TAG, "Request load link => $link")
-                    if (link.isNotEmpty()) {
-                        return link
-                    }
+                    return link
                 }
             }
         } catch (e: Exception) {

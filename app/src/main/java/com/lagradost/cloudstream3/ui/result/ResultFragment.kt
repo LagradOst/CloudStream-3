@@ -96,6 +96,7 @@ import kotlinx.android.synthetic.main.result_recommendations.*
 import kotlinx.android.synthetic.main.result_sync.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -1507,7 +1508,7 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
             when (startAction) {
                 START_ACTION_RESUME_LATEST -> {
                     for (ep in episodeList) {
-                        println("WATCH STATUS::: S${ep.season} E ${ep.episode} - ${ep.getWatchProgress()}")
+                        //println("WATCH STATUS::: S${ep.season} E ${ep.episode} - ${ep.getWatchProgress()}")
                         if (ep.getWatchProgress() > 0.90f) { // watched too much
                             continue
                         }
@@ -1527,7 +1528,7 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                         var found = false
                         for (ep in episodeList) {
                             if (ep.id == startValue) { // watched too much
-                                println("WATCH STATUS::: START_ACTION_LOAD_EP S${ep.season} E ${ep.episode} - ${ep.getWatchProgress()}")
+                                //println("WATCH STATUS::: START_ACTION_LOAD_EP S${ep.season} E ${ep.episode} - ${ep.getWatchProgress()}")
                                 handleAction(EpisodeClickEvent(ACTION_PLAY_EPISODE_IN_PLAYER, ep))
                                 found = true
                                 break
@@ -1536,7 +1537,7 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                         if (!found)
                             for (ep in episodeList) {
                                 if (ep.episode == resumeEpisode && ep.season == resumeSeason) {
-                                    println("WATCH STATUS::: START_ACTION_LOAD_EP S${ep.season} E ${ep.episode} - ${ep.getWatchProgress()}")
+                                    //println("WATCH STATUS::: START_ACTION_LOAD_EP S${ep.season} E ${ep.episode} - ${ep.getWatchProgress()}")
                                     handleAction(
                                         EpisodeClickEvent(
                                             ACTION_PLAY_EPISODE_IN_PLAYER,
@@ -1746,20 +1747,21 @@ class ResultFragment : Fragment(), PanelsChildGestureRegionObserver.GestureRegio
                             result_poster_holder?.setOnClickListener {
                                 try {
                                     context?.let { ctx ->
-                                        val bitmap = result_poster.drawable.toBitmap()
-                                        val sourceBuilder = AlertDialog.Builder(ctx)
-                                        sourceBuilder.setView(R.layout.result_poster)
+                                        runBlocking {
+                                            val sourceBuilder = AlertDialog.Builder(ctx)
+                                            sourceBuilder.setView(R.layout.result_poster)
 
-                                        val sourceDialog = sourceBuilder.create()
-                                        sourceDialog.show()
+                                            val sourceDialog = sourceBuilder.create()
+                                            sourceDialog.show()
 
-                                        sourceDialog.findViewById<ImageView?>(R.id.imgPoster)
-                                            ?.apply {
-                                                setImageBitmap(bitmap)
-                                                setOnClickListener {
-                                                    sourceDialog.dismissSafe()
+                                            sourceDialog.findViewById<ImageView?>(R.id.imgPoster)
+                                                ?.apply {
+                                                    setImage(posterImageLink)
+                                                    setOnClickListener {
+                                                        sourceDialog.dismissSafe()
+                                                    }
                                                 }
-                                            }
+                                        }
                                     }
                                 } catch (e: Exception) {
                                     logError(e)

@@ -3,20 +3,11 @@ package com.lagradost.cloudstream3.animeproviders
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Element
 import java.util.*
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.lagradost.cloudstream3.movieproviders.SflixProvider
-import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.extractRabbitStream
-import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.toExtractorLink
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import com.lagradost.nicehttp.Requests.Companion.await
-import kotlinx.coroutines.runBlocking
-import okhttp3.Interceptor
-import java.net.URI
 
 class GomunimeProvider : MainAPI() {
     override var mainUrl = "https://185.231.223.76"
@@ -168,18 +159,6 @@ class GomunimeProvider : MainAPI() {
         }
     }
 
-    private fun invokeSource(
-        source: String,
-        sourceCallback: (ExtractorLink) -> Unit
-    ) {
-        M3u8Helper.generateM3u8(
-            source = this.name,
-            streamUrl = source,
-            referer = "$mainUrl/",
-            name = this.name,
-        ).forEach(sourceCallback)
-    }
-
     data class MobiSource(
         @JsonProperty("file") val file: String,
         @JsonProperty("label") val label: String,
@@ -219,15 +198,20 @@ class GomunimeProvider : MainAPI() {
                             url = "https://path.gomuni.me/app/vapi.php",
                             data = mapOf("fid" to it.first, "func" to "hls")
                         ).text.let { link ->
-                            invokeSource(link, callback)
+                            M3u8Helper.generateM3u8(
+                                this.name,
+                                link,
+                                "$mainUrl/",
+                                headers = mapOf("Origin" to mainUrl)
+                            ).forEach(callback)
                         }
                     }
-                    else -> {
+                    it.second.contains("mp4") -> {
                         app.post(
                             url = "https://path.gomuni.me/app/vapi.php",
                             data = mapOf("data" to it.first, "func" to "blogs")
                         ).parsed<List<MobiSource>>().map {
-                            callback(
+                            callback.invoke(
                                 ExtractorLink(
                                     source = name,
                                     name = "Mobi SD",
@@ -238,6 +222,7 @@ class GomunimeProvider : MainAPI() {
                             )
                         }
                     }
+                    else -> null
                 }
             }
         }

@@ -17,7 +17,6 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
 import androidx.preference.PreferenceManager
 import com.google.android.exoplayer2.util.MimeTypes
-import com.google.android.material.button.MaterialButton
 import com.hippo.unifile.UniFile
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
@@ -26,6 +25,7 @@ import com.lagradost.cloudstream3.mvvm.Resource
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.mvvm.observe
+import com.lagradost.cloudstream3.ui.player.CustomDecoder.Companion.updateForcedEncoding
 import com.lagradost.cloudstream3.ui.player.PlayerSubtitleHelper.Companion.toSubtitleMimeType
 import com.lagradost.cloudstream3.ui.result.ResultEpisode
 import com.lagradost.cloudstream3.ui.result.ResultFragment
@@ -42,6 +42,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
 import kotlinx.android.synthetic.main.dialog_online_subtitles.*
 import kotlinx.android.synthetic.main.fragment_player.*
 import kotlinx.android.synthetic.main.player_custom_layout.*
+import kotlinx.android.synthetic.main.player_select_source_and_subs.*
 import kotlinx.coroutines.Job
 
 class GeneratorPlayer : FullScreenPlayer() {
@@ -331,14 +332,8 @@ class GeneratorPlayer : FullScreenPlayer() {
                 val sourceDialog = sourceBuilder.create()
                 selectSourceDialog = sourceDialog
                 sourceDialog.show()
-                val providerList =
-                    sourceDialog.findViewById<ListView>(R.id.sort_providers)!!
-                val subtitleList =
-                    sourceDialog.findViewById<ListView>(R.id.sort_subtitles)!!
-                val applyButton =
-                    sourceDialog.findViewById<MaterialButton>(R.id.apply_btt)!!
-                val cancelButton =
-                    sourceDialog.findViewById<MaterialButton>(R.id.cancel_btt)!!
+                val providerList = sourceDialog.sort_providers
+                val subtitleList = sourceDialog.sort_subtitles
 
                 val loadFromFileFooter: TextView =
                     layoutInflater.inflate(R.layout.sort_bottom_footer_add_choice, null) as TextView
@@ -390,11 +385,17 @@ class GeneratorPlayer : FullScreenPlayer() {
                     }
                 }
 
-                sourceDialog.setOnDismissListener {
+                var shouldDismiss = true
+
+                fun dismiss() {
                     if (isPlaying) {
                         player.handleEvent(CSPlayerEvent.Play)
                     }
                     activity?.hideSystemUI()
+                }
+
+                sourceDialog.setOnDismissListener {
+                    if (shouldDismiss) dismiss()
                     selectSourceDialog = null
                 }
 
@@ -417,11 +418,60 @@ class GeneratorPlayer : FullScreenPlayer() {
                     subtitleList.setItemChecked(which, true)
                 }
 
-                cancelButton.setOnClickListener {
+                sourceDialog.cancel_btt?.setOnClickListener {
                     sourceDialog.dismissSafe(activity)
                 }
 
-                applyButton.setOnClickListener {
+                sourceDialog.subtitles_encoding_format?.apply {
+                    val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
+
+                    val prefNames = ctx.resources.getStringArray(R.array.subtitles_encoding_list)
+                    val prefValues = ctx.resources.getStringArray(R.array.subtitles_encoding_values)
+
+                    val value = settingsManager.getString(
+                        ctx.getString(R.string.subtitles_encoding_key),
+                        null
+                    )
+                    val index = prefValues.indexOf(value)
+                    text = prefNames[if (index == -1) 0 else index]
+                }
+
+                sourceDialog.subtitles_click_settings?.setOnClickListener {
+                    val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
+
+                    val prefNames = ctx.resources.getStringArray(R.array.subtitles_encoding_list)
+                    val prefValues = ctx.resources.getStringArray(R.array.subtitles_encoding_values)
+
+                    val currentPrefMedia =
+                        settingsManager.getString(
+                            getString(R.string.subtitles_encoding_key),
+                            null
+                        )
+
+                    shouldDismiss = false
+                    sourceDialog.dismissSafe(activity)
+
+                    val index = prefValues.indexOf(currentPrefMedia)
+                    activity?.showDialog(
+                        prefNames.toList(),
+                        if (index == -1) 0 else index,
+                        ctx.getString(R.string.subtitles_encoding),
+                        true,
+                        {}) {
+                        settingsManager.edit()
+                            .putString(
+                                ctx.getString(R.string.subtitles_encoding_key),
+                                prefValues[it]
+                            )
+                            .apply()
+
+                        updateForcedEncoding(ctx)
+                        dismiss()
+                        player.seekTime(-1) // to update subtitles, a dirty trick
+                    }
+                }
+
+                sourceDialog.apply_btt?.setOnClickListener {
                     var init = false
                     if (sourceIndex != startSource) {
                         init = true
@@ -580,14 +630,24 @@ class GeneratorPlayer : FullScreenPlayer() {
     ): SubtitleData? {
         val langCode = preferredAutoSelectSubtitles ?: return null
         val lang = SubtitleHelper.fromTwoLettersToLanguage(langCode) ?: return null
-
-        if (settings)
-            subtitles.firstOrNull { sub ->
-                sub.name.startsWith(lang)
-                        || sub.name.trim() == langCode
-            }?.let { sub ->
-                return sub
+        if (downloads) {
+            return subtitles.firstOrNull { sub ->
+                (sub.origin == SubtitleOrigin.DOWNLOADED_FILE && sub.name == context?.getString(
+                    R.string.default_subtitles
+                ))
             }
+        }
+
+        sortSubs(subtitles).firstOrNull { sub ->
+            val t = sub.name.replace(Regex("[^A-Za-z]"), " ").trim()
+            (settings || (downloads && sub.origin == SubtitleOrigin.DOWNLOADED_FILE)) && t == lang || t.startsWith(
+                "$lang "
+            ) || t == langCode
+        }?.let { sub ->
+            return sub
+        }
+
+        // post check in case both did not catch anything
         if (downloads) {
             return subtitles.firstOrNull { sub ->
                 (sub.origin == SubtitleOrigin.DOWNLOADED_FILE || sub.name == context?.getString(
@@ -595,10 +655,11 @@ class GeneratorPlayer : FullScreenPlayer() {
                 ))
             }
         }
+
         return null
     }
 
-    private fun autoSelectFromSettings() {
+    private fun autoSelectFromSettings(): Boolean {
         // auto select subtitle based of settings
         val langCode = preferredAutoSelectSubtitles
 
@@ -608,29 +669,34 @@ class GeneratorPlayer : FullScreenPlayer() {
                     if (setSubtitles(sub)) {
                         player.reloadPlayer(ctx)
                         player.handleEvent(CSPlayerEvent.Play)
+                        return true
                     }
                 }
             }
         }
+        return false
     }
 
-    private fun autoSelectFromDownloads() {
+    private fun autoSelectFromDownloads(): Boolean {
         if (player.getCurrentPreferredSubtitle() == null) {
             getAutoSelectSubtitle(currentSubs, settings = false, downloads = true)?.let { sub ->
                 context?.let { ctx ->
                     if (setSubtitles(sub)) {
                         player.reloadPlayer(ctx)
                         player.handleEvent(CSPlayerEvent.Play)
+                        return true
                     }
                 }
             }
         }
+        return false
     }
 
     private fun autoSelectSubtitles() {
         normalSafeApiCall {
-            autoSelectFromSettings()
-            autoSelectFromDownloads()
+            if (!autoSelectFromSettings()) {
+                autoSelectFromDownloads()
+            }
         }
     }
 
@@ -678,16 +744,20 @@ class GeneratorPlayer : FullScreenPlayer() {
     fun setTitle() {
         var playerVideoTitle = getPlayerVideoTitle()
 
-        //Hide title, if set in setting
-        if (limitTitle < 0) {
-            player_video_title?.visibility = View.GONE
-        } else {
-            //Truncate video title if it exceeds limit
-            val differenceInLength = playerVideoTitle.length - limitTitle
-            val margin = 3 //If the difference is smaller than or equal to this value, ignore it
-            if (limitTitle > 0 && differenceInLength > margin) {
-                playerVideoTitle = playerVideoTitle.substring(0, limitTitle - 1) + "..."
+            //Hide title, if set in setting
+            if (limitTitle < 0) {
+                player_video_title?.visibility = View.GONE
+            } else {
+                //Truncate video title if it exceeds limit
+                val differenceInLength = playerVideoTitle.length - limitTitle
+                val margin = 3 //If the difference is smaller than or equal to this value, ignore it
+                if (limitTitle > 0 && differenceInLength > margin) {
+                    playerVideoTitle = playerVideoTitle.substring(0, limitTitle - 1) + "..."
+                }
             }
+
+            player_episode_filler_holder?.isVisible = isFiller ?: false
+            player_video_title?.text = playerVideoTitle
         }
 
         val isFiller: Boolean? = (currentMeta as? ResultEpisode)?.isFiller
@@ -754,6 +824,7 @@ class GeneratorPlayer : FullScreenPlayer() {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
             titleRez = settingsManager.getInt(getString(R.string.prefer_limit_title_rez_key), 3)
             limitTitle = settingsManager.getInt(getString(R.string.prefer_limit_title_key), 0)
+            updateForcedEncoding(ctx)
         }
 
         unwrapBundle(savedInstanceState)

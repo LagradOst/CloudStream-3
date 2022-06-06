@@ -61,6 +61,7 @@ enum class Qualities(var value: Int) {
                 0 -> "Auto"
                 Unknown.value -> ""
                 P2160.value -> "4K"
+                null -> ""
                 else -> "${qual}p"
             }
         }
@@ -117,6 +118,9 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     VizcloudInfo(),
     MwvnVizcloudInfo(),
     VizcloudDigital(),
+    VizcloudCloud(),
+    VideoVard(),
+    VideovardSX(),
     Mp4Upload(),
     StreamTape(),
 
@@ -139,12 +143,15 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     StreamSB8(),
     StreamSB9(),
     StreamSB10(),
+    SBfull(),
     // Streamhub(), cause Streamhub2() works
     Streamhub2(),
 
     FEmbed(),
     FeHD(),
     Fplayer(),
+    DBfilm(),
+    LayarKaca(),
     //  WatchSB(), 'cause StreamSB.kt works
     Uqload(),
     Uqload1(),
@@ -165,6 +172,7 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     DoodSoExtractor(),
     DoodLaExtractor(),
     DoodWsExtractor(),
+    DoodShExtractor(),
 
     AsianLoad(),
 
@@ -174,6 +182,11 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     ZplayerV2(),
     Upstream(),
 
+    Maxstream(),
+    Tantifilm(),
+    Userload(),
+    Supervideo(),
+    GuardareStream(),
 
     // StreamSB.kt works
     //  SBPlay(),
@@ -183,7 +196,15 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     PlayerVoxzer(),
 
     BullStream(),
-    GMPlayer()
+    GMPlayer(),
+
+    Blogger(),
+    Solidfiles(),
+
+    Hxfile(),
+    KotakAnimeid(),
+    Neonime8n(),
+    Neonime7n(),
 )
 
 fun getExtractorApiFromName(name: String): ExtractorApi {

@@ -76,7 +76,7 @@ object APIHolder {
             TwoEmbedProvider(),
             DramaSeeProvider(),
             WatchAsianProvider(),
-	        DramaidProvider(),
+            DramaidProvider(),
             KdramaHoodProvider(),
             AkwamProvider(),
             MyCimaProvider(),
@@ -87,7 +87,11 @@ object APIHolder {
             TheFlixToProvider(),
             StreamingcommunityProvider(),
             TantifilmProvider(),
+            CineblogProvider(),
+            AltadefinizioneProvider(),
             HDMovie5(),
+            RebahinProvider(),
+            LayarKacaProvider(),
 
             // Metadata providers
             //TmdbProvider(),
@@ -112,15 +116,23 @@ object APIHolder {
             DubbedAnimeProvider(),
             MonoschinosProvider(),
             KawaiifuProvider(), // disabled due to cloudflare
-	        NeonimeProvider(),
+            NeonimeProvider(),
             KuramanimeProvider(),
             OploverzProvider(),
             GomunimeProvider(),
             NontonAnimeIDProvider(),
             KuronimeProvider(),
             //MultiAnimeProvider(),
-	        NginxProvider(),
+            NginxProvider(),
+            OlgplyProvider(),
         )
+    }
+
+    fun initAll() {
+        for (api in allProviders) {
+            api.init()
+        }
+        apiMap = null
     }
 
     var apis: List<MainAPI> = arrayListOf()
@@ -138,7 +150,6 @@ object APIHolder {
     fun getApiFromNameNull(apiName: String?): MainAPI? {
         if (apiName == null) return null
         initMap()
-
         return apiMap?.get(apiName)?.let { apis.getOrNull(it) }
     }
 
@@ -151,12 +162,12 @@ object APIHolder {
         return null
     }
 
-    fun getLoadResponseIdFromUrl(url : String, apiName: String) : Int {
+    fun getLoadResponseIdFromUrl(url: String, apiName: String): Int {
         return url.replace(getApiFromName(apiName).mainUrl, "").replace("/", "").hashCode()
     }
 
     fun LoadResponse.getId(): Int {
-        return getLoadResponseIdFromUrl(url,apiName)
+        return getLoadResponseIdFromUrl(url, apiName)
     }
 
     /**
@@ -333,16 +344,16 @@ abstract class MainAPI {
         var overrideData: HashMap<String, ProvidersInfoJson>? = null
     }
 
-    fun overrideWithNewData(data: ProvidersInfoJson) {
-        this.name = data.name
-        this.mainUrl = data.url
-	    this.storedCredentials = data.credentials
-    }
-
-    init {
+    fun init() {
         overrideData?.get(this.javaClass.simpleName)?.let { data ->
             overrideWithNewData(data)
         }
+    }
+
+    fun overrideWithNewData(data: ProvidersInfoJson) {
+        this.name = data.name
+        this.mainUrl = data.url
+        this.storedCredentials = data.credentials
     }
 
     open var name = "NONE"
@@ -628,6 +639,8 @@ fun getQualityFromString(string: String?): SearchQuality? {
         "dvdscr" -> SearchQuality.DVD
         "blueray" -> SearchQuality.BlueRay
         "bluray" -> SearchQuality.BlueRay
+        "blu" -> SearchQuality.BlueRay
+        "fhd" -> SearchQuality.HD
         "br" -> SearchQuality.BlueRay
         "standard" -> SearchQuality.SD
         "sd" -> SearchQuality.SD
@@ -758,12 +771,12 @@ fun AnimeSearchResponse.addDubStatus(isDub: Boolean, episodes: Int? = null) {
 }
 
 fun AnimeSearchResponse.addDub(episodes: Int?) {
-    if(episodes == null || episodes <= 0) return
+    if (episodes == null || episodes <= 0) return
     addDubStatus(DubStatus.Dubbed, episodes)
 }
 
 fun AnimeSearchResponse.addSub(episodes: Int?) {
-    if(episodes == null || episodes <= 0) return
+    if (episodes == null || episodes <= 0) return
     addDubStatus(DubStatus.Subbed, episodes)
 }
 
