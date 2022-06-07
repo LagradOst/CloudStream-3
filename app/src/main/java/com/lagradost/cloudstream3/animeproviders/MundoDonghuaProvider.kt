@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -32,82 +33,68 @@ class MundoDonghuaProvider : MainAPI() {
             HomePageList(
                 "Últimos episodios",
                 app.get(mainUrl, timeout = 120).document.select("div.row .col-xs-4").map {
-                    val title = it.selectFirst("h5").text()
-                    val poster = it.selectFirst(".fit-1 img").attr("src")
+                    val title = it.selectFirst("h5")?.text() ?: ""
+                    val poster = it.selectFirst(".fit-1 img")?.attr("src")
                     val epRegex = Regex("(\\/(\\d+)\$)")
-                    val url = it.selectFirst("a").attr("href").replace(epRegex,"").replace("/ver/","/donghua/")
+                    val url = it.selectFirst("a")?.attr("href")?.replace(epRegex,"")?.replace("/ver/","/donghua/")
                     val epnumRegex = Regex("((\\d+)$)")
                     val epNum = epnumRegex.find(title)?.value?.toIntOrNull()
-                    AnimeSearchResponse(
-                        title.replace(Regex("Episodio|(\\d+)"),"").trim(),
-                        fixUrl(url),
-                        this.name,
-                        TvType.Anime,
-                        fixUrl(poster),
-                        null,
-                        if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
-                            DubStatus.Dubbed
-                        ) else EnumSet.of(DubStatus.Subbed),
-                        subEpisodes = epNum,
-                        dubEpisodes = epNum
-
-                    )
+                    val dubstat = if (title.contains("Latino") || title.contains("Castellano")) DubStatus.Dubbed else DubStatus.Subbed
+                    newAnimeSearchResponse(title.replace(Regex("Episodio|(\\d+)"),"").trim(), fixUrl(url ?: "")) {
+                        this.posterUrl = fixUrl(poster ?: "")
+                        addDubStatus(dubstat, epNum)
+                    }
                 })
         )
-        for (i in urls) {
-            try {
-                val home = app.get(i.first, timeout = 120).document.select(".col-xs-4").map {
-                    val title = it.selectFirst(".fs-14").text()
-                    val poster = it.selectFirst(".fit-1 img").attr("src")
-                    AnimeSearchResponse(
-                        title,
-                        fixUrl(it.selectFirst("a").attr("href")),
-                        this.name,
-                        TvType.Anime,
-                        fixUrl(poster),
-                        null,
-                        if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
-                            DubStatus.Dubbed
-                        ) else EnumSet.of(DubStatus.Subbed),
-                    )
-                }
 
-                items.add(HomePageList(i.second, home))
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        if (items.size <= 0) throw ErrorLoadingException()
-        return HomePageResponse(items)
-    }
-
-    override suspend fun search(query: String): ArrayList<SearchResponse> {
-        val search =
-            app.get("$mainUrl/busquedas/$query", timeout = 120).document.select(".col-xs-4").map {
-                val title = it.selectFirst(".fs-14").text()
-                val href = fixUrl(it.selectFirst("a").attr("href"))
-                val image = it.selectFirst(".fit-1 img").attr("src")
+        urls.apmap { (url, name) ->
+            val home = app.get(url, timeout = 120).document.select(".col-xs-4").map {
+                val title = it.selectFirst(".fs-14")?.text() ?: ""
+                val poster = it.selectFirst(".fit-1 img")?.attr("src") ?: ""
                 AnimeSearchResponse(
                     title,
-                    href,
+                    fixUrl(it.selectFirst("a")?.attr("href") ?: ""),
                     this.name,
                     TvType.Anime,
-                    fixUrl(image),
+                    fixUrl(poster),
                     null,
                     if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
                         DubStatus.Dubbed
                     ) else EnumSet.of(DubStatus.Subbed),
                 )
             }
-        return ArrayList(search)
+
+            items.add(HomePageList(name, home))
+        }
+
+        if (items.size <= 0) throw ErrorLoadingException()
+        return HomePageResponse(items)
+    }
+
+    override suspend fun search(query: String): List<SearchResponse> {
+        return app.get("$mainUrl/busquedas/$query", timeout = 120).document.select(".col-xs-4").map {
+            val title = it.selectFirst(".fs-14")?.text() ?: ""
+            val href = fixUrl(it.selectFirst("a")?.attr("href") ?: "")
+            val image = it.selectFirst(".fit-1 img")?.attr("src")
+            AnimeSearchResponse(
+                title,
+                href,
+                this.name,
+                TvType.Anime,
+                fixUrl(image ?: ""),
+                null,
+                if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
+                    DubStatus.Dubbed
+                ) else EnumSet.of(DubStatus.Subbed),
+            )
+        }
     }
 
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url, timeout = 120).document
-        val poster = doc.selectFirst("head meta[property=og:image]").attr("content")
-        val title = doc.selectFirst(".ls-title-serie").text()
-        val description = doc.selectFirst("p.text-justify.fc-dark").text()
+        val poster = doc.selectFirst("head meta[property=og:image]")?.attr("content") ?: ""
+        val title = doc.selectFirst(".ls-title-serie")?.text() ?: ""
+        val description = doc.selectFirst("p.text-justify.fc-dark")?.text() ?: ""
         val genres = doc.select("span.label.label-primary.f-bold").map { it.text() }
         val status = when (doc.selectFirst("div.col-md-6.col-xs-6.align-center.bg-white.pt-10.pr-15.pb-0.pl-15 p span.badge.bg-default")?.text()) {
             "En Emisión" -> ShowStatus.Ongoing
@@ -115,9 +102,9 @@ class MundoDonghuaProvider : MainAPI() {
             else -> null
         }
         val episodes = doc.select("ul.donghua-list a").map {
-            val name = it.selectFirst(".fs-16").text()
+            val name = it.selectFirst(".fs-16")?.text()
             val link = it.attr("href")
-            AnimeEpisode(fixUrl(link), name)
+            Episode(fixUrl(link), name)
         }.reversed()
         val typeinfo = doc.select("div.row div.col-md-6.pl-15 p.fc-dark").text()
         val tvType = if (typeinfo.contains(Regex("Tipo.*Pel.cula"))) TvType.AnimeMovie else TvType.Anime
@@ -140,6 +127,26 @@ class MundoDonghuaProvider : MainAPI() {
         @JsonProperty("type") val type: String?,
         @JsonProperty("default") val default: String?
     )
+
+    private fun cleanStream(
+        name: String,
+        url: String,
+        qualityString: String?,
+        callback: (ExtractorLink) -> Unit,
+        isM3U8: Boolean
+    ): Boolean {
+        callback(
+            ExtractorLink(
+                name,
+                name,
+                url,
+                "",
+                getQualityFromName(qualityString),
+                isM3U8
+            )
+        )
+        return true
+    }
 
 
     override suspend fun loadLinks(
@@ -166,7 +173,7 @@ class MundoDonghuaProvider : MainAPI() {
                         val requestlink = "$mainUrl/api_donghua.php?slug=$slug"
                         val response = app.get(requestlink, headers =
                         mapOf("Host" to "www.mundodonghua.com",
-                            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0",
+                            "User-Agent" to USER_AGENT,
                             "Accept" to "*/*",
                             "Accept-Language" to "en-US,en;q=0.5",
                             "Referer" to data,
@@ -182,42 +189,24 @@ class MundoDonghuaProvider : MainAPI() {
                         ).text.removePrefix("[").removeSuffix("]")
                         val json = parseJson<Protea>(response)
                         json.source.forEach { source ->
-                            callback(
-                                ExtractorLink(
-                                    "Protea",
-                                    "Protea ${source.label}",
-                                    fixUrl(source.file),
-                                    "",
-                                    getQualityFromName(source.label!!),
-                                    false
-                                )
-                            )
+                            val protename = "Protea"
+                            cleanStream(protename, fixUrl(source.file), source.label, callback, false)
                         }
                     }
                     if (unpack.contains("asura_player")) {
-                        val proteaRegex = Regex("(asura_player.*type)")
-                        proteaRegex.findAll(unpack).map {
+                        val asuraRegex = Regex("(asura_player.*type)")
+                        asuraRegex.findAll(unpack).map {
                             it.value
                         }.toList().apmap { protea ->
+                            val asuraname = "Asura"
                             val file = protea.substringAfter("{file:\"").substringBefore("\"")
-                            M3u8Helper().m3u8Generation(
-                                M3u8Helper.M3u8Stream(
-                                    file,
-                                ), true
-                            )
-                                .apmap { stream ->
-                                    val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
-                                    callback(
-                                        ExtractorLink(
-                                            "Asura",
-                                            "Asura $qualityString",
-                                            stream.streamUrl,
-                                            "",
-                                            getQualityFromName(stream.quality.toString()),
-                                            true
-                                        )
-                                    )
-                                }
+                            generateM3u8(
+                                asuraname,
+                                file,
+                                ""
+                            ).forEach {
+                                cleanStream(asuraname, it.url, it.quality.toString(), callback, true)
+                            }
                         }
                     }
                 }
