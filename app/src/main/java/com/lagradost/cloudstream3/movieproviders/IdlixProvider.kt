@@ -27,7 +27,7 @@ class IdlixProvider : MainAPI() {
 
         document.select("div.items").forEach { block ->
             val header =
-                fixHeader(block.previousElementSibling()?.previousElementSibling()?.select("header > h2")
+                fixTitle(block.previousElementSibling()?.previousElementSibling()?.select("header > h2")
                     ?.text()!!.trim())
             val items = block.select("article.item").mapNotNull {
                 it.toSearchResult()
@@ -119,6 +119,7 @@ class IdlixProvider : MainAPI() {
         return if (tvType == TvType.TvSeries) {
             val episodes = document.select("ul.episodios > li").map {
                 val href = it.select("a").attr("href")
+                val name = fixTitle(it.select("div.episodiotitle > a").text().trim())
                 val image = it.select("div.imagen > img").attr("src")
                 val episode = it.select("div.numerando").text().replace(" ", "").split("-").last()
                     .toIntOrNull()
@@ -126,7 +127,7 @@ class IdlixProvider : MainAPI() {
                     .toIntOrNull()
                 Episode(
                     href,
-                    "Episode $episode",
+                    name,
                     season,
                     episode,
                     image
@@ -312,7 +313,11 @@ class IdlixProvider : MainAPI() {
         sources.captions?.map {
             subCallback.invoke(
                 SubtitleFile(
-                    if (it.language.lowercase().contains("eng")) it.language else "Indonesian",
+                    when (it.language.lowercase()) {
+                        "indonesia" -> "Indonesian"
+                        "bahasa" -> "Indonesian"
+                        else -> it.language
+                    }.toString(),
                     "$domainUrl/asset/userdata/$userData/caption/${it.hash}/${it.id}.srt"
                 )
             )

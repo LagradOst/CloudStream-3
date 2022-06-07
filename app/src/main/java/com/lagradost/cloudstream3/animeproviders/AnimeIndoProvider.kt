@@ -7,7 +7,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.ArrayList
 
-class AnimeIndo : MainAPI() {
+class AnimeIndoProvider : MainAPI() {
     override var mainUrl = "https://anime-indo.one"
     override var name = "AnimeIndo"
     override val hasMainPage = true
@@ -75,8 +75,9 @@ class AnimeIndo : MainAPI() {
         val href = getProperAnimeLink(this.selectFirst("a")!!.attr("href"))
         val posterUrl = this.select("img[itemprop=image]").attr("src").toString()
         val type = getType(this.select("div.type").text().trim())
-        val epNum = this.selectFirst("span.episode")?.ownText()?.replace(Regex("[^0-9]"), "")?.trim()
-            ?.toIntOrNull()
+        val epNum =
+            this.selectFirst("span.episode")?.ownText()?.replace(Regex("[^0-9]"), "")?.trim()
+                ?.toIntOrNull()
         return newAnimeSearchResponse(title, href, type) {
             this.posterUrl = posterUrl
             addDubStatus(dubExist = false, subExist = true, subEpisodes = epNum)
@@ -105,17 +106,24 @@ class AnimeIndo : MainAPI() {
         val title = document.selectFirst("h1.entry-title")?.text().toString().trim()
         val poster = document.selectFirst("div.thumb > img[itemprop=image]")?.attr("src")
         val tags = document.select("div.genxed > a").map { it.text() }
-        val type = getType(document.selectFirst("div.info-content > div.spe > span:nth-child(6)")?.ownText().toString())
+        val type = getType(
+            document.selectFirst("div.info-content > div.spe > span:nth-child(6)")?.ownText()
+                .toString()
+        )
         val year = Regex("\\d, ([0-9]*)").find(
             document.select("div.info-content > div.spe > span:nth-child(9) > time").text()
         )?.groupValues?.get(1)?.toIntOrNull()
-        val status = getStatus(document.selectFirst("div.info-content > div.spe > span:nth-child(1)")!!.ownText().trim())
+        val status = getStatus(
+            document.selectFirst("div.info-content > div.spe > span:nth-child(1)")!!.ownText()
+                .trim()
+        )
         val description = document.select("div[itemprop=description] > p").text()
 
         val episodes = document.select("div.lstepsiode.listeps ul li").mapNotNull {
             val name = it.selectFirst("span.lchx > a")!!.text().trim()
+            val episode = it.selectFirst("span.lchx > a")!!.text().trim().replace("Episode", "").trim().toIntOrNull()
             val link = fixUrl(it.selectFirst("span.lchx > a")!!.attr("href"))
-            Episode(link, name)
+            Episode(link, name = name, episode = episode)
         }.reversed()
 
         return newAnimeLoadResponse(title, url, type) {
@@ -139,6 +147,12 @@ class AnimeIndo : MainAPI() {
         val document = app.get(data).document
         val sources = document.select("div.itemleft > .mirror > option").mapNotNull {
             fixUrl(Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src"))
+        }.map {
+            if (it.startsWith("https://uservideo.xyz")) {
+                app.get(it, referer = "$mainUrl/").document.select("iframe").attr("src")
+            } else {
+                it
+            }
         }
 
         sources.apmap {

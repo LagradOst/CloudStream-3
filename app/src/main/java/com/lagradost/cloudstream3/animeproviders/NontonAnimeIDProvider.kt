@@ -55,7 +55,7 @@ class NontonAnimeIDProvider : MainAPI() {
             if (animes.isNotEmpty()) homePageList.add(HomePageList(header, animes))
         }
 
-        document.select("aside#sidebar_right > div.side:nth-child(2)").forEach { block ->
+        document.select("aside#sidebar_right > div:nth-child(4)").forEach { block ->
             val header = block.selectFirst("h3")!!.ownText().trim()
             val animes = block.select("li.fullwdth").mapNotNull {
                 it.toSearchResultPopular()

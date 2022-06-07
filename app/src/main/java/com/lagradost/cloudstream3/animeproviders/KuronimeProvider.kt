@@ -125,9 +125,10 @@ class KuronimeProvider : MainAPI() {
         val description = document.select("span.const > p").text()
 
         val episodes = document.select("div.bixbox.bxcl > ul > li").map {
-            val name = it.selectFirst("a")?.text()?.trim()?.replace("Episode", title)
+            val name = it.selectFirst("a")?.text()?.trim()
+            val episode = it.selectFirst("a")?.text()?.trim()?.replace("Episode", "")?.trim()?.toIntOrNull()
             val link = it.selectFirst("a")!!.attr("href")
-            Episode(link, name)
+            Episode(link, name = name, episode = episode)
         }.reversed()
 
         return newAnimeLoadResponse(title, url, type) {
@@ -147,7 +148,7 @@ class KuronimeProvider : MainAPI() {
         url: String,
         sourceCallback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url).document
+        val doc = app.get(url, referer = "${mainUrl}/").document
 
         doc.select("script").map { script ->
             if (script.data().contains("function jalankan_jwp() {")) {

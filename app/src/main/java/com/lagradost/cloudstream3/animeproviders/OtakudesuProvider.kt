@@ -182,8 +182,6 @@ class OtakudesuProvider : MainAPI() {
                 )
             ).select("iframe").attr("src")
 
-            Log.i("OTAKUSources", "sources : $sources")
-
             if (sources.startsWith("https://desustream.me")) {
                 if (!sources.contains("/arcg/") && !sources.contains("/odchan/") && !sources.contains("/desudrive/")) {
                     sources = app.get(sources).document.select("iframe").attr("src")
