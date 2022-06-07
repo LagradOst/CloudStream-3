@@ -5,21 +5,18 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKeys
 import com.lagradost.cloudstream3.AcraApplication.Companion.openBrowser
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
-import com.lagradost.cloudstream3.R
-import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.syncproviders.AccountManager
-import com.lagradost.cloudstream3.syncproviders.OAuth2API
-import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.appString
-import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.maxStale
-import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.unixTime
+import com.lagradost.cloudstream3.syncproviders.AuthAPI
 import com.lagradost.cloudstream3.syncproviders.SyncAPI
 import com.lagradost.cloudstream3.utils.AppUtils.splitQuery
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.DataStore.toKotlinObject
 import java.net.URL
@@ -32,11 +29,13 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
     override val idPrefix = "anilist"
     override var mainUrl = "https://anilist.co"
     override val icon = R.drawable.ic_anilist_icon
+    override val requiresLogin = true
+    override val createAccountUrl = "$mainUrl/signup"
 
-    override fun loginInfo(): OAuth2API.LoginInfo? {
+    override fun loginInfo(): AuthAPI.LoginInfo? {
         // context.getUser(true)?.
         getKey<AniListUser>(accountId, ANILIST_USER_KEY)?.let { user ->
-            return OAuth2API.LoginInfo(
+            return AuthAPI.LoginInfo(
                 profilePicture = user.picture,
                 name = user.name,
                 accountIndex = accountIndex
@@ -54,52 +53,96 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         openBrowser(request)
     }
 
-    override fun handleRedirect(url: String) {
-        try {
-            val sanitizer =
-                splitQuery(URL(url.replace(appString, "https").replace("/#", "?"))) // FIX ERROR
-            val token = sanitizer["access_token"]!!
-            val expiresIn = sanitizer["expires_in"]!!
+    override suspend fun handleRedirect(url: String): Boolean {
+        val sanitizer =
+            splitQuery(URL(url.replace(appString, "https").replace("/#", "?"))) // FIX ERROR
+        val token = sanitizer["access_token"]!!
+        val expiresIn = sanitizer["expires_in"]!!
 
-            val endTime = unixTime + expiresIn.toLong()
+        val endTime = unixTime + expiresIn.toLong()
 
-            switchToNewAccount()
-            setKey(accountId, ANILIST_UNIXTIME_KEY, endTime)
-            setKey(accountId, ANILIST_TOKEN_KEY, token)
-            setKey(ANILIST_SHOULD_UPDATE_LIST, true)
-            ioSafe {
-                getUser()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        switchToNewAccount()
+        setKey(accountId, ANILIST_UNIXTIME_KEY, endTime)
+        setKey(accountId, ANILIST_TOKEN_KEY, token)
+        setKey(ANILIST_SHOULD_UPDATE_LIST, true)
+        val user = getUser()
+        return user != null
+    }
+
+    override fun getIdFromUrl(url: String): String {
+        return url.removePrefix("$mainUrl/anime/").removeSuffix("/")
+    }
+
+    private fun getUrlFromId(id: Int): String {
+        return "$mainUrl/anime/$id"
     }
 
     override suspend fun search(name: String): List<SyncAPI.SyncSearchResult>? {
         val data = searchShows(name) ?: return null
-        return data.data.Page.media.map {
+        return data.data?.Page?.media?.map {
             SyncAPI.SyncSearchResult(
-                it.title.romaji,
+                it.title.romaji ?: return null,
                 this.name,
                 it.id.toString(),
-                "$mainUrl/anime/${it.id}",
+                getUrlFromId(it.id),
                 it.bannerImage
             )
         }
     }
 
     override suspend fun getResult(id: String): SyncAPI.SyncResult? {
-        val internalId = id.toIntOrNull() ?: return null
-        val season = getSeason(internalId)?.data?.Media ?: return null
+        val internalId = (Regex("anilist\\.co/anime/(\\d*)").find(id)?.groupValues?.getOrNull(1)
+            ?: id).toIntOrNull() ?: return null
+        val season = getSeason(internalId).data.Media
 
         return SyncAPI.SyncResult(
             season.id.toString(),
             nextAiring = season.nextAiringEpisode?.let {
                 SyncAPI.SyncNextAiring(
-                    it.episode,
-                    it.timeUntilAiring + unixTime
+                    it.episode ?: return@let null,
+                    (it.timeUntilAiring ?: return@let null) + unixTime
                 )
             },
+            title = season.title?.userPreferred,
+            synonyms = season.synonyms,
+            isAdult = season.isAdult,
+            totalEpisodes = season.episodes,
+            synopsis = season.description,
+            actors = season.characters?.edges?.mapNotNull { edge ->
+                val node = edge.node ?: return@mapNotNull null
+                ActorData(
+                    actor = Actor(
+                        name = node.name?.userPreferred ?: node.name?.full ?: node.name?.native
+                        ?: return@mapNotNull null,
+                        image = node.image?.large ?: node.image?.medium
+                    ),
+                    role = when (edge.role) {
+                        "MAIN" -> ActorRole.Main
+                        "SUPPORTING" -> ActorRole.Supporting
+                        "BACKGROUND" -> ActorRole.Background
+                        else -> null
+                    },
+                    voiceActor = edge.voiceActors?.firstNotNullOfOrNull { staff ->
+                        Actor(
+                            name = staff.name?.userPreferred ?: staff.name?.full
+                            ?: staff.name?.native
+                            ?: return@mapNotNull null,
+                            image = staff.image?.large ?: staff.image?.medium
+                        )
+                    }
+                )
+            },
+            publicScore = season.averageScore?.times(100),
+            recommendations = season.recommendations?.edges?.mapNotNull { rec ->
+                val recMedia = rec.node.mediaRecommendation
+                SyncAPI.SyncSearchResult(
+                    name = recMedia.title?.userPreferred ?: return@mapNotNull null,
+                    this.name,
+                    recMedia.id?.toString() ?: return@mapNotNull null,
+                    getUrlFromId(recMedia.id),
+                    recMedia.coverImage?.large ?: recMedia.coverImage?.medium
+                )
+            }
             //TODO REST
         )
     }
@@ -110,9 +153,10 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
 
         return SyncAPI.SyncStatus(
             score = data.score,
-            watchedEpisodes = data.episodes,
-            status = data.type.value,
+            watchedEpisodes = data.progress,
+            status = data.type?.value ?: return null,
             isFavorite = data.isFavourite,
+            maxEpisodes = data.episodes,
         )
     }
 
@@ -122,7 +166,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
             fromIntToAnimeStatus(status.status),
             status.score,
             status.watchedEpisodes
-        ) ?: return false
+        )
     }
 
     companion object {
@@ -258,7 +302,9 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
                             )
                 }
             filtered?.forEach {
-                if (fixName(it.title.romaji) == fixName(name)) return it
+                it.title.romaji?.let { romaji ->
+                    if (fixName(romaji) == fixName(name)) return it
+                }
             }
 
             return filtered?.firstOrNull()
@@ -271,7 +317,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
             Paused(2),
             Dropped(3),
             Planning(4),
-            Rewatching(5),
+            ReWatching(5),
             None(-1)
         }
 
@@ -283,7 +329,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
                 2 -> AniListStatusType.Paused
                 3 -> AniListStatusType.Dropped
                 4 -> AniListStatusType.Planning
-                5 -> AniListStatusType.Rewatching
+                5 -> AniListStatusType.ReWatching
                 else -> AniListStatusType.None
             }
         }
@@ -292,53 +338,121 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
             return fromIntToAnimeStatus(aniListStatusString.indexOf(string))
         }
 
-
-        private suspend fun getSeason(id: Int): SeasonResponse? {
-            val q: String = """
+        private suspend fun getSeason(id: Int): SeasonResponse {
+            val q = """
                query (${'$'}id: Int = $id) {
                    Media (id: ${'$'}id, type: ANIME) {
                        id
                        idMal
+                       coverImage {
+                           extraLarge
+                           large
+                           medium
+                           color
+                       }
+                       title {
+                           romaji
+                           english
+                           native
+                           userPreferred
+                       }
+                       duration
+                       episodes
+                       genres
+                       synonyms
+                       averageScore
+                       isAdult
+                       description(asHtml: false)
+                       characters(sort: ROLE page: 1 perPage: 20) {
+                           edges {
+                               role
+                               voiceActors {
+                                   name {
+                                       userPreferred
+                                       full
+                                       native
+                                   }
+                                   age
+                                   image {
+                                       large
+                                       medium
+                                   }
+                               }
+                               node {
+                                   name {
+                                       userPreferred
+                                       full
+                                       native
+                                   }
+                                   age
+                                   image {
+                                       large
+                                       medium
+                                   }
+                               }
+                           }
+                       }
+                       trailer {
+                           id
+                           site
+                           thumbnail
+                       }
                        relations {
-                            edges {
-                                 id
-                                 relationType(version: 2)
-                                 node {
-                                      id
-                                      format
-                                      nextAiringEpisode {
-                                           timeUntilAiring
-                                           episode
-                                      }
-                                 }
-                            }
+                           edges {
+                                id
+                                relationType(version: 2)
+                                node {
+                                     id
+                                     coverImage {
+                                         extraLarge
+                                         large
+                                         medium
+                                         color
+                                     }
+                                }
+                           }
+                       }
+                       recommendations {
+                           edges {
+                               node {
+                                   mediaRecommendation {
+                                       id
+                                       coverImage {
+                                           extraLarge
+                                           large
+                                           medium
+                                           color
+                                       }
+                                       title {
+                                           romaji
+                                           english
+                                           native
+                                           userPreferred
+                                       }
+                                   }
+                               }
+                           }
                        }
                        nextAiringEpisode {
-                            timeUntilAiring
-                            episode
+                           timeUntilAiring
+                           episode
                        }
                        format
                    }
                }
         """
-
             val data = app.post(
                 "https://graphql.anilist.co",
                 data = mapOf("query" to q),
                 cacheTime = 0,
             ).text
-            if (data == "") return null
-            return try {
-                mapper.readValue(data)
-            } catch (e: Exception) {
-                logError(e)
-                null
-            }
+
+            return tryParseJson(data) ?: throw ErrorLoadingException("Error parsing $data")
         }
     }
 
     fun initGetUser() {
-        if (getKey<String>(accountId, ANILIST_TOKEN_KEY, null) == null) return
+        if (getAuth() == null) return
         ioSafe {
             getUser()
         }
@@ -351,7 +465,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         )!!
     }
 
-    suspend fun getDataAboutId(id: Int): AniListTitleHolder? {
+    private suspend fun getDataAboutId(id: Int): AniListTitleHolder? {
         val q =
             """query (${'$'}id: Int = $id) { # Define which variables will be used in the query (id)
                 Media (id: ${'$'}id, type: ANIME) { # Insert our variables into the query arguments (id) (type: ANIME is hard-coded in the query)
@@ -369,84 +483,69 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
                     }
                 }
             }"""
-        try {
-            val data = postApi("https://graphql.anilist.co", q, true)
-            var d: GetDataRoot? = null
-            try {
-                d = mapper.readValue<GetDataRoot>(data)
-            } catch (e: Exception) {
-                logError(e)
-                println("AniList json failed")
-            }
-            if (d == null) {
-                return null
-            }
 
-            val main = d.data.Media
-            if (main.mediaListEntry != null) {
-                return AniListTitleHolder(
-                    title = main.title,
-                    id = id,
-                    isFavourite = main.isFavourite,
-                    progress = main.mediaListEntry.progress,
-                    episodes = main.episodes,
-                    score = main.mediaListEntry.score,
-                    type = fromIntToAnimeStatus(aniListStatusString.indexOf(main.mediaListEntry.status)),
-                )
-            } else {
-                return AniListTitleHolder(
-                    title = main.title,
-                    id = id,
-                    isFavourite = main.isFavourite,
-                    progress = 0,
-                    episodes = main.episodes,
-                    score = 0,
-                    type = AniListStatusType.None,
-                )
-            }
-        } catch (e: Exception) {
-            logError(e)
-            return null
+        val data = postApi(q, true)
+        val d = mapper.readValue<GetDataRoot>(data ?: return null)
+
+        val main = d.data?.Media
+        if (main?.mediaListEntry != null) {
+            return AniListTitleHolder(
+                title = main.title,
+                id = id,
+                isFavourite = main.isFavourite,
+                progress = main.mediaListEntry.progress,
+                episodes = main.episodes,
+                score = main.mediaListEntry.score,
+                type = fromIntToAnimeStatus(aniListStatusString.indexOf(main.mediaListEntry.status)),
+            )
+        } else {
+            return AniListTitleHolder(
+                title = main?.title,
+                id = id,
+                isFavourite = main?.isFavourite,
+                progress = 0,
+                episodes = main?.episodes,
+                score = 0,
+                type = AniListStatusType.None,
+            )
         }
+
     }
 
-    private suspend fun postApi(url: String, q: String, cache: Boolean = false): String {
-        return try {
-            if (!checkToken()) {
-                // println("VARS_ " + vars)
-                app.post(
-                    "https://graphql.anilist.co/",
-                    headers = mapOf(
-                        "Authorization" to "Bearer " + getKey(
-                            accountId,
-                            ANILIST_TOKEN_KEY,
-                            ""
-                        )!!,
-                        if (cache) "Cache-Control" to "max-stale=$maxStale" else "Cache-Control" to "no-cache"
-                    ),
-                    cacheTime = 0,
-                    data = mapOf("query" to q),//(if (vars == null) mapOf("query" to q) else mapOf("query" to q, "variables" to vars))
-                    timeout = 5 // REASONABLE TIMEOUT
-                ).text.replace("\\/", "/")
-            } else {
-                ""
-            }
-        } catch (e: Exception) {
-            logError(e)
-            ""
+    private fun getAuth(): String? {
+        return getKey(
+            accountId,
+            ANILIST_TOKEN_KEY
+        )
+    }
+
+    private suspend fun postApi(q: String, cache: Boolean = false): String? {
+        return if (!checkToken()) {
+            app.post(
+                "https://graphql.anilist.co/",
+                headers = mapOf(
+                    "Authorization" to "Bearer " + (getAuth() ?: return null),
+                    if (cache) "Cache-Control" to "max-stale=$maxStale" else "Cache-Control" to "no-cache"
+                ),
+                cacheTime = 0,
+                data = mapOf("query" to q),//(if (vars == null) mapOf("query" to q) else mapOf("query" to q, "variables" to vars))
+                timeout = 5 // REASONABLE TIMEOUT
+            ).text.replace("\\/", "/")
+        } else {
+            null
         }
     }
 
     data class MediaRecommendation(
         @JsonProperty("id") val id: Int,
-        @JsonProperty("title") val title: Title,
+        @JsonProperty("title") val title: Title?,
         @JsonProperty("idMal") val idMal: Int?,
-        @JsonProperty("coverImage") val coverImage: CoverImage,
+        @JsonProperty("coverImage") val coverImage: CoverImage?,
         @JsonProperty("averageScore") val averageScore: Int?
     )
 
     data class FullAnilistList(
-        @JsonProperty("data") val data: Data
+        @JsonProperty("data") val data: Data?
     )
 
     data class CompletedAt(
@@ -467,7 +566,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
     )
 
     data class CoverImage(
-        @JsonProperty("medium") val medium: String,
+        @JsonProperty("medium") val medium: String?,
         @JsonProperty("large") val large: String?
     )
 
@@ -515,12 +614,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
     }
 
     suspend fun getAnilistAnimeListSmart(): Array<Lists>? {
-        if (getKey<String>(
-                accountId,
-                ANILIST_TOKEN_KEY,
-                null
-            ) == null
-        ) return null
+        if (getAuth() == null) return null
 
         if (checkToken()) return null
         return if (getKey(ANILIST_SHOULD_UPDATE_LIST, true) == true) {
@@ -536,19 +630,18 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
     }
 
     private suspend fun getFullAnilistList(): FullAnilistList? {
-        try {
-            var userID: Int? = null
-            /** WARNING ASSUMES ONE USER! **/
-            getKeys(ANILIST_USER_KEY)?.forEach { key ->
-                getKey<AniListUser>(key, null)?.let {
-                    userID = it.id
-                }
+        var userID: Int? = null
+        /** WARNING ASSUMES ONE USER! **/
+        getKeys(ANILIST_USER_KEY)?.forEach { key ->
+            getKey<AniListUser>(key, null)?.let {
+                userID = it.id
             }
+        }
 
-            val fixedUserID = userID ?: return null
-            val mediaType = "ANIME"
+        val fixedUserID = userID ?: return null
+        val mediaType = "ANIME"
 
-            val query = """
+        val query = """
                 query (${'$'}userID: Int = $fixedUserID, ${'$'}MEDIA: MediaType = $mediaType) {
                     MediaListCollection (userId: ${'$'}userID, type: ${'$'}MEDIA) { 
                         lists {
@@ -588,13 +681,8 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
                     }
                     }
             """
-            val text = postApi("https://graphql.anilist.co", query)
-            return text.toKotlinObject()
-
-        } catch (e: Exception) {
-            logError(e)
-            return null
-        }
+        val text = postApi(query)
+        return text?.toKotlinObject()
     }
 
     suspend fun toggleLike(id: Int): Boolean {
@@ -610,7 +698,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
 					}
 				}
 			}"""
-        val data = postApi("https://graphql.anilist.co", q)
+        val data = postApi(q)
         return data != ""
     }
 
@@ -620,14 +708,13 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         score: Int?,
         progress: Int?
     ): Boolean {
-        try {
-            val q =
-                """mutation (${'$'}id: Int = $id, ${'$'}status: MediaListStatus = ${
-                    aniListStatusString[maxOf(
-                        0,
-                        type.value
-                    )]
-                }, ${if (score != null) "${'$'}scoreRaw: Int = ${score * 10}" else ""} , ${if (progress != null) "${'$'}progress: Int = $progress" else ""}) {
+        val q =
+            """mutation (${'$'}id: Int = $id, ${'$'}status: MediaListStatus = ${
+                aniListStatusString[maxOf(
+                    0,
+                    type.value
+                )]
+            }, ${if (score != null) "${'$'}scoreRaw: Int = ${score * 10}" else ""} , ${if (progress != null) "${'$'}progress: Int = $progress" else ""}) {
                 SaveMediaListEntry (mediaId: ${'$'}id, status: ${'$'}status, scoreRaw: ${'$'}scoreRaw, progress: ${'$'}progress) {
                     id
                     status
@@ -635,12 +722,8 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
                     score
                 }
                 }"""
-            val data = postApi("https://graphql.anilist.co", q)
-            return data != ""
-        } catch (e: Exception) {
-            logError(e)
-            return false
-        }
+        val data = postApi(q)
+        return data != ""
     }
 
     private suspend fun getUser(setSettings: Boolean = true): AniListUser? {
@@ -661,44 +744,37 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
                         }
   					}
 				}"""
-        try {
-            val data = postApi("https://graphql.anilist.co", q)
-            if (data == "") return null
-            val userData = mapper.readValue<AniListRoot>(data)
-            val u = userData.data.Viewer
-            val user = AniListUser(
-                u.id,
-                u.name,
-                u.avatar.large,
-            )
-            if (setSettings) {
-                setKey(accountId, ANILIST_USER_KEY, user)
-                registerAccount()
-            }
-            /* // TODO FIX FAVS
-            for(i in u.favourites.anime.nodes) {
-                println("FFAV:" + i.id)
-            }*/
-            return user
-        } catch (e: java.lang.Exception) {
-            logError(e)
-            return null
+        val data = postApi(q)
+        if (data.isNullOrBlank()) return null
+        val userData = mapper.readValue<AniListRoot>(data)
+        val u = userData.data?.Viewer
+        val user = AniListUser(
+            u?.id,
+            u?.name,
+            u?.avatar?.large,
+        )
+        if (setSettings) {
+            setKey(accountId, ANILIST_USER_KEY, user)
+            registerAccount()
         }
+        /* // TODO FIX FAVS
+        for(i in u.favourites.anime.nodes) {
+            println("FFAV:" + i.id)
+        }*/
+        return user
     }
 
     suspend fun getAllSeasons(id: Int): List<SeasonResponse?> {
         val seasons = mutableListOf<SeasonResponse?>()
         suspend fun getSeasonRecursive(id: Int) {
             val season = getSeason(id)
-            if (season != null) {
-                seasons.add(season)
-                if (season.data.Media.format?.startsWith("TV") == true) {
-                    season.data.Media.relations.edges.forEach {
-                        if (it.node.format != null) {
-                            if (it.relationType == "SEQUEL" && it.node.format.startsWith("TV")) {
-                                getSeasonRecursive(it.node.id)
-                                return@forEach
-                            }
+            seasons.add(season)
+            if (season.data.Media.format?.startsWith("TV") == true) {
+                season.data.Media.relations?.edges?.forEach {
+                    if (it.node?.format != null) {
+                        if (it.relationType == "SEQUEL" && it.node.format.startsWith("TV")) {
+                            getSeasonRecursive(it.node.id)
+                            return@forEach
                         }
                     }
                 }
@@ -717,26 +793,135 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
     )
 
     data class SeasonMedia(
-        @JsonProperty("id") val id: Int,
+        @JsonProperty("id") val id: Int?,
+        @JsonProperty("title") val title: MediaTitle?,
         @JsonProperty("idMal") val idMal: Int?,
         @JsonProperty("format") val format: String?,
         @JsonProperty("nextAiringEpisode") val nextAiringEpisode: SeasonNextAiringEpisode?,
-        @JsonProperty("relations") val relations: SeasonEdges,
+        @JsonProperty("relations") val relations: SeasonEdges?,
+        @JsonProperty("coverImage") val coverImage: MediaCoverImage?,
+        @JsonProperty("duration") val duration: Int?,
+        @JsonProperty("episodes") val episodes: Int?,
+        @JsonProperty("genres") val genres: List<String>?,
+        @JsonProperty("synonyms") val synonyms: List<String>?,
+        @JsonProperty("averageScore") val averageScore: Int?,
+        @JsonProperty("isAdult") val isAdult: Boolean?,
+        @JsonProperty("trailer") val trailer: MediaTrailer?,
+        @JsonProperty("description") val description: String?,
+        @JsonProperty("characters") val characters: CharacterConnection?,
+        @JsonProperty("recommendations") val recommendations: RecommendationConnection?,
+    )
+
+    data class RecommendationConnection(
+        @JsonProperty("edges") val edges: List<RecommendationEdge> = emptyList(),
+        @JsonProperty("nodes") val nodes: List<Recommendation> = emptyList(),
+        //@JsonProperty("pageInfo") val pageInfo: PageInfo,
+    )
+
+    data class RecommendationEdge(
+        //@JsonProperty("rating") val rating: Int,
+        @JsonProperty("node") val node: Recommendation,
+    )
+
+    data class Recommendation(
+        @JsonProperty("mediaRecommendation") val mediaRecommendation: SeasonMedia,
+    )
+
+    data class CharacterName(
+        @JsonProperty("name") val first: String?,
+        @JsonProperty("middle") val middle: String?,
+        @JsonProperty("last") val last: String?,
+        @JsonProperty("full") val full: String?,
+        @JsonProperty("native") val native: String?,
+        @JsonProperty("alternative") val alternative: List<String>?,
+        @JsonProperty("alternativeSpoiler") val alternativeSpoiler: List<String>?,
+        @JsonProperty("userPreferred") val userPreferred: String?,
+    )
+
+    data class CharacterImage(
+        @JsonProperty("large") val large: String?,
+        @JsonProperty("medium") val medium: String?,
+    )
+
+    data class Character(
+        @JsonProperty("name") val name: CharacterName?,
+        @JsonProperty("age") val age: String?,
+        @JsonProperty("image") val image: CharacterImage?,
+    )
+
+    data class CharacterEdge(
+        @JsonProperty("id") val id: Int?,
+        /**
+        MAIN
+        A primary character role in the media
+
+        SUPPORTING
+        A supporting character role in the media
+
+        BACKGROUND
+        A background character in the media
+         */
+        @JsonProperty("role") val role: String?,
+        @JsonProperty("name") val name: String?,
+        @JsonProperty("voiceActors") val voiceActors: List<Staff>?,
+        @JsonProperty("favouriteOrder") val favouriteOrder: Int?,
+        @JsonProperty("media") val media: List<SeasonMedia>?,
+        @JsonProperty("node") val node: Character?,
+    )
+
+    data class StaffImage(
+        @JsonProperty("large") val large: String?,
+        @JsonProperty("medium") val medium: String?,
+    )
+
+    data class StaffName(
+        @JsonProperty("name") val first: String?,
+        @JsonProperty("middle") val middle: String?,
+        @JsonProperty("last") val last: String?,
+        @JsonProperty("full") val full: String?,
+        @JsonProperty("native") val native: String?,
+        @JsonProperty("alternative") val alternative: List<String>?,
+        @JsonProperty("userPreferred") val userPreferred: String?,
+    )
+
+    data class Staff(
+        @JsonProperty("image") val image: StaffImage?,
+        @JsonProperty("name") val name: StaffName?,
+        @JsonProperty("age") val age: Int?,
+    )
+
+    data class CharacterConnection(
+        @JsonProperty("edges") val edges: List<CharacterEdge>?,
+        @JsonProperty("nodes") val nodes: List<Character>?,
+        //@JsonProperty("pageInfo")  pageInfo: PageInfo
+    )
+
+    data class MediaTrailer(
+        @JsonProperty("id") val id: String?,
+        @JsonProperty("site") val site: String?,
+        @JsonProperty("thumbnail") val thumbnail: String?,
+    )
+
+    data class MediaCoverImage(
+        @JsonProperty("extraLarge") val extraLarge: String?,
+        @JsonProperty("large") val large: String?,
+        @JsonProperty("medium") val medium: String?,
+        @JsonProperty("color") val color: String?,
     )
 
     data class SeasonNextAiringEpisode(
-        @JsonProperty("episode") val episode: Int,
-        @JsonProperty("timeUntilAiring") val timeUntilAiring: Int,
+        @JsonProperty("episode") val episode: Int?,
+        @JsonProperty("timeUntilAiring") val timeUntilAiring: Int?,
     )
 
     data class SeasonEdges(
-        @JsonProperty("edges") val edges: List<SeasonEdge>,
+        @JsonProperty("edges") val edges: List<SeasonEdge>?,
     )
 
     data class SeasonEdge(
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("relationType") val relationType: String,
-        @JsonProperty("node") val node: SeasonNode,
+        @JsonProperty("id") val id: Int?,
+        @JsonProperty("relationType") val relationType: String?,
+        @JsonProperty("node") val node: SeasonNode?,
     )
 
     data class AniListFavoritesMediaConnection(
@@ -747,124 +932,124 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         @JsonProperty("anime") val anime: AniListFavoritesMediaConnection,
     )
 
+    data class MediaTitle(
+        @JsonProperty("romaji") val romaji: String?,
+        @JsonProperty("english") val english: String?,
+        @JsonProperty("native") val native: String?,
+        @JsonProperty("userPreferred") val userPreferred: String?,
+    )
+
     data class SeasonNode(
         @JsonProperty("id") val id: Int,
         @JsonProperty("format") val format: String?,
-        @JsonProperty("title") val title: Title,
+        @JsonProperty("title") val title: Title?,
         @JsonProperty("idMal") val idMal: Int?,
-        @JsonProperty("coverImage") val coverImage: CoverImage,
+        @JsonProperty("coverImage") val coverImage: CoverImage?,
         @JsonProperty("averageScore") val averageScore: Int?
 //        @JsonProperty("nextAiringEpisode") val nextAiringEpisode: SeasonNextAiringEpisode?,
     )
 
     data class AniListAvatar(
-        @JsonProperty("large") val large: String,
+        @JsonProperty("large") val large: String?,
     )
 
     data class AniListViewer(
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("name") val name: String,
-        @JsonProperty("avatar") val avatar: AniListAvatar,
-        @JsonProperty("favourites") val favourites: AniListFavourites,
+        @JsonProperty("id") val id: Int?,
+        @JsonProperty("name") val name: String?,
+        @JsonProperty("avatar") val avatar: AniListAvatar?,
+        @JsonProperty("favourites") val favourites: AniListFavourites?,
     )
 
     data class AniListData(
-        @JsonProperty("Viewer") val Viewer: AniListViewer,
+        @JsonProperty("Viewer") val Viewer: AniListViewer?,
     )
 
     data class AniListRoot(
-        @JsonProperty("data") val data: AniListData,
+        @JsonProperty("data") val data: AniListData?,
     )
 
     data class AniListUser(
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("name") val name: String,
-        @JsonProperty("picture") val picture: String,
+        @JsonProperty("id") val id: Int?,
+        @JsonProperty("name") val name: String?,
+        @JsonProperty("picture") val picture: String?,
     )
 
     data class LikeNode(
-        @JsonProperty("id") val id: Int,
+        @JsonProperty("id") val id: Int?,
         //@JsonProperty("idMal") public int idMal;
     )
 
     data class LikePageInfo(
-        @JsonProperty("total") val total: Int,
-        @JsonProperty("currentPage") val currentPage: Int,
-        @JsonProperty("lastPage") val lastPage: Int,
-        @JsonProperty("perPage") val perPage: Int,
-        @JsonProperty("hasNextPage") val hasNextPage: Boolean,
+        @JsonProperty("total") val total: Int?,
+        @JsonProperty("currentPage") val currentPage: Int?,
+        @JsonProperty("lastPage") val lastPage: Int?,
+        @JsonProperty("perPage") val perPage: Int?,
+        @JsonProperty("hasNextPage") val hasNextPage: Boolean?,
     )
 
     data class LikeAnime(
-        @JsonProperty("nodes") val nodes: List<LikeNode>,
-        @JsonProperty("pageInfo") val pageInfo: LikePageInfo,
+        @JsonProperty("nodes") val nodes: List<LikeNode>?,
+        @JsonProperty("pageInfo") val pageInfo: LikePageInfo?,
     )
 
     data class LikeFavourites(
-        @JsonProperty("anime") val anime: LikeAnime,
+        @JsonProperty("anime") val anime: LikeAnime?,
     )
 
     data class LikeViewer(
-        @JsonProperty("favourites") val favourites: LikeFavourites,
+        @JsonProperty("favourites") val favourites: LikeFavourites?,
     )
 
     data class LikeData(
-        @JsonProperty("Viewer") val Viewer: LikeViewer,
+        @JsonProperty("Viewer") val Viewer: LikeViewer?,
     )
 
     data class LikeRoot(
-        @JsonProperty("data") val data: LikeData,
-    )
-
-    data class Recommendation(
-        @JsonProperty("title") val title: String,
-        @JsonProperty("idMal") val idMal: Int,
-        @JsonProperty("poster") val poster: String,
-        @JsonProperty("averageScore") val averageScore: Int?
+        @JsonProperty("data") val data: LikeData?,
     )
 
     data class AniListTitleHolder(
-        @JsonProperty("title") val title: Title,
-        @JsonProperty("isFavourite") val isFavourite: Boolean,
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("progress") val progress: Int,
-        @JsonProperty("episodes") val episodes: Int,
-        @JsonProperty("score") val score: Int,
-        @JsonProperty("type") val type: AniListStatusType,
+        @JsonProperty("title") val title: Title?,
+        @JsonProperty("isFavourite") val isFavourite: Boolean?,
+        @JsonProperty("id") val id: Int?,
+        @JsonProperty("progress") val progress: Int?,
+        @JsonProperty("episodes") val episodes: Int?,
+        @JsonProperty("score") val score: Int?,
+        @JsonProperty("type") val type: AniListStatusType?,
     )
 
     data class GetDataMediaListEntry(
-        @JsonProperty("progress") val progress: Int,
-        @JsonProperty("status") val status: String,
-        @JsonProperty("score") val score: Int,
+        @JsonProperty("progress") val progress: Int?,
+        @JsonProperty("status") val status: String?,
+        @JsonProperty("score") val score: Int?,
     )
 
     data class Nodes(
-        @JsonProperty("id") val id: Int,
+        @JsonProperty("id") val id: Int?,
         @JsonProperty("mediaRecommendation") val mediaRecommendation: MediaRecommendation?
     )
 
     data class GetDataMedia(
-        @JsonProperty("isFavourite") val isFavourite: Boolean,
-        @JsonProperty("episodes") val episodes: Int,
-        @JsonProperty("title") val title: Title,
+        @JsonProperty("isFavourite") val isFavourite: Boolean?,
+        @JsonProperty("episodes") val episodes: Int?,
+        @JsonProperty("title") val title: Title?,
         @JsonProperty("mediaListEntry") val mediaListEntry: GetDataMediaListEntry?
     )
 
     data class Recommendations(
-        @JsonProperty("nodes") val nodes: List<Nodes>
+        @JsonProperty("nodes") val nodes: List<Nodes>?
     )
 
     data class GetDataData(
-        @JsonProperty("Media") val Media: GetDataMedia,
+        @JsonProperty("Media") val Media: GetDataMedia?,
     )
 
     data class GetDataRoot(
-        @JsonProperty("data") val data: GetDataData,
+        @JsonProperty("data") val data: GetDataData?,
     )
 
     data class GetSearchTitle(
-        @JsonProperty("romaji") val romaji: String,
+        @JsonProperty("romaji") val romaji: String?,
     )
 
     data class TrailerObject(
@@ -885,18 +1070,18 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         @JsonProperty("trailer") val trailer: TrailerObject?,
         @JsonProperty("nextAiringEpisode") val nextAiringEpisode: SeasonNextAiringEpisode?,
         @JsonProperty("recommendations") val recommendations: Recommendations?,
-        @JsonProperty("relations") val relations: SeasonEdges
+        @JsonProperty("relations") val relations: SeasonEdges?
     )
 
     data class GetSearchPage(
-        @JsonProperty("Page") val Page: GetSearchData,
+        @JsonProperty("Page") val Page: GetSearchData?,
     )
 
     data class GetSearchData(
-        @JsonProperty("media") val media: List<GetSearchMedia>,
+        @JsonProperty("media") val media: List<GetSearchMedia>?,
     )
 
     data class GetSearchRoot(
-        @JsonProperty("data") val data: GetSearchPage,
+        @JsonProperty("data") val data: GetSearchPage?,
     )
 }

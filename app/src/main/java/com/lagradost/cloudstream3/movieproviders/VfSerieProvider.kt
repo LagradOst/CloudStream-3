@@ -28,16 +28,27 @@ class VfSerieProvider : MainAPI() {
         for (item in items) {
             val href = item.attr("href")
 
-            val poster = item.selectFirst("> div.Image > figure > img").attr("src").replace("//image", "https://image")
+            val poster = item.selectFirst("> div.Image > figure > img")!!.attr("src")
+                .replace("//image", "https://image")
 
             if (poster == "$mainUrl/wp-content/themes/toroplay/img/cnt/noimg-thumbnail.png") {  // if the poster is missing (the item is just a redirect to something like https://vf-serie.org/series-tv/)
                 continue
             }
-            val name = item.selectFirst("> h3.Title").text()
+            val name = item.selectFirst("> h3.Title")!!.text()
 
-            val year = item.selectFirst("> span.Year").text()?.toIntOrNull()
+            val year = item.selectFirst("> span.Year")!!.text().toIntOrNull()
 
-            returnValue.add(TvSeriesSearchResponse(name, href, this.name, TvType.TvSeries, poster, year, null))
+            returnValue.add(
+                TvSeriesSearchResponse(
+                    name,
+                    href,
+                    this.name,
+                    TvType.TvSeries,
+                    poster,
+                    year,
+                    null
+                )
+            )
         }
         return returnValue
     }
@@ -63,12 +74,12 @@ class VfSerieProvider : MainAPI() {
         val response = app.get(data).text
         val document = Jsoup.parse(response)
         val players = document.select("ul.TPlayerNv > li")
-        val trembedUrl = document.selectFirst("div.TPlayerTb > iframe").attr("src")
+        val trembedUrl = document.selectFirst("div.TPlayerTb > iframe")!!.attr("src")
         var numberPlayer = Regex(".*trembed=(.*?)&").find(trembedUrl)?.groupValues?.get(1)!!
             .toInt()  // the starting trembed number of the first player website, some start at 0 other at 1
         var found = false
         for (player in players) {
-            if (player.selectFirst("> span").text() == "Vudeo") {
+            if (player.selectFirst("> span")!!.text() == "Vudeo") {
                 found = true
                 break
             } else {
@@ -99,19 +110,21 @@ class VfSerieProvider : MainAPI() {
         val response = app.get(url).text
         val document = Jsoup.parse(response)
         val title =
-            document?.selectFirst(".Title")?.text()?.replace("Regarder Serie ", "")?.replace(" En Streaming", "")
+            document.selectFirst(".Title")?.text()?.replace("Regarder Serie ", "")
+                ?.replace(" En Streaming", "")
                 ?: throw ErrorLoadingException("Service might be unavailable")
 
 
-        val year = document.select("span.Date").text()?.toIntOrNull()
-        val rating = document.select("span.AAIco-star").text()?.toIntOrNull()
+        val year = document.select("span.Date").text().toIntOrNull()
+        val rating = document.select("span.AAIco-star").text().toIntOrNull()
 
         //val duration = document.select("span.Time").text()?.toIntOrNull()
 
         val backgroundPoster =
-            document.selectFirst("div.Image > figure > img").attr("src").replace("//image", "https://image")
+            document.selectFirst("div.Image > figure > img")!!.attr("src")
+                .replace("//image", "https://image")
 
-        val descript = document.selectFirst("div.Description > p").text()
+        val descript = document.selectFirst("div.Description > p")!!.text()
 
         val list = ArrayList<Int>()
 
@@ -124,7 +137,7 @@ class VfSerieProvider : MainAPI() {
         }
         if (list.isEmpty()) throw ErrorLoadingException("No Seasons Found")
 
-        val episodeList = ArrayList<TvSeriesEpisode>()
+        val episodeList = ArrayList<Episode>()
 
         for (season in list) {
             val episodes = document.select("table > tbody > tr")
@@ -132,20 +145,20 @@ class VfSerieProvider : MainAPI() {
                 episodes.forEach { episode ->
                     val epNum = episode.selectFirst("> span.Num")?.text()?.toIntOrNull()
                     val poster =
-                        episode.selectFirst("> td.MvTbImg > a > img")?.attr("src")?.replace("//image", "https://image")
+                        episode.selectFirst("> td.MvTbImg > a > img")?.attr("src")
+                            ?.replace("//image", "https://image")
                     val aName = episode.selectFirst("> td.MvTbTtl > a")
                     val date = episode.selectFirst("> td.MvTbTtl > span")?.text()?.toString()
-                    val name = aName.text()
+                    val name = aName!!.text()
                     val href = aName.attr("href")
                     episodeList.add(
-                        TvSeriesEpisode(
-                            name,
-                            season,
-                            epNum,
-                            href,
-                            poster,
-                            date
-                        )
+                        newEpisode(href) {
+                            this.name = name
+                            this.season = season
+                            this.episode = epNum
+                            this.posterUrl = poster
+                            addDate(date)
+                        }
                     )
                 }
             }
@@ -159,7 +172,6 @@ class VfSerieProvider : MainAPI() {
             backgroundPoster,
             year,
             descript,
-            null,
             null,
             rating
         )

@@ -146,6 +146,10 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
         return rawY > statusHeight && rawX < screenWidth //- navHeight
     }
 
+    override fun exitedPipMode() {
+        animateLayoutChanges()
+    }
+
     private fun animateLayoutChanges() {
         if (isShowing) {
             updateUIVisibility()
@@ -495,13 +499,21 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
 
     private fun updateUIVisibility() {
         val isGone = isLocked || !isShowing
+        var togglePlayerTitleGone = isGone
+        context?.let {
+            val settingsManager = PreferenceManager.getDefaultSharedPreferences(it)
+            val limitTitle = settingsManager.getInt(getString(R.string.prefer_limit_title_key), 0)
+            if (limitTitle < 0) {
+                togglePlayerTitleGone = true
+            }
+        }
         player_lock_holder?.isGone = isGone
         player_video_bar?.isGone = isGone
         player_pause_play_holder?.isGone = isGone
         player_pause_play?.isGone = isGone
         //player_buffering?.isGone = isGone
         player_top_holder?.isGone = isGone
-        player_video_title?.isGone = isGone
+        player_video_title?.isGone = togglePlayerTitleGone
         player_video_title_rez?.isGone = isGone
         player_episode_filler?.isGone = isGone
         player_center_menu?.isGone = isGone
@@ -1015,7 +1027,6 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
 
         // init variables
         setPlayBackSpeed(getKey(PLAYBACK_SPEED_KEY) ?: 1.0f)
-        fastForwardTime = getKey(PLAYBACK_FASTFORWARD) ?: 10000L
 
         // handle tv controls
         playerEventListener = { eventType ->
@@ -1073,6 +1084,10 @@ open class FullScreenPlayer : AbstractPlayerFragment() {
         try {
             context?.let { ctx ->
                 val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
+
+                fastForwardTime =
+                    settingsManager.getInt(ctx.getString(R.string.double_tap_seek_time_key), 10)
+                        .toLong() * 1000L
 
                 navigationBarHeight = ctx.getNavigationBarHeight()
                 statusBarHeight = ctx.getStatusBarHeight()

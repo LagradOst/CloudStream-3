@@ -1,7 +1,7 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.setDuration
+import com.lagradost.cloudstream3.LoadResponse.Companion.addDuration
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -29,14 +29,14 @@ class SeriesflixProvider : MainAPI() {
             try {
                 val soup = app.get(i.first).document
                 val home = soup.select("article.TPost.B").map {
-                    val title = it.selectFirst("h2.title").text()
-                    val link = it.selectFirst("a").attr("href")
+                    val title = it.selectFirst("h2.title")!!.text()
+                    val link = it.selectFirst("a")!!.attr("href")
                     TvSeriesSearchResponse(
                         title,
                         link,
                         this.name,
                         TvType.Movie,
-                        it.selectFirst("figure img").attr("src"),
+                        it.selectFirst("figure img")!!.attr("src"),
                         null,
                         null,
                     )
@@ -55,9 +55,9 @@ class SeriesflixProvider : MainAPI() {
         val url = "$mainUrl/?s=$query"
         val doc = app.get(url).document
         return doc.select("article.TPost.B").map {
-            val href = it.selectFirst("a").attr("href")
-            val poster = it.selectFirst("figure img").attr("src")
-            val name = it.selectFirst("h2.title").text()
+            val href = it.selectFirst("a")!!.attr("href")
+            val poster = it.selectFirst("figure img")!!.attr("src")
+            val name = it.selectFirst("h2.title")!!.text()
             val isMovie = href.contains("/movies/")
             if (isMovie) {
                 MovieSearchResponse(
@@ -88,16 +88,15 @@ class SeriesflixProvider : MainAPI() {
 
         val document = app.get(url).document
 
-        val title = document.selectFirst("h1.Title").text()
+        val title = document.selectFirst("h1.Title")!!.text()
         val descRegex = Regex("(Recuerda.*Seriesflix.)")
-        val descipt = document.selectFirst("div.Description > p").text().replace(descRegex, "")
+        val descipt = document.selectFirst("div.Description > p")!!.text().replace(descRegex, "")
         val rating =
-            document.selectFirst("div.Vote > div.post-ratings > span")?.text()?.toFloatOrNull()
-                ?.times(1000)?.toInt()
+            document.selectFirst("div.Vote > div.post-ratings > span")?.text()?.toRatingInt()
         val year = document.selectFirst("span.Date")?.text()
         // ?: does not work
         val duration = try {
-            document.selectFirst("span.Time").text()
+            document.selectFirst("span.Time")!!.text()
         } catch (e: Exception) {
             null
         }
@@ -124,7 +123,7 @@ class SeriesflixProvider : MainAPI() {
             }
             if (list.isEmpty()) throw ErrorLoadingException("No Seasons Found")
 
-            val episodeList = ArrayList<TvSeriesEpisode>()
+            val episodeList = ArrayList<Episode>()
 
             for (season in list) {
                 val seasonDocument = app.get(season.second).document
@@ -134,18 +133,17 @@ class SeriesflixProvider : MainAPI() {
                         val epNum = episode.selectFirst("> td > span.Num")?.text()?.toIntOrNull()
                         val epthumb = episode.selectFirst("img")?.attr("src")
                         val aName = episode.selectFirst("> td.MvTbTtl > a")
-                        val name = aName.text()
-                        val href = aName.attr("href")
+                        val name = aName!!.text()
+                        val href = aName!!.attr("href")
                         val date = episode.selectFirst("> td.MvTbTtl > span")?.text()
                         episodeList.add(
-                            TvSeriesEpisode(
-                                name,
-                                season.first,
-                                epNum,
-                                href,
-                                fixUrlNull(epthumb),
-                                date
-                            )
+                            newEpisode(href) {
+                                this.name = name
+                                this.season = season.first
+                                this.episode = epNum
+                                this.posterUrl = fixUrlNull(epthumb)
+                                addDate(date)
+                            }
                         )
                     }
                 }
@@ -160,7 +158,6 @@ class SeriesflixProvider : MainAPI() {
                 year?.toIntOrNull(),
                 descipt,
                 null,
-                null,
                 rating
             )
         } else {
@@ -174,7 +171,7 @@ class SeriesflixProvider : MainAPI() {
                 this.year = year?.toIntOrNull()
                 this.plot = descipt
                 this.rating = rating
-                setDuration(duration)
+                addDuration(duration)
             }
         }
     }
@@ -218,7 +215,7 @@ class SeriesflixProvider : MainAPI() {
                     params = mapOf(Pair("h", postkey)),
                     data = mapOf(Pair("h", postkey)),
                     allowRedirects = false
-                ).response.headers.values("location").apmap { link ->
+                ).okhttpResponse.headers.values("location").apmap { link ->
                     val url1 = link.replace("#bu", "")
                     loadExtractor(url1, data, callback)
                 }

@@ -56,7 +56,10 @@ const val SKIP_OP_VIDEO_PERCENTAGE = 50
 const val PRELOAD_NEXT_EPISODE_PERCENTAGE = 80
 
 // when the player should mark the episode as watched and resume watching the next
-const val NEXT_WATCH_EPISODE_PERCENTAGE = 95
+const val NEXT_WATCH_EPISODE_PERCENTAGE = 90
+
+// when the player should sync the progress of "watched", TODO MAKE SETTING
+const val UPDATE_SYNC_PROGRESS_PERCENTAGE = 80
 
 abstract class AbstractPlayerFragment(
     val player: IPlayer = CS3IPlayer()
@@ -86,6 +89,14 @@ abstract class AbstractPlayerFragment(
     }
 
     open fun subtitlesChanged() {
+        throw NotImplementedError()
+    }
+
+    open fun embeddedSubtitlesFetched(subtitles: List<SubtitleData>) {
+        throw NotImplementedError()
+    }
+
+    open fun exitedPipMode() {
         throw NotImplementedError()
     }
 
@@ -157,7 +168,7 @@ abstract class AbstractPlayerFragment(
             isInPIPMode = isInPictureInPictureMode
             if (isInPictureInPictureMode) {
                 // Hide the full-screen UI (controls, etc.) while in picture-in-picture mode.
-                player_holder.alpha = 0f
+                player_holder?.alpha = 0f
                 pipReceiver = object : BroadcastReceiver() {
                     override fun onReceive(
                         context: Context,
@@ -185,7 +196,8 @@ abstract class AbstractPlayerFragment(
                 updateIsPlaying(Pair(isPlayingValue, isPlayingValue))
             } else {
                 // Restore the full-screen UI.
-                player_holder.alpha = 1f
+                player_holder?.alpha = 1f
+                exitedPipMode()
                 pipReceiver?.let {
                     activity?.unregisterReceiver(it)
                 }
@@ -329,7 +341,10 @@ abstract class AbstractPlayerFragment(
                 SKIP_OP_VIDEO_PERCENTAGE,
                 PRELOAD_NEXT_EPISODE_PERCENTAGE,
                 NEXT_WATCH_EPISODE_PERCENTAGE,
-            ), subtitlesUpdates = ::subtitlesChanged
+                UPDATE_SYNC_PROGRESS_PERCENTAGE,
+            ),
+            subtitlesUpdates = ::subtitlesChanged,
+            embeddedSubtitlesFetched = ::embeddedSubtitlesFetched,
         )
 
         if (player is CS3IPlayer) {
@@ -350,7 +365,7 @@ abstract class AbstractPlayerFragment(
                         settingsManager.getInt(getString(R.string.video_buffer_disk_key), 0)
                     val currentPrefBufferSec =
                         settingsManager.getInt(getString(R.string.video_buffer_length_key), 0)
-                    
+
                     player.cacheSize = currentPrefCacheSize * 1024L * 1024L
                     player.simpleCacheSize = currentPrefDiskSize * 1024L * 1024L
                     player.videoBufferMs = currentPrefBufferSec * 1000L
@@ -379,6 +394,7 @@ abstract class AbstractPlayerFragment(
     override fun onDestroy() {
         playerEventListener = null
         keyEventListener = null
+        canEnterPipMode = false
         SubtitlesFragment.applyStyleEvent -= ::onSubStyleChanged
 
         keepScreenOn(false)

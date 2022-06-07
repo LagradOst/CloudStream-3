@@ -56,10 +56,10 @@ class IHaveNoTvProvider : MainAPI() {
                     res.selectFirst("a[href][title]")
                 }
                 val year = Regex("""•?\s+(\d{4})\s+•""").find(
-                    res.selectFirst(".episodeMeta").text()
+                    res.selectFirst(".episodeMeta")!!.text()
                 )?.destructured?.component1()?.toIntOrNull()
 
-                val title = aTag.attr("title")
+                val title = aTag!!.attr("title")
                 val href = fixUrl(aTag.attr("href"))
                 searchResults[href] = TvSeriesSearchResponse(
                     title,
@@ -98,11 +98,11 @@ class IHaveNoTvProvider : MainAPI() {
             }
             val year =
                 Regex("""•?\s+(\d{4})\s+•""").find(
-                    res.selectFirst(".episodeMeta").text()
+                    res.selectFirst(".episodeMeta")!!.text()
                 )?.destructured?.component1()
                     ?.toIntOrNull()
 
-            val title = aTag.attr("title")
+            val title = aTag!!.attr("title")
             val href = fixUrl(aTag.attr("href"))
             searchResults[href] = TvSeriesSearchResponse(
                 title,
@@ -126,7 +126,7 @@ class IHaveNoTvProvider : MainAPI() {
         val container = soup.selectFirst(".container-fluid h1")?.parent()
         val title = if (isSeries) {
             container?.selectFirst("h1")?.text()?.split("•")?.firstOrNull().toString()
-        } else soup.selectFirst(".videoDetails").selectFirst("strong")?.text().toString()
+        } else soup.selectFirst(".videoDetails")!!.selectFirst("strong")?.text().toString()
         val description = if (isSeries) {
             container?.selectFirst("p")?.text()
         } else {
@@ -138,11 +138,11 @@ class IHaveNoTvProvider : MainAPI() {
 
         val episodes = if (isSeries) {
             container?.select(".episode")?.map { ep ->
-                val thumb = ep.selectFirst("img").attr("src")
-                val epTitle = ep.selectFirst("a[title]").attr("title")
-                val epLink = fixUrl(ep.selectFirst("a[title]").attr("href"))
+                val thumb = ep.selectFirst("img")!!.attr("src")
+
+                val epLink = fixUrl(ep.selectFirst("a[title]")!!.attr("href"))
                 val (season, epNum) = if (ep.selectFirst(".episodeMeta > strong") != null &&
-                    ep.selectFirst(".episodeMeta > strong").html().contains("S")
+                    ep.selectFirst(".episodeMeta > strong")!!.html().contains("S")
                 ) {
                     val split = ep.selectFirst(".episodeMeta > strong")?.text()?.split("E")
                     Pair(
@@ -150,24 +150,21 @@ class IHaveNoTvProvider : MainAPI() {
                         split?.get(1)?.toIntOrNull()
                     )
                 } else Pair<Int?, Int?>(null, null)
-                val epDescription = ep.selectFirst(".episodeSynopsis")?.text()
+
                 year = Regex("""•?\s+(\d{4})\s+•""").find(
-                    ep.selectFirst(".episodeMeta").text()
+                    ep.selectFirst(".episodeMeta")!!.text()
                 )?.destructured?.component1()?.toIntOrNull()
 
                 categories.addAll(
                     ep.select(".episodeMeta > a[href*=\"/category/\"]").map { it.text().trim() })
 
-                TvSeriesEpisode(
-                    epTitle,
-                    season,
-                    epNum,
-                    epLink,
-                    thumb,
-                    null,
-                    null,
-                    epDescription
-                )
+                newEpisode(epLink) {
+                    this.name = ep.selectFirst("a[title]")!!.attr("title")
+                    this.season = season
+                    this.episode = epNum
+                    this.posterUrl = thumb
+                    this.description = ep.selectFirst(".episodeSynopsis")?.text()
+                }
             }
         } else {
             listOf(MovieLoadResponse(
@@ -176,20 +173,19 @@ class IHaveNoTvProvider : MainAPI() {
                 this.name,
                 TvType.Movie,
                 url,
-                soup.selectFirst("[rel=\"image_src\"]").attr("href"),
+                soup.selectFirst("[rel=\"image_src\"]")!!.attr("href"),
                 Regex("""•?\s+(\d{4})\s+•""").find(
-                    soup.selectFirst(".videoDetails").text()
+                    soup.selectFirst(".videoDetails")!!.text()
                 )?.destructured?.component1()?.toIntOrNull(),
                 description,
                 null,
-                null,
-                soup.selectFirst(".videoDetails").select("a[href*=\"/category/\"]")
+                soup.selectFirst(".videoDetails")!!.select("a[href*=\"/category/\"]")
                     .map { it.text().trim() }
             ))
         }
 
         val poster = episodes?.firstOrNull().let {
-            if (isSeries && it != null) (it as TvSeriesEpisode).posterUrl
+            if (isSeries && it != null) (it as Episode).posterUrl
             else null
         }
 
@@ -198,11 +194,10 @@ class IHaveNoTvProvider : MainAPI() {
             url,
             this.name,
             TvType.TvSeries,
-            episodes!!.map { it as TvSeriesEpisode },
+            episodes!!.map { it as Episode },
             poster,
             year,
             description,
-            null,
             null,
             null,
             categories.toList()

@@ -22,7 +22,9 @@ import com.google.android.material.button.MaterialButton
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.filterProviderByPreferredMedia
 import com.lagradost.cloudstream3.APIHolder.getApiFromName
+import com.lagradost.cloudstream3.APIHolder.getApiProviderLangSettings
 import com.lagradost.cloudstream3.APIHolder.getApiSettings
+import com.lagradost.cloudstream3.AcraApplication.Companion.removeKey
 import com.lagradost.cloudstream3.mvvm.Resource
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.observe
@@ -34,6 +36,7 @@ import com.lagradost.cloudstream3.ui.home.ParentItemAdapter
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTrueTvSettings
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.setKey
+import com.lagradost.cloudstream3.utils.SubtitleHelper
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import com.lagradost.cloudstream3.utils.UIHelper.getSpanCount
@@ -49,7 +52,8 @@ class SearchFragment : Fragment() {
         fun List<SearchResponse>.filterSearchResponse(): List<SearchResponse> {
             return this.filter { response ->
                 if (response is AnimeSearchResponse) {
-                    (response.dubStatus.isNullOrEmpty()) || (response.dubStatus.any {
+                    val status = response.dubStatus
+                    (status.isNullOrEmpty()) || (status.any {
                         APIRepository.dubStatusActive.contains(it)
                     })
                 } else {
@@ -130,10 +134,10 @@ class SearchFragment : Fragment() {
 
         val searchExitIcon =
             main_search.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
-        val searchMagIcon =
-            main_search.findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon)
-        searchMagIcon.scaleX = 0.65f
-        searchMagIcon.scaleY = 0.65f
+        // val searchMagIcon =
+        //    main_search.findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon)
+        //searchMagIcon.scaleX = 0.65f
+        //searchMagIcon.scaleY = 0.65f
 
         context?.let { ctx ->
             val validAPIs = ctx.filterProviderByPreferredMedia()
@@ -155,6 +159,8 @@ class SearchFragment : Fragment() {
                 builder.setContentView(R.layout.home_select_mainpage)
                 builder.show()
                 builder.let { dialog ->
+                    val isMultiLang = ctx.getApiProviderLangSettings().size > 1
+
                     val anime = dialog.findViewById<MaterialButton>(R.id.home_select_anime)
                     val cartoons = dialog.findViewById<MaterialButton>(R.id.home_select_cartoons)
                     val tvs = dialog.findViewById<MaterialButton>(R.id.home_select_tv_series)
@@ -164,7 +170,8 @@ class SearchFragment : Fragment() {
                     val cancelBtt = dialog.findViewById<MaterialButton>(R.id.cancel_btt)
                     val applyBtt = dialog.findViewById<MaterialButton>(R.id.apply_btt)
 
-                    val pairList = HomeFragment.getPairList(anime, cartoons, tvs, docs, movies,asian)
+                    val pairList =
+                        HomeFragment.getPairList(anime, cartoons, tvs, docs, movies, asian)
 
                     cancelBtt?.setOnClickListener {
                         dialog.dismissSafe()
@@ -217,11 +224,16 @@ class SearchFragment : Fragment() {
                             api.supportedTypes.any {
                                 selectedSearchTypes.contains(it)
                             }
-                        }.sortedBy { it.name }
+                        }.sortedBy { it.name.lowercase() }
 
-                        val names = currentValidApis.map { it.name }
-
-                        for ((index, api) in names.withIndex()) {
+                        val names = currentValidApis.map {
+                            if (isMultiLang) "${
+                                SubtitleHelper.getFlagFromIso(
+                                    it.lang
+                                )?.plus(" ") ?: ""
+                            }${it.name}" else it.name
+                        }
+                        for ((index, api) in currentValidApis.map { it.name }.withIndex()) {
                             listView?.setItemChecked(index, currentSelectedApis.contains(api))
                         }
 
@@ -277,10 +289,21 @@ class SearchFragment : Fragment() {
             search_select_asian,
         )
 
+        val settingsManager = context?.let { PreferenceManager.getDefaultSharedPreferences(it) }
+        val isAdvancedSearch = settingsManager?.getBoolean("advanced_search", true) ?: true
+
         selectedSearchTypes = context?.getKey<List<String>>(SEARCH_PREF_TAGS)
             ?.mapNotNull { listName -> TvType.values().firstOrNull { it.name == listName } }
             ?.toMutableList()
             ?: mutableListOf(TvType.Movie, TvType.TvSeries)
+
+        fun updateSelectedList(list: MutableList<TvType>) {
+            selectedSearchTypes = list
+            for ((button, validTypes) in pairList) {
+                button?.isSelected = selectedSearchTypes.any { validTypes.contains(it) }
+            }
+        }
+
         context?.filterProviderByPreferredMedia()?.let { validAPIs ->
             for ((button, validTypes) in pairList) {
                 val isValid =
@@ -339,9 +362,26 @@ class SearchFragment : Fragment() {
 
             override fun onQueryTextChange(newText: String): Boolean {
                 //searchViewModel.quickSearch(newText)
+                val showHistory = newText.isBlank()
+                if (showHistory) {
+                    searchViewModel.clearSearch()
+                    searchViewModel.updateHistory()
+                }
+
+                search_history_recycler?.isVisible = showHistory
+
+                search_master_recycler?.isVisible = !showHistory && isAdvancedSearch
+                search_autofit_results?.isVisible = !showHistory && !isAdvancedSearch
+
                 return true
             }
         })
+
+        observe(searchViewModel.currentHistory) { list ->
+            (search_history_recycler.adapter as? SearchHistoryAdaptor?)?.updateList(list)
+        }
+
+        searchViewModel.updateHistory()
 
         observe(searchViewModel.searchResponse) {
             when (it) {
@@ -406,14 +446,30 @@ class SearchFragment : Fragment() {
                 activity?.loadHomepageList(item)
             })
 
+        val historyAdapter = SearchHistoryAdaptor(mutableListOf()) { click ->
+            val searchItem = click.item
+            when (click.clickAction) {
+                SEARCH_HISTORY_OPEN -> {
+                    searchViewModel.clearSearch()
+                    if (searchItem.type.isNotEmpty())
+                        updateSelectedList(searchItem.type.toMutableList())
+                    main_search?.setQuery(searchItem.searchText, true)
+                }
+                SEARCH_HISTORY_REMOVE -> {
+                    removeKey(SEARCH_HISTORY_KEY, searchItem.key)
+                    searchViewModel.updateHistory()
+                }
+                else -> {
+                    // wth are you doing???
+                }
+            }
+        }
+
+        search_history_recycler?.adapter = historyAdapter
+        search_history_recycler?.layoutManager = GridLayoutManager(context, 1)
+
         search_master_recycler?.adapter = masterAdapter
         search_master_recycler?.layoutManager = GridLayoutManager(context, 1)
-
-        val settingsManager = context?.let { PreferenceManager.getDefaultSharedPreferences(it) }
-        val isAdvancedSearch = settingsManager?.getBoolean("advanced_search", true) ?: true
-
-        search_master_recycler?.isVisible = isAdvancedSearch
-        search_autofit_results?.isVisible = !isAdvancedSearch
 
         // SubtitlesFragment.push(activity)
         //searchViewModel.search("iron man")

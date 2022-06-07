@@ -2,9 +2,7 @@ package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.loadExtractor
-import kotlin.collections.ArrayList
 
 class PeliSmartProvider: MainAPI() {
     override var mainUrl = "https://pelismart.com"
@@ -31,14 +29,14 @@ class PeliSmartProvider: MainAPI() {
             try {
                 val soup = app.get(url).document
                 val home = soup.select(".description-off").map {
-                    val title = it.selectFirst("h3.entry-title a").text()
-                    val link = it.selectFirst("a").attr("href")
+                    val title = it.selectFirst("h3.entry-title a")!!.text()
+                    val link = it.selectFirst("a")!!.attr("href")
                     TvSeriesSearchResponse(
                         title,
                         link,
                         this.name,
                         if (link.contains("pelicula")) TvType.Movie else TvType.TvSeries,
-                        it.selectFirst("div img").attr("src"),
+                        it.selectFirst("div img")!!.attr("src"),
                         null,
                         null,
                     )
@@ -59,9 +57,9 @@ class PeliSmartProvider: MainAPI() {
         val document = app.get(url).document
 
         return document.select(".description-off").map {
-            val title = it.selectFirst("h3.entry-title a").text()
-            val href = it.selectFirst("a").attr("href")
-            val image = it.selectFirst("div img").attr("src")
+            val title = it.selectFirst("h3.entry-title a")!!.text()
+            val href = it.selectFirst("a")!!.attr("href")
+            val image = it.selectFirst("div img")!!.attr("src")
             val isMovie = href.contains("pelicula")
 
             if (isMovie) {
@@ -90,13 +88,13 @@ class PeliSmartProvider: MainAPI() {
 
     override suspend fun load(url: String): LoadResponse? {
         val soup = app.get(url, timeout = 120).document
-        val title = soup.selectFirst(".wpb_wrapper h1").text()
+        val title = soup.selectFirst(".wpb_wrapper h1")!!.text()
         val description = soup.selectFirst("div.wpb_wrapper p")?.text()?.trim()
-        val poster: String? = soup.selectFirst(".vc_single_image-img").attr("src")
+        val poster: String? = soup.selectFirst(".vc_single_image-img")!!.attr("src")
         val episodes = soup.select("div.vc_tta-panel-body div a").map { li ->
-            val href = li.selectFirst("a").attr("href")
+            val href = li.selectFirst("a")!!.attr("href")
             val preregex = Regex("(\\d+)\\. ")
-            val name = li.selectFirst("a").text().replace(preregex,"")
+            val name = li.selectFirst("a")!!.text().replace(preregex,"")
             val regextest = Regex("(temporada-(\\d+)-capitulo-(\\d+)|temporada-(\\d+)-episodio-(\\d+))")
             val test = regextest.find(href)?.destructured?.component1()?.replace(Regex("(temporada-|-)"),"")
             val seasonid = test.let { str ->
@@ -105,11 +103,11 @@ class PeliSmartProvider: MainAPI() {
             val isValid = seasonid?.size == 2
             val episode = if (isValid) seasonid?.getOrNull(1) else null
             val season = if (isValid) seasonid?.getOrNull(0) else null
-                TvSeriesEpisode(
+                Episode(
+                    href,
                     name,
                     season,
                     episode,
-                    href,
                 )
         }
         return when (val tvType = if (episodes.isEmpty()) TvType.Movie else TvType.TvSeries) {

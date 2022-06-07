@@ -118,7 +118,7 @@ class DramaSeeProvider : MainAPI() {
         }
 
         // Episodes Links
-        val episodeList = ArrayList<TvSeriesEpisode>()
+        val episodeList = ArrayList<Episode>()
         body?.select("ul.episodes > li")?.forEach { ep ->
             val innerA = ep.select("a") ?: return@forEach
             val count = innerA.select("span.episode")?.text()?.toIntOrNull() ?: 0
@@ -141,7 +141,7 @@ class DramaSeeProvider : MainAPI() {
 
                     //Log.i(this.name, "Result => (listOfLinks) ${listOfLinks.toJson()}")
                     episodeList.add(
-                        TvSeriesEpisode(
+                        Episode(
                             name = null,
                             season = null,
                             episode = count,
@@ -197,9 +197,12 @@ class DramaSeeProvider : MainAPI() {
                 //Log.i(this.name, "Result => (url) ${url}")
                 when {
                     url.startsWith("https://asianembed.io") || url.startsWith("https://asianload.io") -> {
-                        val iv = "9262859232435825".toByteArray()
-                        val secretKey = "93422192433952489752342908585752".toByteArray()
-                        extractVidstream(url, this.name, callback, iv, secretKey)
+                        val iv = "9262859232435825"
+                        val secretKey = "93422192433952489752342908585752"
+                        extractVidstream(url, this.name, callback, iv, secretKey, secretKey,
+                            isUsingAdaptiveKeys = false,
+                            isUsingAdaptiveData = false
+                        )
                         AsianEmbedHelper.getUrls(url, callback)
                     }
                     url.startsWith("https://embedsito.com") -> {

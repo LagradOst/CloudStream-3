@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
 import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
@@ -17,7 +18,7 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavOptions
-import androidx.navigation.findNavController
+import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceManager
 import com.google.android.gms.cast.framework.*
@@ -26,21 +27,25 @@ import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import com.lagradost.cloudstream3.APIHolder.allProviders
 import com.lagradost.cloudstream3.APIHolder.apis
 import com.lagradost.cloudstream3.APIHolder.getApiDubstatusSettings
+import com.lagradost.cloudstream3.APIHolder.initAll
 import com.lagradost.cloudstream3.CommonActivity.backEvent
 import com.lagradost.cloudstream3.CommonActivity.loadThemes
 import com.lagradost.cloudstream3.CommonActivity.onColorSelectedEvent
 import com.lagradost.cloudstream3.CommonActivity.onDialogDismissedEvent
 import com.lagradost.cloudstream3.CommonActivity.onUserLeaveHint
+import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.CommonActivity.updateLocale
 import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.network.Requests
+import com.lagradost.cloudstream3.network.initClient
 import com.lagradost.cloudstream3.receivers.VideoDownloadRestartReceiver
-import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.OAuth2Apis
-import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.OAuth2accountApis
-import com.lagradost.cloudstream3.syncproviders.OAuth2API.Companion.appString
+import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.OAuth2Apis
+import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.accountManagers
+import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.appString
+import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.inAppAuths
 import com.lagradost.cloudstream3.ui.APIRepository
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_NAVIGATE_TO
 import com.lagradost.cloudstream3.ui.result.ResultFragment
+import com.lagradost.cloudstream3.ui.search.SearchResultBuilder
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isEmulatorSettings
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
 import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
@@ -48,10 +53,12 @@ import com.lagradost.cloudstream3.utils.AppUtils.loadCache
 import com.lagradost.cloudstream3.utils.AppUtils.loadResult
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.BackupUtils.setUpBackup
+import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.cloudstream3.utils.DataStore.getKey
 import com.lagradost.cloudstream3.utils.DataStore.removeKey
 import com.lagradost.cloudstream3.utils.DataStore.setKey
+import com.lagradost.cloudstream3.utils.DataStoreHelper.migrateResumeWatching
 import com.lagradost.cloudstream3.utils.DataStoreHelper.setViewPos
 import com.lagradost.cloudstream3.utils.InAppUpdater.Companion.runAutoUpdate
 import com.lagradost.cloudstream3.utils.UIHelper.changeStatusBarState
@@ -61,6 +68,7 @@ import com.lagradost.cloudstream3.utils.UIHelper.getResourceColor
 import com.lagradost.cloudstream3.utils.UIHelper.hideKeyboard
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.requestRW
+import com.lagradost.nicehttp.Requests
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_result_swipe.*
 import kotlinx.coroutines.Dispatchers
@@ -83,10 +91,15 @@ const val VLC_EXTRA_DURATION_OUT = "extra_duration"
 const val VLC_LAST_ID_KEY = "vlc_last_open_id"
 
 // Short name for requests client to make it nicer to use
-var app = Requests()
-
+var app = Requests().apply {
+    defaultHeaders = mapOf("user-agent" to USER_AGENT)
+}
 
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
+    companion object {
+        const val TAG = "MAINACT"
+    }
+
     override fun onColorSelected(dialogId: Int, color: Int) {
         onColorSelectedEvent.invoke(Pair(dialogId, color))
     }
@@ -98,7 +111,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         updateLocale() // android fucks me by chaining lang when rotating the phone
-        findNavController(R.id.nav_host_fragment).currentDestination?.let { updateNavBar(it) }
+
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        navHostFragment.navController.currentDestination?.let { updateNavBar(it) }
     }
 
     private fun updateNavBar(destination: NavDestination) {
@@ -113,7 +129,14 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             R.id.navigation_search,
             R.id.navigation_downloads,
             R.id.navigation_settings,
-            R.id.navigation_download_child
+            R.id.navigation_download_child,
+            R.id.navigation_subtitles,
+            R.id.navigation_chrome_subtitles,
+            R.id.navigation_settings_player,
+            R.id.navigation_settings_updates,
+            R.id.navigation_settings_ui,
+            R.id.navigation_settings_account,
+            R.id.navigation_settings_lang,
         ).contains(destination.id)
 
         val landscape = when (resources.configuration.orientation) {
@@ -266,7 +289,29 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             if (str.contains(appString)) {
                 for (api in OAuth2Apis) {
                     if (str.contains("/${api.redirectUrl}")) {
-                        api.handleRedirect(str)
+                        ioSafe {
+                            Log.i(TAG, "handleAppIntent $str")
+                            val isSuccessful = api.handleRedirect(str)
+
+                            if (isSuccessful) {
+                                Log.i(TAG, "authenticated ${api.name}")
+                            } else {
+                                Log.i(TAG, "failed to authenticate ${api.name}")
+                            }
+
+                            this.runOnUiThread {
+                                try {
+                                    showToast(
+                                        this,
+                                        getString(if (isSuccessful) R.string.authenticated_user else R.string.authenticated_user_fail).format(
+                                            api.name
+                                        )
+                                    )
+                                } catch (e: Exception) {
+                                    logError(e) // format might fail
+                                }
+                            }
+                        }
                     }
                 }
             } else {
@@ -309,11 +354,34 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         }
     }
 
+    fun test() {
+        /*runBlocking {
+            //https://test.api.anime-skip.com/graphiql
+            val txt = app.get(
+                "https://api.anime-skip.com/status",
+                headers = mapOf("X-Client-ID" to "")
+            )
+            println("TEXT: $txt")
+        }*/
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // init accounts
-        for (api in OAuth2accountApis) {
+        for (api in accountManagers) {
             api.init()
         }
+
+        ioSafe {
+            inAppAuths.apmap { api ->
+                try {
+                    api.initialize()
+                } catch (e: Exception) {
+                    logError(e)
+                }
+            }
+        }
+
+        SearchResultBuilder.updateCache(this)
 
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
         val downloadFromGithub = try {
@@ -333,7 +401,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         }
 
         // this pulls the latest data so ppl don't have to update to simply change provider url
-        if(downloadFromGithub) {
+        if (downloadFromGithub) {
             try {
                 runBlocking {
                     withContext(Dispatchers.IO) {
@@ -350,10 +418,13 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
                                             tryParseJson<HashMap<String, ProvidersInfoJson>>(txt)
                                         setKey(PROVIDER_STATUS_KEY, txt)
                                         MainAPI.overrideData = newCache // update all new providers
+
+                                        initAll()
                                         for (api in apis) { // update current providers
-                                            newCache?.get(api.javaClass.simpleName)?.let { data ->
-                                                api.overrideWithNewData(data)
-                                            }
+                                            newCache?.get(api.javaClass.simpleName)
+                                                ?.let { data ->
+                                                    api.overrideWithNewData(data)
+                                                }
                                         }
                                     } catch (e: Exception) {
                                         logError(e)
@@ -368,6 +439,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
                                 newCache
                             }?.let { providersJsonMap ->
                                 MainAPI.overrideData = providersJsonMap
+                                initAll()
                                 val acceptableProviders =
                                     providersJsonMap.filter { it.value.status == PROVIDER_STATUS_OK || it.value.status == PROVIDER_STATUS_SLOW }
                                         .map { it.key }.toSet()
@@ -379,20 +451,24 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
                                 apis = allProviders.filter { api ->
                                     val name = api.javaClass.simpleName
                                     // if the provider does not exist in the json file, then it is shown by default
-                                    !providersJsonMap.containsKey(name) || acceptableProviders.contains(name) || restrictedApis.contains(name)
+                                    !providersJsonMap.containsKey(name) || acceptableProviders.contains(
+                                        name
+                                    ) || restrictedApis.contains(name)
                                 }
                             }
-                        } catch (e : Exception) {
+                        } catch (e: Exception) {
                             logError(e)
                         }
                     }
                 }
             } catch (e: Exception) {
+                initAll()
                 apis = allProviders
                 e.printStackTrace()
                 logError(e)
             }
         } else {
+            initAll()
             apis = allProviders
         }
 
@@ -422,8 +498,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         setUpBackup()
 
         CommonActivity.init(this)
-
-        val navController = findNavController(R.id.nav_host_fragment)
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navController = navHostFragment.navController
+        //val navController = findNavController(R.id.nav_host_fragment)
 
         /*navOptions = NavOptions.Builder()
             .setLaunchSingleTop(true)
@@ -434,10 +512,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             .setPopUpTo(navController.graph.startDestination, false)
             .build()*/
         nav_view?.setupWithNavController(navController)
-        val navRail = findViewById<NavigationRailView?>(R.id.nav_rail_view)
-        navRail?.setupWithNavController(navController)
+        val nav_rail = findViewById<NavigationRailView?>(R.id.nav_rail_view)
+        nav_rail?.setupWithNavController(navController)
 
-        navRail?.setOnItemSelectedListener { item ->
+        nav_rail?.setOnItemSelectedListener { item ->
             onNavDestinationSelected(
                 item,
                 navController
@@ -454,7 +532,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
         }
 
         loadCache()
-
+        test()
         /*nav_view.setOnNavigationItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.navigation_home -> {
@@ -475,7 +553,9 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
 
         val rippleColor = ColorStateList.valueOf(getResourceColor(R.attr.colorPrimary, 0.1f))
         nav_view?.itemRippleColor = rippleColor
-        navRail?.itemRippleColor = rippleColor
+        nav_rail?.itemRippleColor = rippleColor
+        nav_rail?.itemActiveIndicatorColor = rippleColor
+        nav_view?.itemActiveIndicatorColor = rippleColor
 
         if (!checkWrite()) {
             requestRW()
@@ -546,16 +626,18 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             createISO()
         }*/
 
-        var providersAndroidManifestString = "Current androidmanifest should be:\n"
-        for (api in allProviders) {
-            providersAndroidManifestString += "<data android:scheme=\"https\" android:host=\"${
-                api.mainUrl.removePrefix(
-                    "https://"
-                )
-            }\" android:pathPrefix=\"/\"/>\n"
-        }
+        if (BuildConfig.DEBUG) {
+            var providersAndroidManifestString = "Current androidmanifest should be:\n"
+            for (api in allProviders) {
+                providersAndroidManifestString += "<data android:scheme=\"https\" android:host=\"${
+                    api.mainUrl.removePrefix(
+                        "https://"
+                    )
+                }\" android:pathPrefix=\"/\"/>\n"
+            }
 
-        println(providersAndroidManifestString)
+            println(providersAndroidManifestString)
+        }
 
         handleAppIntent(intent)
 
@@ -574,6 +656,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
             logError(e)
         }
         println("Loaded everything")
+
+        ioSafe {
+            migrateResumeWatching()
+        }
 /*
         val relativePath = (Environment.DIRECTORY_DOWNLOADS) + File.separatorChar
         val displayName = "output.dex" //""output.dex"

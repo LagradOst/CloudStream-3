@@ -22,7 +22,7 @@
     "AnimePaheProvider": {
         "name": "AnimePahe",
         "url": "https://animepahe.com",
-        "status": 1
+        "status": 0
     },
     "AnimeWorldProvider": {
         "name": "AnimeWorld",
@@ -52,17 +52,17 @@
     "BflixProvider": {
         "name": "Bflix",
         "url": "https://bflix.ru",
-        "status": 1
+        "status": 0
     },
     "FmoviesToProvider": {
         "name": "Fmovies.to",
         "url": "https://fmovies.to",
-        "status": 1
+        "status": 0
     },
     "SflixProProvider": {
         "name": "Sflix.pro",
         "url": "https://sflix.pro",
-        "status": 1
+        "status": 0
     },
     "CinecalidadProvider": {
         "name": "Cinecalidad",
@@ -161,8 +161,8 @@
     },
     "NineAnimeProvider": {
         "name": "9Anime",
-        "url": "https://9anime.center",
-        "status": 1
+        "url": "https://9anime.id",
+        "status": 0
     },
     "PeliSmartProvider": {
         "name": "PeliSmart",
@@ -237,7 +237,7 @@
     "TheFlixToProvider": {
         "name": "TheFlix.to",
         "url": "https://theflix.to",
-        "status": 1
+        "status": 0
     },
     "TwoEmbedProvider": {
         "name": "2Embed",
@@ -282,6 +282,6 @@
     "ZoroProvider": {
         "name": "Zoro",
         "url": "https://zoro.to",
-        "status": 1
+        "status": 0
     }
 }

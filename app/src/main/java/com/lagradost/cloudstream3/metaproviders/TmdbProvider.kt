@@ -3,9 +3,11 @@ package com.lagradost.cloudstream3.metaproviders
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
+import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.uwetrottmann.tmdb2.Tmdb
 import com.uwetrottmann.tmdb2.entities.*
+import com.uwetrottmann.tmdb2.enumerations.AppendToResponseItem
 import retrofit2.awaitResponse
 import java.util.*
 
@@ -93,23 +95,23 @@ open class TmdbProvider : MainAPI() {
         val episodes = this.seasons?.filter { !disableSeasonZero || (it.season_number ?: 0) != 0 }
             ?.mapNotNull { season ->
                 season.episodes?.map { episode ->
-                    TvSeriesEpisode(
-                        episode.name,
-                        episode.season_number,
-                        episode.episode_number,
+                    Episode(
                         TmdbLink(
                             episode.external_ids?.imdb_id ?: this.external_ids?.imdb_id,
                             this.id,
                             episode.episode_number,
                             episode.season_number,
                         ).toJson(),
+                        episode.name,
+                        episode.season_number,
+                        episode.episode_number,
                         getImageUrl(episode.still_path),
-                        episode.air_date?.toString(),
                         episode.rating,
                         episode.overview,
+                        episode.air_date?.time,
                     )
                 } ?: (1..(season.episode_count ?: 1)).map { episodeNum ->
-                    TvSeriesEpisode(
+                    Episode(
                         episode = episodeNum,
                         data = TmdbLink(
                             this.external_ids?.imdb_id,
@@ -135,7 +137,8 @@ open class TmdbProvider : MainAPI() {
                 }.get(Calendar.YEAR)
             }
             plot = overview
-            imdbId = external_ids?.imdb_id
+            addImdbId(external_ids?.imdb_id)
+
             tags = genres?.mapNotNull { it.name }
             duration = episode_run_time?.average()?.toInt()
             rating = this@toLoadResponse.rating
@@ -163,7 +166,7 @@ open class TmdbProvider : MainAPI() {
                 }.get(Calendar.YEAR)
             }
             plot = overview
-            imdbId = external_ids?.imdb_id
+            addImdbId(external_ids?.imdb_id)
             tags = genres?.mapNotNull { it.name }
             duration = runtime
             rating = this@toLoadResponse.rating
@@ -251,11 +254,12 @@ open class TmdbProvider : MainAPI() {
         val found = idRegex.find(url)
 
         val isTvSeries = found?.groupValues?.getOrNull(1).equals("tv", ignoreCase = true)
-        val id = found?.groupValues?.getOrNull(2)?.toIntOrNull() ?: throw ErrorLoadingException("No id found")
+        val id = found?.groupValues?.getOrNull(2)?.toIntOrNull()
+            ?: throw ErrorLoadingException("No id found")
 
         return if (useMetaLoadResponse) {
             return if (isTvSeries) {
-                val body = tmdb.tvService().tv(id, "en-US").awaitResponse().body()
+                val body = tmdb.tvService().tv(id, "en-US", AppendToResponse(AppendToResponseItem.EXTERNAL_IDS)).awaitResponse().body()
                 val response = body?.toLoadResponse()
                 if (response != null) {
                     if (response.recommendations.isNullOrEmpty())
@@ -263,8 +267,8 @@ open class TmdbProvider : MainAPI() {
                             ?.let {
                                 it.results?.map { res -> res.toSearchResponse() }
                             }?.let { list ->
-                            response.recommendations = list
-                        }
+                                response.recommendations = list
+                            }
 
                     if (response.actors.isNullOrEmpty())
                         tmdb.tvService().credits(id, "en-US").awaitResponse().body()?.let {
@@ -274,7 +278,7 @@ open class TmdbProvider : MainAPI() {
 
                 response
             } else {
-                val body = tmdb.moviesService().summary(id, "en-US").awaitResponse().body()
+                val body = tmdb.moviesService().summary(id, "en-US", AppendToResponse(AppendToResponseItem.EXTERNAL_IDS)).awaitResponse().body()
                 val response = body?.toLoadResponse()
                 if (response != null) {
                     if (response.recommendations.isNullOrEmpty())

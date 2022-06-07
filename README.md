@@ -19,6 +19,7 @@ https://github.com/LagradOst/CloudStream-3/releases
 + Chromecast
 
 ***Screenshots:***
+(All the images are blurred because of DMCA reasons, but are actually not blurred in the app)
 
 <img src="./.github/home.jpg" height="400"/><img src="./.github/search.jpg" height="400"/><img src="./.github/downloads.jpg" height="400"/><img src="./.github/results.jpg" height="400"/>
 <img src="./.github/player.jpg" height="200"/>
@@ -31,6 +32,7 @@ https://github.com/LagradOst/CloudStream-3/releases
 * 🇩🇪 German
 * 🇬🇷 Greek
 * 🇮🇳 Hindi
+* 🇮🇩 Indonesian
 * 🇮🇹 Italian
 * 🇲🇰 Macedonian
 * 🇮🇳 Malayalam
@@ -58,52 +60,5 @@ It merely scrapes 3rd-party websites that are publicly accessable via any regula
 
 
 ***Sites used:***
-https://lagradost.github.io/CloudStream-3/
-<!-- Do not remove those two comments -->
-<!--SITE LIST START-->
-- [pelisplus.icu](https://pelisplus.icu) 
-- [pelismart.com](https://pelismart.com) 
-- [melomovie.com](https://melomovie.com) 
-- [doramasyt.com](https://doramasyt.com) 
-- [pelisflix.li](https://pelisflix.li) 
-- [seriesflix.video](https://seriesflix.video) 
-- [ihavenotv.com](https://ihavenotv.com) 
-- [lookmovie.io](https://lookmovie.io) 
-- [vmovee.watch](https://www.vmovee.watch) 
-- [allmoviesforyou.net](https://allmoviesforyou.net) 
-- [vidembed.cc](https://vidembed.cc) 
-- [vf-film.me](https://vf-film.me) 
-- [vf-serie.org](https://vf-serie.org) 
-- [asianembed.io](https://asianembed.io) 
-- [asiaflix.app](https://asiaflix.app) 
-- [fmovies.to](https://fmovies.to) 
-- [filman.cc](https://filman.cc) 
-- [dopebox.to](https://dopebox.to) 
-- [pinoymoviepedia.ru](https://pinoymoviepedia.ru) 
-- [pinoy-hd.xyz](https://www.pinoy-hd.xyz) 
-- [pinoymovies.es](https://pinoymovies.es) 
-- [trailers.to](https://trailers.to) 
-- [2embed.ru](https://www.2embed.ru) 
-- [dramasee.net](https://dramasee.net) 
-- [watchasian.sh](https://watchasian.sh) 
-- [kdramahood.com](https://kdramahood.com) 
-- [akwam.to](https://akwam.to) 
-- [mycima.tv](https://mycima.tv) 
-- [egy.best](https://egy.best) 
-- [hdm.to](https://hdm.to) 
-- [theflix.to](https://theflix.to) 
-- [v2.apimdb.net](https://v2.apimdb.net) 
-- [wcostream.com](https://www.wcostream.com) 
-- [gogoanime.film](https://gogoanime.film) 
-- [allanime.site](https://allanime.site) 
-- [animekisa.in](https://animekisa.in) 
-- [animeflick.net](https://animeflick.net) 
-- [tenshi.moe](https://tenshi.moe) 
-- [wcostream.cc](https://wcostream.cc) 
-- [9anime.center](https://9anime.center) 
-- [animeworld.tv](https://www.animeworld.tv) 
-- [zoro.to](https://zoro.to) 
-- [bestdubbedanime.com](https://bestdubbedanime.com) 
-- [monoschinos2.com](https://monoschinos2.com) 
-- [kawaiifu.com](https://kawaiifu.com) 
-<!--SITE LIST END-->
+
+Look [here](https://lagradost.github.io/CloudStream-3/) for a comprehensive list

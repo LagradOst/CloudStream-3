@@ -27,12 +27,12 @@ class VfFilmProvider : MainAPI() {
         for (item in items) {
             val href = item.attr("href")
 
-            val poster = item.selectFirst("> div.Image > figure > img").attr("src")
+            val poster = item.selectFirst("> div.Image > figure > img")!!.attr("src")
                 .replace("//image", "https://image")
 
-            val name = item.selectFirst("> h3.Title").text()
+            val name = item.selectFirst("> h3.Title")!!.text()
 
-            val year = item.selectFirst("> span.Year").text()?.toIntOrNull()
+            val year = item.selectFirst("> span.Year")!!.text().toIntOrNull()
 
             returnValue.add(MovieSearchResponse(name, href, this.name, TvType.Movie, poster, year))
         }
@@ -73,27 +73,25 @@ class VfFilmProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val response = app.get(url).text
         val document = Jsoup.parse(response)
-        val title = document?.selectFirst("div.SubTitle")?.text()
+        val title = document.selectFirst("div.SubTitle")?.text()
             ?: throw ErrorLoadingException("Service might be unavailable")
 
+        val year = document.select("span.Date").text().toIntOrNull()
 
-        val year = document.select("span.Date").text()?.toIntOrNull()
+//        val rating = document.select("span.AAIco-star").text()
 
-        val rating = document.select("span.AAIco-star").text()
+        val duration = document.select("span.Time").text().toIntOrNull()
 
-        val duration = document.select("span.Time").text()?.toIntOrNull()
-
-        val poster = document.selectFirst("div.Image > figure > img").attr("src")
+        val poster = document.selectFirst("div.Image > figure > img")!!.attr("src")
             .replace("//image", "https://image")
 
-        val descript = document.selectFirst("div.Description > p").text()
-
+        val descript = document.selectFirst("div.Description > p")!!.text()
 
         val players = document.select("ul.TPlayerNv > li")
         var number_player = 0
         var found = false
         for (player in players) {
-            if (player.selectFirst("> span").text() == "Vudeo") {
+            if (player.selectFirst("> span")!!.text() == "Vudeo") {
                 found = true
                 break
             } else {
@@ -108,17 +106,17 @@ class VfFilmProvider : MainAPI() {
 
         val data = getDirect("$mainUrl/?trembed=$i&trid=$trid&trtype=1")
 
-        return MovieLoadResponse(
+        return newMovieLoadResponse(
             title,
             url,
-            this.name,
             TvType.Movie,
-            data,
-            poster,
-            year,
-            descript,
-            rating,
-            duration
-        )
+            data
+        ) {
+            this.posterUrl = poster
+            this.year = year
+            this.plot = descript
+            //this.rating = rating
+            this.duration = duration
+        }
     }
 }

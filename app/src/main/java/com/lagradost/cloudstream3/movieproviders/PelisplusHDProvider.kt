@@ -1,9 +1,9 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
-import java.util.*
 
 class PelisplusHDProvider:MainAPI() {
     override var mainUrl = "https://pelisplushd.net"
@@ -67,9 +67,9 @@ class PelisplusHDProvider:MainAPI() {
         val document = app.get(url).document
 
         return document.select("a.Posters-link").map {
-            val title = it.selectFirst(".listing-content p").text()
-            val href = it.selectFirst("a").attr("href")
-            val image = it.selectFirst(".Posters-img").attr("src")
+            val title = it.selectFirst(".listing-content p")!!.text()
+            val href = it.selectFirst("a")!!.attr("href")
+            val image = it.selectFirst(".Posters-img")!!.attr("src")
             val isMovie = href.contains("/pelicula/")
 
             if (isMovie) {
@@ -98,12 +98,12 @@ class PelisplusHDProvider:MainAPI() {
     override suspend fun load(url: String): LoadResponse? {
         val soup = app.get(url, timeout = 120).document
 
-        val title = soup.selectFirst(".m-b-5").text()
+        val title = soup.selectFirst(".m-b-5")!!.text()
         val description = soup.selectFirst("div.text-large")?.text()?.trim()
-        val poster: String? = soup.selectFirst(".img-fluid").attr("src")
+        val poster: String? = soup.selectFirst(".img-fluid")!!.attr("src")
         val episodes = soup.select("div.tab-pane .btn").map { li ->
-            val href = li.selectFirst("a").attr("href")
-            val name = li.selectFirst(".btn-primary.btn-block").text()
+            val href = li.selectFirst("a")!!.attr("href")
+            val name = li.selectFirst(".btn-primary.btn-block")!!.text()
             val seasonid = href.replace("/capitulo/","-")
                 .replace(Regex("$mainUrl/.*/.*/temporada/"),"").let { str ->
                     str.split("-").mapNotNull { subStr -> subStr.toIntOrNull() }
@@ -111,15 +111,15 @@ class PelisplusHDProvider:MainAPI() {
             val isValid = seasonid.size == 2
             val episode = if (isValid) seasonid.getOrNull(1) else null
             val season = if (isValid) seasonid.getOrNull(0) else null
-            TvSeriesEpisode(
+            Episode(
+                href,
                 name,
                 season,
                 episode,
-                href,
             )
         }
 
-        val year = soup.selectFirst(".p-r-15 .text-semibold").text().toIntOrNull()
+        val year = soup.selectFirst(".p-r-15 .text-semibold")!!.text().toIntOrNull()
         val tvType = if (url.contains("/pelicula/")) TvType.Movie else TvType.TvSeries
         val tags = soup.select(".p-h-15.text-center a span.font-size-18.text-info.text-semibold")
             .map { it?.text()?.trim().toString().replace(", ","") }
@@ -137,7 +137,6 @@ class PelisplusHDProvider:MainAPI() {
                     description,
                     null,
                     null,
-                    null,
                     tags,
                 )
             }
@@ -151,7 +150,6 @@ class PelisplusHDProvider:MainAPI() {
                     poster,
                     year,
                     description,
-                    null,
                     null,
                     tags,
                 )

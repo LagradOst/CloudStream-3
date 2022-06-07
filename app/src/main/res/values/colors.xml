@@ -25,11 +25,11 @@
     <color name="dubColor">#3d50fa</color> <!--3b65f5 f18c82 8294F1-->
     <color name="amoledModeLight">#121213</color>
 
-    <color name="dubColorBg">#803B65F5</color>
+    <color name="dubColorBg">#3B65F5</color>
     <color name="subColor">#F54A3B</color> <!--F53B66 FA3D79-->
-    <color name="subColorBg">#80F53B66</color>
+    <color name="subColorBg">#F53B66</color>
     <color name="typeColor">#3BF585</color>
-    <color name="typeColorBg">#803BF585</color>
+    <color name="typeColorBg">?attr/colorPrimaryDark</color>
 
     <color name="video_ripple">#80FFFFFF</color>
     <color name="video_button_ripple">#32FFFFFF</color>
@@ -63,4 +63,12 @@
     <color name="colorPrimaryBanana">#E4D448</color>
     <color name="colorPrimaryParty">#ea596e</color>
     <color name="colorPrimaryPink">#ff1493</color>
+
+    <color name="colorPrimaryCarnationPink">#BD5DA5</color>
+    <color name="colorPrimaryDarkGreen">#004500</color>
+    <color name="colorPrimaryMaroon">#451010</color>
+    <color name="colorPrimaryNavyBlue">#000080</color>
+    <color name="colorPrimaryGrey">#515151</color>
+    <color name="colorPrimaryWhite">#FFFFFF</color>
+    <color name="colorPrimaryBrown">#622C00</color>
 </resources>

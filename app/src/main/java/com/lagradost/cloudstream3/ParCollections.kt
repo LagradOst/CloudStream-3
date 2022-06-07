@@ -26,8 +26,16 @@ fun <T, R> Iterable<T>.pmap(
     return ArrayList<R>(destination)
 }*/
 
+fun <K, V, R> Map<out K, V>.apmap(f: suspend (Map.Entry<K, V>) -> R): List<R> = runBlocking {
+    map { async { f(it) } }.map { it.await() }
+}
+
 fun <A, B> List<A>.apmap(f: suspend (A) -> B): List<B> = runBlocking {
     map { async { f(it) } }.map { it.await() }
+}
+
+fun <A, B> List<A>.apmapIndexed(f: suspend (index: Int, A) -> B): List<B> = runBlocking {
+    mapIndexed { index, a -> async { f(index, a) } }.map { it.await() }
 }
 
 // run code in parallel

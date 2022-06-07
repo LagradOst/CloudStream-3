@@ -5,24 +5,22 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.mvvm.safeApiCall
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
-import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.Qualities
 import org.jsoup.Jsoup
 import org.mozilla.javascript.Context
 import org.mozilla.javascript.Scriptable
 import java.net.URI
 import java.net.URLDecoder
-import java.util.*
 
 
 class AllAnimeProvider : MainAPI() {
     override var mainUrl = "https://allanime.site"
     override var name = "AllAnime"
     override val hasQuickSearch = false
-    override val hasMainPage = false
-
-    private val hlsHelper = M3u8Helper()
+    override val hasMainPage = true
 
     private fun getStatus(t: String): ShowStatus {
         return when (t) {
@@ -87,6 +85,77 @@ class AllAnimeProvider : MainAPI() {
         @JsonProperty("data") val data: Data
     )
 
+    data class RandomMain(
+        @JsonProperty("data") var data: DataRan? = DataRan()
+    )
+
+    data class DataRan(
+        @JsonProperty("queryRandomRecommendation") var queryRandomRecommendation: ArrayList<QueryRandomRecommendation> = arrayListOf()
+    )
+
+    data class QueryRandomRecommendation(
+        @JsonProperty("_id") val Id: String? = null,
+        @JsonProperty("name") val name: String? = null,
+        @JsonProperty("englishName") val englishName: String? = null,
+        @JsonProperty("nativeName") val nativeName: String? = null,
+        @JsonProperty("thumbnail") val thumbnail: String? = null,
+        @JsonProperty("airedStart") val airedStart: String? = null,
+        @JsonProperty("availableChapters") val availableChapters: String? = null,
+        @JsonProperty("availableEpisodes") val availableEpisodes: String? = null,
+        @JsonProperty("__typename") val _typename: String? = null
+    )
+
+    override suspend fun getMainPage(): HomePageResponse {
+        val items = ArrayList<HomePageList>()
+        val urls = listOf(
+            Pair(
+                "Top Anime",
+                "$mainUrl/graphql?variables=%7B%22search%22%3A%7B%22allowAdult%22%3Afalse%2C%22sortBy%22%3A%22Top%22%7D%2C%22limit%22%3A26%2C%22page%22%3A1%2C%22translationType%22%3A%22sub%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%229343797cc3d9e3f444e2d3b7db9a84d759b816a4d84512ea72d079f85bb96e98%22%7D%7D"
+            ),
+            Pair(
+                "Animes",
+                "$mainUrl/graphql?variables=%7B%22search%22%3A%7B%22allowAdult%22%3Afalse%7D%2C%22limit%22%3A26%2C%22page%22%3A1%2C%22translationType%22%3A%22sub%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%229343797cc3d9e3f444e2d3b7db9a84d759b816a4d84512ea72d079f85bb96e98%22%7D%7D"
+            ),
+        )
+
+        val random =
+            "$mainUrl/graphql?variables=%7B%22format%22%3A%22anime%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%2221ac672633498a3698e8f6a93ce6c2b3722b29a216dcca93363bf012c360cd54%22%7D%7D"
+        val ranlink = app.get(random).text
+        val jsonran = parseJson<RandomMain>(ranlink)
+        val ranhome = jsonran.data?.queryRandomRecommendation?.map {
+            newAnimeSearchResponse(it.name!!, "$mainUrl/anime/${it.Id}", fix = false) {
+                this.posterUrl = it.thumbnail
+                this.otherName = it.nativeName
+            }
+        }
+
+        items.add(HomePageList("Random", ranhome!!))
+
+        urls.apmap { (HomeName, url) ->
+            val test = app.get(url).text
+            val json = parseJson<AllAnimeQuery>(test)
+            val home = ArrayList<SearchResponse>()
+            val results = json.data.shows.edges.filter {
+                // filtering in case there is an anime with 0 episodes available on the site.
+                !(it.availableEpisodes?.raw == 0 && it.availableEpisodes.sub == 0 && it.availableEpisodes.dub == 0)
+            }
+            results.map {
+                home.add(
+                    newAnimeSearchResponse(it.name, "$mainUrl/anime/${it.Id}", fix = false) {
+                        this.posterUrl = it.thumbnail
+                        this.year = it.airedStart?.year
+                        this.otherName = it.englishName
+                        addDub(it.availableEpisodes?.dub)
+                        addSub(it.availableEpisodes?.sub)
+                    })
+            }
+            items.add(HomePageList(HomeName, home))
+        }
+
+        if (items.size <= 0) throw ErrorLoadingException()
+        return HomePageResponse(items)
+    }
+
     override suspend fun search(query: String): List<SearchResponse> {
         val link =
             """$mainUrl/graphql?variables=%7B%22search%22%3A%7B%22allowAdult%22%3Afalse%2C%22query%22%3A%22$query%22%7D%2C%22limit%22%3A26%2C%22page%22%3A1%2C%22translationType%22%3A%22sub%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%229343797cc3d9e3f444e2d3b7db9a84d759b816a4d84512ea72d079f85bb96e98%22%7D%7D"""
@@ -103,18 +172,13 @@ class AllAnimeProvider : MainAPI() {
         }
 
         return results.map {
-            AnimeSearchResponse(
-                it.name,
-                "$mainUrl/anime/${it.Id}",
-                this.name,
-                TvType.Anime,
-                it.thumbnail,
-                it.airedStart?.year,
-                EnumSet.of(DubStatus.Subbed, DubStatus.Dubbed),
-                it.englishName,
-                it.availableEpisodes?.dub,
-                it.availableEpisodes?.sub
-            )
+            newAnimeSearchResponse(it.name, "$mainUrl/anime/${it.Id}", fix = false) {
+                this.posterUrl = it.thumbnail
+                this.year = it.airedStart?.year
+                this.otherName = it.englishName
+                addDub(it.availableEpisodes?.dub)
+                addSub(it.availableEpisodes?.sub)
+            }
         }
     }
 
@@ -155,11 +219,11 @@ class AllAnimeProvider : MainAPI() {
         val episodes = showData.availableEpisodes.let {
             if (it == null) return@let Pair(null, null)
             Pair(if (it.sub != 0) ((1..it.sub).map { epNum ->
-                AnimeEpisode(
+                Episode(
                     "$mainUrl/anime/${showData.Id}/episodes/sub/$epNum", episode = epNum
                 )
             }) else null, if (it.dub != 0) ((1..it.dub).map { epNum ->
-                AnimeEpisode(
+                Episode(
                     "$mainUrl/anime/${showData.Id}/episodes/dub/$epNum", episode = epNum
                 )
             }) else null)
@@ -253,18 +317,12 @@ class AllAnimeProvider : MainAPI() {
         referer: String,
         qualityName: String,
     ): List<ExtractorLink> {
-        return hlsHelper.m3u8Generation(M3u8Helper.M3u8Stream(m3u8Link, null), true).map { stream ->
-            val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
-            ExtractorLink(
-                this.name,
-                "${this.name} - $qualityName $qualityString",
-                stream.streamUrl,
-                referer,
-                getQualityFromName(stream.quality.toString()),
-                true,
-                stream.headers
-            )
-        }
+        return M3u8Helper.generateM3u8(
+            this.name,
+            m3u8Link,
+            referer,
+            name = "${this.name} - $qualityName"
+        )
     }
 
     override suspend fun loadLinks(
@@ -300,7 +358,7 @@ class AllAnimeProvider : MainAPI() {
                                     "",
                                     link,
                                     data,
-                                    getQualityFromName("1080"),
+                                    Qualities.P1080.value,
                                     false
                                 )
                             )
@@ -330,7 +388,7 @@ class AllAnimeProvider : MainAPI() {
                                         "$apiEndPoint/player?uri=" + (if (URI(server.link).host.isNotEmpty()) server.link else apiEndPoint + URI(
                                             server.link
                                         ).path),
-                                        getQualityFromName("1080"),
+                                        Qualities.P1080.value,
                                         false
                                     )
                                 )

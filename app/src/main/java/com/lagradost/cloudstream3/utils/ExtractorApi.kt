@@ -22,18 +22,18 @@ data class ExtractorLink(
 ) : VideoDownloadManager.IDownloadableMinimum
 
 data class ExtractorUri(
-    val uri : Uri,
-    val name : String,
+    val uri: Uri,
+    val name: String,
 
     val basePath: String? = null,
     val relativePath: String? = null,
     val displayName: String? = null,
 
-    val id : Int? = null,
-    val parentId : Int? = null,
-    val episode : Int? = null,
-    val season : Int? = null,
-    val headerName : String? = null,
+    val id: Int? = null,
+    val parentId: Int? = null,
+    val episode: Int? = null,
+    val season: Int? = null,
+    val headerName: String? = null,
     val tvType: TvType? = null,
 )
 
@@ -45,27 +45,38 @@ data class ExtractorSubtitleLink(
 ) : VideoDownloadManager.IDownloadableMinimum
 
 enum class Qualities(var value: Int) {
-    Unknown(0),
-    P360(-2), // 360p
-    P480(-1), // 480p
-    P720(1), // 720p
-    P1080(2), // 1080p
-    P1440(3), // 1440p
-    P2160(4) // 4k or 2160p
+    Unknown(400),
+    P144(144), // 144p
+    P240(240), // 240p
+    P360(360), // 360p
+    P480(480), // 480p
+    P720(720), // 720p
+    P1080(1080), // 1080p
+    P1440(1440), // 1440p
+    P2160(2160); // 4k or 2160p
+
+    companion object {
+        fun getStringByInt(qual: Int?): String {
+            return when (qual) {
+                0 -> "Auto"
+                Unknown.value -> ""
+                P2160.value -> "4K"
+                null -> ""
+                else -> "${qual}p"
+            }
+        }
+    }
 }
 
-fun getQualityFromName(qualityName: String): Int {
-    return when (qualityName.replace("p", "").replace("P", "").trim()) {
-        "360" -> Qualities.P360
-        "480" -> Qualities.P480
-        "720" -> Qualities.P720
-        "1080" -> Qualities.P1080
-        "1440" -> Qualities.P1440
-        "2160" -> Qualities.P2160
+fun getQualityFromName(qualityName: String?): Int {
+    if (qualityName == null)
+        return Qualities.Unknown.value
+
+    val match = qualityName.lowercase().replace("p", "").trim()
+    return when (match) {
         "4k" -> Qualities.P2160
-        "4K" -> Qualities.P2160
-        else -> Qualities.Unknown
-    }.value
+        else -> null
+    }?.value ?: match.toIntOrNull() ?: Qualities.Unknown.value
 }
 
 private val packedRegex = Regex("""eval\(function\(p,a,c,k,e,.*\)\)""")
@@ -81,7 +92,11 @@ fun getAndUnpack(string: String): String {
 /**
  * Tries to load the appropriate extractor based on link, returns true if any extractor is loaded.
  * */
-suspend fun loadExtractor(url: String, referer: String? = null, callback: (ExtractorLink) -> Unit) : Boolean {
+suspend fun loadExtractor(
+    url: String,
+    referer: String? = null,
+    callback: (ExtractorLink) -> Unit
+): Boolean {
     for (extractor in extractorApis) {
         if (url.startsWith(extractor.mainUrl)) {
             extractor.getSafeUrl(url, referer)?.forEach(callback)
@@ -99,11 +114,24 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     Vizcloud2(),
     VizcloudOnline(),
     VizcloudXyz(),
+    VizcloudLive(),
+    VizcloudInfo(),
+    MwvnVizcloudInfo(),
+    VizcloudDigital(),
+    VizcloudCloud(),
+    VideoVard(),
+    VideovardSX(),
     Mp4Upload(),
     StreamTape(),
+
+    //mixdrop extractors
+    MixDropBz(),
+    MixDropCh(),
     MixDrop(),
+
     Mcloud(),
     XStreamCdn(),
+
     StreamSB(),
     StreamSB1(),
     StreamSB2(),
@@ -115,45 +143,68 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     StreamSB8(),
     StreamSB9(),
     StreamSB10(),
-   // Streamhub(), cause Streamhub2() works
+    SBfull(),
+    // Streamhub(), cause Streamhub2() works
     Streamhub2(),
 
     FEmbed(),
     FeHD(),
     Fplayer(),
-  //  WatchSB(), 'cause StreamSB.kt works
+    DBfilm(),
+    LayarKaca(),
+    //  WatchSB(), 'cause StreamSB.kt works
     Uqload(),
     Uqload1(),
     Evoload(),
     Evoload1(),
     VoeExtractor(),
-   // UpstreamExtractor(), GenericM3U8.kt works
+    // UpstreamExtractor(), GenericM3U8.kt works
 
     Tomatomatela(),
     Cinestart(),
     OkRu(),
+    OkRuHttps(),
 
     // dood extractors
+    DoodCxExtractor(),
+    DoodPmExtractor(),
     DoodToExtractor(),
     DoodSoExtractor(),
     DoodLaExtractor(),
     DoodWsExtractor(),
+    DoodShExtractor(),
 
     AsianLoad(),
 
-   // GenericM3U8(),
+    // GenericM3U8(),
     Jawcloud(),
     Zplayer(),
     ZplayerV2(),
     Upstream(),
 
+    Maxstream(),
+    Tantifilm(),
+    Userload(),
+    Supervideo(),
+    GuardareStream(),
 
-  // StreamSB.kt works
-  //  SBPlay(),
-  //  SBPlay1(),
-  //  SBPlay2(),
+    // StreamSB.kt works
+    //  SBPlay(),
+    //  SBPlay1(),
+    //  SBPlay2(),
 
     PlayerVoxzer(),
+
+    BullStream(),
+    GMPlayer(),
+
+    Blogger(),
+    Solidfiles(),
+
+    Hxfile(),
+    KotakAnimeid(),
+    Neonime8n(),
+    Neonime7n(),
 )
 
 fun getExtractorApiFromName(name: String): ExtractorApi {
@@ -171,7 +222,7 @@ fun httpsify(url: String): String {
     return if (url.startsWith("//")) "https:$url" else url
 }
 
-suspend fun getPostForm(requestUrl : String, html : String) : String? {
+suspend fun getPostForm(requestUrl: String, html: String): String? {
     val document = Jsoup.parse(html)
     val inputs = document.select("Form > input")
     if (inputs.size < 4) return null
@@ -195,7 +246,7 @@ suspend fun getPostForm(requestUrl : String, html : String) : String? {
     }
     delay(5000) // ye this is needed, wont work with 0 delay
 
-    val postResponse = app.post(
+    return app.post(
         requestUrl,
         headers = mapOf(
             "content-type" to "application/x-www-form-urlencoded",
@@ -205,8 +256,6 @@ suspend fun getPostForm(requestUrl : String, html : String) : String? {
         ),
         data = mapOf("op" to op, "id" to id, "mode" to mode, "hash" to hash)
     ).text
-
-    return postResponse
 }
 
 abstract class ExtractorApi {

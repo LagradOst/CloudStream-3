@@ -1,11 +1,17 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import java.util.*
-import org.json.JSONObject
-import org.jsoup.nodes.Element
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addDuration
+import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addRating
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.nicehttp.NiceResponse
+import org.jsoup.nodes.Element
 
 class AnimeWorldProvider : MainAPI() {
     override var mainUrl = "https://www.animeworld.tv"
@@ -20,6 +26,19 @@ class AnimeWorldProvider : MainAPI() {
     )
 
     companion object {
+        private const val cookieName = "AWCookieVerify"
+        private val cookieRegex = Regex("$cookieName=(.+?)(\\s?);")
+        private val cookies = mutableMapOf(cookieName to "")
+
+        private suspend fun request(url: String): NiceResponse {
+            val response = app.get(url, cookies = cookies)
+            return cookieRegex.find(response.text)?.let {
+                val verify = it.groups[1]?.value ?: throw ErrorLoadingException("Can't bypass protection")
+                cookies[cookieName] = verify
+                return app.get(url, cookies = cookies)
+            } ?: response
+        }
+
         fun getType(t: String?): TvType {
             return when (t?.lowercase()) {
                 "movie" -> TvType.AnimeMovie
@@ -27,6 +46,7 @@ class AnimeWorldProvider : MainAPI() {
                 else -> TvType.Anime
             }
         }
+
         fun getStatus(t: String?): ShowStatus? {
             return when (t?.lowercase()) {
                 "finito" -> ShowStatus.Completed
@@ -43,36 +63,33 @@ class AnimeWorldProvider : MainAPI() {
             return h.joinToString(".")
         }
 
-        val title = this.select("a.name").text().removeSuffix(" (ITA)")
-        val otherTitle = this.select("a.name").attr("data-jtitle").removeSuffix(" (ITA)")
-        val url = fixUrl(this.select("a.name").attr("href").parseHref())
+        val anchor = this.select("a.name").firstOrNull() ?: throw ErrorLoadingException("Error")
+        val title = anchor.text().removeSuffix(" (ITA)")
+        val otherTitle = anchor.attr("data-jtitle").removeSuffix(" (ITA)")
+
+        val url = fixUrl(anchor.attr("href").parseHref())
         val poster = this.select("a.poster img").attr("src")
 
         val statusElement = this.select("div.status") // .first()
         val dub = statusElement.select(".dub").isNotEmpty()
-        val dubStatus = if (dub) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(DubStatus.Subbed)
-        val episode = statusElement.select(".ep").text().split(' ').last().toIntOrNull()
+
+        val episode = if (showEpisode) statusElement.select(".ep").text().split(' ').last()
+            .toIntOrNull() else null
         val type = when {
             statusElement.select(".movie").isNotEmpty() -> TvType.AnimeMovie
             statusElement.select(".ova").isNotEmpty() -> TvType.OVA
             else -> TvType.Anime
         }
 
-        return AnimeSearchResponse(
-            title,
-            url,
-            name,
-            type,
-            poster,
-            dubStatus = dubStatus,
-            otherName = if (otherTitle != title) otherTitle else null,
-            dubEpisodes = if (showEpisode && type != TvType.AnimeMovie && dub) episode else null,
-            subEpisodes = if (showEpisode && type != TvType.AnimeMovie && !dub) episode else null
-        )
+        return newAnimeSearchResponse(title, url, type) {
+            addDubStatus(dub, episode)
+            this.otherName = otherTitle
+            this.posterUrl = poster
+        }
     }
 
     override suspend fun getMainPage(): HomePageResponse {
-        val document = app.get(mainUrl).document
+        val document = request(mainUrl).document
         val list = ArrayList<HomePageList>()
 
         val widget = document.select(".widget.hotnew")
@@ -96,32 +113,25 @@ class AnimeWorldProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/search?keyword=$query").document
+        val document = request("$mainUrl/search?keyword=$query").document
         return document.select(".film-list > .item").map {
             it.toSearchResult(showEpisode = false)
         }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        fun String.parseDuration(): Int? {
-            val arr = this.split(" e ")
-            return if (arr.size == 1)
-                arr[0].split(' ')[0].toIntOrNull()
-            else
-                arr[1].split(' ')[0].toIntOrNull()?.let {
-                    arr[0].removeSuffix("h").toIntOrNull()?.times(60)!!.plus(it) }
-        }
-        val document = app.get(url).document
+        val document = request(url).document
 
         val widget = document.select("div.widget.info")
         val title = widget.select(".info .title").text().removeSuffix(" (ITA)")
         val otherTitle = widget.select(".info .title").attr("data-jtitle").removeSuffix(" (ITA)")
-        val description = widget.select(".desc .long").first()?.text() ?: widget.select(".desc").text()
+        val description =
+            widget.select(".desc .long").first()?.text() ?: widget.select(".desc").text()
         val poster = document.select(".thumb img").attr("src")
 
         val type: TvType = getType(widget.select("dd").first()?.text())
         val genres = widget.select(".meta").select("a[href*=\"/genre/\"]").map { it.text() }
-        val rating: Int? = widget.select("#average-vote").text().toFloatOrNull()?.times(1000)?.toInt()
+        val rating = widget.select("#average-vote").text()
 
         val trailerUrl = document.select(".trailer[data-url]").attr("data-url")
         val malId = document.select("#mal-button").attr("href")
@@ -132,7 +142,7 @@ class AnimeWorldProvider : MainAPI() {
         var dub = false
         var year: Int? = null
         var status: ShowStatus? = null
-        var duration: Int? = null
+        var duration: String? = null
 
         for (meta in document.select(".meta dt, .meta dd")) {
             val text = meta.text()
@@ -143,18 +153,19 @@ class AnimeWorldProvider : MainAPI() {
             else if (status == null && text.contains("Stato"))
                 status = getStatus(meta.nextElementSibling()?.text())
             else if (status == null && text.contains("Durata"))
-                duration = meta.nextElementSibling()?.text()?.parseDuration()
+                duration = meta.nextElementSibling()?.text()
         }
 
         val servers = document.select(".widget.servers")
         val episodes = servers.select(".server[data-name=\"9\"] .episode").map {
             val id = it.select("a").attr("data-id")
             val number = it.select("a").attr("data-episode-num").toIntOrNull()
-            AnimeEpisode(
-                fixUrl("$mainUrl/api/episode/info?id=$id"),
+            Episode(
+                "$mainUrl/api/episode/info?id=$id",
                 episode = number
             )
         }
+        val comingSoon = episodes.isEmpty()
 
         val recommendations = document.select(".film-list.interesting .item").map {
             it.toSearchResult(showEpisode = false)
@@ -163,20 +174,27 @@ class AnimeWorldProvider : MainAPI() {
         return newAnimeLoadResponse(title, url, type) {
             engName = title
             japName = otherTitle
-            posterUrl = poster
+            addPoster(poster)
             this.year = year
             addEpisodes(if (dub) DubStatus.Dubbed else DubStatus.Subbed, episodes)
             showStatus = status
             plot = description
             tags = genres
-            this.malId = malId
-            this.anilistId = anlId
-            this.rating = rating
-            this.duration = duration
-            this.trailerUrl = trailerUrl
+            addMalId(malId)
+            addAniListId(anlId)
+            addRating(rating)
+            addDuration(duration)
+            addTrailer(trailerUrl)
             this.recommendations = recommendations
+            this.comingSoon = comingSoon
         }
     }
+
+    data class Json (
+        @JsonProperty("grabber") val grabber: String,
+        @JsonProperty("name") val name: String,
+        @JsonProperty("target") val target: String,
+    )
 
     override suspend fun loadLinks(
         data: String,
@@ -184,9 +202,13 @@ class AnimeWorldProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val url = JSONObject(
-            app.get(data).text
-        ).getString("grabber")
+        val url = tryParseJson<Json>(
+            request(data).text
+        )?.grabber
+
+        if (url.isNullOrEmpty())
+            return false
+
         callback.invoke(
             ExtractorLink(
                 name,

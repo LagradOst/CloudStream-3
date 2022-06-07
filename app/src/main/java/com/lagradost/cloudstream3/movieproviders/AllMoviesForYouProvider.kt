@@ -1,7 +1,7 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.setDuration
+import com.lagradost.cloudstream3.LoadResponse.Companion.addDuration
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -37,14 +37,14 @@ class AllMoviesForYouProvider : MainAPI() {
         for ((name, element) in urls) {
             try {
                 val home = soup.select(element).map {
-                    val title = it.selectFirst("h2.title").text()
-                    val link = it.selectFirst("a").attr("href")
+                    val title = it.selectFirst("h2.title")!!.text()
+                    val link = it.selectFirst("a")!!.attr("href")
                     TvSeriesSearchResponse(
                         title,
                         link,
                         this.name,
                         TvType.Movie,
-                        fixUrl(it.selectFirst("figure img").attr("data-src")),
+                        fixUrl(it.selectFirst("figure img")!!.attr("data-src")),
                         null,
                         null,
                     )
@@ -66,8 +66,8 @@ class AllMoviesForYouProvider : MainAPI() {
         val items = document.select("ul.MovieList > li > article > a")
         return items.map { item ->
             val href = item.attr("href")
-            val title = item.selectFirst("> h2.Title").text()
-            val img = fixUrl(item.selectFirst("> div.Image > figure > img").attr("data-src"))
+            val title = item.selectFirst("> h2.Title")!!.text()
+            val img = fixUrl(item.selectFirst("> div.Image > figure > img")!!.attr("data-src"))
             val type = getType(href)
             if (type == TvType.Movie) {
                 MovieSearchResponse(title, href, this.name, type, img, null)
@@ -108,13 +108,12 @@ class AllMoviesForYouProvider : MainAPI() {
 
         val document = app.get(url).document
 
-        val title = document.selectFirst("h1.Title").text()
-        val descipt = document.selectFirst("div.Description > p").text()
+        val title = document.selectFirst("h1.Title")!!.text()
+        val descipt = document.selectFirst("div.Description > p")!!.text()
         val rating =
-            document.selectFirst("div.Vote > div.post-ratings > span")?.text()?.toFloatOrNull()
-                ?.times(1000)?.toInt()
+            document.selectFirst("div.Vote > div.post-ratings > span")?.text()?.toRatingInt()
         val year = document.selectFirst("span.Date")?.text()
-        val duration = document.selectFirst("span.Time").text()
+        val duration = document.selectFirst("span.Time")!!.text()
         val backgroundPoster =
             fixUrlNull(document.selectFirst("div.Image > figure > img")?.attr("data-src"))
 
@@ -130,7 +129,7 @@ class AllMoviesForYouProvider : MainAPI() {
             }
             if (list.isEmpty()) throw ErrorLoadingException("No Seasons Found")
 
-            val episodeList = ArrayList<TvSeriesEpisode>()
+            val episodeList = ArrayList<Episode>()
 
             for (season in list) {
                 val seasonResponse = app.get(season.second).text
@@ -141,18 +140,18 @@ class AllMoviesForYouProvider : MainAPI() {
                         val epNum = episode.selectFirst("> td > span.Num")?.text()?.toIntOrNull()
                         val poster = episode.selectFirst("> td.MvTbImg > a > img")?.attr("data-src")
                         val aName = episode.selectFirst("> td.MvTbTtl > a")
-                        val name = aName.text()
+                        val name = aName!!.text()
                         val href = aName.attr("href")
                         val date = episode.selectFirst("> td.MvTbTtl > span")?.text()
+
                         episodeList.add(
-                            TvSeriesEpisode(
-                                name,
-                                season.first,
-                                epNum,
-                                fixUrl(href),
-                                fixUrlNull(poster),
-                                date
-                            )
+                            newEpisode(href) {
+                                this.name = name
+                                this.season = season.first
+                                this.episode = epNum
+                                this.posterUrl = fixUrlNull(poster)
+                                addDate(date)
+                            }
                         )
                     }
                 }
@@ -167,7 +166,6 @@ class AllMoviesForYouProvider : MainAPI() {
                 year?.toIntOrNull(),
                 descipt,
                 null,
-                null,
                 rating
             )
         } else {
@@ -181,7 +179,7 @@ class AllMoviesForYouProvider : MainAPI() {
                 this.year = year?.toIntOrNull()
                 this.plot = descipt
                 this.rating = rating
-                setDuration(duration)
+                addDuration(duration)
             }
         }
     }
@@ -198,7 +196,7 @@ class AllMoviesForYouProvider : MainAPI() {
             if (id.contains("trembed")) {
                 val soup = app.get(id).document
                 soup.select("body iframe").map {
-                    val link = fixUrl(it.attr("src").replace("streamhub.to/d/","streamhub.to/e/"))
+                    val link = fixUrl(it.attr("src").replace("streamhub.to/d/", "streamhub.to/e/"))
                     loadExtractor(link, data, callback)
                 }
             } else loadExtractor(id, data, callback)

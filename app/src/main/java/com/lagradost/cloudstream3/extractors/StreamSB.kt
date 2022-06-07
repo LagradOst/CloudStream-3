@@ -1,12 +1,15 @@
 package com.lagradost.cloudstream3.extractors
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.USER_AGENT
-import com.lagradost.cloudstream3.apmap
-import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.M3u8Helper
 
+class SBfull : StreamSB() {
+    override var mainUrl = "https://sbfull.com"
+}
 
 class StreamSB1 : StreamSB() {
     override var mainUrl = "https://sbplay1.com"
@@ -68,12 +71,16 @@ open class StreamSB : ExtractorApi() {
         return String(hexChars)
     }
 
+    data class Subs (
+        @JsonProperty("file") val file: String,
+        @JsonProperty("label") val label: String,
+    )
 
     data class StreamData (
         @JsonProperty("file") val file: String,
         @JsonProperty("cdn_img") val cdnImg: String,
         @JsonProperty("hash") val hash: String,
-        @JsonProperty("subs") val subs: List<String>,
+        @JsonProperty("subs") val subs: List<Subs>?,
         @JsonProperty("length") val length: String,
         @JsonProperty("id") val id: String,
         @JsonProperty("title") val title: String,
@@ -92,7 +99,7 @@ open class StreamSB : ExtractorApi() {
         }.first()
         val bytes = id.toByteArray()
         val bytesToHex = bytesToHex(bytes)
-        val master = "$mainUrl/sources41/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
+        val master = "$mainUrl/sources43/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
         val headers = mapOf(
             "watchsb" to "streamsb",
             )
@@ -103,24 +110,13 @@ open class StreamSB : ExtractorApi() {
         val mapped = urltext.let { parseJson<Main>(it) }
         val testurl = app.get(mapped.streamData.file, headers = headers).text
         // val urlmain = mapped.streamData.file.substringBefore("/hls/")
-        if (urltext.contains("m3u8") && testurl.contains("EXTM3U")) return  M3u8Helper().m3u8Generation(
-            M3u8Helper.M3u8Stream(
+        if (urltext.contains("m3u8") && testurl.contains("EXTM3U"))
+            return M3u8Helper.generateM3u8(
+                name,
                 mapped.streamData.file,
+                url,
                 headers = headers
-            ), true
-        )
-            .map { stream ->
-               // val cleanstreamurl = stream.streamUrl.replace(Regex("https://.*/hls/"), "$urlmain/hls/")
-                val qualityString = if ((stream.quality ?: 0) == 0) "" else "${stream.quality}p"
-                ExtractorLink(
-                    name,
-                    "$name $qualityString",
-                    stream.streamUrl,
-                    url,
-                    getQualityFromName(stream.quality.toString()),
-                    true
-                )
-            }
+            )
         return null
     }
 }

@@ -1,6 +1,6 @@
 <resources>
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.MaterialComponents.NoActionBar">
+    <!-- Base application theme. Material3 -->
+    <style name="AppTheme" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowBackground">@drawable/splash_background</item>
         <item name="android:navigationBarColor">?attr/primaryBlackBackground</item>
         <item name="android:colorEdgeEffect">?attr/textColor</item>
@@ -61,6 +61,8 @@
         <item name="boxItemBackground">@color/boxItemBackground</item>
         <item name="iconColor">@color/iconColor</item>
         <item name="white">#FFF</item>
+
+        <item name="preferenceTheme">@style/CustomPreferenceThemeOverlay</item>
     </style>
 
     <style name="ListViewStyle" parent="Widget.AppCompat.ListView">
@@ -175,6 +177,76 @@
         <item name="android:colorAccent">@color/colorPrimaryPink</item>
     </style>
 
+    <style name="OverlayPrimaryColorCarnationPink">
+        <item name="colorPrimary">@color/colorPrimaryCarnationPink</item>
+        <item name="android:colorPrimary">@color/colorPrimaryCarnationPink</item>
+        <item name="colorPrimaryDark">#83366f</item>
+        <item name="colorAccent">#BD5DA5</item>
+        <item name="colorOnPrimary">#BD5DA5</item>
+        <!--   Needed for leanback fuckery   -->
+        <item name="android:colorAccent">@color/colorPrimaryCarnationPink</item>
+    </style>
+
+    <style name="OverlayPrimaryColorMaroon">
+        <item name="colorPrimary">@color/colorPrimaryMaroon</item>
+        <item name="android:colorPrimary">@color/colorPrimaryMaroon</item>
+        <item name="colorPrimaryDark">#370C0C</item>
+        <item name="colorAccent">#451010</item>
+        <item name="colorOnPrimary">#451010</item>
+        <!--   Needed for leanback fuckery   -->
+        <item name="android:colorAccent">@color/colorPrimaryMaroon</item>
+    </style>
+
+    <style name="OverlayPrimaryColorDarkGreen">
+        <item name="colorPrimary">@color/colorPrimaryDarkGreen</item>
+        <item name="android:colorPrimary">@color/colorPrimaryDarkGreen</item>
+        <item name="colorPrimaryDark">#003d00</item>
+        <item name="colorAccent">#004500</item>
+        <item name="colorOnPrimary">#004500</item>
+        <!--   Needed for leanback fuckery   -->
+        <item name="android:colorAccent">@color/colorPrimaryDarkGreen</item>
+    </style>
+
+    <style name="OverlayPrimaryColorNavyBlue">
+        <item name="colorPrimary">@color/colorPrimaryNavyBlue</item>
+        <item name="android:colorPrimary">@color/colorPrimaryNavyBlue</item>
+        <item name="colorPrimaryDark">#000073</item>
+        <item name="colorAccent">#000080</item>
+        <item name="colorOnPrimary">#000080</item>
+        <!--   Needed for leanback fuckery   -->
+        <item name="android:colorAccent">@color/colorPrimaryNavyBlue</item>
+    </style>
+
+    <style name="OverlayPrimaryColorGrey">
+        <item name="colorPrimary">@color/colorPrimaryGrey</item>
+        <item name="android:colorPrimary">@color/colorPrimaryGrey</item>
+        <item name="colorPrimaryDark">#484848</item>
+        <item name="colorAccent">#515151</item>
+        <item name="colorOnPrimary">#515151</item>
+        <!--   Needed for leanback fuckery   -->
+        <item name="android:colorAccent">@color/colorPrimaryGrey</item>
+    </style>
+
+    <style name="OverlayPrimaryColorWhite">
+        <item name="colorPrimary">@color/colorPrimaryWhite</item>
+        <item name="android:colorPrimary">@color/colorPrimaryWhite</item>
+        <item name="colorPrimaryDark">#CCCCCC</item>
+        <item name="colorAccent">#FFFFFF</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <!--   Needed for leanback fuckery   -->
+        <item name="android:colorAccent">@color/colorPrimaryWhite</item>
+    </style>
+
+    <style name="OverlayPrimaryColorBrown">
+        <item name="colorPrimary">@color/colorPrimaryBrown</item>
+        <item name="android:colorPrimary">@color/colorPrimaryBrown</item>
+        <item name="colorPrimaryDark">#582700</item>
+        <item name="colorAccent">#622C00</item>
+        <item name="colorOnPrimary">#622C00</item>
+        <!--   Needed for leanback fuckery   -->
+        <item name="android:colorAccent">@color/colorPrimaryBrown</item>
+    </style>
+
     <style name="customRatingBar" parent="@style/Widget.AppCompat.RatingBar">
 
         <item name="android:progressDrawable">@drawable/abc_ratingbar_indicator_material</item>
@@ -186,8 +258,7 @@
         <item name="android:windowBackground">?attr/primaryBlackBackground</item>
     </style>
 
-    <style name="AppSearchViewStyle"
-           parent="Theme.MaterialComponents.NoActionBar">
+    <style name="AppSearchViewStyle" parent="Theme.MaterialComponents.NoActionBar">
         <item name="android:searchIcon">@drawable/search_icon</item>
         <item name="android:queryHint">@string/search_hint</item>
         <item name="android:background">@color/transparent</item>
@@ -212,8 +283,7 @@
         <item name="behavior_peekHeight">512dp</item>
     </style>
 
-    <style name="PreferenceTheme" parent="@style/AppTheme">
-    </style>
+    <style name="PreferenceTheme" parent="@style/AppTheme"></style>
 
     <style name="Theme.AlertDialog" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
         <item name="android:windowMinWidthMajor">@android:dimen/dialog_min_width_major</item>
@@ -229,6 +299,7 @@
     <style name="AppButtonStyle" parent="android:Widget.Holo.Button">
         <item name="android:fontFamily">@font/google_sans</item>
     </style>
+
     <style name="AppEditStyle" parent="android:Widget.EditText">
         <item name="android:fontFamily">@font/google_sans</item>
     </style>
@@ -242,8 +313,8 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:minHeight">24dp</item>
         <item name="android:minWidth">0dp</item>
-     <!--   <item name="android:paddingStart">5dp</item>
-        <item name="android:paddingEnd">5dp</item>-->
+        <!--   <item name="android:paddingStart">5dp</item>
+           <item name="android:paddingEnd">5dp</item>-->
     </style>
 
     <style name="AppMaterialButtonStyle" parent="Widget.MaterialComponents.Button">
@@ -262,6 +333,7 @@
         <item name="tabMinWidth">75dp</item>
         <item name="tabMode">scrollable</item>-->
     </style>
+
     <style name="AlertDialogCustom" parent="Theme.AppCompat.Dialog.Alert">
         <item name="android:windowFullscreen">true</item>
         <item name="android:textColor">?attr/textColor</item>
@@ -278,13 +350,16 @@
         <item name="android:windowMinWidthMinor">@android:dimen/dialog_min_width_minor</item>
         <item name="android:windowBackground">@drawable/dialog__window_background</item>
     </style>
+
     <style name="AlertDialogCustomTransparent" parent="Theme.AppCompat.Dialog.Alert">
         <item name="android:windowBackground">@color/transparent</item>
     </style>
+
     <style name="AlertDialogCustomBlack" parent="Theme.AppCompat.Dialog.Alert">
         <item name="android:windowBackground">?attr/primaryBlackBackground</item>
-        <item name="android:layout_width">fill_parent</item>
-        <item name="android:layout_height">fill_parent</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+
         <!-- No backgrounds, titles or window float -->
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowIsFloating">false</item>
@@ -293,6 +368,10 @@
 
     <style name="PopupMenu" parent="@android:style/Widget.PopupMenu">
         <item name="android:backgroundTint">?attr/primaryBlackBackground</item>
+    </style>
+
+    <style name="CustomPreferenceThemeOverlay" parent="@style/PreferenceThemeOverlay">
+        <item name="android:layout">@layout/settings_title_top</item>
     </style>
 
     <style name="SettingsItem">
@@ -317,6 +396,23 @@
         <item name="android:textSize">18sp</item>
         <item name="android:layout_marginEnd">50dp</item>
         <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="SearchBox">
+        <item name="android:textStyle">bold</item>
+        <item name="android:minWidth">50dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginBottom">5dp</item>
+        <item name="android:paddingLeft">10dp</item>
+        <item name="android:paddingRight">10dp</item>
+        <item name="android:paddingTop">5dp</item>
+        <item name="android:paddingBottom">5dp</item>
+        <item name="android:textSize">12sp</item>
+        <item name="textColor">@color/textColor</item>
+        <item name="android:textColor">@color/textColor</item>
+        <item name="android:layout_margin">2dp</item>
     </style>
 
     <style name="NiceButton">
@@ -345,6 +441,29 @@
         <item name="iconTint">?attr/iconGrayBackground</item>
         <item name="android:textColor">?attr/iconGrayBackground</item>
         <item name="rippleColor">?attr/primaryBlackBackground</item>
+    </style>
+
+    <style name="BlackLabel" parent="@style/Widget.MaterialComponents.Tooltip">
+        <item name="backgroundTint">?attr/iconGrayBackground</item>
+        <item name="android:textColor">?attr/textColor</item>
+    </style>
+
+    <style name="CheckLabel" parent="@style/AppTextViewStyle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">?android:attr/listPreferredItemHeightSmall</item>
+        <item name="android:textColor">@color/text_selection_color</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:checkMark">?android:attr/listChoiceIndicatorSingle</item>
+        <item name="android:ellipsize">marquee</item>
+        <item name="android:foreground">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:drawablePadding">20dp</item>
+        <item name="drawableTint">@color/check_selection_color</item>
+        <item name="drawableStartCompat">@drawable/ic_baseline_check_24</item>
     </style>
 
     <style name="BlackButton" parent="NiceButton">
@@ -451,6 +570,10 @@
         <item name="strokeColor">@color/toggle_button_outline</item>
     </style>
 
+    <style name="Tag" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">@color/tag_stroke_color</item>
+    </style>
+
     <style name="VideoButtonTV">
         <item name="android:stateListAnimator">@null</item>
         <item name="strokeColor">@color/transparent</item>
@@ -495,26 +618,34 @@
         <item name="castPlayButtonDrawable">@drawable/ic_baseline_play_arrow_24</item>
         <item name="castPauseButtonDrawable">@drawable/netflix_pause</item>
         <item name="castStopButtonDrawable">@drawable/cast_ic_expanded_controller_stop</item>
-        <item name="castSkipPreviousButtonDrawable">@drawable/cast_ic_expanded_controller_skip_previous</item>
-        <item name="castSkipNextButtonDrawable">@drawable/cast_ic_expanded_controller_skip_next</item>
+        <item name="castSkipPreviousButtonDrawable">
+            @drawable/cast_ic_expanded_controller_skip_previous
+        </item>
+        <item name="castSkipNextButtonDrawable">@drawable/cast_ic_expanded_controller_skip_next
+        </item>
         <item name="castRewind30ButtonDrawable">@drawable/go_back_30</item>
         <item name="castForward30ButtonDrawable">@drawable/go_forward_30</item>
     </style>
+
     <style name="CustomCastMiniController" parent="CastMiniController">
         <item name="castMiniControllerLoadingIndicatorColor">?attr/colorPrimary</item>
         <item name="castShowImageThumbnail">true</item>
 
         <item name="castTitleTextAppearance">@style/TextAppearance.AppCompat.Subhead</item>
         <item name="castSubtitleTextAppearance">@style/TextAppearance.AppCompat.Caption</item>
-        <item name="castBackground">@color/transparent</item> <!--CHECK bitDarkerGrayBackground darkBackground-->
+        <item name="castBackground">@color/transparent
+        </item> <!--CHECK bitDarkerGrayBackground darkBackground-->
         <item name="castProgressBarColor">?attr/colorPrimary</item>
         <item name="castStopButtonDrawable">@drawable/cast_ic_mini_controller_stop</item>'
         <item name="castLargeStopButtonDrawable">@drawable/cast_ic_mini_controller_stop_large</item>
-        <item name="castSkipPreviousButtonDrawable">@drawable/cast_ic_mini_controller_skip_prev</item>
+        <item name="castSkipPreviousButtonDrawable">@drawable/cast_ic_mini_controller_skip_prev
+        </item>
         <item name="castSkipNextButtonDrawable">@drawable/cast_ic_mini_controller_skip_next</item>
         <item name="castRewind30ButtonDrawable">@drawable/go_back_30</item>
         <item name="castForward30ButtonDrawable">@drawable/go_forward_30</item>
         <item name="castMuteToggleButtonDrawable">@drawable/cast_ic_mini_controller_mute</item>
-        <item name="castClosedCaptionsButtonDrawable">@drawable/cast_ic_mini_controller_closed_caption</item>
+        <item name="castClosedCaptionsButtonDrawable">
+            @drawable/cast_ic_mini_controller_closed_caption
+        </item>
     </style>
 </resources>

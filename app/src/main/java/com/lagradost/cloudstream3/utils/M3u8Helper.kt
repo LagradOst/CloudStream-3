@@ -10,13 +10,46 @@ import kotlin.math.pow
 
 
 class M3u8Helper {
+    companion object {
+        private val generator = M3u8Helper()
+        fun generateM3u8(
+            source: String,
+            streamUrl: String,
+            referer: String,
+            quality: Int? = null,
+            headers: Map<String, String> = mapOf(),
+            name: String = source
+        ): List<ExtractorLink> {
+            return generator.m3u8Generation(
+                M3u8Stream(
+                    streamUrl = streamUrl,
+                    quality = quality,
+                    headers = headers,
+                ), null
+            )
+                .map { stream ->
+                    ExtractorLink(
+                        source,
+                        name = name,
+                        stream.streamUrl,
+                        referer,
+                        stream.quality ?: Qualities.Unknown.value,
+                        true,
+                        stream.headers,
+                    )
+                }
+        }
+    }
+
     private val ENCRYPTION_DETECTION_REGEX = Regex("#EXT-X-KEY:METHOD=([^,]+),")
-    private val ENCRYPTION_URL_IV_REGEX = Regex("#EXT-X-KEY:METHOD=([^,]+),URI=\"([^\"]+)\"(?:,IV=(.*))?")
+    private val ENCRYPTION_URL_IV_REGEX =
+        Regex("#EXT-X-KEY:METHOD=([^,]+),URI=\"([^\"]+)\"(?:,IV=(.*))?")
     private val QUALITY_REGEX =
         Regex("""#EXT-X-STREAM-INF:(?:(?:.*?(?:RESOLUTION=\d+x(\d+)).*?\s+(.*))|(?:.*?\s+(.*)))""")
-    private val TS_EXTENSION_REGEX = Regex("""(.*\.ts.*|.*\.jpg.*)""") //.jpg here 'case vizcloud uses .jpg instead of .ts
+    private val TS_EXTENSION_REGEX =
+        Regex("""(.*\.ts.*|.*\.jpg.*)""") //.jpg here 'case vizcloud uses .jpg instead of .ts
 
-    fun absoluteExtensionDetermination(url: String): String? {
+    private fun absoluteExtensionDetermination(url: String): String? {
         val split = url.split("/")
         val gg: String = split[split.size - 1].split("?")[0]
         return if (gg.contains(".")) {
@@ -40,7 +73,11 @@ class M3u8Helper {
         }
     }.iterator()
 
-    private fun getDecrypter(secretKey: ByteArray, data: ByteArray, iv: ByteArray = "".toByteArray()): ByteArray {
+    private fun getDecrypter(
+        secretKey: ByteArray,
+        data: ByteArray,
+        iv: ByteArray = "".toByteArray()
+    ): ByteArray {
         val ivKey = if (iv.isEmpty()) defaultIvGen.next() else iv
         val c = Cipher.getInstance("AES/CBC/PKCS5Padding")
         val skSpec = SecretKeySpec(secretKey, "AES")
@@ -79,14 +116,17 @@ class M3u8Helper {
         return !url.contains("https://") && !url.contains("http://")
     }
 
-    fun m3u8Generation(m3u8: M3u8Stream, returnThis: Boolean): List<M3u8Stream> {
+    fun m3u8Generation(m3u8: M3u8Stream, returnThis: Boolean?): List<M3u8Stream> {
         val generate = sequence {
             val m3u8Parent = getParentLink(m3u8.streamUrl)
             val response = runBlocking {
                 app.get(m3u8.streamUrl, headers = m3u8.headers).text
             }
 
+            var hasAnyContent = false
             for (match in QUALITY_REGEX.findAll(response)) {
+                hasAnyContent = true
+
                 var (quality, m3u8Link, m3u8Link2) = match.destructured
                 if (m3u8Link.isEmpty()) m3u8Link = m3u8Link2
                 if (absoluteExtensionDetermination(m3u8Link) == "m3u8") {
@@ -114,11 +154,11 @@ class M3u8Helper {
                     )
                 )
             }
-            if (returnThis) {
+            if (returnThis ?: !hasAnyContent) {
                 yield(
                     M3u8Stream(
                         m3u8.streamUrl,
-                        0,
+                        Qualities.Unknown.value,
                         m3u8.headers
                     )
                 )
@@ -135,7 +175,14 @@ class M3u8Helper {
     )
 
     fun hlsYield(qualities: List<M3u8Stream>, startIndex: Int = 0): Iterator<HlsDownloadData> {
-        if (qualities.isEmpty()) return listOf(HlsDownloadData(byteArrayOf(), 1, 1, true)).iterator()
+        if (qualities.isEmpty()) return listOf(
+            HlsDownloadData(
+                byteArrayOf(),
+                1,
+                1,
+                true
+            )
+        ).iterator()
 
         var selected = selectBest(qualities)
         if (selected == null) {
@@ -148,7 +195,8 @@ class M3u8Helper {
 
         val secondSelection = selectBest(streams.ifEmpty { listOf(selected) })
         if (secondSelection != null) {
-            val m3u8Response = runBlocking {app.get(secondSelection.streamUrl, headers = headers).text}
+            val m3u8Response =
+                runBlocking { app.get(secondSelection.streamUrl, headers = headers).text }
 
             var encryptionUri: String?
             var encryptionIv = byteArrayOf()
@@ -166,7 +214,8 @@ class M3u8Helper {
                 }
 
                 encryptionIv = match.component3().toByteArray()
-                val encryptionKeyResponse = runBlocking { app.get(encryptionUri, headers = headers) }
+                val encryptionKeyResponse =
+                    runBlocking { app.get(encryptionUri, headers = headers) }
                 encryptionData = encryptionKeyResponse.body?.bytes() ?: byteArrayOf()
             }
 

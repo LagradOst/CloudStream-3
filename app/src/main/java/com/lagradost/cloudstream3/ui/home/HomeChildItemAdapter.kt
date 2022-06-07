@@ -10,10 +10,12 @@ import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.ui.search.SearchClickCallback
 import com.lagradost.cloudstream3.ui.search.SearchResponseDiffCallback
 import com.lagradost.cloudstream3.ui.search.SearchResultBuilder
+import com.lagradost.cloudstream3.utils.UIHelper.IsBottomLayout
+import kotlinx.android.synthetic.main.home_result_grid.view.*
 
 class HomeChildItemAdapter(
     val cardList: MutableList<SearchResponse>,
-    val layout: Int = R.layout.home_result_grid,
+    private val overrideLayout : Int? = null,
     private val nextFocusUp: Int? = null,
     private val nextFocusDown: Int? = null,
     private val clickCallback: (SearchClickCallback) -> Unit,
@@ -21,6 +23,8 @@ class HomeChildItemAdapter(
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val layout = overrideLayout ?: if(parent.context.IsBottomLayout()) R.layout.home_result_grid_expanded else R.layout.home_result_grid
+
         return CardViewHolder(
             LayoutInflater.from(parent.context).inflate(layout, parent, false),
             clickCallback,
@@ -59,7 +63,9 @@ class HomeChildItemAdapter(
 
     class CardViewHolder
     constructor(
-        itemView: View, private val clickCallback: (SearchClickCallback) -> Unit, private val itemCount: Int,
+        itemView: View,
+        private val clickCallback: (SearchClickCallback) -> Unit,
+        private val itemCount: Int,
         private val nextFocusUp: Int? = null,
         private val nextFocusDown: Int? = null,
     ) :
@@ -74,8 +80,20 @@ class HomeChildItemAdapter(
                 else -> null
             }
 
-            SearchResultBuilder.bind(clickCallback, card, position, itemView, nextFocusBehavior, nextFocusUp, nextFocusDown)
+            SearchResultBuilder.bind(
+                clickCallback,
+                card,
+                position,
+                itemView,
+                nextFocusBehavior,
+                nextFocusUp,
+                nextFocusDown
+            )
             itemView.tag = position
+
+            if (position == 0) { // to fix tv
+                itemView.background_card?.nextFocusLeftId = R.id.nav_rail_view
+            }
             //val ani = ScaleAnimation(0.9f, 1.0f, 0.9f, 1f)
             //ani.fillAfter = true
             //ani.duration = 200

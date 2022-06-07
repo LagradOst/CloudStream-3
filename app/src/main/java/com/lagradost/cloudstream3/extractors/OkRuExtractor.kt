@@ -24,6 +24,10 @@ data class Videos (
     @JsonProperty("disallowed") var disallowed : Boolean? = null
 )
 
+class OkRuHttps: OkRu(){
+    override var mainUrl = "https://ok.ru"
+}
+
 open class OkRu : ExtractorApi() {
     override var name = "Okru"
     override var mainUrl = "http://ok.ru"
@@ -50,7 +54,7 @@ open class OkRu : ExtractorApi() {
                 val extractedurl = it.url.replace("\\\\u0026", "&")
                 sources.add(ExtractorLink(
                     name,
-                    "$name $quality",
+                    name = this.name,
                     extractedurl,
                     url,
                     getQualityFromName(quality),

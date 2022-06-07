@@ -12,16 +12,15 @@ import android.content.res.Resources
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
-import android.view.Gravity
-import android.view.MenuItem
-import android.view.View
-import android.view.WindowManager
+import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
+import android.widget.ListAdapter
+import android.widget.ListView
 import androidx.annotation.AttrRes
 import androidx.annotation.ColorInt
+import androidx.annotation.DrawableRes
 import androidx.annotation.IdRes
-import androidx.annotation.RequiresApi
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.PopupMenu
@@ -71,11 +70,41 @@ object UIHelper {
         )
     }
 
+
+    /**
+     * Sets ListView height dynamically based on the height of the items.
+     *
+     * @param listView to be resized
+     * @return true if the listView is successfully resized, false otherwise
+     */
+    fun setListViewHeightBasedOnItems(listView: ListView?) {
+        val listAdapter: ListAdapter = listView?.adapter ?: return
+        val numberOfItems: Int = listAdapter.count
+
+        // Get total height of all items.
+        var totalItemsHeight = 0
+        for (itemPos in 0 until numberOfItems) {
+            val item: View = listAdapter.getView(itemPos, null, listView)
+            item.measure(0, 0)
+            totalItemsHeight += item.measuredHeight
+        }
+
+        // Get total height of all item dividers.
+        val totalDividersHeight: Int = listView.dividerHeight *
+                (numberOfItems - 1)
+
+        // Set list height.
+        val params: ViewGroup.LayoutParams = listView.layoutParams
+        params.height = totalItemsHeight + totalDividersHeight
+        listView.layoutParams = params
+        listView.requestLayout()
+    }
+
     fun Activity?.getSpanCount(): Int? {
-        val compactView = this?.getGridIsCompact() ?: return null
+        val compactView = false
         val spanCountLandscape = if (compactView) 2 else 6
         val spanCountPortrait = if (compactView) 1 else 3
-        val orientation = this.resources?.configuration?.orientation ?: return null
+        val orientation = this?.resources?.configuration?.orientation ?: return null
 
         return if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
             spanCountLandscape
@@ -120,14 +149,24 @@ object UIHelper {
         return color
     }
 
-    fun ImageView?.setImage(url: String?) : Boolean {
+    fun ImageView?.setImage(
+        url: String?,
+        headers: Map<String, String>? = null,
+        @DrawableRes
+        errorImageDrawable: Int? = null
+    ): Boolean {
         if (this == null || url.isNullOrBlank()) return false
         return try {
-            GlideApp.with(this.context)
-                .load(GlideUrl(url)).transition(
+            val builder = GlideApp.with(this.context)
+                .load(GlideUrl(url) { headers ?: emptyMap() }).transition(
                     DrawableTransitionOptions.withCrossFade()
                 )
-                .into(this)
+
+            if (errorImageDrawable != null)
+                builder.error(errorImageDrawable).into(this)
+            else
+                builder.into(this)
+
             true
         } catch (e: Exception) {
             logError(e)
@@ -135,11 +174,17 @@ object UIHelper {
         }
     }
 
-    fun ImageView?.setImageBlur(url: String?, radius: Int, sample: Int = 3) {
+    fun ImageView?.setImageBlur(
+        url: String?,
+        radius: Int,
+        sample: Int = 3,
+        headers: Map<String, String>? = null
+    ) {
         if (this == null || url.isNullOrBlank()) return
         try {
             GlideApp.with(this.context)
-                .load(GlideUrl(url)).apply(bitmapTransform(BlurTransformation(radius, sample)))
+                .load(GlideUrl(url) { headers ?: emptyMap() })
+                .apply(bitmapTransform(BlurTransformation(radius, sample)))
                 .transition(
                     DrawableTransitionOptions.withCrossFade()
                 )
@@ -257,7 +302,8 @@ object UIHelper {
         return result
     }
 
-    fun Context.fixPaddingStatusbar(v: View) {
+    fun Context?.fixPaddingStatusbar(v: View?) {
+        if (v == null || this == null) return
         v.setPadding(
             v.paddingLeft,
             v.paddingTop + getStatusBarHeight(),
@@ -281,21 +327,10 @@ object UIHelper {
         return result
     }
 
-    private fun Context.getGridFormat(): String {
+    fun Context?.IsBottomLayout(): Boolean {
+        if (this == null) return true
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
-        return settingsManager.getString(getString(R.string.grid_format_key), "grid")!!
-    }
-
-    fun Context.getGridFormatId(): Int {
-        return when (getGridFormat()) {
-            "list" -> R.layout.search_result_compact
-            "compact_list" -> R.layout.search_result_super_compact
-            else -> R.layout.search_result_grid
-        }
-    }
-
-    fun Context.getGridIsCompact(): Boolean {
-        return getGridFormat() != "grid"
+        return settingsManager.getBoolean(getString(R.string.bottom_title_key), true)
     }
 
     fun Activity.changeStatusBarState(hide: Boolean): Int {
@@ -316,7 +351,7 @@ object UIHelper {
     fun Activity.showSystemUI() {
         window.decorView.systemUiVisibility =
 
-                (View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
+            (View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
 
         changeStatusBarState(isEmulatorSettings())
 
@@ -336,18 +371,23 @@ object UIHelper {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     fun Context.hasPIPPermission(): Boolean {
         val appOps =
             getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        return appOps.checkOpNoThrow(
-            AppOpsManager.OPSTR_PICTURE_IN_PICTURE,
-            android.os.Process.myUid(),
-            packageName
-        ) == AppOpsManager.MODE_ALLOWED
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_PICTURE_IN_PICTURE,
+                android.os.Process.myUid(),
+                packageName
+            ) == AppOpsManager.MODE_ALLOWED
+        } else {
+            return true
+        }
     }
 
-    fun hideKeyboard(view: View) {
+    fun hideKeyboard(view: View?) {
+        if (view == null) return
+
         val inputMethodManager =
             view.context.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager?
         inputMethodManager?.hideSoftInputFromWindow(view.windowToken, 0)

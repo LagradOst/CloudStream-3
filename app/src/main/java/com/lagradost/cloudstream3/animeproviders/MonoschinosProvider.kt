@@ -5,7 +5,6 @@ import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import java.util.*
-import kotlin.collections.ArrayList
 
 
 class MonoschinosProvider : MainAPI() {
@@ -14,6 +13,12 @@ class MonoschinosProvider : MainAPI() {
             return if (t.contains("OVA") || t.contains("Especial")) TvType.OVA
             else if (t.contains("Pelicula")) TvType.AnimeMovie
             else TvType.Anime
+        }
+
+        fun getDubStatus(title: String): DubStatus {
+            return if (title.contains("Latino") || title.contains("Castellano"))
+                DubStatus.Dubbed
+            else DubStatus.Subbed
         }
     }
 
@@ -45,44 +50,28 @@ class MonoschinosProvider : MainAPI() {
             HomePageList(
                 "Capítulos actualizados",
                 app.get(mainUrl, timeout = 120).document.select(".col-6").map {
-                    val title = it.selectFirst("p.animetitles").text()
-                    val poster = it.selectFirst(".animeimghv").attr("data-src")
+                    val title = it.selectFirst("p.animetitles")!!.text()
+                    val poster = it.selectFirst(".animeimghv")!!.attr("data-src")
                     val epRegex = Regex("episodio-(\\d+)")
-                    val url = it.selectFirst("a").attr("href").replace("ver/", "anime/")
+                    val url = it.selectFirst("a")?.attr("href")!!.replace("ver/", "anime/")
                         .replace(epRegex, "sub-espanol")
-                    val epNum = it.selectFirst(".positioning h5").text().toIntOrNull()
-                    AnimeSearchResponse(
-                        title,
-                        url,
-                        this.name,
-                        TvType.Anime,
-                        poster,
-                        null,
-                        if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
-                            DubStatus.Dubbed
-                        ) else EnumSet.of(DubStatus.Subbed),
-                        subEpisodes = epNum,
-                        dubEpisodes = epNum,
-                    )
+                    val epNum = it.selectFirst(".positioning h5")?.text()?.toIntOrNull()
+                    newAnimeSearchResponse(title, url) {
+                        this.posterUrl = fixUrl(poster)
+                        addDubStatus(getDubStatus(title), epNum)
+                    }
                 })
         )
 
         for (i in urls) {
             try {
                 val home = app.get(i.first, timeout = 120).document.select(".col-6").map {
-                    val title = it.selectFirst(".seristitles").text()
-                    val poster = it.selectFirst("img.animemainimg").attr("src")
-                    AnimeSearchResponse(
-                        title,
-                        fixUrl(it.selectFirst("a").attr("href")),
-                        this.name,
-                        TvType.Anime,
-                        fixUrl(poster),
-                        null,
-                        if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(
-                            DubStatus.Dubbed
-                        ) else EnumSet.of(DubStatus.Subbed),
-                    )
+                    val title = it.selectFirst(".seristitles")!!.text()
+                    val poster = it.selectFirst("img.animemainimg")!!.attr("src")
+                    newAnimeSearchResponse(title, fixUrl(it.selectFirst("a")!!.attr("href"))) {
+                        this.posterUrl = fixUrl(poster)
+                        addDubStatus(getDubStatus(title))
+                    }
                 }
 
                 items.add(HomePageList(i.second, home))
@@ -98,9 +87,9 @@ class MonoschinosProvider : MainAPI() {
     override suspend fun search(query: String): ArrayList<SearchResponse> {
         val search =
             app.get("$mainUrl/buscar?q=$query", timeout = 120).document.select(".col-6").map {
-                val title = it.selectFirst(".seristitles").text()
-                val href = fixUrl(it.selectFirst("a").attr("href"))
-                val image = it.selectFirst("img.animemainimg").attr("src")
+                val title = it.selectFirst(".seristitles")!!.text()
+                val href = fixUrl(it.selectFirst("a")!!.attr("href"))
+                val image = it.selectFirst("img.animemainimg")!!.attr("src")
                 AnimeSearchResponse(
                     title,
                     href,
@@ -118,10 +107,10 @@ class MonoschinosProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url, timeout = 120).document
-        val poster = doc.selectFirst(".chapterpic img").attr("src")
-        val title = doc.selectFirst(".chapterdetails h1").text()
-        val type = doc.selectFirst("div.chapterdetls2").text()
-        val description = doc.selectFirst("p.textComplete").text().replace("Ver menos", "")
+        val poster = doc.selectFirst(".chapterpic img")!!.attr("src")
+        val title = doc.selectFirst(".chapterdetails h1")!!.text()
+        val type = doc.selectFirst("div.chapterdetls2")!!.text()
+        val description = doc.selectFirst("p.textComplete")!!.text().replace("Ver menos", "")
         val genres = doc.select(".breadcrumb-item a").map { it.text() }
         val status = when (doc.selectFirst("button.btn1")?.text()) {
             "Estreno" -> ShowStatus.Ongoing
@@ -129,10 +118,10 @@ class MonoschinosProvider : MainAPI() {
             else -> null
         }
         val episodes = doc.select("div.col-item").map {
-            val name = it.selectFirst("p.animetitles").text()
-            val link = it.selectFirst("a").attr("href")
-            val epThumb = it.selectFirst(".animeimghv").attr("data-src")
-            AnimeEpisode(link, name, posterUrl = epThumb)
+            val name = it.selectFirst("p.animetitles")!!.text()
+            val link = it.selectFirst("a")!!.attr("href")
+            val epThumb = it.selectFirst(".animeimghv")!!.attr("data-src")
+            Episode(link, name, posterUrl = epThumb)
         }
         return newAnimeLoadResponse(title, url, getType(type)) {
             posterUrl = poster
