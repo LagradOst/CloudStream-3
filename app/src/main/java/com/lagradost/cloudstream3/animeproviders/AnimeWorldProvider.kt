@@ -153,7 +153,7 @@ class AnimeWorldProvider : MainAPI() {
             else if (status == null && text.contains("Stato"))
                 status = getStatus(meta.nextElementSibling()?.text())
             else if (status == null && text.contains("Durata"))
-                duration = meta.nextElementSibling()?.text() // ?.parseDuration()
+                duration = meta.nextElementSibling()?.text()
         }
 
         val servers = document.select(".widget.servers")
