@@ -60,7 +60,7 @@ class LayarKacaProvider : MainAPI() {
             if (this.select("div.quality-top").isNotEmpty()) TvType.Movie else TvType.TvSeries
         return if (type == TvType.Movie) {
             val quality = getQualityFromString(this.select("div.quality-top").text().trim())
-            return newMovieSearchResponse(title, href, TvType.Movie) {
+            newMovieSearchResponse(title, href, TvType.Movie) {
                 this.posterUrl = posterUrl
                 this.quality = quality
             }

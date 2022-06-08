@@ -93,6 +93,7 @@ object APIHolder {
             RebahinProvider(),
             LayarKacaProvider(),
             IdlixProvider(),
+            MultiplexProvider(),
 
             // Metadata providers
             //TmdbProvider(),
