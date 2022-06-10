@@ -110,7 +110,7 @@ class AltadefinizioneProvider : MainAPI() {
                 ActorData(actor = Actor(it.text()))
         }
 
-
+        val tags: List<String> = document.select("#details > li:nth-child(1) > a").map { it.text() }
             return newMovieLoadResponse(
                 title,
                 url,
@@ -124,6 +124,7 @@ class AltadefinizioneProvider : MainAPI() {
                 this.recommendations = recomm
                 this.duration = null
                 this.actors = actors
+                this.tags = tags
             }
         }
 
