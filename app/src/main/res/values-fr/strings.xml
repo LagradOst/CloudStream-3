@@ -193,7 +193,7 @@
     <string name="app_theme_settings">Thème de l\'application</string>
     <string name="player_speed_text_format" formatted="true">Vitesse (%.2fx)</string>
     <string name="use_system_brightness_settings">Utiliser la luminosité du système</string>
-    <string name="general">Général</string>
+    <string name="category_general">Général</string>
     <string name="dns_pref">DNS avec HTTPS</string>
     <string name="display_subbed_dubbed_settings">Afficher les animés en Anglais (Dub) / sous-titrés</string>
     <string name="phone_layout">Disposition en mode téléphone</string>
@@ -295,8 +295,6 @@
     <string name="killswitch_settings_des">Pour accéder à tous les fournisseurs (y compris les fournisseurs défectueux), désactivez ce paramètre</string>
     <string name="authenticated_user">Connecté %s</string>
     <string name="action_add_to_bookmarks">Définir le statut de visionage</string>
-    <string name="nginx_credentials_title">Identifiants nginx</string>
-    <string name="nginx_credentials_summary">Vous devez utiliser le format suivant: monnomdutilisateur:monmotdepasse123</string>
     <string name="nginx_info_title">Qu\'est-ce qu\'Nginx ?</string>
     <string name="nginx_info_summary">Nginx est un logiciel utilisé pour afficher les fichier d\'un server que vous possèdez. Cliquez pour voir un guide de mise en place.</string>
     <string name="nginx_url_pref">Addresse du serveur Nginx</string>

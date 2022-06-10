@@ -53,7 +53,6 @@ object APIHolder {
             PelisflixProvider(),
             SeriesflixProvider(),
             IHaveNoTvProvider(), // Documentaries provider
-            LookMovieProvider(), // RECAPTCHA (Please allow up to 5 seconds...)
             VMoveeProvider(),
             AllMoviesForYouProvider(),
             VidEmbedProvider(),
@@ -476,12 +475,6 @@ fun base64Encode(array: ByteArray): String {
 
 class ErrorLoadingException(message: String? = null) : Exception(message)
 
-fun parseRating(ratingString: String?): Int? {
-    if (ratingString == null) return null
-    val floatRating = ratingString.toFloatOrNull() ?: return null
-    return (floatRating * 10).toInt()
-}
-
 fun MainAPI.fixUrlNull(url: String?): String? {
     if (url.isNullOrEmpty()) {
         return null
@@ -858,7 +851,7 @@ interface LoadResponse {
     var posterUrl: String?
     var year: Int?
     var plot: String?
-    var rating: Int? // 1-1000
+    var rating: Int? // 0-10000
     var tags: List<String>?
     var duration: Int? // in minutes
     var trailers: List<String>?
@@ -937,7 +930,7 @@ interface LoadResponse {
         }
 
         fun LoadResponse.addRating(value: Int?) {
-            if ((value ?: return) < 0 || value > 1000) {
+            if ((value ?: return) < 0 || value > 10000) {
                 return
             }
             this.rating = value
