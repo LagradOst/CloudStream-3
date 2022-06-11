@@ -21,7 +21,7 @@
         "language": "it",
         "name": "Altadefinizione",
         "status": 1,
-        "url": "https://altadefinizione.limo"
+        "url": "https://altadefinizione.hair"
     },
     "AnimeFlickProvider": {
         "language": "en",
@@ -189,6 +189,12 @@
         "name": "HD Movies",
         "status": 0,
         "url": "https://hdm.to"
+    },
+    "HDTodayProvider": {
+        "language": "en",
+        "name": "HDToday",
+        "status": 1,
+        "url": "https://hdtoday.cc"
     },
     "IHaveNoTvProvider": {
         "language": "en",

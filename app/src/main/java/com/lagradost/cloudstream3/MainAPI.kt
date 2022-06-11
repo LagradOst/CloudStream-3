@@ -91,6 +91,7 @@ object APIHolder {
             HDMovie5(),
             RebahinProvider(),
             LayarKacaProvider(),
+            HDTodayProvider(),
             IdlixProvider(),
             MultiplexProvider(),
 
