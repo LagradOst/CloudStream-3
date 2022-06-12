@@ -6,17 +6,18 @@
 ![Build](https://img.shields.io/github/workflow/status/lagradost/CloudStream-3/Pre-release?style=for-the-badge)
 [![Discord](https://img.shields.io/discord/737724143126052974?style=for-the-badge)](https://discord.gg/5Hus6fM)
 
-
-**DOWNLOAD:**
-https://github.com/LagradOst/CloudStream-3/releases
-
-
 ***Features:***
 + **AdFree**, No ads whatsoever
 + No tracking/analytics
 + Bookmarks
 + Download and stream movies, tv-shows and anime
 + Chromecast
+
+***Download***
+
+You can download the app from the [Release section on GitHub](https://github.com/LagradOst/CloudStream-3/releases).
+
+You can also get the app in a F-Droid client via the [IzzyOnDroid](https://apt.izzysoft.de/fdroid) repo just [here](https://apt.izzysoft.de/fdroid/index/apk/com.lagradost.cloudstream3).
 
 ***Screenshots:***
 (All the images are blurred because of DMCA reasons, but are actually not blurred in the app)
