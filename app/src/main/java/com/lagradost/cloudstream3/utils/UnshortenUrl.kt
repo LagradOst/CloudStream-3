@@ -3,7 +3,7 @@ import android.util.Base64
 import com.lagradost.cloudstream3.app
 import com.lagradost.nicehttp.NiceResponse
 import java.net.URI
-//Code heavily based on unshortenit.py form jigoop1 /kod_addon
+//Code heavily based on unshortenit.py form kodiondemand /addon
 class UnshortenUrl {
 
     val adfly_regex = """adf\.ly|j\.gs|q\.gs|u\.bb|ay\.gy|atominik\.com|tinyium\.com|microify\.com|threadsphere\.bid|clearload\.bid|activetect\.net|swiftviz\.net|briskgram\.net|activetect\.net|baymaleti\.net|thouth\.net|uclaut\.net|gloyah\.net|larati\.net|scuseami\.net"""
