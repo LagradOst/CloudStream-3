@@ -42,6 +42,8 @@ object APIHolder {
     val allProviders by lazy {
         arrayListOf(
             // Movie providers
+            ElifilmsProvider(),
+            EstrenosDoramasProvider(),
             PelisplusProvider(),
             PelisplusHDProvider(),
             PeliSmartProvider(),
@@ -106,6 +108,9 @@ object APIHolder {
             //ShiroProvider(), // v2 fucked me
             AnimeFlickProvider(),
             AnimeflvnetProvider(),
+            AnimefenixProvider(),
+            AnimeflvIOProvider(),
+            JKAnimeProvider(),
             TenshiProvider(),
             WcoProvider(),
             AnimePaheProvider(),
@@ -115,6 +120,7 @@ object APIHolder {
             ZoroProvider(),
             DubbedAnimeProvider(),
             MonoschinosProvider(),
+            MundoDonghuaProvider(),
             KawaiifuProvider(), // disabled due to cloudflare
             NeonimeProvider(),
             KuramanimeProvider(),
@@ -897,6 +903,17 @@ interface LoadResponse {
             } else {
                 val update = this.trailers?.toMutableList()
                 update?.add(trailerUrl)
+                this.trailers = update
+            }
+        }
+
+        fun LoadResponse.addTrailer(trailerUrls: List<String>?) {
+            if(trailerUrls == null) return
+            if (this.trailers == null) {
+                this.trailers = trailerUrls
+            } else {
+                val update = this.trailers?.toMutableList()
+                update?.addAll(trailerUrls)
                 this.trailers = update
             }
         }
