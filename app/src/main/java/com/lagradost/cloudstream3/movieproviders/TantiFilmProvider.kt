@@ -8,8 +8,8 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 
 
 class TantifilmProvider : MainAPI() {
-    override val lang = "it"
-    override var mainUrl = "https://www.tantifilm.pics"
+    override var lang = "it"
+    override var mainUrl = "https://www.tantifilm.rodeo"
     override var name = "Tantifilm"
     override val hasMainPage = true
     override val hasChromecastSupport = true
