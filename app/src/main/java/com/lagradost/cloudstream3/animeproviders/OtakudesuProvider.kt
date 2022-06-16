@@ -12,7 +12,7 @@ import org.jsoup.nodes.Element
 import java.util.ArrayList
 
 class OtakudesuProvider : MainAPI() {
-    override var mainUrl = "https://otakudesu.tube"
+    override var mainUrl = "https://otakudesu.watch"
     override var name = "Otakudesu"
     override val hasMainPage = true
     override val lang = "id"
@@ -42,7 +42,7 @@ class OtakudesuProvider : MainAPI() {
 
     override suspend fun getMainPage(): HomePageResponse {
         val document = app.get(mainUrl).document
-
+        Log.i("HEXATED", mainUrl)
         val homePageList = ArrayList<HomePageList>()
 
         document.select("div.rseries").forEach { block ->

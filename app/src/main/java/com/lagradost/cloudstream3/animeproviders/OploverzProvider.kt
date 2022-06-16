@@ -2,16 +2,15 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.ArrayList
 
+
 class OploverzProvider : MainAPI() {
-    override var mainUrl = "https://oploverz.asia"
+    override var mainUrl = "https://65.108.132.145"
     override var name = "Oploverz"
-    override val hasQuickSearch = false
     override val hasMainPage = true
     override val lang = "id"
     override val hasDownloadSupport = true

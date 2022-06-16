@@ -155,6 +155,13 @@ class IdlixProvider : MainAPI() {
         }
     }
 
+    private fun getLanguage(str: String) : String {
+        return when {
+            str.lowercase().contains("indonesia") || str.lowercase().contains("bahasa") -> "Indonesian"
+            else -> str
+        }
+    }
+
     data class ResponseHash(
         @JsonProperty("embed_url") val embed_url: String,
         @JsonProperty("type") val type: String?,
@@ -200,11 +207,7 @@ class IdlixProvider : MainAPI() {
                 tryParseJson<List<Tracks>>("[$subData]")?.map { subtitle ->
                     subCallback.invoke(
                         SubtitleFile(
-                            when (subtitle.label?.lowercase()) {
-                                "indonesia" -> "Indonesian"
-                                "bahasa" -> "Indonesian"
-                                else -> subtitle.label
-                            }.toString(),
+                            getLanguage(subtitle.label!!),
                             subtitle.file
                         )
                     )
@@ -248,15 +251,11 @@ class IdlixProvider : MainAPI() {
                 }
 
                 val subData = script.data().substringAfter("tracks: [").substringBefore("],")
-                tryParseJson<List<Tracks>>("[$subData]")?.map {
+                tryParseJson<List<Tracks>>("[$subData]")?.map { subtitle ->
                     subCallback.invoke(
                         SubtitleFile(
-                            when (it.label?.lowercase()) {
-                                "indonesia" -> "Indonesian"
-                                "bahasa" -> "Indonesian"
-                                else -> it.label
-                            }.toString(),
-                            (if (it.kind!!.contains("captions")) it.file else null)!!
+                            getLanguage(subtitle.label!!),
+                            (if (subtitle.kind!!.contains("captions")) subtitle.file else null)!!
                         )
                     )
                 }
@@ -310,15 +309,11 @@ class IdlixProvider : MainAPI() {
             )
         }
         val userData = sources.player.poster_file.split("/")[2]
-        sources.captions?.map {
+        sources.captions?.map { subtitle ->
             subCallback.invoke(
                 SubtitleFile(
-                    when (it.language.lowercase()) {
-                        "indonesia" -> "Indonesian"
-                        "bahasa" -> "Indonesian"
-                        else -> it.language
-                    }.toString(),
-                    "$domainUrl/asset/userdata/$userData/caption/${it.hash}/${it.id}.srt"
+                    getLanguage(subtitle.language),
+                    "$domainUrl/asset/userdata/$userData/caption/${subtitle.hash}/${subtitle.id}.srt"
                 )
             )
         }
