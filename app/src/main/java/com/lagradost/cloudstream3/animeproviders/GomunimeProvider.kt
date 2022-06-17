@@ -13,7 +13,7 @@ class GomunimeProvider : MainAPI() {
     override var mainUrl = "https://185.231.223.76"
     override var name = "Gomunime"
     override val hasMainPage = true
-    override val lang = "id"
+    override var lang = "id"
     override val hasDownloadSupport = true
 
     override val supportedTypes = setOf(

@@ -50,6 +50,7 @@ import com.lagradost.cloudstream3.ui.download.DOWNLOAD_ACTION_DOWNLOAD
 import com.lagradost.cloudstream3.ui.download.DOWNLOAD_NAVIGATE_TO
 import com.lagradost.cloudstream3.ui.download.DownloadButtonSetup.handleDownloadClick
 import com.lagradost.cloudstream3.ui.download.EasyDownloadButton
+import com.lagradost.cloudstream3.ui.player.CSPlayerEvent
 import com.lagradost.cloudstream3.ui.player.GeneratorPlayer
 import com.lagradost.cloudstream3.ui.player.RepoLinkGenerator
 import com.lagradost.cloudstream3.ui.player.SubtitleData
@@ -88,8 +89,10 @@ import com.lagradost.cloudstream3.utils.VideoDownloadManager.getFileName
 import com.lagradost.cloudstream3.utils.VideoDownloadManager.sanitizeFilename
 import kotlinx.android.synthetic.main.fragment_result.*
 import kotlinx.android.synthetic.main.fragment_result_swipe.*
+import kotlinx.android.synthetic.main.fragment_trailer.*
 import kotlinx.android.synthetic.main.result_recommendations.*
 import kotlinx.android.synthetic.main.result_sync.*
+import kotlinx.android.synthetic.main.trailer_custom_layout.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
@@ -608,42 +611,54 @@ class ResultFragment : ResultTrailerPlayer() {
     }
 
     override fun playerError(exception: Exception) {
-        if (player.getIsPlaying()) // because we dont want random toasts in player
+        if (player.getIsPlaying()) { // because we dont want random toasts in player
             super.playerError(exception)
-    }
-
-    private fun loadTrailer(index: Int? = null) {
-        currentTrailers.getOrNull(index ?: currentTrailerIndex)?.let { trailer ->
-            //if(trailer.contains("youtube.com")) { // wont load in exo
-            //    nextMirror()
-            //    return
-            //}
-            context?.let { ctx ->
-                player.onPause()
-                player.loadPlayer(
-                    ctx,
-                    false,
-                    ExtractorLink(
-                        "",
-                        "Trailer",
-                        trailer,
-                        "",
-                        Qualities.Unknown.value
-                    ),
-                    null,
-                    startPosition = 0L,
-                    subtitles = emptySet(),
-                    subtitle = null,
-                    autoPlay = false
-                )
-            }
+        } else {
+            nextMirror()
         }
     }
 
+    private fun loadTrailer(index: Int? = null) {
+        val isSuccess =
+            currentTrailers.getOrNull(index ?: currentTrailerIndex)?.let { trailer ->
+                context?.let { ctx ->
+                    player.onPause()
+                    player.loadPlayer(
+                        ctx,
+                        false,
+                        ExtractorLink(
+                            "",
+                            "Trailer",
+                            trailer,
+                            "",
+                            Qualities.Unknown.value
+                        ),
+                        null,
+                        startPosition = 0L,
+                        subtitles = emptySet(),
+                        subtitle = null,
+                        autoPlay = false
+                    )
+                    true
+                } ?: run {
+                    false
+                }
+            } ?: run {
+                false
+            }
+        result_trailer_loading?.isVisible = isSuccess
+    }
+
     private fun setTrailers(trailers: List<String>?) {
-        if(context?.isTvSettings() == true) return
-        currentTrailers = trailers ?: emptyList()
-        loadTrailer()
+        context?.let { ctx ->
+            if (ctx.isTvSettings()) return
+            val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
+            val showTrailers =
+                settingsManager.getBoolean(ctx.getString(R.string.show_trailers_key), true)
+            if (!showTrailers) return
+            currentTrailers = trailers ?: emptyList()
+            loadTrailer()
+        }
     }
 
     private fun setActors(actors: List<ActorData>?) {
@@ -752,6 +767,12 @@ class ResultFragment : ResultTrailerPlayer() {
         result_overlapping_panels?.setStartPanelLockState(OverlappingPanelsLayout.LockState.CLOSE)
         result_overlapping_panels?.setEndPanelLockState(OverlappingPanelsLayout.LockState.CLOSE)
 
+        player_open_source?.setOnClickListener {
+            currentTrailers.getOrNull(currentTrailerIndex)?.let {
+                context?.openBrowser(it)
+            }
+        }
+
         updateUIListener = ::updateUI
 
         val restart = arguments?.getBoolean(RESTART_BUNDLE) ?: false
@@ -822,6 +843,12 @@ class ResultFragment : ResultTrailerPlayer() {
             } else if (dy < -5) {
                 result_bookmark_fab?.extend()
             }
+            if (!isFullScreenPlayer && player.getIsPlaying()) {
+                if (scrollY > (player_background?.height ?: scrollY)) {
+                    player.handleEvent(CSPlayerEvent.Pause)
+                }
+            }
+
             //result_poster_blur_holder?.translationY = -scrollY.toFloat()
         })
 
