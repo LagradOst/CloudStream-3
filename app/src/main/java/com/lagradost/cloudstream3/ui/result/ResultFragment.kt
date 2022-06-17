@@ -41,6 +41,7 @@ import com.google.android.material.button.MaterialButton
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.getApiFromName
 import com.lagradost.cloudstream3.APIHolder.getId
+import com.lagradost.cloudstream3.APIHolder.updateHasTrailers
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.CommonActivity.getCastSession
 import com.lagradost.cloudstream3.CommonActivity.showToast
@@ -602,7 +603,7 @@ class ResultFragment : ResultTrailerPlayer() {
         setFormatText(result_meta_rating, R.string.rating_format, rating?.div(1000f))
     }
 
-    var currentTrailers: List<String> = emptyList()
+    var currentTrailers: List<ExtractorLink> = emptyList()
     var currentTrailerIndex = 0
 
     override fun nextMirror() {
@@ -626,13 +627,7 @@ class ResultFragment : ResultTrailerPlayer() {
                     player.loadPlayer(
                         ctx,
                         false,
-                        ExtractorLink(
-                            "",
-                            "Trailer",
-                            trailer,
-                            "",
-                            Qualities.Unknown.value
-                        ),
+                        trailer,
                         null,
                         startPosition = 0L,
                         subtitles = emptySet(),
@@ -649,16 +644,11 @@ class ResultFragment : ResultTrailerPlayer() {
         result_trailer_loading?.isVisible = isSuccess
     }
 
-    private fun setTrailers(trailers: List<String>?) {
-        context?.let { ctx ->
-            if (ctx.isTvSettings()) return
-            val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
-            val showTrailers =
-                settingsManager.getBoolean(ctx.getString(R.string.show_trailers_key), true)
-            if (!showTrailers) return
-            currentTrailers = trailers ?: emptyList()
-            loadTrailer()
-        }
+    private fun setTrailers(trailers: List<ExtractorLink>?) {
+        context?.updateHasTrailers()
+        if (!LoadResponse.isTrailersEnabled) return
+        currentTrailers = trailers?.sortedBy { -it.quality } ?: emptyList()
+        loadTrailer()
     }
 
     private fun setActors(actors: List<ActorData>?) {
@@ -769,7 +759,7 @@ class ResultFragment : ResultTrailerPlayer() {
 
         player_open_source?.setOnClickListener {
             currentTrailers.getOrNull(currentTrailerIndex)?.let {
-                context?.openBrowser(it)
+                context?.openBrowser(it.url)
             }
         }
 
@@ -782,6 +772,7 @@ class ResultFragment : ResultTrailerPlayer() {
 
         activity?.window?.decorView?.clearFocus()
         hideKeyboard()
+        context?.updateHasTrailers()
         activity?.loadCache()
 
         activity?.fixPaddingStatusbar(result_top_bar)

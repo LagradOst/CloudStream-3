@@ -106,6 +106,19 @@ suspend fun loadExtractor(
     return false
 }
 
+suspend fun loadExtractor(
+    url: String,
+    referer: String? = null,
+): List<ExtractorLink> {
+    for (extractor in extractorApis) {
+        if (url.startsWith(extractor.mainUrl)) {
+            return extractor.getSafeUrl(url, referer) ?: emptyList()
+
+        }
+    }
+    return emptyList()
+}
+
 val extractorApis: Array<ExtractorApi> = arrayOf(
     //AllProvider(),
     WcoStream(),
@@ -217,6 +230,9 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     DesuDrive(),
 
     Filesim(),
+
+    YoutubeExtractor(),
+    YoutubeShortLinkExtractor(),
 )
 
 fun getExtractorApiFromName(name: String): ExtractorApi {
