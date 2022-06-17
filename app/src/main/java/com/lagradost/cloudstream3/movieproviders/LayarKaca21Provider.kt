@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
@@ -133,6 +134,7 @@ class LayarKacaProvider : MainAPI() {
                 .isNotEmpty()
         ) TvType.TvSeries else TvType.Movie
         val description = document.select("div.content > blockquote").text().trim()
+        val trailer = document.selectFirst("div.action-player li > a.fancybox")?.attr("href")
         val rating =
             document.selectFirst("div.content > div:nth-child(6) > h3")?.text()?.toRatingInt()
         val actors = document.select("div.col-xs-9.content > div:nth-child(3) > h3 > a").map {
@@ -173,6 +175,7 @@ class LayarKacaProvider : MainAPI() {
                 this.rating = rating
                 this.actors = actors
                 this.recommendations = recommendations
+                addTrailer(trailer)
             }
         }
         else {
@@ -184,6 +187,7 @@ class LayarKacaProvider : MainAPI() {
                 this.rating = rating
                 this.actors = actors
                 this.recommendations = recommendations
+                addTrailer(trailer)
             }
         }
     }

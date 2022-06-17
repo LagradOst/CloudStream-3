@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.animeproviders
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
@@ -11,7 +12,7 @@ class AnimeIndoProvider : MainAPI() {
     override var mainUrl = "https://anime-indo.one"
     override var name = "AnimeIndo"
     override val hasMainPage = true
-    override val lang = "id"
+    override var lang = "id"
     override val hasDownloadSupport = true
 
     override val supportedTypes = setOf(
@@ -118,7 +119,7 @@ class AnimeIndoProvider : MainAPI() {
                 .trim()
         )
         val description = document.select("div[itemprop=description] > p").text()
-
+        val trailer = document.selectFirst("div.player-embed iframe")?.attr("src")
         val episodes = document.select("div.lstepsiode.listeps ul li").mapNotNull {
             val name = it.selectFirst("span.lchx > a")!!.text().trim()
             val episode = it.selectFirst("span.lchx > a")!!.text().trim().replace("Episode", "").trim().toIntOrNull()
@@ -134,6 +135,7 @@ class AnimeIndoProvider : MainAPI() {
             showStatus = status
             plot = description
             this.tags = tags
+            addTrailer(trailer)
         }
     }
 

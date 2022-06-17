@@ -114,7 +114,7 @@ class KuronimeProvider : MainAPI() {
         val type = getType(
             document.selectFirst(".infodetail > ul > li:nth-child(7)")?.ownText()?.trim().toString()
         )
-        val trailer = document.select("iframe.entered.lazyloaded").attr("src")
+        val trailer = document.selectFirst("div.tply iframe")?.attr("data-lazy-src")
         val year = Regex("\\d, ([0-9]*)").find(
             document.select(".infodetail > ul > li:nth-child(5)").text()
         )?.groupValues?.get(1)?.toIntOrNull()
@@ -140,7 +140,6 @@ class KuronimeProvider : MainAPI() {
             plot = description
             addTrailer(trailer)
             this.tags = tags
-            trailers = listOf(trailer)
         }
     }
 

@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.animeproviders
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
@@ -112,19 +113,17 @@ class NeonimeProvider : MainAPI() {
                 val mYear = document.selectFirst("a[href*=release-year]")!!.text().toIntOrNull()
                 val mDescription = document.select("div[itemprop = description]").text().trim()
                 val mRating = document.select("span[itemprop = ratingValue]").text().toIntOrNull()
+                val mTrailer = "https://www.youtube.com/embed/" + document.selectFirst("div.youtube_id iframe")?.attr("data-wpfc-original-src")?.substringAfterLast("html#")
 
-                return MovieLoadResponse(
-                    name = mTitle,
-                    url = url,
-                    this.name,
-                    type = TvType.Movie,
-                    dataUrl = url,
-                    posterUrl = mPoster,
-                    year = mYear,
-                    plot = mDescription,
-                    rating = mRating,
+                return newMovieLoadResponse(name = mTitle, url = url, type = TvType.Movie, dataUrl = url) {
+                    apiName = this.name
+                    posterUrl = mPoster
+                    year = mYear
+                    plot = mDescription
+                    rating = mRating
                     tags = mTags
-                )
+                    addTrailer(mTrailer)
+                }
             }
             else {
                 val title = document.select("h1[itemprop = name]").text().trim()
@@ -133,6 +132,7 @@ class NeonimeProvider : MainAPI() {
                 val year = document.select("#info a[href*=\"-year/\"]").text().toIntOrNull()
                 val status = getStatus(document.select("div.metadatac > span").last()!!.text().trim())
                 val description = document.select("div[itemprop = description] > p").text().trim()
+                val trailer = "https://www.youtube.com/embed/" + document.selectFirst("div.youtube_id_tv iframe")?.attr("data-wpfc-original-src")?.substringAfterLast("html#")
 
                 val episodes = document.select("ul.episodios > li").mapNotNull {
                     val name = it.selectFirst(".episodiotitle > a")!!.ownText().trim()
@@ -148,6 +148,7 @@ class NeonimeProvider : MainAPI() {
                     showStatus = status
                     plot = description
                     this.tags = tags
+                    addTrailer(trailer)
                 }
             }
     }

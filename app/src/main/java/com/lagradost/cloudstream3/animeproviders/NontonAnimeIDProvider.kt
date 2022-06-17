@@ -147,7 +147,7 @@ class NontonAnimeIDProvider : MainAPI() {
         val type = getType(document.select("span.typeseries").text().trim())
         val rating = document.select("span.nilaiseries").text().trim().toIntOrNull()
         val description = document.select(".entry-content.seriesdesc > p").text().trim()
-        val trailer = document.select("a.ytp-impression-link").attr("href")
+        val trailer = document.select("iframe#traileryt").attr("data-src")
 
         val episodes = if (document.select("button.buttfilter").isNotEmpty()) {
             val id = document.select("input[name=series_id]").attr("value")

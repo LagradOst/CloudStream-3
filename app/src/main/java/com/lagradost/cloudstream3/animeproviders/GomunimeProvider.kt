@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import org.jsoup.Jsoup
 import java.util.*
 import com.lagradost.cloudstream3.mvvm.logError
@@ -136,7 +137,7 @@ class GomunimeProvider : MainAPI() {
         )?.groupValues?.get(1)?.toIntOrNull()
         val status = getStatus(document.selectFirst(".spe > span")!!.ownText())
         val description = document.select("div[itemprop = description] > p").text()
-
+        val trailer = document.select("div.embed-responsive noscript iframe").attr("src")
         val episodes = parseJson<List<EpisodeElement>>(
             Regex("var episodelist = (\\[.*])").find(
                 document.select(".bixbox.bxcl.epcheck > script").toString().trim()
@@ -155,6 +156,7 @@ class GomunimeProvider : MainAPI() {
             showStatus = status
             plot = description
             this.tags = tags
+            addTrailer(trailer)
         }
     }
 

@@ -15,7 +15,7 @@ class OtakudesuProvider : MainAPI() {
     override var mainUrl = "https://otakudesu.watch"
     override var name = "Otakudesu"
     override val hasMainPage = true
-    override val lang = "id"
+    override var lang = "id"
     override val hasDownloadSupport = true
 
     override val supportedTypes = setOf(

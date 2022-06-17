@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.movieproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
@@ -13,7 +14,7 @@ class IdlixProvider : MainAPI() {
     override var mainUrl = "https://193.178.172.113"
     override var name = "Idlix"
     override val hasMainPage = true
-    override val lang = "id"
+    override var lang = "id"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
         TvType.Movie,
@@ -95,6 +96,7 @@ class IdlixProvider : MainAPI() {
         val tvType = if (document.select("ul#section > li:nth-child(1)").text().contains("Episodes")
         ) TvType.TvSeries else TvType.Movie
         val description = document.select("div.wp-content > p").text().trim()
+        val trailer = document.selectFirst("div.embed iframe")?.attr("src")
         val rating =
             document.selectFirst("span.dt_rating_vgs")?.text()?.toRatingInt()
         val actors = document.select("div.persons > div[itemprop=actor]").map {
@@ -141,6 +143,7 @@ class IdlixProvider : MainAPI() {
                 this.rating = rating
                 this.actors = actors
                 this.recommendations = recommendations
+                addTrailer(trailer)
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
@@ -151,6 +154,7 @@ class IdlixProvider : MainAPI() {
                 this.rating = rating
                 this.actors = actors
                 this.recommendations = recommendations
+                addTrailer(trailer)
             }
         }
     }

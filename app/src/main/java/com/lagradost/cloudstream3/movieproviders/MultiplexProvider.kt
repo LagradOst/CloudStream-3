@@ -3,6 +3,7 @@ package com.lagradost.cloudstream3.movieproviders
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
@@ -13,7 +14,7 @@ class MultiplexProvider : MainAPI() {
     override var mainUrl = "https://146.19.24.137"
     override var name = "Multiplex"
     override val hasMainPage = true
-    override val lang = "id"
+    override var lang = "id"
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
         TvType.Movie,
@@ -107,6 +108,7 @@ class MultiplexProvider : MainAPI() {
             document.select("span.gmr-movie-genre:contains(Year:) > a").text().trim().toIntOrNull()
         val tvType = if (url.contains("/tv/")) TvType.TvSeries else TvType.Movie
         val description = document.selectFirst("div[itemprop=description] > p")?.text()?.trim()
+        val trailer = document.selectFirst("ul.gmr-player-nav li a.gmr-trailer-popup")?.attr("href")
         val rating =
             document.selectFirst("div.gmr-meta-rating > span[itemprop=ratingValue]")?.text()
                 ?.toRatingInt()
@@ -143,6 +145,7 @@ class MultiplexProvider : MainAPI() {
                 this.rating = rating
                 this.actors = actors
                 this.recommendations = recommendations
+                addTrailer(trailer)
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
@@ -153,6 +156,7 @@ class MultiplexProvider : MainAPI() {
                 this.rating = rating
                 this.actors = actors
                 this.recommendations = recommendations
+                addTrailer(trailer)
             }
         }
     }
