@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -140,6 +141,7 @@ class OploverzProvider : MainAPI() {
             }
         val type = getType(typeCheck)
         val description = document.select(".entry-content > p").text().trim()
+        val trailer = document.selectFirst("a.trailerbutton")?.attr("href")
 
         val episodes = document.select(".eplister > ul > li").map {
             val name = it.select(".epl-title").text().trim()
@@ -169,6 +171,7 @@ class OploverzProvider : MainAPI() {
             plot = description
             this.tags = tags
             this.recommendations = recommendations
+            addTrailer(trailer)
         }
 
     }

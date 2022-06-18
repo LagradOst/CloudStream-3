@@ -58,7 +58,7 @@ class IdlixProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse {
-        val title = this.selectFirst("h3 > a")!!.text().trim()
+        val title = this.selectFirst("h3 > a")!!.text().replace(Regex("\\(\\d{4}\\)"), "").trim()
         val href = getProperLink(this.selectFirst("h3 > a")!!.attr("href"))
         val posterUrl = this.select("div.poster > img").attr("src").toString()
         val quality = getQualityFromString(this.select("span.quality").text())
@@ -74,7 +74,7 @@ class IdlixProvider : MainAPI() {
         val document = app.get(link).document
 
         return document.select("div.result-item").map {
-            val title = it.selectFirst("div.title > a")!!.text().trim()
+            val title = it.selectFirst("div.title > a")!!.text().replace(Regex("\\(\\d{4}\\)"), "").trim()
             val href = getProperLink(it.selectFirst("div.title > a")!!.attr("href"))
             val posterUrl = it.selectFirst("img")!!.attr("src").toString()
             newMovieSearchResponse(title, href, TvType.TvSeries) {
@@ -86,7 +86,7 @@ class IdlixProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title = document.selectFirst("div.data > h1")?.text()?.trim().toString()
+        val title = document.selectFirst("div.data > h1")?.text()?.replace(Regex("\\(\\d{4}\\)"), "")?.trim().toString()
         val poster = document.select("div.poster > img").attr("src").toString()
         val tags = document.select("div.sgeneros > a").map { it.text() }
 

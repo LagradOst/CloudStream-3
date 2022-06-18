@@ -108,9 +108,7 @@ class KuronimeProvider : MainAPI() {
         val document = app.get(url).document
 
         val title = document.selectFirst(".entry-title")?.text().toString().trim()
-        val poster = document.select("div[itemprop=image]").joinToString {
-            it.select("img").attr("src")
-        }
+        val poster = document.selectFirst("div.l[itemprop=image] > img")?.attr("src")
         val tags = document.select(".infodetail > ul > li:nth-child(2) > a").map { it.text() }
         val type = getType(
             document.selectFirst(".infodetail > ul > li:nth-child(7)")?.ownText()?.trim().toString()
