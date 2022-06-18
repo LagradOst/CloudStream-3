@@ -19,7 +19,8 @@ class FilmpertuttiProvider : MainAPI() {
     override val hasMainPage = true
     override val hasChromecastSupport = true
     override val supportedTypes = setOf(
-        TvType.Movie
+        TvType.Movie,
+        TvType.TvSeries
     )
 
     override suspend fun getMainPage(): HomePageResponse {
