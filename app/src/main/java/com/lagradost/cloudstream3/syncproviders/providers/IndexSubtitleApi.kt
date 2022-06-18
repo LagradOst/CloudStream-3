@@ -4,9 +4,10 @@ import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.subtitles.AbstractSubProvider
 import com.lagradost.cloudstream3.subtitles.AbstractSubtitleEntities
+import com.lagradost.cloudstream3.syncproviders.InAppAuthAPIManager
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 
-class IndexSubtitleApi : AbstractSubProvider, MainAPI() {
+class IndexSubtitleApi : AbstractSubProvider {
     val idPrefix = "indexsubtitle"
     val host = "https://indexsubtitle.com"
 
@@ -121,16 +122,19 @@ class IndexSubtitleApi : AbstractSubProvider, MainAPI() {
                 }
             }
         }
-        Log.i(TAG, "urlItem => $urlItem")
+
         val results = mutableListOf<AbstractSubtitleEntities.SubtitleEntity>()
 
         urlItem.forEach { url ->
             val request = app.get(url)
             if (request.isSuccessful) {
+                val maxItem = 10 // maximal item that can takes for avoiding ddos site
+                var item = 0
                 request.document.select("div.my-3.p-3 div.media").apmap { block ->
                     if (block.select("span.d-block span[data-original-title=Language]").text().trim()
-                            .contains("$queryLang")
+                            .contains("$queryLang") && item < maxItem
                     ) {
+                        ++item
                         app.get(
                             fixUrl(
                                 block.selectFirst("a")!!.attr("href")
@@ -138,7 +142,7 @@ class IndexSubtitleApi : AbstractSubProvider, MainAPI() {
                         ).document.select("div.my-3.p-3 div.media").map {
                             if(epNum > 0) {
                                 if (it.selectFirst("strong.d-block.text-primary")?.text()?.trim()
-                                        ?.contains(Regex("(?i)(Episode\\s?0?$epNum)|(E0?$epNum[\\s|.])"))!!
+                                        ?.contains(Regex("(?i)(Season\\s?0?${seasonNum}Episode\\s?0?$epNum)|(S?0?${seasonNum}x?E?0?$epNum[\\s|.])"))!!
                                 ) {
                                     results.add(
                                         AbstractSubtitleEntities.SubtitleEntity(
@@ -175,12 +179,10 @@ class IndexSubtitleApi : AbstractSubProvider, MainAPI() {
                 }
             }
         }
-        Log.i(TAG, "results => $results")
         return results
     }
 
     override suspend fun load(data: AbstractSubtitleEntities.SubtitleEntity): String {
-        Log.i(TAG, "data => $data")
         return data.data
     }
 
