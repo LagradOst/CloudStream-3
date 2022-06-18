@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.movieproviders
 
+import android.util.Base64
 import androidx.core.text.parseAsHtml
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.logError
@@ -7,6 +8,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.LoadResponse.Companion.addRating
+import com.lagradost.nicehttp.NiceResponse
 
 
 class Filmpertutti : MainAPI() {
@@ -159,6 +161,58 @@ class Filmpertutti : MainAPI() {
         }
     }
 
+
+    suspend fun unshorten_linkup(uri: String): String {
+
+        var r: NiceResponse? = null
+        var uri = uri
+        if (uri.contains("/tv/")) {
+            uri = uri.replace("/tv/", "/tva/")
+        }
+        else if (uri.contains("delta")) {
+            uri = uri.replace("/delta/", "/adelta/")
+        }
+        else if (uri.contains("/ga/") || uri.contains("/ga2/")) {
+            uri = Base64.decode(uri.split('/').last().toByteArray(), Base64.DEFAULT).decodeToString().trim()
+        }
+        else if (uri.contains("/speedx/")) {
+            uri = uri.replace("http://linkup.pro/speedx", "http://speedvideo.net")
+        }
+        else {
+            r = app.get(uri, allowRedirects = true)
+            uri = r.url
+            var link = Regex("<iframe[^<>]*src=\\'([^'>]*)\\'[^<>]*>").findAll(r.text).map { it.value }.toList()
+            if (link.isEmpty()) {
+                link = Regex("""action="(?:[^/]+.*?/[^/]+/([a-zA-Z0-9_]+))">""").findAll(r.text).map { it.value }.toList()
+            }
+            if (link.isNotEmpty()) {
+                uri = link.toString()
+            }
+        }
+        val short = Regex("""^https?://.*?(https?://.*)""").findAll(uri).map { it.value }.toList()
+        if (short.isNotEmpty()){
+            uri = short[0]
+        }
+        if (r==null){
+            r = app.get(
+                uri,
+                allowRedirects = false)
+            if (r.headers["location"]!= null){
+                uri = r.headers["location"].toString()
+            }
+        }
+        if (uri.contains("snip.")) {
+            if (uri.contains("out_generator")) {
+                uri = Regex("url=(.*)\$").find( uri)!!.value
+            }
+            else if (uri.contains("/decode/")) {
+                uri = app.get(uri, allowRedirects = true).url
+            }
+        }
+        return uri
+    }
+
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -166,9 +220,18 @@ class Filmpertutti : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         data.drop(1).dropLast(1).split(",").forEach { id ->
-            val doc2 = app.get(id).document
-            val id2 = app.get(doc2.selectFirst("iframe")!!.attr("src")).url
-            loadExtractor(id2, data, callback)
+            if (id.contains("isecure")){
+                val id2 = unshorten_linkup(id)
+                loadExtractor(id2, data, callback)
+            }
+            else if (id.contains("buckler")){
+                val doc2 = app.get(id).document
+                val id2 = app.get(doc2.selectFirst("iframe")!!.attr("src")).url
+                loadExtractor(id2, data, callback)
+            }
+            else{
+                loadExtractor(id, data, callback)
+            }
         }
         return true
     }
