@@ -12,7 +12,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addRating
 import com.lagradost.nicehttp.NiceResponse
 
 
-class Filmpertutti : MainAPI() {
+class FilmpertuttiProvider : MainAPI() {
     override var lang = "it"
     override var mainUrl = "https://www.filmpertutti.buzz"
     override var name = "Filmpertutti"
