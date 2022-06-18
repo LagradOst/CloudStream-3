@@ -140,6 +140,8 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
     //mixdrop extractors
     MixDropBz(),
     MixDropCh(),
+    MixDropTo(),
+
     MixDrop(),
 
     Mcloud(),

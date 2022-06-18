@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 
+
 class CineblogProvider : MainAPI() {
     override var lang = "it"
     override var mainUrl = "https://cb01.rip"
@@ -28,6 +29,13 @@ class CineblogProvider : MainAPI() {
                 val home = soup.select("article.item.movies").map {
                     val title = it.selectFirst("div.data > h3 > a")!!.text().substringBefore("(")
                     val link = it.selectFirst("div.poster > a")!!.attr("href")
+                    val qualitydata = it.selectFirst("span.quality")
+                    val quality = if (qualitydata!= null) {
+                        getQualityFromString(qualitydata.text())
+                    }
+                    else {
+                        null
+                    }
                     TvSeriesSearchResponse(
                         title,
                         link,
@@ -36,6 +44,7 @@ class CineblogProvider : MainAPI() {
                         it.selectFirst("img")!!.attr("src"),
                         null,
                         null,
+                        quality = quality
                     )
                 }
 
@@ -82,8 +91,7 @@ class CineblogProvider : MainAPI() {
                 href,
                 this.name,
                 TvType.Movie,
-                poster,
-                null
+                poster
             )
 
         }
@@ -96,7 +104,6 @@ class CineblogProvider : MainAPI() {
         val title = document.selectFirst("div.data > h1")!!.text().substringBefore("(")
         val description = document.select("#info > div.wp-content > p").html().toString()
         val rating = null
-
         var year = document.selectFirst(" div.data > div.extra > span.date")!!.text().substringAfter(",")
             .filter { it.isDigit() }
         if (year.length > 4) {
@@ -114,8 +121,7 @@ class CineblogProvider : MainAPI() {
                 href,
                 this.name,
                 TvType.Movie,
-                posterUrl,
-                null
+                posterUrl
             )
 
         }
