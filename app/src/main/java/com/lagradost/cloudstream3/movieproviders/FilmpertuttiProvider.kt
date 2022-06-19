@@ -7,6 +7,8 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.LoadResponse.Companion.addRating
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.nicehttp.NiceResponse
 import org.jsoup.nodes.Element
 
@@ -115,7 +117,7 @@ class FilmpertuttiProvider : MainAPI() {
                 element.select("div.episode-wrap").map { episode ->
                     val href =
                         episode.select("#links > div > div > table > tbody:nth-child(2) > tr")
-                            .map { it.selectFirst("a")!!.attr("href") }.toString()
+                            .map { it.selectFirst("a")!!.attr("href") }.toJson()
                     val epNum = episode.selectFirst("li.season-no")!!.text().substringAfter("x")
                         .filter { it.isDigit() }.toIntOrNull()
                     val epTitle = episode.selectFirst("li.other_link > a")?.text()
@@ -146,9 +148,9 @@ class FilmpertuttiProvider : MainAPI() {
 
             val urls0 = document.select("div.embed-player")
             val urls = if (urls0.isNotEmpty()){
-                    urls0.map { it.attr("data-id") }.toString()
+                    urls0.map { it.attr("data-id") }.toJson()
                 }
-            else{ document.select("#info > ul > li ").map { it.selectFirst("a")!!.attr("href") }.toString() }
+            else{ document.select("#info > ul > li ").map { it.selectFirst("a")!!.attr("href") }.toJson() }
 
             return newMovieLoadResponse(
                 title,
@@ -221,7 +223,7 @@ class FilmpertuttiProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        data.drop(1).dropLast(1).split(",").forEach { id ->
+        tryParseJson<List<String>>(data)?.forEach { id ->
             if (id.contains("buckler")){
                 val id2 = unshorten_linkup(id).trim().replace("/v/","/e/").replace("/f/","/e/")
                 loadExtractor(id2, data, callback)
