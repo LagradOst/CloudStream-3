@@ -1,9 +1,7 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -42,7 +40,7 @@ class OtakudesuProvider : MainAPI() {
 
     override suspend fun getMainPage(): HomePageResponse {
         val document = app.get(mainUrl).document
-        Log.i("HEXATED", mainUrl)
+
         val homePageList = ArrayList<HomePageList>()
 
         document.select("div.rseries").forEach { block ->
