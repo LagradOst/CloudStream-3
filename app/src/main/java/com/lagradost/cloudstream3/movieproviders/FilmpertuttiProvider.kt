@@ -1,7 +1,5 @@
 package com.lagradost.cloudstream3.movieproviders
-
 import android.util.Base64
-import androidx.core.text.isDigitsOnly
 import androidx.core.text.parseAsHtml
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.logError
@@ -10,6 +8,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.LoadResponse.Companion.addRating
 import com.lagradost.nicehttp.NiceResponse
+import org.jsoup.nodes.Element
 
 
 class FilmpertuttiProvider : MainAPI() {
@@ -69,13 +68,8 @@ class FilmpertuttiProvider : MainAPI() {
             val title = it.selectFirst("div.title")!!.text().substringBeforeLast("(").substringBeforeLast("[")
             val link = it.selectFirst("a")!!.attr("href")
             val image = it.selectFirst("a")!!.attr("data-thumbnail")
-            val qualitydata = it.selectFirst("div.hd")
-            val quality = if (qualitydata!= null) {
-                getQualityFromString(qualitydata.text())
-            }
-            else {
-                null
-            }
+            val quality = getQualityFromString(it.selectFirst("div.hd")?.text())
+
             MovieSearchResponse(
                 title,
                 link,
@@ -95,27 +89,19 @@ class FilmpertuttiProvider : MainAPI() {
         val title = document.selectFirst("#content > h1")!!.text().substringBeforeLast("(")
             .substringBeforeLast("[")
 
-        val descipt0 = document.selectFirst("i.fa.fa-file-text-o.fa-fw")
+        val descipt = document.selectFirst("i.fa.fa-file-text-o.fa-fw")?.parent()?.nextSibling()?.toString()?.parseAsHtml().toString()
 
-        val descipt = if (descipt0!= null){
-            descipt0.parent()!!.nextSibling()!!.toString().parseAsHtml().toString()
-        } else{null}
 
         val rating = document.selectFirst("div.rating > div.value")?.text()
-        val year0 = document.selectFirst("i.fa.fa-calendar.fa-fw")
-        val year = if (year0!= null){
-            year0.parent()!!.nextSibling()!!.childNode(0)
-                .toString().substringAfterLast(" ")
-                .filter { it.isDigit() }.toInt()
-        } else{null}
+        val year = (document.selectFirst("i.fa.fa-calendar.fa-fw")?.parent()?.nextSibling() as Element)
+            .text().substringAfterLast(" ").filter { it.isDigit() }.toInt()
+
 
         val poster = document.selectFirst("div.meta > div > img")!!.attr("data-src")
 
 
-        val trailerurl = if (document.selectFirst("div.youtube-player")!=null){
-            "https://www.youtube.com/watch?v=" + document.selectFirst("div.youtube-player")!!
-                .attr("data-id")}
-        else{null}
+        val trailerurl = document.selectFirst("div.youtube-player").let{ urldata->
+            "https://www.youtube.com/watch?v=" + urldata?.attr("data-id")}
 
         if (type == TvType.TvSeries) {
 
@@ -129,9 +115,7 @@ class FilmpertuttiProvider : MainAPI() {
                             .map { it.selectFirst("a")!!.attr("href") }.toString()
                     val epNum = episode.selectFirst("li.season-no")!!.text().substringAfter("x")
                         .filter { it.isDigit() }.toIntOrNull()
-                    val epTitle = if(episode.selectFirst("li.other_link > a") != null) {
-                        episode.selectFirst("li.other_link > a")!!.text()
-                    } else { null }
+                    val epTitle = episode.selectFirst("li.other_link > a")?.text()
 
                     val posterUrl = episode.selectFirst("figure > img")!!.attr("data-src")
                     episodeList.add(
@@ -158,11 +142,11 @@ class FilmpertuttiProvider : MainAPI() {
         } else {
 
             val urls0 = document.select("div.embed-player")
-            val urls = if (urls0.size != 0){
+            val urls = if (urls0.isNotEmpty()){
                     urls0.map { it.attr("data-id") }.toString()
-                } else{
-                document.select("#info > ul > li ").map { it.selectFirst("a")!!.attr("href") }.toString()
-            }
+                }
+            else{ document.select("#info > ul > li ").map { it.selectFirst("a")!!.attr("href") }.toString() }
+
             return newMovieLoadResponse(
                 title,
                 url,
@@ -183,32 +167,27 @@ class FilmpertuttiProvider : MainAPI() {
     suspend fun unshorten_linkup(uri: String): String {
         var r: NiceResponse? = null
         var uri = uri
-        if (uri.contains("/tv/")) {
-            uri = uri.replace("/tv/", "/tva/")
-        }
-        else if (uri.contains("delta")) {
-            uri = uri.replace("/delta/", "/adelta/")
-        }
-        else if (uri.contains("/ga/") || uri.contains("/ga2/")) {
-            uri = Base64.decode(uri.split('/').last().toByteArray(), Base64.DEFAULT).decodeToString().trim()
-        }
-        else if (uri.contains("/speedx/")) {
-            uri = uri.replace("http://linkup.pro/speedx", "http://speedvideo.net")
-        }
-        else {
-            r = app.get(uri, allowRedirects = true)
-            uri = r.url
-            var link = Regex("<iframe[^<>]*src=\\'([^'>]*)\\'[^<>]*>").findAll(r.text).map { it.value }.toList()
-            if (link.isEmpty()) {
-                link = Regex("""action="(?:[^/]+.*?/[^/]+/([a-zA-Z0-9_]+))">""").findAll(r.text).map { it.value }.toList()
-            }
-            if (link.isEmpty()){
-                link = listOf(Regex("""href","((.|\\n)*?)"""").findAll(r.text).elementAt(1).groupValues[1])
-            }
-            if (link.isNotEmpty()) {
-                uri = link[0]
+        when{
+            uri.contains("/tv/") -> uri = uri.replace("/tv/", "/tva/")
+            uri.contains("delta") -> uri = uri.replace("/delta/", "/adelta/")
+            (uri.contains("/ga/") || uri.contains("/ga2/")) -> uri = Base64.decode(uri.split('/').last().toByteArray(), Base64.DEFAULT).decodeToString().trim()
+            uri.contains("/speedx/") -> uri = uri.replace("http://linkup.pro/speedx", "http://speedvideo.net")
+            else -> {
+                r = app.get(uri, allowRedirects = true)
+                uri = r.url
+                var link = Regex("<iframe[^<>]*src=\\'([^'>]*)\\'[^<>]*>").findAll(r.text).map { it.value }.toList()
+                if (link.isEmpty()) {
+                    link = Regex("""action="(?:[^/]+.*?/[^/]+/([a-zA-Z0-9_]+))">""").findAll(r.text).map { it.value }.toList()
+                }
+                if (link.isEmpty()){
+                    link = listOf(Regex("""href","((.|\\n)*?)"""").findAll(r.text).elementAt(1).groupValues[1])
+                }
+                if (link.isNotEmpty()) {
+                    uri = link[0]
+                }
             }
         }
+
         val short = Regex("""^https?://.*?(https?://.*)""").findAll(uri).map { it.value }.toList()
         if (short.isNotEmpty()){
             uri = short[0]
@@ -246,8 +225,8 @@ class FilmpertuttiProvider : MainAPI() {
             }
             else if (id.contains("isecure")){
                 val doc1 = app.get(id).document
-                val id = doc1.selectFirst("iframe")!!.attr("src")
-                loadExtractor(id, data, callback)
+                val id2 = doc1.selectFirst("iframe")!!.attr("src")
+                loadExtractor(id2, data, callback)
             }
             else{
                 loadExtractor(id, data, callback)

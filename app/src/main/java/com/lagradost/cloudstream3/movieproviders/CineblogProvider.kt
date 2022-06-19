@@ -29,13 +29,7 @@ class CineblogProvider : MainAPI() {
                 val home = soup.select("article.item.movies").map {
                     val title = it.selectFirst("div.data > h3 > a")!!.text().substringBefore("(")
                     val link = it.selectFirst("div.poster > a")!!.attr("href")
-                    val qualitydata = it.selectFirst("span.quality")
-                    val quality = if (qualitydata!= null) {
-                        getQualityFromString(qualitydata.text())
-                    }
-                    else {
-                        null
-                    }
+                    val quality = getQualityFromString(it.selectFirst("span.quality")?.text())
                     TvSeriesSearchResponse(
                         title,
                         link,
