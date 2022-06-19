@@ -89,12 +89,15 @@ class FilmpertuttiProvider : MainAPI() {
         val title = document.selectFirst("#content > h1")!!.text().substringBeforeLast("(")
             .substringBeforeLast("[")
 
-        val descipt = document.selectFirst("i.fa.fa-file-text-o.fa-fw")?.parent()?.nextSibling()?.toString()?.parseAsHtml().toString()
+        val description = document.selectFirst("i.fa.fa-file-text-o.fa-fw")?.parent()?.nextSibling()?.toString()?.parseAsHtml().toString()
 
 
         val rating = document.selectFirst("div.rating > div.value")?.text()
-        val year = (document.selectFirst("i.fa.fa-calendar.fa-fw")?.parent()?.nextSibling() as Element)
-            .text().substringAfterLast(" ").filter { it.isDigit() }.toInt()
+
+        val year =
+            document.selectFirst("#content > h1")!!.text().substringAfterLast("(").filter { it.isDigit() }.toIntOrNull() ?:
+            description.substringAfter("trasmessa nel").take(6).filter { it.isDigit() }.toIntOrNull() ?:
+            (document.selectFirst("i.fa.fa-calendar.fa-fw")?.parent()?.nextSibling() as Element).text().substringAfterLast(" ").filter { it.isDigit() }.toInt()
 
 
         val poster = document.selectFirst("div.meta > div > img")!!.attr("data-src")
@@ -135,7 +138,7 @@ class FilmpertuttiProvider : MainAPI() {
             ) {
                 this.posterUrl = poster
                 this.year = year
-                this.plot = descipt
+                this.plot = description
                 addRating(rating)
                 addTrailer(trailerurl)
             }
@@ -155,7 +158,7 @@ class FilmpertuttiProvider : MainAPI() {
             ) {
                 posterUrl = fixUrlNull(poster)
                 this.year = year
-                this.plot = descipt
+                this.plot = description
                 addRating(rating)
                 addTrailer(trailerurl)
 
