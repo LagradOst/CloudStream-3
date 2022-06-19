@@ -100,7 +100,7 @@ class FilmpertuttiProvider : MainAPI() {
             (document.selectFirst("i.fa.fa-calendar.fa-fw")?.parent()?.nextSibling() as Element?)?.text()?.substringAfterLast(" ")?.filter { it.isDigit() }?.toIntOrNull()
 
 
-        val poster = document.selectFirst("div.meta > div > img")!!.attr("data-src")
+        val poster = document.selectFirst("div.meta > div > img")?.attr("data-src")
 
 
         val trailerurl = document.selectFirst("div.youtube-player").let{ urldata->
