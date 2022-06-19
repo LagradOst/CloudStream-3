@@ -97,7 +97,7 @@ class FilmpertuttiProvider : MainAPI() {
         val year =
             document.selectFirst("#content > h1")!!.text().substringAfterLast("(").filter { it.isDigit() }.toIntOrNull() ?:
             description.substringAfter("trasmessa nel").take(6).filter { it.isDigit() }.toIntOrNull() ?:
-            (document.selectFirst("i.fa.fa-calendar.fa-fw")?.parent()?.nextSibling() as Element).text().substringAfterLast(" ").filter { it.isDigit() }.toInt()
+            (document.selectFirst("i.fa.fa-calendar.fa-fw")?.parent()?.nextSibling() as Element?)?.text()?.substringAfterLast(" ")?.filter { it.isDigit() }?.toIntOrNull()
 
 
         val poster = document.selectFirst("div.meta > div > img")!!.attr("data-src")
