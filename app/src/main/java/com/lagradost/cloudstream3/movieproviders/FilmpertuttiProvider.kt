@@ -40,7 +40,7 @@ class FilmpertuttiProvider : MainAPI() {
                     val image = it.selectFirst("a")!!.attr("data-thumbnail")
                     val qualitydata = it.selectFirst("div.hd")
                     val quality = if (qualitydata!= null) {
-                        getQualityFromString(qualitydata.text())
+                        getQualityFromString(qualitydata?.text())
                     }
                     else {
                         null
@@ -97,7 +97,7 @@ class FilmpertuttiProvider : MainAPI() {
         val rating = document.selectFirst("div.rating > div.value")?.text()
 
         val year =
-            document.selectFirst("#content > h1")!!.text().substringAfterLast("(").filter { it.isDigit() }.toIntOrNull() ?:
+            document.selectFirst("#content > h1")?.text()?.substringAfterLast("(")?.filter { it.isDigit() }?.toIntOrNull() ?:
             description.substringAfter("trasmessa nel").take(6).filter { it.isDigit() }.toIntOrNull() ?:
             (document.selectFirst("i.fa.fa-calendar.fa-fw")?.parent()?.nextSibling() as Element?)?.text()?.substringAfterLast(" ")?.filter { it.isDigit() }?.toIntOrNull()
 
@@ -105,8 +105,9 @@ class FilmpertuttiProvider : MainAPI() {
         val poster = document.selectFirst("div.meta > div > img")?.attr("data-src")
 
 
-        val trailerurl = document.selectFirst("div.youtube-player").let{ urldata->
-            "https://www.youtube.com/watch?v=" + urldata?.attr("data-id")}
+        val trailerurl = document.selectFirst("div.youtube-player")?.attr("data-id")?.let{ urldata->
+            "https://www.youtube.com/watch?v=$urldata"
+        }
 
         if (type == TvType.TvSeries) {
 
@@ -122,7 +123,7 @@ class FilmpertuttiProvider : MainAPI() {
                         .filter { it.isDigit() }.toIntOrNull()
                     val epTitle = episode.selectFirst("li.other_link > a")?.text()
 
-                    val posterUrl = episode.selectFirst("figure > img")!!.attr("data-src")
+                    val posterUrl = episode.selectFirst("figure > img")?.attr("data-src")
                     episodeList.add(
                         Episode(
                             href,
@@ -150,7 +151,7 @@ class FilmpertuttiProvider : MainAPI() {
             val urls = if (urls0.isNotEmpty()){
                     urls0.map { it.attr("data-id") }.toJson()
                 }
-            else{ document.select("#info > ul > li ").map { it.selectFirst("a")!!.attr("href") }.toJson() }
+            else{ document.select("#info > ul > li ").mapNotNull { it.selectFirst("a")?.attr("href") }.toJson() }
 
             return newMovieLoadResponse(
                 title,
