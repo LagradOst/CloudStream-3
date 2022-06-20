@@ -1,5 +1,4 @@
 package com.lagradost.cloudstream3.movieproviders
-import android.util.Base64
 import androidx.core.text.parseAsHtml
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.logError
@@ -176,27 +175,25 @@ class FilmpertuttiProvider : MainAPI() {
         when{
             uri.contains("/tv/") -> uri = uri.replace("/tv/", "/tva/")
             uri.contains("delta") -> uri = uri.replace("/delta/", "/adelta/")
-            (uri.contains("/ga/") || uri.contains("/ga2/")) -> uri = Base64.decode(uri.split('/').last().toByteArray(), Base64.DEFAULT).decodeToString().trim()
+            (uri.contains("/ga/") || uri.contains("/ga2/")) -> uri = base64Decode(uri.split('/').last()).trim()
             uri.contains("/speedx/") -> uri = uri.replace("http://linkup.pro/speedx", "http://speedvideo.net")
             else -> {
                 r = app.get(uri, allowRedirects = true)
                 uri = r.url
-                var link = Regex("<iframe[^<>]*src=\\'([^'>]*)\\'[^<>]*>").findAll(r.text).map { it.value }.toList()
-                if (link.isEmpty()) {
-                    link = Regex("""action="(?:[^/]+.*?/[^/]+/([a-zA-Z0-9_]+))">""").findAll(r.text).map { it.value }.toList()
-                }
-                if (link.isEmpty()){
-                    link = listOf(Regex("""href","((.|\\n)*?)"""").findAll(r.text).elementAt(1).groupValues[1])
-                }
-                if (link.isNotEmpty()) {
-                    uri = link[0]
+                val link =
+                    Regex("<iframe[^<>]*src=\\'([^'>]*)\\'[^<>]*>").find(r.text)?.value ?:
+                    Regex("""action="(?:[^/]+.*?/[^/]+/([a-zA-Z0-9_]+))">""").find(r.text)?.value ?:
+                    Regex("""href","((.|\\n)*?)"""").findAll(r.text).elementAtOrNull(1)?.groupValues?.get(1)
+
+                if (link!=null) {
+                    uri = link
                 }
             }
         }
 
-        val short = Regex("""^https?://.*?(https?://.*)""").findAll(uri).map { it.value }.toList()
-        if (short.isNotEmpty()){
-            uri = short[0]
+        val short = Regex("""^https?://.*?(https?://.*)""").find(uri)?.value
+        if (short!=null){
+            uri = short
         }
         if (r==null){
             r = app.get(
@@ -208,7 +205,7 @@ class FilmpertuttiProvider : MainAPI() {
         }
         if (uri.contains("snip.")) {
             if (uri.contains("out_generator")) {
-                uri = Regex("url=(.*)\$").find( uri)!!.value
+                uri = Regex("url=(.*)\$").find(uri)!!.value
             }
             else if (uri.contains("/decode/")) {
                 uri = app.get(uri, allowRedirects = true).url
