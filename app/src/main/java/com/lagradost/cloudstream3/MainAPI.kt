@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.animeproviders.*
 import com.lagradost.cloudstream3.metaproviders.CrossTmdbProvider
 import com.lagradost.cloudstream3.movieproviders.*
@@ -93,6 +92,7 @@ object APIHolder {
             TantifilmProvider(),
             CineblogProvider(),
             AltadefinizioneProvider(),
+            FilmpertuttiProvider(),
             HDMovie5(),
             RebahinProvider(),
             LayarKacaProvider(),
@@ -908,11 +908,11 @@ interface LoadResponse {
             this.actors = actors?.map { actor -> ActorData(actor) }
         }
 
-        fun LoadResponse.getMalId() : String? {
+        fun LoadResponse.getMalId(): String? {
             return this.syncData[malIdPrefix]
         }
 
-        fun LoadResponse.getAniListId() : String? {
+        fun LoadResponse.getAniListId(): String? {
             return this.syncData[aniListIdPrefix]
         }
 
@@ -1013,7 +1013,7 @@ interface LoadResponse {
 
 fun LoadResponse?.isEpisodeBased(): Boolean {
     if (this == null) return false
-    return (this is AnimeLoadResponse || this is TvSeriesLoadResponse) && this.type.isEpisodeBased()
+    return this is EpisodeResponse && this.type.isEpisodeBased()
 }
 
 fun LoadResponse?.isAnimeBased(): Boolean {
@@ -1024,6 +1024,17 @@ fun LoadResponse?.isAnimeBased(): Boolean {
 fun TvType?.isEpisodeBased(): Boolean {
     if (this == null) return false
     return (this == TvType.TvSeries || this == TvType.Anime)
+}
+
+
+data class NextAiring(
+    val episode: Int,
+    val unixTime: Long,
+)
+
+interface EpisodeResponse {
+    var showStatus: ShowStatus?
+    var nextAiring: NextAiring?
 }
 
 data class TorrentLoadResponse(
@@ -1059,7 +1070,7 @@ data class AnimeLoadResponse(
     override var year: Int? = null,
 
     var episodes: MutableMap<DubStatus, List<Episode>> = mutableMapOf(),
-    var showStatus: ShowStatus? = null,
+    override var showStatus: ShowStatus? = null,
 
     override var plot: String? = null,
     override var tags: List<String>? = null,
@@ -1073,7 +1084,8 @@ data class AnimeLoadResponse(
     override var comingSoon: Boolean = false,
     override var syncData: MutableMap<String, String> = mutableMapOf(),
     override var posterHeaders: Map<String, String>? = null,
-) : LoadResponse
+    override var nextAiring: NextAiring? = null,
+) : LoadResponse, EpisodeResponse
 
 fun AnimeLoadResponse.addEpisodes(status: DubStatus, episodes: List<Episode>?) {
     if (episodes == null) return
@@ -1231,7 +1243,7 @@ data class TvSeriesLoadResponse(
     override var year: Int? = null,
     override var plot: String? = null,
 
-    var showStatus: ShowStatus? = null,
+    override var showStatus: ShowStatus? = null,
     override var rating: Int? = null,
     override var tags: List<String>? = null,
     override var duration: Int? = null,
@@ -1241,7 +1253,8 @@ data class TvSeriesLoadResponse(
     override var comingSoon: Boolean = false,
     override var syncData: MutableMap<String, String> = mutableMapOf(),
     override var posterHeaders: Map<String, String>? = null,
-) : LoadResponse
+    override var nextAiring: NextAiring? = null,
+) : LoadResponse, EpisodeResponse
 
 suspend fun MainAPI.newTvSeriesLoadResponse(
     name: String,
