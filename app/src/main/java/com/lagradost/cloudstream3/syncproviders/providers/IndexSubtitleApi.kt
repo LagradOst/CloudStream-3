@@ -4,13 +4,16 @@ import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.subtitles.AbstractSubProvider
 import com.lagradost.cloudstream3.subtitles.AbstractSubtitleEntities
+import com.lagradost.cloudstream3.syncproviders.InAppAuthAPIManager
 import com.lagradost.cloudstream3.utils.SubtitleHelper
 
-class IndexSubtitleApi : AbstractSubProvider {
-    val idPrefix = "indexsubtitle"
-    val host = "https://indexsubtitle.com"
+class IndexSubtitleApi(index: Int) : InAppAuthAPIManager(index), AbstractSubProvider {
+    override val idPrefix = "indexsubtitle"
+    override val createAccountUrl = ""
+    override val requiresLogin = false
 
     companion object {
+        const val host = "https://indexsubtitle.com"
         const val TAG = "INDEXSUBS"
     }
 
