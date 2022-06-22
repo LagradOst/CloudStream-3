@@ -184,7 +184,7 @@ class IndexSubtitleApi(index: Int) : InAppAuthAPIManager(index), AbstractSubProv
         urlItems.forEach { url ->
             val request = app.get(url)
             if (request.isSuccessful) {
-                request.document.select("div.my-3.p-3 div.media").apmap { block ->
+                request.document.select("div.my-3.p-3 div.media").map { block ->
                     if (block.select("span.d-block span[data-original-title=Language]").text().trim()
                             .contains("$queryLang")
                     ) {
