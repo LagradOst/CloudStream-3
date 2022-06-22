@@ -74,6 +74,16 @@ class IndexSubtitleApi : AbstractSubProvider {
         }
     }
 
+    private fun isRightEps(text: String, seasonNum: Int?, epNum: Int?) : Boolean {
+        val FILTER_EPS_REGEX = Regex("(?i)((Chapter\\s?0?${epNum})|((Season)?\\s?0?${seasonNum}?\\s?(Episode)\\s?0?${epNum}[^0-9]))|(?i)((S?0?${seasonNum}?E0?${epNum}[^0-9])|(0?${seasonNum}[a-z]0?${epNum}[^0-9]))")
+        return text.contains(FILTER_EPS_REGEX)
+    }
+
+    private fun haveEps(text: String) : Boolean {
+        val HAVE_EPS_REGEX = Regex("(?i)((Chapter\\s?0?\\d)|((Season)?\\s?0?\\d?\\s?(Episode)\\s?0?\\d))|(?i)((S?0?\\d?E0?\\d)|(0?\\d[a-z]0?\\d))")
+        return text.contains(HAVE_EPS_REGEX)
+    }
+
     override suspend fun search(query: AbstractSubtitleEntities.SubtitleSearch): List<AbstractSubtitleEntities.SubtitleEntity> {
         val imdbId = query.imdb ?: 0
         val lang = query.lang
@@ -84,6 +94,21 @@ class IndexSubtitleApi : AbstractSubProvider {
         val yearNum = query.year ?: 0
 
         val urlItems = ArrayList<String>()
+
+        fun cleanResources(results: MutableList<AbstractSubtitleEntities.SubtitleEntity>, name: String, link: String) {
+            results.add(
+                AbstractSubtitleEntities.SubtitleEntity(
+                    idPrefix = idPrefix,
+                    name = name,
+                    lang = queryLang.toString(),
+                    data = link,
+                    type = if (seasonNum > 0) TvType.TvSeries else TvType.Movie,
+                    epNumber = epNum,
+                    seasonNumber = seasonNum,
+                    year = yearNum
+                )
+            )
+        }
 
         val document = app.get("$host/?search=$queryText").document
 
@@ -122,14 +147,14 @@ class IndexSubtitleApi : AbstractSubProvider {
                                     ?.attr("href"))?.toLongOrNull()
                             val year = itemDoc.selectFirst("div.d-flex span.badge.badge-success")
                                     ?.ownText()
-                                    ?.trim()?.toIntOrNull()
+                                    ?.trim().toString()
                             Log.i(TAG, "id => $id \nyear => $year||$yearNum")
                             if (imdbId > 0) {
                                 if (id == imdbId) {
                                     urlItems.add(urlItem)
                                 }
                             } else {
-                                if (year == yearNum) {
+                                if (year.contains("$yearNum")) {
                                     urlItems.add(urlItem)
                                 }
                             }
@@ -156,53 +181,27 @@ class IndexSubtitleApi : AbstractSubProvider {
         urlItems.forEach { url ->
             val request = app.get(url)
             if (request.isSuccessful) {
-                val maxItem = 10 // prevents ddos site
-                var item = 0
                 request.document.select("div.my-3.p-3 div.media").apmap { block ->
                     if (block.select("span.d-block span[data-original-title=Language]").text().trim()
-                            .contains("$queryLang") && item < maxItem
+                            .contains("$queryLang")
                     ) {
-                        ++item
-                        app.get(
-                            fixUrl(
-                                block.selectFirst("a")!!.attr("href")
-                            )
-                        ).document.select("div.my-3.p-3 div.media").map {
-                            if(epNum > 0) {
-//                                Log.i(TAG, "title tv sub => ${it.selectFirst("strong.d-block.text-primary")?.text()!!}")
-                                if (it.selectFirst("strong.d-block.text-primary")?.text()?.trim()
-                                        ?.contains(Regex("(?i)((Season)?\\s?0?${seasonNum}?\\s?(Episode)\\s?0?${epNum}[^0-9])|(?i)((S?0?${seasonNum}?E0?${epNum}[^0-9])|(0?${seasonNum}[a-z]0?${epNum}[^0-9]))"))!!
-                                ) {
-                                    results.add(
-                                        AbstractSubtitleEntities.SubtitleEntity(
-                                            idPrefix = idPrefix,
-                                            name = it.selectFirst("strong.d-block.text-primary")?.text()!!,
-                                            lang = queryLang.toString(),
-                                            data = fixUrl(it.selectFirst("a")!!.attr("href")),
-                                            type = if (seasonNum > 0) TvType.TvSeries else TvType.Movie,
-                                            epNumber = epNum,
-                                            seasonNumber = seasonNum,
-                                            year = yearNum
-                                        )
-                                    )
-
-                                } else {
-                                    null
+                        var name = block.select("strong.text-primary").text().trim()
+                        val link: String?
+                        if(seasonNum > 0) {
+                            when {
+                                isRightEps(name, seasonNum, epNum) -> {
+                                    name = block.select("strong.text-primary").text().trim()
+                                    link = fixUrl(block.selectFirst("a")!!.attr("href"))
+                                    cleanResources(results, name, link)
                                 }
-                            } else {
-                                results.add(
-                                    AbstractSubtitleEntities.SubtitleEntity(
-                                        idPrefix = idPrefix,
-                                        name = it.selectFirst("strong.d-block.text-primary")?.text()!!,
-                                        lang = queryLang.toString(),
-                                        data = fixUrl(it.selectFirst("a")!!.attr("href")),
-                                        type = if (seasonNum > 0) TvType.TvSeries else TvType.Movie,
-                                        epNumber = epNum,
-                                        seasonNumber = seasonNum,
-                                        year = yearNum
-                                    )
-                                )
+                                !(haveEps(name)) -> {
+                                    name = "${block.select("strong.text-primary").text().trim()} (S${seasonNum}:E${epNum})"
+                                    link = fixUrl(block.selectFirst("a")!!.attr("href"))
+                                    cleanResources(results, name, link)
+                                }
                             }
+                        } else {
+                            cleanResources(results, name, fixUrl(block.selectFirst("a")!!.attr("href")))
                         }
                     }
                 }
@@ -211,8 +210,37 @@ class IndexSubtitleApi : AbstractSubProvider {
         return results
     }
 
-    override suspend fun load(data: AbstractSubtitleEntities.SubtitleEntity): String {
-        return data.data
+    override suspend fun load(data: AbstractSubtitleEntities.SubtitleEntity): String? {
+        val seasonNum = data.seasonNumber
+        val epNum = data.epNumber
+
+        val req = app.get(data.data)
+
+        if(req.isSuccessful) {
+            val document = req.document
+            val link = if (document.select("div.my-3.p-3 div.media").size == 1) {
+                fixUrl(
+                    document.selectFirst("div.my-3.p-3 div.media a")!!.attr("href")
+                )
+            } else {
+                document.select("div.my-3.p-3 div.media").map { block ->
+                    val name = block.selectFirst("strong.d-block.text-primary")?.text()?.trim().toString()
+                    if (seasonNum!! > 0) {
+                        if (isRightEps(name, seasonNum, epNum)) {
+                            fixUrl(block.selectFirst("a")!!.attr("href"))
+                        } else {
+                            null
+                        }
+                    } else {
+                        fixUrl(block.selectFirst("a")!!.attr("href"))
+                    }
+                }.first()
+            }
+            return link
+        }
+
+        return null
+
     }
 
 }
