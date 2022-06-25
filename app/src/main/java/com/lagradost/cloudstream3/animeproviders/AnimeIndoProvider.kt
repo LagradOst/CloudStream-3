@@ -1,15 +1,18 @@
 package com.lagradost.cloudstream3.animeproviders
 
+import android.util.Log
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.nicehttp.NiceResponse
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.ArrayList
 
 class AnimeIndoProvider : MainAPI() {
-    override var mainUrl = "https://anime-indo.one"
+    override var mainUrl = "https://animeindo.sbs"
     override var name = "AnimeIndo"
     override val hasMainPage = true
     override var lang = "id"
@@ -35,10 +38,34 @@ class AnimeIndoProvider : MainAPI() {
                 else -> ShowStatus.Completed
             }
         }
+
+        private suspend fun request(url: String): NiceResponse {
+            val req = app.get(
+                url,
+                cookies = mapOf("recaptcha_cookie" to "#Asia/Jakarta#-420#win32#Windows#0,false,false#Google Inc. (Intel)~ANGLE (Intel, Intel(R) HD Graphics 400 Direct3D11 vs_5_0 ps_5_0)")
+            )
+            if (req.isSuccessful) {
+                return req
+            } else {
+                val document = app.get(url).document
+                val captchaKey =
+                    document.select("script[src*=https://www.google.com/recaptcha/api.js?render=]")
+                        .attr("src").substringAfter("render=").substringBefore("&amp")
+                val token = getCaptchaToken(url, captchaKey)
+                return app.post(
+                    url,
+                    data = mapOf(
+                        "action" to "recaptcha_for_all",
+                        "token" to "$token",
+                        "sitekey" to captchaKey
+                    )
+                )
+            }
+        }
     }
 
     override suspend fun getMainPage(): HomePageResponse {
-        val document = app.get(mainUrl).document
+        val document = request(mainUrl).document
 
         val homePageList = ArrayList<HomePageList>()
 
@@ -88,7 +115,7 @@ class AnimeIndoProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val link = "$mainUrl/?s=$query"
-        val document = app.get(link).document
+        val document = request(link).document
 
         return document.select(".site-main.relat > article").map {
             val title = it.selectFirst("div.title > h2")!!.ownText().trim()
@@ -102,7 +129,7 @@ class AnimeIndoProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = request(url).document
 
         val title = document.selectFirst("h1.entry-title")?.text().toString().trim()
         val poster = document.selectFirst("div.thumb > img[itemprop=image]")?.attr("src")
@@ -146,7 +173,7 @@ class AnimeIndoProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        val document = app.get(data).document
+        val document = request(data).document
         val sources = document.select("div.itemleft > .mirror > option").mapNotNull {
             fixUrl(Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src"))
         }.map {
