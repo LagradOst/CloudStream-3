@@ -11,7 +11,7 @@ import java.net.URI
 import java.util.ArrayList
 
 class IdlixProvider : MainAPI() {
-    override var mainUrl = "https://193.178.172.113"
+    override var mainUrl = "https://idlix.xn--6frz82g"
     override var name = "Idlix"
     override val hasMainPage = true
     override var lang = "id"
