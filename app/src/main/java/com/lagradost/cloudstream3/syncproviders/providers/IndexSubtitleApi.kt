@@ -189,22 +189,19 @@ class IndexSubtitleApi(index: Int) : InAppAuthAPIManager(index), AbstractSubProv
                             .contains("$queryLang")
                     ) {
                         var name = block.select("strong.text-primary").text().trim()
-                        val link: String?
+                        val link = fixUrl(block.selectFirst("a")!!.attr("href"))
                         if(seasonNum > 0) {
                             when {
                                 isRightEps(name, seasonNum, epNum) -> {
-                                    name = block.select("strong.text-primary").text().trim()
-                                    link = fixUrl(block.selectFirst("a")!!.attr("href"))
                                     cleanResources(results, name, link)
                                 }
                                 !(haveEps(name)) -> {
-                                    name = "${block.select("strong.text-primary").text().trim()} (S${seasonNum}:E${epNum})"
-                                    link = fixUrl(block.selectFirst("a")!!.attr("href"))
+                                    name = "$name (S${seasonNum}:E${epNum})"
                                     cleanResources(results, name, link)
                                 }
                             }
                         } else {
-                            cleanResources(results, name, fixUrl(block.selectFirst("a")!!.attr("href")))
+                            cleanResources(results, name, link)
                         }
                     }
                 }
