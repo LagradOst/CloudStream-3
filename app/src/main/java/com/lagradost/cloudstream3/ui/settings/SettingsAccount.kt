@@ -19,6 +19,8 @@ import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.aniListApi
 import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.malApi
 import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.nginxApi
+import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.radarrApi
+import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.sonarrApi
 import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.openSubtitlesApi
 import com.lagradost.cloudstream3.syncproviders.AuthAPI
 import com.lagradost.cloudstream3.syncproviders.InAppAuthAPI
@@ -80,6 +82,8 @@ class SettingsAccount : PreferenceFragmentCompat() {
                     dialog.login_password_input?.isVisible = api.requiresPassword
                     dialog.login_server_input?.isVisible = api.requiresServer
                     dialog.login_username_input?.isVisible = api.requiresUsername
+                    dialog.login_path_input?.isVisible = api.requiresPath
+                    dialog.login_apikey_input?.isVisible = api.requiresApiKey
                     dialog.create_account?.isGone = api.createAccountUrl.isNullOrBlank()
                     dialog.create_account?.setOnClickListener {
                         val i = Intent(Intent.ACTION_VIEW)
@@ -107,6 +111,8 @@ class SettingsAccount : PreferenceFragmentCompat() {
                             password = if (api.requiresPassword) dialog.login_password_input?.text?.toString() else null,
                             email = if (api.requiresEmail) dialog.login_email_input?.text?.toString() else null,
                             server = if (api.requiresServer) dialog.login_server_input?.text?.toString() else null,
+                            path = if (api.requiresPath) dialog.login_path_input?.text?.toString() else null,
+                            apiKey = if (api.requiresApiKey) dialog.login_apikey_input?.text?.toString() else null,
                         )
                         ioSafe {
                             val isSuccessful = try {
@@ -185,6 +191,8 @@ class SettingsAccount : PreferenceFragmentCompat() {
                 R.string.anilist_key to aniListApi,
                 R.string.opensubtitles_key to openSubtitlesApi,
                 R.string.nginx_key to nginxApi,
+                R.string.radarr_key to radarrApi,
+                R.string.sonarr_key to sonarrApi,
             )
 
         for ((key, api) in syncApis) {

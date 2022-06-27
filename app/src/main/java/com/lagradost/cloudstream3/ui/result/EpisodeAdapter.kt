@@ -52,6 +52,8 @@ const val ACTION_SHOW_DESCRIPTION = 15
 const val ACTION_DOWNLOAD_EPISODE_SUBTITLE = 13
 const val ACTION_DOWNLOAD_EPISODE_SUBTITLE_MIRROR = 14
 
+const val ACTION_SHOW_ARR_OPTIONS = 15  // sonarr and radarr provider
+
 data class EpisodeClickEvent(val action: Int, val data: ResultEpisode)
 
 class EpisodeAdapter(

@@ -94,7 +94,7 @@
                 android:nextFocusRight="@id/cancel_btt"
                 android:nextFocusLeft="@id/apply_btt"
                 android:nextFocusUp="@id/login_server_input"
-                android:nextFocusDown="@id/apply_btt"
+                android:nextFocusDown="@id/login_path_input"
 
                 android:requiresFadingEdge="vertical"
                 android:layout_width="match_parent"
@@ -102,6 +102,35 @@
                 android:inputType="textVisiblePassword"
                 tools:ignore="LabelFor"
                 android:autofillHints="password" />
+        <EditText
+            android:textColorHint="?attr/grayTextColor"
+            android:hint="@string/example_path"
+            android:id="@+id/login_path_input"
+            android:nextFocusRight="@id/cancel_btt"
+            android:nextFocusLeft="@id/apply_btt"
+            android:nextFocusUp="@id/login_password_input"
+            android:nextFocusDown="@id/login_apikey_input"
+
+            android:requiresFadingEdge="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textUri"
+            tools:ignore="LabelFor" />
+        <EditText
+            android:textColorHint="?attr/grayTextColor"
+            android:hint="@string/example_api_key"
+            android:id="@+id/login_apikey_input"
+            android:nextFocusRight="@id/cancel_btt"
+            android:nextFocusLeft="@id/apply_btt"
+            android:nextFocusUp="@id/login_path_input"
+            android:nextFocusDown="@id/apply_btt"
+
+            android:requiresFadingEdge="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textVisiblePassword"
+            tools:ignore="LabelFor"
+            android:autofillHints="password" />
     </LinearLayout>
 
 

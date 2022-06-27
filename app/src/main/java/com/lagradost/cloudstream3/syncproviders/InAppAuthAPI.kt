@@ -8,6 +8,8 @@ interface InAppAuthAPI : AuthAPI {
         val password: String? = null,
         val server: String? = null,
         val email: String? = null,
+        val path: String? = null,
+        val apiKey: String? = null
     )
 
     // this is for displaying the UI
@@ -15,6 +17,8 @@ interface InAppAuthAPI : AuthAPI {
     val requiresUsername: Boolean
     val requiresServer: Boolean
     val requiresEmail: Boolean
+    val requiresPath: Boolean
+    val requiresApiKey: Boolean
 
     // if this is false we can assume that getLatestLoginData returns null and wont be called
     // this is used in case for some reason it is not preferred to store any login data besides the "token" or encrypted data
@@ -34,6 +38,8 @@ abstract class InAppAuthAPIManager(defIndex: Int) : AccountManager(defIndex), In
     override val requiresServer = false
     override val storesPasswordInPlainText = true
     override val requiresLogin = true
+    override val requiresPath = false
+    override val requiresApiKey = false
 
     // runs on startup
     @WorkerThread

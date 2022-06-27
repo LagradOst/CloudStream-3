@@ -18,6 +18,8 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.getMalId
 import com.lagradost.cloudstream3.animeproviders.GogoanimeProvider
 import com.lagradost.cloudstream3.animeproviders.NineAnimeProvider
 import com.lagradost.cloudstream3.metaproviders.SyncRedirector
+import com.lagradost.cloudstream3.movieproviders.RadarrProvider
+import com.lagradost.cloudstream3.movieproviders.SonarrProvider
 import com.lagradost.cloudstream3.mvvm.Resource
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.safeApiCall
@@ -524,6 +526,15 @@ class ResultViewModel : ViewModel() {
         } catch (e: Exception) {
             logError(e)
         }
+    }
+
+
+    fun loadSonarrResponse(data: String?, monitorStatus: String) = viewModelScope.launch  {
+        SonarrProvider.requestSonarrDownload(data, monitorStatus)
+    }
+
+    fun loadRadarrResponse(data: String?) = viewModelScope.launch  {
+        RadarrProvider.requestRadarrDownload(data)
     }
 
     fun load(url: String, apiName: String, showFillers: Boolean) = viewModelScope.launch {

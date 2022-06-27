@@ -132,8 +132,12 @@ object APIHolder {
             NontonAnimeIDProvider(),
             KuronimeProvider(),
             //MultiAnimeProvider(),
-            NginxProvider(),
             OlgplyProvider(),
+
+            // SELF HOSTED providers
+            NginxProvider(),
+            RadarrProvider(),
+            SonarrProvider(),
         )
 
 
@@ -353,7 +357,6 @@ const val PROVIDER_STATUS_DOWN = 0
 data class ProvidersInfoJson(
     @JsonProperty("name") var name: String,
     @JsonProperty("url") var url: String,
-    @JsonProperty("credentials") var credentials: String? = null,
     @JsonProperty("status") var status: Int,
 )
 
@@ -374,12 +377,10 @@ abstract class MainAPI {
         this.name = data.name
         if (data.url.isNotBlank() && data.url != "NONE")
             this.mainUrl = data.url
-        this.storedCredentials = data.credentials
     }
 
     open var name = "NONE"
     open var mainUrl = "NONE"
-    open var storedCredentials: String? = null
     open var canBeOverridden: Boolean = true
 
     //open val uniqueId : Int by lazy { this.name.hashCode() } // in case of duplicate providers you can have a shared id
@@ -558,6 +559,9 @@ enum class ProviderType {
 
     // When all data is from the site
     DirectProvider,
+
+    // when provider is managing a remote server (*arr: radarr or sonarr)
+    ArrProvider,
 }
 
 enum class VPNStatus {
@@ -708,6 +712,26 @@ fun MainAPI.newTvSeriesSearchResponse(
     val builder = TvSeriesSearchResponse(name, if (fix) fixUrl(url) else url, this.name, type)
     builder.initializer()
 
+    return builder
+}
+
+
+fun MainAPI.newSonarrTvSeriesLoadResponse(
+    name: String,
+    url: String,
+    type: TvType,
+    seasons: List<Episode>,
+    initializer: TvSeriesLoadResponse.() -> Unit = { }
+): TvSeriesLoadResponse {
+    val builder = TvSeriesLoadResponse(
+        name = name,
+        url = url,
+        apiName = this.name,
+        type = type,
+        episodes = seasons,
+        comingSoon = seasons.isEmpty(),
+    )
+    builder.initializer()
     return builder
 }
 

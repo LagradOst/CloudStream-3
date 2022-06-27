@@ -24,4 +24,12 @@
                 android:data="https://www.sarlays.com/use-nginx-with-cloudstream/" />
     </Preference>
 
+    <Preference
+        android:key="@string/radarr_key"
+        android:icon="@drawable/nginx" />
+
+    <Preference
+        android:key="@string/sonarr_key"
+        android:icon="@drawable/nginx" />
+
 </PreferenceScreen>

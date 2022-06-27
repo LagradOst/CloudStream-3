@@ -46,6 +46,7 @@ import com.lagradost.cloudstream3.APIHolder.updateHasTrailers
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.CommonActivity.getCastSession
 import com.lagradost.cloudstream3.CommonActivity.showToast
+import com.lagradost.cloudstream3.movieproviders.SonarrProvider
 import com.lagradost.cloudstream3.mvvm.*
 import com.lagradost.cloudstream3.syncproviders.providers.Kitsu
 import com.lagradost.cloudstream3.ui.WatchType
@@ -902,6 +903,74 @@ class ResultFragment : ResultTrailerPlayer() {
             activity?.popCurrentPage()
         }
 
+        result_arr_parent?.visibility = if (api.providerType == ProviderType.ArrProvider) {
+            VISIBLE
+        } else {
+            GONE
+        }
+        result_send_remote_button?.visibility = if (api.providerType == ProviderType.ArrProvider) {
+            VISIBLE
+        } else {
+            GONE
+        }
+
+        fun overrwiteSonarrAction(monitorStatus: String) {
+            val data = currentEpisodes?.firstOrNull()?.data
+            viewModel.loadSonarrResponse(data, monitorStatus)
+        }
+
+        fun displaySonarrDialog() {
+
+            context?.let { ctx ->
+                val builder = AlertDialog.Builder(ctx, R.style.AlertDialogCustom)
+                var sonarrDialog: AlertDialog? = null
+
+                val options =
+                    requireContext().resources.getStringArray(R.array.sonarr_monitor_choices)
+                val optionsValues =
+                    requireContext().resources.getStringArray(R.array.sonarr_monitor_choices_values)
+
+                val sonarrDialogTitle =
+                    requireContext().resources.getString(R.string.sonarr_dialog_pick_title)
+                builder.setTitle(sonarrDialogTitle)
+
+                val verifiedOptions = ArrayList<String>()
+                val verifiedOptionsValues = ArrayList<String>()
+
+
+                for (i in options.indices) {  // maybe useless
+                    val opv = optionsValues[i]
+                    val op = options[i]
+                    verifiedOptions.add(op)
+                    verifiedOptionsValues.add(opv)
+                }
+
+                builder.setItems(
+                    verifiedOptions.toTypedArray()
+                ) { _, which ->
+                    overrwiteSonarrAction(
+                        verifiedOptionsValues[which],
+                    )
+                    sonarrDialog?.dismissSafe(activity)
+                }
+                sonarrDialog = builder.create()
+                sonarrDialog.show()
+            }
+        }
+
+
+        if (api.name == "Sonarr") {
+            result_send_remote_button.setOnClickListener {
+                    displaySonarrDialog()
+            }
+        }
+        if (api.name == "Radarr") {
+            result_send_remote_button.setOnClickListener {
+                val data = currentEpisodes?.firstOrNull()?.data
+                viewModel.loadRadarrResponse(data)
+            }
+        }
+
         fun handleAction(episodeClick: EpisodeClickEvent): Job = main {
             if (episodeClick.action == ACTION_DOWNLOAD_EPISODE) {
                 val isMovie = currentIsMovie ?: return@main
@@ -1061,21 +1130,24 @@ class ResultFragment : ResultTrailerPlayer() {
                 }
 
                 ACTION_CLICK_DEFAULT -> {
-                    context?.let { ctx ->
-                        if (ctx.isConnectedToChromecast()) {
-                            handleAction(
-                                EpisodeClickEvent(
-                                    ACTION_CHROME_CAST_EPISODE,
-                                    episodeClick.data
+                    if (api.providerType != ProviderType.ArrProvider) { // disable find links for arr
+                        context?.let { ctx ->
+                            if (ctx.isConnectedToChromecast()) {
+                                handleAction(
+                                    EpisodeClickEvent(
+                                        ACTION_CHROME_CAST_EPISODE,
+                                        episodeClick.data
+                                    )
                                 )
-                            )
-                        } else {
-                            handleAction(
-                                EpisodeClickEvent(
-                                    ACTION_PLAY_EPISODE_IN_PLAYER,
-                                    episodeClick.data
+                            } else {
+                                handleAction(
+                                    EpisodeClickEvent(
+                                        ACTION_PLAY_EPISODE_IN_PLAYER,
+                                        episodeClick.data
+                                    )
                                 )
-                            )
+                            }
+
                         }
                     }
                 }
@@ -1394,6 +1466,8 @@ class ResultFragment : ResultTrailerPlayer() {
         observe(viewModel.selectedRange) { range ->
             result_episode_select?.text = range
         }
+
+
 
         observe(viewModel.rangeOptions) { range ->
             episodeRanges = range
@@ -1956,7 +2030,6 @@ class ResultFragment : ResultTrailerPlayer() {
                     if (d.type.isMovieType()) {
                         val hasDownloadSupport = api.hasDownloadSupport
                         lateFixDownloadButton(true)
-
                         result_play_movie?.setOnClickListener {
                             val card =
                                 currentEpisodes?.firstOrNull() ?: return@setOnClickListener

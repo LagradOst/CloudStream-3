@@ -661,6 +661,37 @@
                                       android:layout_height="match_parent" />-->
                         </LinearLayout>
 
+
+
+                        <LinearLayout
+                            android:id="@+id/result_arr_parent"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="5dp"
+                            android:orientation="vertical"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/result_send_remote_button"
+                                style="@style/WhiteButton"
+                                android:layout_width="match_parent"
+
+                                android:layout_gravity="center_vertical"
+                                android:layout_marginStart="0dp"
+                                android:layout_marginEnd="0dp"
+                                android:layout_marginBottom="10dp"
+                                android:nextFocusUp="@id/result_bookmark_button"
+                                android:nextFocusDown="@id/result_download_movie"
+                                android:text="@string/send_remote_server_button"
+                                android:visibility="visible"
+                                app:icon="@drawable/ic_outline_arrow_upward_24"
+                                tools:visibility="visible" />
+                        </LinearLayout>
+
+
+
+
                         <LinearLayout
                                 android:id="@+id/result_series_parent"
                                 android:layout_width="match_parent"

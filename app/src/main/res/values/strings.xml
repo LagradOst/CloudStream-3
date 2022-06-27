@@ -120,6 +120,7 @@
 
     <string name="play_movie_button">Play Movie</string>
     <string name="play_torrent_button">Stream Torrent</string>
+    <string name="send_remote_server_button">Download to server</string>
     <string name="pick_source">Sources</string>
     <string name="pick_subtitle">Subtitles</string>
     <string name="reload_error">Retry connection…</string>
@@ -354,6 +355,15 @@
     <string name="episode_action_reload_links">Reload links</string>
     <string name="episode_action_download_subtitle">Download subtitles</string>
 
+    <string name="sonarr_monitor_choice_all_eps">All Episodes</string>
+    <string name="sonarr_monitor_choice_future_eps">Future Episodes</string>
+    <string name="sonarr_monitor_choice_missing_eps">Missing Episodes</string>
+    <string name="sonarr_monitor_choice_existing_eps">Existing Episodes</string>
+    <string name="sonarr_monitor_choice_pilot_eps">Pilot Episodes</string>
+    <string name="sonarr_monitor_choice_first_season">Only First Season</string>
+    <string name="sonarr_monitor_choice_latest_season">Only Latest Season</string>
+    <string name="sonarr_monitor_choice_none">None</string>
+
     <string name="show_hd">Quality label</string>
     <string name="show_dub">Dub label</string>
     <string name="show_sub">Sub label</string>
@@ -448,10 +458,15 @@
     <string name="mal_key" translatable="false">mal_key</string>
     <string name="opensubtitles_key" translatable="false">opensubtitles_key</string>
     <string name="nginx_key" translatable="false">nginx_key</string>
+    <string name="radarr_key" translatable="false">radarr_key</string>
+    <string name="sonarr_key" translatable="false">sonarr_key</string>
+    <string name="sonarr_dialog_pick_title" translatable="false">Monitoring Options:</string>
     <string name="example_password">password123</string>
     <string name="example_username">MyCoolUsername</string>
     <string name="example_email">hello@world.com</string>
     <string name="example_ip">127.0.0.1</string>
+    <string name="example_path">/home/bob/media/files/</string>
+    <string name="example_api_key">868826cc01a165761d2624</string>
     <string name="example_site_name">MyCoolSite</string>
     <string name="example_site_url">example.com</string>
     <string name="example_lang_name">Language code (en)</string>

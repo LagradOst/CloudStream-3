@@ -206,6 +206,31 @@
         <item>8</item>
     </array>
 
+
+
+    <array name="sonarr_monitor_choices">
+        <item>@string/sonarr_monitor_choice_all_eps</item>
+        <item>@string/sonarr_monitor_choice_future_eps</item>
+        <item>@string/sonarr_monitor_choice_missing_eps</item>
+        <item>@string/sonarr_monitor_choice_existing_eps</item>
+        <item>@string/sonarr_monitor_choice_pilot_eps</item>
+        <item>@string/sonarr_monitor_choice_first_season</item>
+        <item>@string/sonarr_monitor_choice_latest_season</item>
+        <item>@string/sonarr_monitor_choice_none</item>
+    </array>
+
+    <array name="sonarr_monitor_choices_values">
+        <item>all</item>
+        <item>future</item>
+        <item>missing</item>
+        <item>existing</item>
+        <item>pilot</item>
+        <item>firstSeason</item>
+        <item>latestSeason</item>
+        <item>none</item>
+    </array>
+
+
     <array name="app_layout">
         <item>@string/automatic</item>
         <item>@string/phone_layout</item>

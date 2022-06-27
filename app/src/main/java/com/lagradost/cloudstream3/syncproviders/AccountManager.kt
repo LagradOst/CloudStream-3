@@ -6,6 +6,8 @@ import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.syncproviders.providers.AniListApi
 import com.lagradost.cloudstream3.syncproviders.providers.MALApi
 import com.lagradost.cloudstream3.syncproviders.providers.NginxApi
+import com.lagradost.cloudstream3.syncproviders.providers.RadarrApi
+import com.lagradost.cloudstream3.syncproviders.providers.SonarrApi
 import com.lagradost.cloudstream3.syncproviders.providers.OpenSubtitlesApi
 import java.util.concurrent.TimeUnit
 
@@ -15,6 +17,8 @@ abstract class AccountManager(private val defIndex: Int) : AuthAPI {
         val aniListApi = AniListApi(0)
         val openSubtitlesApi = OpenSubtitlesApi(0)
         val nginxApi = NginxApi(0)
+        val radarrApi = RadarrApi(0)
+        val sonarrApi = SonarrApi(0)
 
         // used to login via app intent
         val OAuth2Apis
@@ -25,7 +29,7 @@ abstract class AccountManager(private val defIndex: Int) : AuthAPI {
         // this needs init with context and can be accessed in settings
         val accountManagers
             get() = listOf(
-                malApi, aniListApi, openSubtitlesApi, nginxApi
+                malApi, aniListApi, openSubtitlesApi, nginxApi, radarrApi, sonarrApi
             )
 
         // used for active syncing
@@ -35,7 +39,7 @@ abstract class AccountManager(private val defIndex: Int) : AuthAPI {
             )
 
         val inAppAuths
-            get() = listOf(openSubtitlesApi, nginxApi)
+            get() = listOf(openSubtitlesApi, nginxApi, sonarrApi, radarrApi)
 
         val subtitleProviders
             get() = listOf(
