@@ -1,11 +1,9 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.USER_AGENT
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.animeproviders.GogoanimeProvider
 import com.lagradost.cloudstream3.animeproviders.GogoanimeProvider.Companion.extractVidstream
-import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.metaproviders.TmdbLink
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -103,34 +101,36 @@ class OpenVidsProvider:TmdbProvider() {
                 "Sec-Fetch-Site" to "same-origin",
             )
         }
-        val response = app.get("$mainUrl/api/servers.json?imdb=${mappedData.imdbID}", headers = headers).text
-        val json = parseJson<OpenvidsMain>(response)
-        if (json.ok == true) {
-            val servers = listOf(
-                "https://streamsb.net/e/${json.servers?.streamsb?.code}",
-                "https://player.voxzer.org/view/${json.servers?.voxzer?.code}",
-                "https://mixdrop.co/e/${json.servers?.mixdrop?.code}",
-                "https://dood.pm/e/${json.servers?.doodstream?.code}",
-                "https://voe.sx/e/${json.servers?.voe?.code}",
-                "https://membed.net/streaming.php?id=${json.servers?.vidcloud?.code}",
-            )
-            servers.map { links ->
-                loadExtractor(links, data, callback)
-                if (links.contains("membed")) {
-                    val membed = VidEmbedProvider()
-                    extractVidstream(
-                        links,
-                        this.name,
-                        callback,
-                        membed.iv,
-                        membed.secretKey,
-                        membed.secretDecryptKey,
-                        membed.isUsingAdaptiveKeys,
-                        membed.isUsingAdaptiveData)
-                }
-            }
+        val json = app.get("$mainUrl/api/servers.json?imdb=${mappedData.imdbID}", headers = headers).parsedSafe<OpenvidsMain>()
+        val listservers = listOfNotNull(
+            "https://streamsb.net/e/" to json?.servers?.streamsb?.code,
+            "https://player.voxzer.org/view/" to json?.servers?.voxzer?.code,
+            "https://mixdrop.co/e/" to json?.servers?.mixdrop?.code,
+            "https://dood.pm/e/" to json?.servers?.doodstream?.code,
+            "https://voe.sx/e/" to json?.servers?.voe?.code,
+            "https://membed.net/streaming.php?id=" to json?.servers?.vidcloud?.code
+        )
+        val a = listservers.map { (url, id) ->
+            if (id == null) {
+                ""
+            } else "$url$id"
         }
-
+        if (json?.ok != true) return false
+        a.apmap { links ->
+            if (links.contains("membed")) {
+                val membed = VidEmbedProvider()
+                extractVidstream(
+                    links,
+                    this.name,
+                    callback,
+                    membed.iv,
+                    membed.secretKey,
+                    membed.secretDecryptKey,
+                    membed.isUsingAdaptiveKeys,
+                    membed.isUsingAdaptiveData)
+            } else
+                loadExtractor(links, data, callback)
+        }
         return true
     }
 
