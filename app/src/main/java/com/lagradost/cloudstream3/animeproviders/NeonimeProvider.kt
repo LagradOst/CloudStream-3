@@ -113,7 +113,7 @@ class NeonimeProvider : MainAPI() {
                 val mYear = document.selectFirst("a[href*=release-year]")!!.text().toIntOrNull()
                 val mDescription = document.select("div[itemprop = description]").text().trim()
                 val mRating = document.select("span[itemprop = ratingValue]").text().toIntOrNull()
-                val mTrailer = "https://www.youtube.com/embed/" + document.selectFirst("div.youtube_id iframe")?.attr("data-wpfc-original-src")?.substringAfterLast("html#")
+                val mTrailer = document.selectFirst("div.youtube_id iframe")?.attr("data-wpfc-original-src")?.substringAfterLast("html#")?.let{ "https://www.youtube.com/embed/$it"}
 
                 return newMovieLoadResponse(name = mTitle, url = url, type = TvType.Movie, dataUrl = url) {
                     posterUrl = mPoster
@@ -131,7 +131,7 @@ class NeonimeProvider : MainAPI() {
                 val year = document.select("#info a[href*=\"-year/\"]").text().toIntOrNull()
                 val status = getStatus(document.select("div.metadatac > span").last()!!.text().trim())
                 val description = document.select("div[itemprop = description] > p").text().trim()
-                val trailer = "https://www.youtube.com/embed/" + document.selectFirst("div.youtube_id_tv iframe")?.attr("data-wpfc-original-src")?.substringAfterLast("html#")
+                val trailer = document.selectFirst("div.youtube_id_tv iframe")?.attr("data-wpfc-original-src")?.substringAfterLast("html#")?.let{ "https://www.youtube.com/embed/$it"}
 
                 val episodes = document.select("ul.episodios > li").mapNotNull {
                     val name = it.selectFirst(".episodiotitle > a")!!.ownText().trim()
