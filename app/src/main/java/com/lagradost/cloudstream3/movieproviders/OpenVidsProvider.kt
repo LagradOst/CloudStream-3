@@ -102,21 +102,18 @@ class OpenVidsProvider:TmdbProvider() {
             )
         }
         val json = app.get("$mainUrl/api/servers.json?imdb=${mappedData.imdbID}", headers = headers).parsedSafe<OpenvidsMain>()
-        val listservers = listOfNotNull(
+
+        val listservers = listOf(
             "https://streamsb.net/e/" to json?.servers?.streamsb?.code,
             "https://player.voxzer.org/view/" to json?.servers?.voxzer?.code,
             "https://mixdrop.co/e/" to json?.servers?.mixdrop?.code,
             "https://dood.pm/e/" to json?.servers?.doodstream?.code,
             "https://voe.sx/e/" to json?.servers?.voe?.code,
             "https://membed.net/streaming.php?id=" to json?.servers?.vidcloud?.code
-        )
-        val a = listservers.map { (url, id) ->
-            if (id == null) {
-                ""
-            } else "$url$id"
-        }
+        ).mapNotNull { (url, id) -> if(id==null) return@mapNotNull null else "$url$id" }
+
         if (json?.ok != true) return false
-        a.apmap { links ->
+        listservers.apmap { links ->
             if (links.contains("membed")) {
                 val membed = VidEmbedProvider()
                 extractVidstream(
