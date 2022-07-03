@@ -138,6 +138,7 @@ object APIHolder {
             //MultiAnimeProvider(),
             NginxProvider(),
             OlgplyProvider(),
+            AniflixProvider(),
         )
 
 

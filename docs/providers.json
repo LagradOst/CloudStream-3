@@ -23,6 +23,12 @@
         "status": 1,
         "url": "https://altadefinizione.hair"
     },
+    "AniflixProvider": {
+        "language": "en",
+        "name": "Aniflix",
+        "status": 1,
+        "url": "https://aniflix.pro"
+    },
     "AnimeFlickProvider": {
         "language": "en",
         "name": "AnimeFlick",
@@ -146,7 +152,7 @@
     "EgyBestProvider": {
         "language": "ar",
         "name": "EgyBest",
-        "status": 1,
+        "status": 0,
         "url": "https://www.egy.best"
     },
     "ElifilmsProvider": {
@@ -175,7 +181,7 @@
     "FaselHDProvider": {
         "language": "ar",
         "name": "FaselHD",
-        "status": 1,
+        "status": 0,
         "url": "https://faselhd.io"
     },
     "FilmanProvider": {
@@ -420,7 +426,7 @@
         "language": "it",
         "name": "Streamingcommunity",
         "status": 1,
-        "url": "https://streamingcommunity.press"
+        "url": "https://streamingcommunity.business"
     },
     "TantifilmProvider": {
         "language": "it",

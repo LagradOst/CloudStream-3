@@ -64,6 +64,7 @@ import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTrueT
 import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSettings
 import com.lagradost.cloudstream3.ui.subtitles.SubtitlesFragment.Companion.getDownloadSubsLanguageISO639_1
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.html
 import com.lagradost.cloudstream3.utils.AppUtils.isAppInstalled
 import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
 import com.lagradost.cloudstream3.utils.AppUtils.isConnectedToChromecast
@@ -96,15 +97,9 @@ import kotlinx.android.synthetic.main.fragment_trailer.*
 import kotlinx.android.synthetic.main.result_recommendations.*
 import kotlinx.android.synthetic.main.result_sync.*
 import kotlinx.android.synthetic.main.trailer_custom_layout.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.io.File
 import java.util.concurrent.TimeUnit
-
-
-const val MAX_SYNO_LENGH = 1000
 
 const val START_ACTION_NORMAL = 0
 const val START_ACTION_RESUME_LATEST = 1
@@ -647,6 +642,13 @@ class ResultFragment : ResultTrailerPlayer() {
             }
         result_trailer_loading?.isVisible = isSuccess
         result_smallscreen_holder?.isVisible = !isSuccess && !isFullScreenPlayer
+
+        // We don't want the trailer to be focusable if it's not visible
+        result_smallscreen_holder?.descendantFocusability = if (isSuccess) {
+            ViewGroup.FOCUS_AFTER_DESCENDANTS
+        } else {
+            ViewGroup.FOCUS_BLOCK_DESCENDANTS
+        }
         result_fullscreen_holder?.isVisible = !isSuccess && isFullScreenPlayer
     }
 
@@ -1908,21 +1910,18 @@ class ResultFragment : ResultTrailerPlayer() {
                         )*/
                     //result_plot_header?.text =
                     //    if (d.type == TvType.Torrent) getString(R.string.torrent_plot) else getString(R.string.result_plot)
-                    if (!d.plot.isNullOrEmpty()) {
-                        var syno = d.plot!!
-                        if (syno.length > MAX_SYNO_LENGH) {
-                            syno = syno.substring(0, MAX_SYNO_LENGH) + "..."
-                        }
-                        result_description.setOnClickListener {
+                    val syno = d.plot
+                    if (!syno.isNullOrEmpty()) {
+                        result_description?.setOnClickListener {
                             val builder: AlertDialog.Builder =
                                 AlertDialog.Builder(requireContext(), R.style.AlertDialogCustom)
-                            builder.setMessage(d.plot)
+                            builder.setMessage(syno.html())
                                 .setTitle(if (d.type == TvType.Torrent) R.string.torrent_plot else R.string.result_plot)
                                 .show()
                         }
-                        result_description.text = syno
+                        result_description?.text = syno.html()
                     } else {
-                        result_description.text =
+                        result_description?.text =
                             if (d.type == TvType.Torrent) getString(R.string.torrent_no_plot) else getString(
                                 R.string.normal_no_plot
                             )
