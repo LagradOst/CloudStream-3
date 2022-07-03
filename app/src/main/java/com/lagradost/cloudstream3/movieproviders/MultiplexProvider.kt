@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.movieproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -63,7 +64,7 @@ class MultiplexProvider : MainAPI() {
             val episode = this.select("div.gmr-numbeps > span").text().toIntOrNull()
             newAnimeSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
-                addDubStatus(dubExist = false, subExist = true, subEpisodes = episode)
+                addSub(episode)
             }
         } else {
             newMovieSearchResponse(title, href, TvType.Movie) {
@@ -111,14 +112,7 @@ class MultiplexProvider : MainAPI() {
         val rating =
             document.selectFirst("div.gmr-meta-rating > span[itemprop=ratingValue]")?.text()
                 ?.toRatingInt()
-        val actors =
-            document.select("div.gmr-moviedata").last()?.select("span[itemprop=actors]")?.map {
-                ActorData(
-                    Actor(
-                        it.select("a").text()
-                    )
-                )
-            }
+        val actors = document.select("div.gmr-moviedata").last()?.select("span[itemprop=actors]")?.map { it.select("a").text() }
 
         val recommendations = document.select("div.idmuvi-rp ul li").map {
             it.toBottomSearchResult()
@@ -142,7 +136,7 @@ class MultiplexProvider : MainAPI() {
                 this.plot = description
                 this.tags = tags
                 this.rating = rating
-                this.actors = actors
+                addActors(actors)
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }
@@ -153,7 +147,7 @@ class MultiplexProvider : MainAPI() {
                 this.plot = description
                 this.tags = tags
                 this.rating = rating
-                this.actors = actors
+                addActors(actors)
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }

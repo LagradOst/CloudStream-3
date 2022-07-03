@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.movieproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.safeApiCall
@@ -107,17 +108,11 @@ class RebahinProvider : MainAPI() {
         )?.groupValues?.get(1).toString().toIntOrNull()
         val tvType = if (url.contains("/series/")) TvType.TvSeries else TvType.Movie
         val description = document.select("span[itemprop=reviewBody] > p").text().trim()
-        val trailer = fixUrl(document.selectFirst("div.modal-body-trailer iframe")!!.attr("src"))
+        val trailer = fixUrlNull(document.selectFirst("div.modal-body-trailer iframe")?.attr("src"))
         val rating = document.selectFirst("span[itemprop=ratingValue]")?.text()?.toRatingInt()
         val duration = document.selectFirst(".mvici-right > p:nth-child(1)")!!
             .ownText().replace(Regex("[^0-9]"), "").toIntOrNull()
-        val actors = document.select("span[itemprop=actor] > a").map {
-            ActorData(
-                Actor(
-                    it.select("span").text()
-                )
-            )
-        }
+        val actors = document.select("span[itemprop=actor] > a").map { it.select("span").text() }
 
         return if (tvType == TvType.TvSeries) {
             val baseLink = document.select("div#mv-info > a").attr("href")
@@ -126,7 +121,6 @@ class RebahinProvider : MainAPI() {
                 name
             }.distinct().map {
                 val name = it
-//                val epNum = Regex("[^r|R]\\s(\\d+)").find(it)?.groupValues?.get(1)?.toIntOrNull()
                 val epNum = it.replace(Regex("[^0-9]"), "").toIntOrNull()
                 val link = "$baseLink?ep=$epNum"
                 newEpisode(link) {
@@ -141,7 +135,7 @@ class RebahinProvider : MainAPI() {
                 this.tags = tags
                 this.rating = rating
                 this.duration = duration
-                this.actors = actors
+                addActors(actors)
                 addTrailer(trailer)
             }
         } else {
@@ -153,7 +147,7 @@ class RebahinProvider : MainAPI() {
                 this.tags = tags
                 this.rating = rating
                 this.duration = duration
-                this.actors = actors
+                addActors(actors)
                 addTrailer(trailer)
             }
         }

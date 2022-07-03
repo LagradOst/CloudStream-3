@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -71,7 +70,7 @@ class AnimeIndoProvider : MainAPI() {
 
         document.select("div.widget_senction").forEach { block ->
             val header = block.selectFirst("div.widget-title > h3")!!.text().trim()
-            val items = block.select("div.post-show > article").mapNotNull {
+            val items = block.select("div.post-show > article").map {
                 it.toSearchResult()
             }
             if (items.isNotEmpty()) homePageList.add(HomePageList(header, items))
@@ -98,7 +97,7 @@ class AnimeIndoProvider : MainAPI() {
         }
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
+    private fun Element.toSearchResult(): AnimeSearchResponse {
         val title = this.selectFirst("div.title")!!.text().trim()
         val href = getProperAnimeLink(this.selectFirst("a")!!.attr("href"))
         val posterUrl = this.select("img[itemprop=image]").attr("src").toString()
@@ -108,7 +107,7 @@ class AnimeIndoProvider : MainAPI() {
                 ?.toIntOrNull()
         return newAnimeSearchResponse(title, href, type) {
             this.posterUrl = posterUrl
-            addDubStatus(dubExist = false, subExist = true, subEpisodes = epNum)
+            addSub(epNum)
         }
 
     }
@@ -148,9 +147,10 @@ class AnimeIndoProvider : MainAPI() {
         val description = document.select("div[itemprop=description] > p").text()
         val trailer = document.selectFirst("div.player-embed iframe")?.attr("src")
         val episodes = document.select("div.lstepsiode.listeps ul li").mapNotNull {
-            val name = it.selectFirst("span.lchx > a")!!.text().trim()
-            val episode = it.selectFirst("span.lchx > a")!!.text().trim().replace("Episode", "").trim().toIntOrNull()
-            val link = fixUrl(it.selectFirst("span.lchx > a")!!.attr("href"))
+            val header = it.selectFirst("span.lchx > a") ?: return@mapNotNull null
+            val name = header.text().trim()
+            val episode = header.text().trim().replace("Episode", "").trim().toIntOrNull()
+            val link = fixUrl(header.attr("href"))
             Episode(link, name = name, episode = episode)
         }.reversed()
 
@@ -174,20 +174,17 @@ class AnimeIndoProvider : MainAPI() {
     ): Boolean {
 
         val document = request(data).document
-        val sources = document.select("div.itemleft > .mirror > option").mapNotNull {
+        document.select("div.itemleft > .mirror > option").mapNotNull {
             fixUrl(Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src"))
-        }.map {
+        }.apmap {
             if (it.startsWith("https://uservideo.xyz")) {
                 app.get(it, referer = "$mainUrl/").document.select("iframe").attr("src")
             } else {
                 it
             }
-        }
-
-        sources.apmap {
+        }.apmap {
             loadExtractor(it, data, callback)
         }
-
 
         return true
     }

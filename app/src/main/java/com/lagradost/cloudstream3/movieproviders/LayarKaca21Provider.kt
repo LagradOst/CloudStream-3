@@ -1,6 +1,7 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -69,7 +70,7 @@ class LayarKacaProvider : MainAPI() {
             val episode = this.select("div.last-episode > span").text().toIntOrNull()
             newAnimeSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
-                addDubStatus(dubExist = false, subExist = true, subEpisodes = episode)
+                addSub(episode)
             }
         }
 
@@ -137,13 +138,7 @@ class LayarKacaProvider : MainAPI() {
         val trailer = document.selectFirst("div.action-player li > a.fancybox")?.attr("href")
         val rating =
             document.selectFirst("div.content > div:nth-child(6) > h3")?.text()?.toRatingInt()
-        val actors = document.select("div.col-xs-9.content > div:nth-child(3) > h3 > a").map {
-            ActorData(
-                Actor(
-                    it.text()
-                )
-            )
-        }
+        val actors = document.select("div.col-xs-9.content > div:nth-child(3) > h3 > a").map { it.text() }
 
         val recommendations = document.select("div.row.item-media").map {
             val recName = it.selectFirst("h3")?.text()?.trim().toString()
@@ -173,7 +168,7 @@ class LayarKacaProvider : MainAPI() {
                 this.plot = description
                 this.tags = tags
                 this.rating = rating
-                this.actors = actors
+                addActors(actors)
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }
@@ -185,7 +180,7 @@ class LayarKacaProvider : MainAPI() {
                 this.plot = description
                 this.tags = tags
                 this.rating = rating
-                this.actors = actors
+                addActors(actors)
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }

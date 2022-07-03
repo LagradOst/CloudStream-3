@@ -47,7 +47,7 @@ class NeonimeProvider : MainAPI() {
 
         document.select("div.item_1.items").forEach { block ->
             val header = block.previousElementSibling()?.select("h1")!!.text()
-            val animes = block.select("div.item").mapNotNull {
+            val animes = block.select("div.item").map {
                 it.toSearchResult()
             }
             if (animes.isNotEmpty()) homePageList.add(HomePageList(header, animes))
@@ -70,7 +70,7 @@ class NeonimeProvider : MainAPI() {
         }
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
+    private fun Element.toSearchResult(): AnimeSearchResponse {
         val href = getProperAnimeLink(fixUrl(this.select("a").attr("href")))
         val title = this.select("span.tt.title-episode,h2.title-episode-movie").text()
         val posterUrl = fixUrl(this.select("img").attr("data-src"))
@@ -78,7 +78,7 @@ class NeonimeProvider : MainAPI() {
 
         return newAnimeSearchResponse(title, href, TvType.Anime) {
             this.posterUrl = posterUrl
-            addDubStatus(dubExist = false, subExist = true, subEpisodes = epNum)
+            addSub(epNum)
         }
 
     }
@@ -97,7 +97,7 @@ class NeonimeProvider : MainAPI() {
 
             newAnimeSearchResponse(title, href, tvType) {
                 this.posterUrl = poster
-                addDubStatus(dubExist = false, subExist = true, subEpisodes = episodes)
+                addSub(episodes)
             }
         }
     }
@@ -116,7 +116,6 @@ class NeonimeProvider : MainAPI() {
                 val mTrailer = "https://www.youtube.com/embed/" + document.selectFirst("div.youtube_id iframe")?.attr("data-wpfc-original-src")?.substringAfterLast("html#")
 
                 return newMovieLoadResponse(name = mTitle, url = url, type = TvType.Movie, dataUrl = url) {
-                    apiName = this.name
                     posterUrl = mPoster
                     year = mYear
                     plot = mDescription

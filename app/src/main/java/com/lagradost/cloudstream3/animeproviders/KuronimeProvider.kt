@@ -10,7 +10,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 class KuronimeProvider : MainAPI() {
-    override var mainUrl = "https://185.231.223.254"
+    override var mainUrl = "https://45.12.2.2/"
     override var name = "Kuronime"
     override val hasQuickSearch = false
     override val hasMainPage = true
@@ -46,7 +46,7 @@ class KuronimeProvider : MainAPI() {
 
         document.select(".bixbox").forEach { block ->
             val header = block.select(".releases > h3").text().trim()
-            val animes = block.select("article").mapNotNull {
+            val animes = block.select("article").map {
                 it.toSearchResult()
             }
             if (animes.isNotEmpty()) homePageList.add(HomePageList(header, animes))
@@ -74,15 +74,15 @@ class KuronimeProvider : MainAPI() {
         }
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
+    private fun Element.toSearchResult(): AnimeSearchResponse {
         val href = getProperAnimeLink(fixUrl(this.select("a").attr("href")))
         val title = this.select(".bsuxtt, .tt > h4").text().trim()
-        val posterUrl = fixUrl(this.select("img").attr("src"))
+        val posterUrl = fixUrlNull(this.selectFirst("img.entered.lazyloaded")?.attr("src"))
         val epNum = this.select(".ep").text().replace(Regex("[^0-9]"), "").trim().toIntOrNull()
 
         return newAnimeSearchResponse(title, href, TvType.Anime) {
             this.posterUrl = posterUrl
-            addDubStatus(dubExist = false, subExist = true, subEpisodes = epNum)
+            addSub(epNum)
         }
 
     }

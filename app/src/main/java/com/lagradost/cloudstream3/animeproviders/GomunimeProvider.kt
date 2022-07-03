@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -74,7 +75,7 @@ class GomunimeProvider : MainAPI() {
                         .toIntOrNull()
                     newAnimeSearchResponse(title, href, type) {
                         this.posterUrl = posterUrl
-                        addDubStatus(dubExist = false, subExist = true, subEpisodes = epNum)
+                        addSub(epNum)
                     }
                 }
                 items.add(HomePageList(name, home))
@@ -138,7 +139,7 @@ class GomunimeProvider : MainAPI() {
         )?.groupValues?.get(1)?.toIntOrNull()
         val status = getStatus(document.selectFirst(".spe > span")!!.ownText())
         val description = document.select("div[itemprop = description] > p").text()
-        val trailer = document.select("div.embed-responsive noscript iframe").attr("src")
+        val trailer = document.selectFirst("div.embed-responsive noscript iframe")?.attr("src")
         val episodes = parseJson<List<EpisodeElement>>(
             Regex("var episodelist = (\\[.*])").find(
                 document.select(".bixbox.bxcl.epcheck > script").toString().trim()

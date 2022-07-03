@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.animeproviders
 
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -47,7 +48,7 @@ class OploverzProvider : MainAPI() {
 
         document.select(".bixbox.bbnofrm").forEach { block ->
             val header = block.selectFirst("h3")!!.text().trim()
-            val animes = block.select("article[itemscope=itemscope]").mapNotNull {
+            val animes = block.select("article[itemscope=itemscope]").map {
                 it.toSearchResult()
             }
             if (animes.isNotEmpty()) homePageList.add(HomePageList(header, animes))
@@ -86,7 +87,7 @@ class OploverzProvider : MainAPI() {
 
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
+    private fun Element.toSearchResult(): AnimeSearchResponse {
         val href = getProperAnimeLink(this.selectFirst("a.tip")!!.attr("href"))
         val title = this.selectFirst("h2[itemprop=headline]")!!.text().trim()
         val posterUrl = fixUrl(this.selectFirst("img")!!.attr("src"))
@@ -97,7 +98,7 @@ class OploverzProvider : MainAPI() {
 
         return newAnimeSearchResponse(title, href, type) {
             this.posterUrl = posterUrl
-            addDubStatus(dubExist = false, subExist = true, subEpisodes = epNum)
+            addSub(epNum)
         }
     }
 

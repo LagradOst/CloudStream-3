@@ -45,7 +45,7 @@ class OtakudesuProvider : MainAPI() {
 
         document.select("div.rseries").forEach { block ->
             val header = block.selectFirst("div.rvad > h1")!!.text().trim()
-            val items = block.select("div.venz > ul > li").mapNotNull {
+            val items = block.select("div.venz > ul > li").map {
                 it.toSearchResult()
             }
             if (items.isNotEmpty()) homePageList.add(HomePageList(header, items))
@@ -54,7 +54,7 @@ class OtakudesuProvider : MainAPI() {
         return HomePageResponse(homePageList)
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
+    private fun Element.toSearchResult(): AnimeSearchResponse {
         val title = this.selectFirst("h2.jdlflm")!!.text().trim()
         val href = this.selectFirst("a")!!.attr("href")
         val posterUrl = this.select("div.thumbz > img").attr("src").toString()
@@ -62,7 +62,7 @@ class OtakudesuProvider : MainAPI() {
             ?.toIntOrNull()
         return newAnimeSearchResponse(title, href, TvType.Anime) {
             this.posterUrl = posterUrl
-            addDubStatus(dubExist = false, subExist = true, subEpisodes = epNum)
+            addSub(epNum)
         }
 
     }

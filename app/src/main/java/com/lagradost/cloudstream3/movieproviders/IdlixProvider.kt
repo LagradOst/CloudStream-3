@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.movieproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.*
@@ -100,12 +101,7 @@ class IdlixProvider : MainAPI() {
         val rating =
             document.selectFirst("span.dt_rating_vgs")?.text()?.toRatingInt()
         val actors = document.select("div.persons > div[itemprop=actor]").map {
-            ActorData(
-                Actor(
-                    it.select("meta[itemprop=name]").attr("content"),
-                    it.select("img").attr("src")
-                )
-            )
+            Actor(it.select("meta[itemprop=name]").attr("content"), it.select("img").attr("src"))
         }
 
         val recommendations = document.select("div.owl-item").map {
@@ -141,7 +137,7 @@ class IdlixProvider : MainAPI() {
                 this.plot = description
                 this.tags = tags
                 this.rating = rating
-                this.actors = actors
+                addActors(actors)
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }
@@ -152,14 +148,14 @@ class IdlixProvider : MainAPI() {
                 this.plot = description
                 this.tags = tags
                 this.rating = rating
-                this.actors = actors
+                addActors(actors)
                 this.recommendations = recommendations
                 addTrailer(trailer)
             }
         }
     }
 
-    private fun getLanguage(str: String) : String {
+    private fun getLanguage(str: String): String {
         return when {
             str.lowercase().contains("indonesia") || str.lowercase().contains("bahasa") -> "Indonesian"
             else -> str
