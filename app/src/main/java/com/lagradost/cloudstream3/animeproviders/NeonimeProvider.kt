@@ -44,9 +44,9 @@ class NeonimeProvider : MainAPI() {
         val document = app.get(mainUrl).document
 
         val homePageList = ArrayList<HomePageList>()
-
-        document.select("div.item_1.items").forEach { block ->
-            val header = block.previousElementSibling()?.select("h1")!!.text()
+        
+        document.select("div.item_1.items,div#slid01").forEach { block ->
+            val header = block.previousElementSibling()?.select("h1")?.text() ?: block.selectFirst("h3")?.text().toString()
             val animes = block.select("div.item").map {
                 it.toSearchResult()
             }
@@ -59,12 +59,22 @@ class NeonimeProvider : MainAPI() {
     private fun getProperAnimeLink(uri: String): String {
         return when {
             uri.contains("/episode") -> {
-                val href = "$mainUrl/tvshows/" + Regex("episode/(.*)-\\d{1,2}x\\d+").find(uri)?.groupValues?.get(1).toString()
-                when {
-                    !href.contains("-subtitle-indonesia") -> "$href-subtitle-indonesia"
-                    href.contains("-special") -> href.replace(Regex("-x\\d+"), "")
-                    else -> href
+                val title = uri.substringAfter("$mainUrl/episode/").let { tt ->
+                    val fixTitle = Regex("(.*)-\\d{1,2}x\\d+").find(tt)?.groupValues?.getOrNull(1).toString()
+                    when {
+                        !tt.contains("-season") && !tt.contains(Regex("-1x\\d+")) && !tt.contains("one-piece") -> "$fixTitle-season-${Regex("-(\\d{1,2})x\\d+").find(tt)?.groupValues?.getOrNull(1).toString()}"
+                        tt.contains("-special") -> fixTitle.replace(Regex("-x\\d+"), "")
+                        !fixTitle.contains("-subtitle-indonesia") -> "$fixTitle-subtitle-indonesia"
+                        else -> fixTitle
+                    }
                 }
+
+//                title = when {
+//                    title.contains("youkoso-jitsuryoku") && !title.contains("-season") -> title.replace("-e-", "-e-tv-")
+//                    else -> title
+//                }
+
+                "$mainUrl/tvshows/$title"
             }
             else -> uri
         }
@@ -72,7 +82,7 @@ class NeonimeProvider : MainAPI() {
 
     private fun Element.toSearchResult(): AnimeSearchResponse {
         val href = getProperAnimeLink(fixUrl(this.select("a").attr("href")))
-        val title = this.select("span.tt.title-episode,h2.title-episode-movie").text()
+        val title = this.select("span.tt.title-episode,h2.title-episode-movie,span.ttps").text()
         val posterUrl = fixUrl(this.select("img").attr("data-src"))
         val epNum = this.select(".fixyear > h2.text-center").text().replace(Regex("[^0-9]"), "").trim().toIntOrNull()
 

@@ -10,7 +10,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 class KuronimeProvider : MainAPI() {
-    override var mainUrl = "https://45.12.2.2/"
+    override var mainUrl = "https://45.12.2.2"
     override var name = "Kuronime"
     override val hasQuickSearch = false
     override val hasMainPage = true
@@ -75,12 +75,12 @@ class KuronimeProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): AnimeSearchResponse {
-        val href = getProperAnimeLink(fixUrl(this.select("a").attr("href")))
+        val href = getProperAnimeLink(fixUrlNull(this.selectFirst("a")?.attr("href")).toString())
         val title = this.select(".bsuxtt, .tt > h4").text().trim()
-        val posterUrl = fixUrlNull(this.selectFirst("img.entered.lazyloaded")?.attr("src"))
+        val posterUrl = fixUrlNull(this.selectFirst("div.view,div.bt")?.nextElementSibling()?.select("img")?.attr("data-src"))
         val epNum = this.select(".ep").text().replace(Regex("[^0-9]"), "").trim().toIntOrNull()
-
-        return newAnimeSearchResponse(title, href, TvType.Anime) {
+        val tvType = getType(this.selectFirst(".bt > span")?.text().toString())
+        return newAnimeSearchResponse(title, href, tvType) {
             this.posterUrl = posterUrl
             addSub(epNum)
         }
@@ -91,16 +91,8 @@ class KuronimeProvider : MainAPI() {
         val link = "$mainUrl/?s=$query"
         val document = app.get(link).document
 
-        return document.select("article.bs").mapNotNull {
-            val title = it.selectFirst(".tt > h4")!!.text().trim()
-            val poster = it.select("img").attr("src")
-            val tvType = getType(it.selectFirst(".bt > span")?.text().toString())
-            val href = getProperAnimeLink(fixUrl(it.selectFirst("a")!!.attr("href")))
-
-            newAnimeSearchResponse(title, href, tvType) {
-                this.posterUrl = poster
-                addDubStatus(dubExist = false, subExist = true)
-            }
+        return document.select("article.bs").map {
+            it.toSearchResult()
         }
     }
 
@@ -108,7 +100,7 @@ class KuronimeProvider : MainAPI() {
         val document = app.get(url).document
 
         val title = document.selectFirst(".entry-title")?.text().toString().trim()
-        val poster = document.selectFirst("div.l[itemprop=image] > img")?.attr("src")
+        val poster = document.selectFirst("div.l[itemprop=image] > img")?.attr("data-src")
         val tags = document.select(".infodetail > ul > li:nth-child(2) > a").map { it.text() }
         val type = getType(
             document.selectFirst(".infodetail > ul > li:nth-child(7)")?.ownText()?.trim().toString()
