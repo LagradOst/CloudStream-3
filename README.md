@@ -1,9 +1,9 @@
-# CloudStream-3
-
-<!-- ![Maintenance](https://img.shields.io/maintenance/yes/2022?color=blue&style=for-the-badge) -->
+<p align="center"><a href="https://github.com/LagradOst/CloudStream-3"><img src="https://rawcdn.githack.com/LagradOst/CloudStream-3/40b66d48caeee0e37fd313c547afe320ab958657/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png" width="150"></a></p> 
+<h2 align="center"><b>CloudStream 3</b></h2>
 
 <div align="center" style="width:100%; display:flex; justify-content:space-between;">
 
+<!-- ![Maintenance](https://img.shields.io/maintenance/yes/2022?color=blue&style=for-the-badge) -->
 ![GitHub release](https://img.shields.io/github/v/release/LagradOst/cloudstream-3?sort=semver&style=for-the-badge)
 ![Downloads](https://img.shields.io/github/downloads/lagradost/CloudStream-3/total?color=blue&style=for-the-badge)
 ![Build](https://img.shields.io/github/workflow/status/lagradost/CloudStream-3/Pre-release?style=for-the-badge)
@@ -27,6 +27,7 @@
 + Download and stream movies, tv-shows and anime
 + Chromecast
 + Inbuilt Updater
++ Subtitle Support
 
 ## 📱 Screenshots
 
