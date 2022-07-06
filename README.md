@@ -11,7 +11,7 @@
 
 </div>
 
-### 📥 Download
+## 📥 Download
 
 <div align="center" style="width:100%; display:flex; justify-content:space-between;">
 
@@ -19,13 +19,14 @@
 
 </div>
 
-### ⭐ Main Features
+## ⭐ Main Features
 
 + **AdFree**, No ads whatsoever
 + No tracking/analytics
 + Bookmarks
 + Download and stream movies, tv-shows and anime
 + Chromecast
++ Inbuilt Updater
 
 ## 📱 Screenshots
 
@@ -62,6 +63,14 @@
 * 🇵🇭 Tagalog
 * 🇹🇷 Turkish
 * 🇻🇳 Vietnamese
+
+## 😇 Contributing
+
+Whether you have ideas, translations, design changes, code cleaning, or real heavy code changes, help is always welcome.The more is done the better it gets!
+
+If creating a pull request, please make sure to format your code.
+
+If opening an issue without following the issue template, we will ignore the issue and force close it.
 
 ***Disclaimer:***
 
