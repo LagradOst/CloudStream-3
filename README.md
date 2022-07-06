@@ -1,28 +1,45 @@
 # CloudStream-3
 
 <!-- ![Maintenance](https://img.shields.io/maintenance/yes/2022?color=blue&style=for-the-badge) -->
+
+<div align="center" style="width:100%; display:flex; justify-content:space-between;">
+
 ![GitHub release](https://img.shields.io/github/v/release/LagradOst/cloudstream-3?sort=semver&style=for-the-badge)
 ![Downloads](https://img.shields.io/github/downloads/lagradost/CloudStream-3/total?color=blue&style=for-the-badge)
 ![Build](https://img.shields.io/github/workflow/status/lagradost/CloudStream-3/Pre-release?style=for-the-badge)
 [![Discord](https://img.shields.io/discord/737724143126052974?style=for-the-badge)](https://discord.gg/5Hus6fM)
 
+</div>
 
-**DOWNLOAD:**
-https://github.com/LagradOst/CloudStream-3/releases
+### 📥 Download
 
+<div align="center" style="width:100%; display:flex; justify-content:space-between;">
 
-***Features:***
+[<img src="https://i.ibb.co/H73HtzL/ghload.png" alt="Get it on GitHub" width="60%">](https://github.com/libre-tube/LibreTube/releases/latest)
+
+</div>
+
+### ⭐ Main Features
+
 + **AdFree**, No ads whatsoever
 + No tracking/analytics
 + Bookmarks
 + Download and stream movies, tv-shows and anime
 + Chromecast
 
+## 📱 Screenshots
+
 ***Screenshots:***
 (All the images are blurred because of DMCA reasons, but are actually not blurred in the app)
 
-<img src="./.github/home.jpg" height="400"/><img src="./.github/search.jpg" height="400"/><img src="./.github/downloads.jpg" height="400"/><img src="./.github/results.jpg" height="400"/>
-<img src="./.github/player.jpg" height="200"/>
+<div style="width:100%; display:flex; justify-content:space-between;">
+
+[<img src="https://github.com/LagradOst/CloudStream-3/blob/master/.github/home.jpg" width=30% alt="Home">]()
+[<img src="https://github.com/LagradOst/CloudStream-3/blob/master/.github/search.jpg" width=30% alt="Search">]()
+[<img src="https://github.com/LagradOst/CloudStream-3/blob/master/.github/downloads.jpg" width=30% alt="Downloads">]()
+[<img src="https://github.com/LagradOst/CloudStream-3/blob/master/.github/results.jpg" width=30% alt="Results">]()
+
+</div>
 
 ***The list of supported languages:***
 * 🇱🇧 Arabic
