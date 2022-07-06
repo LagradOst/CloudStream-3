@@ -74,7 +74,7 @@
     "ApiMDBProvider": {
         "language": "en",
         "name": "ApiMDB",
-        "status": 1,
+        "status": 0,
         "url": "https://v2.apimdb.net"
     },
     "AsiaFlixProvider": {
@@ -338,6 +338,12 @@
         "status": 1,
         "url": "https://olgply.com"
     },
+    "OpenVidsProvider": {
+        "language": "en",
+        "name": "OpenVids",
+        "status": 1,
+        "url": "https://openvids.io"
+    },
     "OploverzProvider": {
         "language": "id",
         "name": "Oploverz",
@@ -455,8 +461,8 @@
     "TwoEmbedProvider": {
         "language": "en",
         "name": "2Embed",
-        "status": 0,
-        "url": "https://www.2embed.ru"
+        "status": 1,
+        "url": "https://www.2embed.to"
     },
     "VMoveeProvider": {
         "language": "en",
