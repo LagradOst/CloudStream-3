@@ -20,6 +20,7 @@ class Neonime8n : Hxfile() {
 class KotakAnimeid : Hxfile() {
     override val name = "KotakAnimeid"
     override val mainUrl = "https://kotakanimeid.com"
+    override val requiresReferer = true
 }
 
 class Yufiles : Hxfile() {
@@ -40,7 +41,7 @@ open class Hxfile : ExtractorApi() {
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val sources = mutableListOf<ExtractorLink>()
-        val document = app.get(url, allowRedirects = redirect).document
+        val document = app.get(url, allowRedirects = redirect, referer = referer).document
         with(document) {
             this.select("script").map { script ->
                 if (script.data().contains("eval(function(p,a,c,k,e,d)")) {

@@ -236,7 +236,7 @@ class NontonAnimeIDProvider : MainAPI() {
         }
 
         sources.apmap {
-            loadExtractor(it, data, callback)
+            loadExtractor(it, "$mainUrl/", callback)
         }
 
         return true
