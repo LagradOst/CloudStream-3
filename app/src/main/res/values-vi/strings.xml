@@ -17,7 +17,7 @@
     <string name="no_data">Không có dữ liệu</string>
     <string name="episode_more_options_des">Thêm tuỳ chọn</string>
     <string name="next_episode">Tập tiếp theo</string>
-    <string name="result_plot" translatable="false">@string/synopsis</string>
+
     <string name="result_tags">Thể loại</string>
     <string name="result_share">Chia sẻ</string>
     <string name="result_open_in_browser">Mở bằng trình duyệt</string>
@@ -134,12 +134,10 @@
     <string name="swipe_to_change_settings_des">Vuốt từ dưới lên trên ở bên trái hoặc phải đều điều chỉnh độ sáng và âm lượng</string>
     <string name="double_tap_to_seek_settings">Nhấn 2 lần để tua</string>
     <string name="double_tap_to_pause_settings">Chạm 2 lần để tạm dừng</string>
-    <string name="double_tap_to_seek_settings_des">Nhấn 2 lần vào bên trái hoặc màn hình để tua trước hoặc sau
-    </string>
+    <string name="double_tap_to_seek_settings_des">Nhấn 2 lần vào bên trái hoặc màn hình để tua trước hoặc sau</string>
     <string name="double_tap_to_pause_settings_des">Nhấn vào giữa để tạm dừng</string>
     <string name="use_system_brightness_settings">Sử dụng độ sáng hệ thống</string>
-    <string name="use_system_brightness_settings_des">Sử dụng độ sáng hệ thống trong trình phát ứng dụng
-    </string>
+    <string name="use_system_brightness_settings_des">Sử dụng độ sáng hệ thống trong trình phát ứng dụng</string>
 
     <string name="episode_sync_settings">Cập nhật tiến trình xem</string>
     <string name="episode_sync_settings_des">Tự động đồng bộ tiến trình hiện tại của bạn</string>
@@ -231,17 +229,13 @@
     <string name="anime">Anime</string>
     <string name="torrent">Torrent</string>
     <string name="documentaries">Phim Tài Liệu</string>
-    <string name="ova">OVA</string>
-    <string name="asian_drama">Truyền Hình Châu Á</string>
 
 	<!--singular-->
     <string name="movies_singular">Phim Lẻ</string>
     <string name="tv_series_singular">Phim Bộ</string>
     <string name="cartoons_singular">Hoạt Hình</string>
-    <string name="anime_singular">@string/anime</string>
     <string name="torrent_singular">Torrent</string>
     <string name="documentaries_singular">Phim Tài Liệu</string>
-    <string name="asian_drama_singular">Truyền Hình Châu Á</string>
 
     <string name="source_error">Lỗi nguồn phim</string>
     <string name="remote_error">Lỗi kết nối tới máy chủ</string>
@@ -264,10 +258,6 @@
     <string name="show_dub">Nhãn lồng tiếng</string>
     <string name="show_sub">Nhãn phụ đề</string>
     <string name="show_title">Tiêu đề</string>
-    <string name="show_hd_key" translatable="false">show_hd_key</string>
-    <string name="show_dub_key" translatable="false">show_dub_key</string>
-    <string name="show_sub_key" translatable="false">show_sub_key</string>
-    <string name="show_title_key" translatable="false">show_title_key</string>
     <string name="poster_ui_settings">Thay đổi giao diện trên poster</string>
 
     <string name="no_update_found">Bạn đang dùng phiên bản mới nhất</string>
@@ -302,7 +292,7 @@
 
     <string name="nginx_url_pref">Địa chỉ máy chủ Nginx</string>
 
-    <string name="display_subbed_dubbed_settings">Hiển thị cờ Phụ đề hoặc Thuyết minh</string>
+    <string name="display_subbed_dubbed_settings">Hiển thị nhãn Phụ đề hoặc Thuyết minh</string>
 	
     <string name="resize_fit">Vừa màn hình</string>
     <string name="resize_fill">Kéo dãn</string>
@@ -329,27 +319,12 @@
     <string name="bottom_title_settings_des">Đặt tiêu đề dưới poster</string>
 
     <!-- account stuff -->
-    <string name="anilist_key" translatable="false">anilist_key</string>
-    <string name="mal_key" translatable="false">mal_key</string>
-    <string name="opensubtitles_key" translatable="false">opensubtitles_key</string>
-    <string name="nginx_key" translatable="false">nginx_key</string>
     <string name="example_password">Mật khẩu</string>
     <string name="example_username">Tài khoản</string>
     <string name="example_email">Email</string>
-    <string name="example_ip">127.0.0.1</string>
     <string name="example_site_name">Địa chỉ trang web</string>
-    <string name="example_site_url">example.com</string>
     <string name="example_lang_name">Mã ngôn ngữ (vi)</string>
-	
-    <!--
-    <string name="mal_account_settings" translatable="false">MAL</string>
-    <string name="anilist_account_settings" translatable="false">AniList</string>
-    <string name="tmdb_account_settings" translatable="false">TMDB</string>
-    <string name="imdb_account_settings" translatable="false">IMDB</string>
-    <string name="kitsu_account_settings" translatable="false">Kitsu</string>
-    <string name="trakt_account_settings" translatable="false">Trakt</string>
-    -->
-    <string name="login_format" formatted="true">%s %s</string>
+
     <string name="account">tài khoản</string>
     <string name="logout">Đăng xuất</string>
     <string name="login">Đăng nhập</string>
@@ -360,11 +335,9 @@
     <string name="added_sync_format" formatted="true">Đã thêm %s</string>
     <string name="upload_sync">Đồng bộ</string>
     <string name="sync_score">Đánh giá</string>
-    <string name="sync_score_format" formatted="true">%d / 10</string>
-    <string name="sync_total_episodes_none">/??</string>
-    <string name="sync_total_episodes_some" formatted="true">/%d</string>
-    <string name="authenticated_user" formatted="true">%s đã xác thực</string>
-    <string name="authenticated_user_fail" formatted="true">Không thể xác thực cho %s</string>
+
+    <string name="authenticated_user" formatted="true">Đã xác thực %s</string>
+    <string name="authenticated_user_fail" formatted="true">Không thể xác thực %s</string>
 
     <!-- ============ -->
     <string name="none">Mặc định</string>
@@ -372,13 +345,11 @@
     <string name="all">Tất cả</string>
     <string name="max">Tối đa</string>
     <string name="min">Tối thiểu</string>
-    <string name="subtitles_none" translatable="false">@string/none</string>
     <string name="subtitles_outline">Viền</string>
     <string name="subtitles_depressed">Chìm</string>
     <string name="subtitles_shadow">Đổ bóng</string>
     <string name="subtitles_raised">Nâng</string>
     <string name="subtitle_offset">Chỉnh phụ đề</string>
-    <string name="subtitle_offset_hint">1000ms</string>
     <string name="subtitle_offset_title">Độ trễ phụ đề</string>
     <string name="subtitle_offset_extra_hint_later_format">Dùng nếu phụ đề hiện sớm %dms</string>
     <string name="subtitle_offset_extra_hint_before_format">Dùng nếu phụ đề hiện trễ %dms</string>
@@ -405,23 +376,6 @@
     <string name="home_random">Ngẫu nhiên</string>
 
     <string name="coming_soon">Sắp có…</string>
-
-    <string name="quality_cam">Cam</string>
-    <string name="quality_cam_rip">Cam</string>
-    <string name="quality_cam_hd">Cam</string>
-    <string name="quality_hq">HQ</string>
-    <string name="quality_hd">HD</string>
-    <string name="quality_ts">TS</string>
-    <string name="quality_tc">TC</string>
-    <string name="quality_blueray">BlueRay</string>
-    <string name="quality_workprint">WP</string>
-    <string name="quality_dvd">DVD</string>
-    <string name="quality_4k">4K</string>
-    <string name="quality_sd">SD</string>
-    <string name="quality_uhd">UHD</string>
-    <string name="quality_hdr">HDR</string>
-    <string name="quality_sdr">SDR</string>
-    <string name="quality_webrip">Web</string>
 
     <string name="poster_image">Áp phích</string>
     <string name="category_player">Trình phát</string>
