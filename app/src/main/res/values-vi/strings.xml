@@ -425,7 +425,7 @@
 
     <string name="poster_image">Áp phích</string>
     <string name="category_player">Trình phát</string>
-    <string name="resolution_and_title">Độ phân giải & Tiêu đề</string>
+    <string name="resolution_and_title">Độ phân giải và Tiêu đề</string>
     <string name="title">Tiêu đề</string>
     <string name="resolution">Độ phân giải</string>
     <string name="error_invalid_id">Id không hợp lệ</string>
