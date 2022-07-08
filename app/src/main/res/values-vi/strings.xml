@@ -156,7 +156,6 @@
     <string name="chromecast_subtitles_settings">Phụ đề Chromecast</string>
     <string name="chromecast_subtitles_settings_des">Cài đặt phụ đề Chromecast</string>
 	
-    <string name="eigengraumode_settings">Chế độ Eigengravy</string>
     <string name="eigengraumode_settings">Điều chỉnh tốc độ khi xem phim</string>
     <string name="eigengraumode_settings_des">Có thể điều chỉnh tốc độ phát phim</string>
     <string name="swipe_to_seek_settings">Vuốt để tua nhanh</string>
