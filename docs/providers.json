@@ -144,7 +144,6 @@
         "url": "https://185.224.83.103"
     },
     "DreamSubProvider": {
-        "language": "it",
         "name": "DreamSub",
         "status": 1,
         "url": "https://dreamsub.me"
@@ -259,7 +258,7 @@
     "KawaiifuProvider": {
         "language": "en",
         "name": "Kawaiifu",
-        "status": 0,
+        "status": 1,
         "url": "https://kawaiifu.com"
     },
     "KdramaHoodProvider": {
