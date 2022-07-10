@@ -243,12 +243,18 @@ class GeneratorPlayer : FullScreenPlayer() {
         var currentLanguageTwoLetters: String = getAutoSelectLanguageISO639_1()
 
         fun getName(entry: AbstractSubtitleEntities.SubtitleEntity): String {
-            return if (entry.lang.isBlank()) {
-                entry.name
-            } else {
-                val language = fromTwoLettersToLanguage(entry.lang.trim()) ?: entry.lang
-                return "$language ${entry.name}"
+            if (entry.lang.isBlank()) {
+                return if (entry.isHearingImpaired) {
+                    "(HI) - ${entry.name}"
+                } else {
+                    entry.name
+                }
             }
+            var language = fromTwoLettersToLanguage(entry.lang.trim()) ?: entry.lang
+            if (entry.isHearingImpaired) {
+                language += " (HI)"
+            }
+            return "$language ${entry.name}"
         }
 
         fun setSubtitlesList(list: List<AbstractSubtitleEntities.SubtitleEntity>) {

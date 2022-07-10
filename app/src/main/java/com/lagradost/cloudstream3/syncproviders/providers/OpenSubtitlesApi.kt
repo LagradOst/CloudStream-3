@@ -190,6 +190,7 @@ class OpenSubtitlesApi(index: Int) : InAppAuthAPIManager(index), AbstractSubProv
                 val resSeasonNum = featureDetails?.seasonNumber ?: query.seasonNumber
                 val year = featureDetails?.year ?: query.year
                 val type = if ((resSeasonNum ?: 0) > 0) TvType.TvSeries else TvType.Movie
+                val isHearingImpaired = attr.hearing_impaired ?: false
                 //Log.i(TAG, "Result id/name => ${item.id} / $name")
                 item.attributes?.files?.forEach { file ->
                     val resultData = file.fileId?.toString() ?: ""
@@ -203,7 +204,8 @@ class OpenSubtitlesApi(index: Int) : InAppAuthAPIManager(index), AbstractSubProv
                             type = type,
                             epNumber = resEpNum,
                             seasonNumber = resSeasonNum,
-                            year = year
+                            year = year,
+                            isHearingImpaired = isHearingImpaired
                         )
                     )
                 }
@@ -277,7 +279,8 @@ class OpenSubtitlesApi(index: Int) : InAppAuthAPIManager(index), AbstractSubProv
         @JsonProperty("release") var release: String? = null,
         @JsonProperty("url") var url: String? = null,
         @JsonProperty("files") var files: List<ResultFiles>? = listOf(),
-        @JsonProperty("feature_details") var featDetails: ResultFeatureDetails? = ResultFeatureDetails()
+        @JsonProperty("feature_details") var featDetails: ResultFeatureDetails? = ResultFeatureDetails(),
+        @JsonProperty("hearing_impaired") var hearing_impaired: Boolean? = null,
     )
 
     data class ResultFiles(
