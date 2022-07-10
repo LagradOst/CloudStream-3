@@ -97,18 +97,6 @@
     <string name="home_expanded_hide">Ascunde</string>
     <string name="home_play">Începe</string>
     <string name="home_info">Informații</string>
-    <string name="filter_bookmarks">Filtrează Marcajele</string>
-    <string name="error_bookmarks_text">Marcaje</string>
-    <string name="action_remove_from_bookmarks">Eliminați</string>
-    <string name="sort_apply">Aplică</string>
-    <string name="sort_cancel">Anulează</string>
-    <string name="player_speed">Viteza de Redare</string>
-
-    <string name="pref_disable_acra">Dezactivați raportarea automată a erorilor</string>
-    <string name="home_more_info">Mai multe informații</string>
-    <string name="home_expanded_hide">Ascunde</string>
-    <string name="home_play">Începe</string>
-    <string name="home_info">Informații</string>
     <string name="filter_bookmarks">Filtrează marcajele</string>
     <string name="error_bookmarks_text">Marcaje</string>
     <string name="action_remove_from_bookmarks">Eliminează</string>
@@ -233,14 +221,14 @@
     <string name="acra_report_toast">Ne pare rău, aplicația s-a blocat. Un raport de eroare anonim va fi trimis dezvoltatorilor</string>
 
     <string name="season">Sezonul</string>
-    <string name="no_season">Nu există sezon/string>
+    <string name="no_season">Nu există sezon</string>
     <string name="episode">Episodul</string>
     <string name="episodes">Episoade</string>
     <string name="season_short">S</string>
     <string name="episode_short">E</string>
     <string name="no_episodes_found">Nu s-au găsit episoade</string>
 
-    <string name="delete_file">Ștergeți fișierul/string>
+    <string name="delete_file">Ștergeți fișierul</string>
     <string name="delete">Ștergeți</string>
     <string name="cancel" translatable="false">@string/sort_cancel</string>
     <string name="pause">Pauză</string>
@@ -386,7 +374,7 @@
 
     <string name="primary_color_settings">Culoare primară</string>
     <string name="app_theme_settings">Tema</string>
-    <string name="bottom_title_settings">Locația titlului posterului/string>
+    <string name="bottom_title_settings">Locația titlului posterului</string>
     <string name="bottom_title_settings_des">Locația titlului de pe poster</string>
 
     <!-- account stuff -->
