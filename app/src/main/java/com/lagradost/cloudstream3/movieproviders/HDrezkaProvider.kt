@@ -1,21 +1,18 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.safeApiCall
-import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import java.net.URI
 import java.util.*
 
 class HDrezkaProvider : MainAPI() {
@@ -32,28 +29,24 @@ class HDrezkaProvider : MainAPI() {
     )
 
     override suspend fun getMainPage(): HomePageResponse {
-        val urls = listOf(
+
+        val items = ArrayList<HomePageList>()
+
+        listOf(
             Pair("фильмы", "$mainUrl/films/?filter=watching"),
             Pair("сериалы", "$mainUrl/series/?filter=watching"),
             Pair("мультфильмы", "$mainUrl/cartoons/?filter=watching"),
             Pair("аниме", "$mainUrl/animation/?filter=watching"),
-        )
-
-        val items = ArrayList<HomePageList>()
-
-        for ((header, url) in urls) {
-            try {
+        ).apmap { (header, url) ->
+            safeApiCall {
                 val home = app.get(url).document.select(
                     "div.b-content__inline_items div.b-content__inline_item"
                 ).map {
                     it.toSearchResult()
                 }
                 items.add(HomePageList(fixTitle(header), home))
-            } catch (e: Exception) {
-                logError(e)
             }
         }
-
         if (items.size <= 0) throw ErrorLoadingException()
         return HomePageResponse(items)
     }
@@ -74,7 +67,12 @@ class HDrezkaProvider : MainAPI() {
                     .toIntOrNull()
             newAnimeSearchResponse(title, href, TvType.TvSeries) {
                 this.posterUrl = posterUrl
-                addDubStatus(dubExist = true, dubEpisodes = episode, subExist = true, subEpisodes = episode)
+                addDubStatus(
+                    dubExist = true,
+                    dubEpisodes = episode,
+                    subExist = true,
+                    subEpisodes = episode
+                )
             }
         }
     }
@@ -240,9 +238,9 @@ class HDrezkaProvider : MainAPI() {
                 source,
                 source,
                 url,
-                referer = "${this.mainUrl}/",
-                quality = getQualityFromName(quality),
-                isM3u8 = isM3u8
+                referer = "$mainUrl/",
+                quality = getQuality(quality),
+                isM3u8 = isM3u8,
             )
         )
     }
@@ -255,6 +253,17 @@ class HDrezkaProvider : MainAPI() {
         }
     }
 
+    private fun getQuality(str: String): Int {
+        return when (str) {
+            "360p" -> Qualities.P240.value
+            "480p" -> Qualities.P360.value
+            "720p" -> Qualities.P480.value
+            "1080p" -> Qualities.P720.value
+            "1080p Ultra" -> Qualities.P1080.value
+            else -> getQualityFromName(str)
+        }
+    }
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -264,7 +273,7 @@ class HDrezkaProvider : MainAPI() {
 
         tryParseJson<Data>(data)?.let { res ->
             res.server?.apmap { server ->
-                safeApiCall {
+                suspendSafeApiCall {
                     app.post(
                         url = "$mainUrl/ajax/get_cdn_series/?t=${Date().time}",
                         data = mapOf(
@@ -280,16 +289,16 @@ class HDrezkaProvider : MainAPI() {
                         ).filterValues { it != null }.mapValues { it.value as String },
                         referer = res.ref
                     ).parsedSafe<Sources>()?.let { source ->
-                        Log.i(this.name, "url => $source")
-                        decryptStreamUrl(source.url ?: return@safeApiCall).split(",").map { links ->
+                        decryptStreamUrl(source.url).split(",").map { links ->
                             val quality =
                                 Regex("\\[([0-9]*p.*?)]").find(links)?.groupValues?.getOrNull(1)
                                     .toString().trim()
                             links.replace("[$quality]", "").split("or").map { it.trim() }
                                 .map { link ->
+
                                     if (link.endsWith(".m3u8")) {
                                         cleanCallback(
-                                            "${server.translator_name.toString()} [Main]",
+                                            "${server.translator_name.toString()} (Main)",
                                             link,
                                             quality,
                                             true,
@@ -297,7 +306,7 @@ class HDrezkaProvider : MainAPI() {
                                         )
                                     } else {
                                         cleanCallback(
-                                            "${server.translator_name.toString()} [Backup]",
+                                            "${server.translator_name.toString()} (Backup)",
                                             link,
                                             quality,
                                             false,
@@ -309,7 +318,8 @@ class HDrezkaProvider : MainAPI() {
 
                         source.subtitle?.toString()?.split(",")?.map { sub ->
                             val language =
-                                Regex("\\[(.*)]").find(sub)?.groupValues?.getOrNull(1).toString()
+                                Regex("\\[(.*)]").find(sub)?.groupValues?.getOrNull(1)
+                                    .toString()
                             val link = sub.replace(Regex("\\[.*]"), "").trim()
                             subtitleCallback.invoke(
                                 SubtitleFile(
@@ -327,7 +337,7 @@ class HDrezkaProvider : MainAPI() {
     }
 
     data class Sources(
-        @JsonProperty("url") val url: String?,
+        @JsonProperty("url") val url: String,
         @JsonProperty("subtitle") val subtitle: Any?,
     )
 

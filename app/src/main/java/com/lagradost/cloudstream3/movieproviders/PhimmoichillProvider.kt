@@ -1,12 +1,13 @@
 package com.lagradost.cloudstream3.movieproviders
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.ExtractorLinkPlayList
+import com.lagradost.cloudstream3.utils.PlayListItem
 import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.jsoup.nodes.Element
 import java.net.URLDecoder
 import java.util.ArrayList
@@ -157,24 +158,71 @@ class PhimmoichillProvider : MainAPI() {
             }
         }.first()
 
-        listOf(
-            Pair("https://so-trym.topphimmoi.org/hlspm/$key", "PMFAST"),
-            Pair("https://dash.megacdn.xyz/hlspm/$key", "PMHLS"),
-            Pair("https://dash.megacdn.xyz/dast/$key/index.m3u8", "PMBK")
-        ).map { (link, source) ->
+        app.get("https://so-trym.topphimmoi.org/hlspm/$key", referer = "$mainUrl/")
+            .parsedSafe<ResponseM3u>()?.main.let {
+            val playList = it?.segments?.map { segment ->
+                PlayListItem(
+                    segment.link,
+                    segment.du.toFloat().toLong()
+                )
+            }
+
             callback.invoke(
-                ExtractorLink(
-                    source,
-                    source,
-                    link,
+                ExtractorLinkPlayList(
+                    "PMFAST",
+                    "PMFAST",
+                    playList ?: return@let,
                     referer = "$mainUrl/",
                     quality = Qualities.Unknown.value,
                     isM3u8 = true
                 )
             )
+
         }
+
+//        listOf(
+//            Pair("https://so-trym.topphimmoi.org/hlspm/$key", "PMFAST"),
+//            Pair("https://dash.megacdn.xyz/hlspm/$key", "PMHLS"),
+//            Pair("https://dash.megacdn.xyz/dast/$key/index.m3u8", "PMBK")
+//        ).apmap { (link, source) ->
+//
+//            app.get(link, referer = "$mainUrl/").parsedSafe<ResponseM3u>()?.main.let {
+//
+//                val playList = it?.segments?.map { segment ->
+//                    PlayListItem(
+//                        segment.link!!,
+//                        segment.du?.toBigDecimal()?.toLong()!!
+//                    )
+//                }
+//
+//                callback.invoke(
+//                    ExtractorLinkPlayList(
+//                        source,
+//                        source,
+//                        playList!!,
+//                        referer = "$mainUrl/",
+//                        quality = Qualities.Unknown.value,
+//                        isM3u8 = true
+//                    )
+//                )
+//            }
+//        }
+
 
         return true
     }
+
+    data class Segment(
+        @JsonProperty("du") val du: String,
+        @JsonProperty("link") val link: String,
+    )
+
+    data class DataM3u(
+        @JsonProperty("segments") val segments: List<Segment>?,
+    )
+
+    data class ResponseM3u(
+        @JsonProperty("2048p") val main: DataM3u?,
+    )
 
 }
