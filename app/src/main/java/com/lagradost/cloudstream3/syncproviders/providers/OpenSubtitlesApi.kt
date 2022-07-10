@@ -2,22 +2,19 @@ package com.lagradost.cloudstream3.syncproviders.providers
 
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.removeKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
-import com.lagradost.cloudstream3.ErrorLoadingException
-import com.lagradost.cloudstream3.R
-import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.subtitles.AbstractSubProvider
+import com.lagradost.cloudstream3.subtitles.AbstractSubApi
 import com.lagradost.cloudstream3.subtitles.AbstractSubtitleEntities
 import com.lagradost.cloudstream3.syncproviders.AuthAPI
 import com.lagradost.cloudstream3.syncproviders.InAppAuthAPI
 import com.lagradost.cloudstream3.syncproviders.InAppAuthAPIManager
 import com.lagradost.cloudstream3.utils.AppUtils
 
-class OpenSubtitlesApi(index: Int) : InAppAuthAPIManager(index), AbstractSubProvider {
+class OpenSubtitlesApi(index: Int) : InAppAuthAPIManager(index), AbstractSubApi {
     override val idPrefix = "opensubtitles"
     override val name = "OpenSubtitles"
     override val icon = R.drawable.open_subtitles_icon
@@ -202,6 +199,7 @@ class OpenSubtitlesApi(index: Int) : InAppAuthAPIManager(index), AbstractSubProv
                             lang = lang,
                             data = resultData,
                             type = type,
+                            source = this.name,
                             epNumber = resEpNum,
                             seasonNumber = resSeasonNum,
                             year = year,

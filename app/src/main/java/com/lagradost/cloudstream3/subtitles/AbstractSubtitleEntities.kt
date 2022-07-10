@@ -9,6 +9,7 @@ class AbstractSubtitleEntities {
         var lang: String = "en",
         var data: String = "", //Id or link, depends on provider how to process
         var type: TvType = TvType.Movie, //Movie, TV series, etc..
+        var source: String,
         var epNumber: Int? = null,
         var seasonNumber: Int? = null,
         var year: Int? = null,
