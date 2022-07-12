@@ -4,10 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkPlayList
-import com.lagradost.cloudstream3.utils.PlayListItem
-import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.mvvm.safeApiCall
+import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 import java.net.URLDecoder
 import java.util.ArrayList
@@ -161,9 +159,10 @@ class PhimmoichillProvider : MainAPI() {
         app.get("https://so-trym.topphimmoi.org/hlspm/$key", referer = "$mainUrl/")
             .parsedSafe<ResponseM3u>()?.main.let {
             val playList = it?.segments?.map { segment ->
+                val duration = (segment.du.toFloat() * 1_000_000).toLong()
                 PlayListItem(
                     segment.link,
-                    segment.du.toFloat().toLong()
+                    duration
                 )
             }
 
@@ -185,13 +184,12 @@ class PhimmoichillProvider : MainAPI() {
 //            Pair("https://dash.megacdn.xyz/hlspm/$key", "PMHLS"),
 //            Pair("https://dash.megacdn.xyz/dast/$key/index.m3u8", "PMBK")
 //        ).apmap { (link, source) ->
-//
-//            app.get(link, referer = "$mainUrl/").parsedSafe<ResponseM3u>()?.main.let {
-//
-//                val playList = it?.segments?.map { segment ->
+//            safeApiCall {
+//                val content = app.get(link, referer = "$mainUrl/").parsedSafe<ResponseM3u>()
+//                val playList = content?.main?.segments?.map { segment ->
 //                    PlayListItem(
-//                        segment.link!!,
-//                        segment.du?.toBigDecimal()?.toLong()!!
+//                        segment.link,
+//                        (segment.du.toFloat() * 1_000_000).toLong()
 //                    )
 //                }
 //
@@ -199,7 +197,7 @@ class PhimmoichillProvider : MainAPI() {
 //                    ExtractorLinkPlayList(
 //                        source,
 //                        source,
-//                        playList!!,
+//                        playList ?: return@safeApiCall,
 //                        referer = "$mainUrl/",
 //                        quality = Qualities.Unknown.value,
 //                        isM3u8 = true
