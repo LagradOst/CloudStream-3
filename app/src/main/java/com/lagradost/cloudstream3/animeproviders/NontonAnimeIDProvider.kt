@@ -68,16 +68,16 @@ class NontonAnimeIDProvider : MainAPI() {
         return if (uri.contains("/anime/")) {
             uri
         } else {
-            val name = Regex("$mainUrl/(.*)-episode.*").find(uri)?.groupValues?.get(1).toString()
-            if (name.contains("movie")) {
-                return "$mainUrl/anime/" + name.replace("-movie", "")
-            } else {
-                if (name.contains("kokurasetai-season-3")) {
-                    "$mainUrl/anime/${name.replace("season-3", "ultra-romantic")}"
-                } else {
-                    "$mainUrl/anime/$name"
-                }
+            var title = uri.substringAfter("$mainUrl/")
+            val fixTitle = Regex("(.*)-episode.*").find(title)?.groupValues?.getOrNull(1).toString()
+            title = when {
+                title.contains("movie") -> title.substringBefore("-movie")
+                title.contains("kokurasetai-season-3") -> fixTitle.replace("season-3", "ultra-romantic")
+                title.contains("utawarerumono-season-3") -> fixTitle.replace("season-3", "futari-no-hakuoro")
+                title.contains("kingdom-season-4") -> fixTitle.replace("season-4", "4th-season")
+                else -> fixTitle
             }
+            "$mainUrl/anime/$title"
         }
     }
 

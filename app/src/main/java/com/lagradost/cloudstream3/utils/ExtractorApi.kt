@@ -278,6 +278,8 @@ val extractorApis: Array<ExtractorApi> = arrayOf(
 
     Filesim(),
 
+    Linkbox(),
+
     YoutubeExtractor(),
     YoutubeShortLinkExtractor(),
 )
