@@ -14,7 +14,7 @@
     <string name="year_format" translatable="false" formatted="true">%d</string>
     <string name="app_dub_sub_episode_text_format" formatted="true">%s Ep %d</string>
     <string name="cast_format" formatted="true">Cast: %s</string>
-    <string name="next_episode_format" formatted="true">Bölüm %d şu tarihte yayınlanacak:</string>
+    <string name="next_episode_format" formatted="true">Bölüm %d şu tarihte yayınlanacak: </string>
     <string name="next_episode_time_day_format" formatted="true">%dd %dh %dm</string>
     <string name="next_episode_time_hour_format" formatted="true">%dh %dm</string>
     <string name="next_episode_time_min_format" formatted="true">%dm</string>
@@ -141,10 +141,10 @@
     <string name="action_open_watching">Daha fazla bilgi</string>
     <string name="action_open_play">@string/home_play </string>
 
-    <string name="vpn_might_be_needed">Bu sağlayıcının düzgün çalışması için bir VPN gerekebilir.</string>
-    <string name="vpn_torrent">Bu sağlayıcı bir torrent. VPN önerilir.</string>
+    <string name="vpn_might_be_needed">Bu sağlayıcının düzgün çalışması için bir VPN gerekebilir</string>
+    <string name="vpn_torrent">Bu sağlayıcı bir torrent. VPN önerilir</string>
 
-    <string name="provider_info_meta">Metadata verisi site tarafından sağlanmadı, video yüklemesi eğer sitede bulunmuyorsa oynatma başarısız olacak.</string>
+    <string name="provider_info_meta">Metadata verisi site tarafından sağlanmadı, video yüklemesi eğer sitede bulunmuyorsa oynatma başarısız olacak</string>
 
     <string name="torrent_plot">Açıklama</string>
     <string name="normal_no_plot">Konu bulunamadı</string>
@@ -165,7 +165,7 @@
     <string name="eigengraumode_settings_des">Oynatıcıya bir hız seçeneği ekler</string>
     <string name="swipe_to_seek_settings">Gözlemek için kaydır</string>
     <string name="swipe_to_seek_settings_des">Zamanı ayarlamak için sağa veya sola kaydır</string>
-    <string name="swipe_to_change_settings">Ayaları değiştirmek için kaydır</string>
+    <string name="swipe_to_change_settings">Ayarları değiştirmek için kaydır</string>
     <string name="swipe_to_change_settings_des">Sol ve sağ taraftan kaydırarak parlaklık ve sesi ayarla</string>
     <string name="double_tap_to_seek_settings">Gözlemek için çift tıkla</string>
     <string name="double_tap_to_pause_settings">Durdurmak için çift tıkla</string>
@@ -193,7 +193,7 @@
     <string name="category_account">Hesaplar</string>
     <string name="category_updates">Güncellemeler ve yedek</string>
     <string name="nginx_info_title">Nginx nedir?</string>
-    <string name="nginx_info_summary">Nginx, sahip olduğunuz bir sunucudan dosyaları görüntülemek için kullanılabilecek bir yazılımdır. Nginx kurulum kılavuzunu görmek için tıklayın.</string>
+    <string name="nginx_info_summary">Nginx, sahip olduğunuz bir sunucudan dosyaları görüntülemek için kullanılabilecek bir yazılımdır. Nginx kurulum kılavuzunu görmek için tıklayın</string>
 
     <string name="settings_info">Bilgi</string>
     <string name="advanced_search">Gelişmiş arama</string>
@@ -207,7 +207,7 @@
     <string name="updates_settings">Uygulama güncellemelerini göster</string>
     <string name="updates_settings_des">Başlangıçta yeni güncellemeleri otomatik olarak ara</string>
     <string name="uprereleases_settings">Ön sürümlere güncelle</string>
-    <string name="uprereleases_settings_des">Yalnızca tam sürümler yerine ön sürüm güncellemelerini de ara</string>
+    <string name="uprereleases_settings_des">Sadece tam sürümler yerine ön sürüm güncellemelerini de ara</string>
     <string name="github">GitHub</string>
     <string name="lightnovel">Aynı geliştiriciler tarafından LightNovel uygulaması</string>
     <string name="anim">Aynı geliştiriciler tarafından anime uygulaması</string>
@@ -326,8 +326,8 @@
     <string name="video_buffer_disk_settings">Diskteki video önbelleği</string>
     <string name="video_buffer_clear_settings">Video ve resim önbelleğini temizle</string>
 
-    <string name="video_ram_description">Çok yüksek ayarlanırsa rastgele çökmelere neden olur. Android TV veya eski bir telefon gibi ram miktarı düşük cihazlarda değiştirmeyin</string>
-    <string name="video_disk_description">Çok yükseğe ayarlarsanız, Android TV cihazları gibi düşük depolama alanına sahip sistemlerde sorunlara neden olabilir</string>
+    <string name="video_ram_description">Çok yükseğe ayarlanırsa rastgele çökmelere neden olur. Android TV veya eski bir telefon gibi ram miktarı düşük cihazlarda değiştirmeyin</string>
+    <string name="video_disk_description">Çok yükseğe ayarlanırsa, Android TV cihazları gibi düşük depolama alanına sahip sistemlerde sorunlara neden olabilir</string>
 
     <string name="dns_pref">HTTPS üzerinden DNS</string>
     <string name="dns_pref_summary">ISP bloklarını atlatmak için kullanışlıdır</string>
@@ -420,7 +420,7 @@
     <string name="sync_score_format" formatted="true">%d / 10</string>
     <string name="sync_total_episodes_none">/??</string>
     <string name="sync_total_episodes_some" formatted="true">/%d</string>
-    <string name="authenticated_user" formatted="true">Doğrulandı %s</string>
+    <string name="authenticated_user" formatted="true">%s için doğrulama başarılı</string>
     <string name="authenticated_user_fail" formatted="true">%s için doğrulama başarısız</string>
 
     <!-- ============ -->
@@ -437,8 +437,8 @@
     <string name="subtitle_offset">Alt yazı senkronu</string>
     <string name="subtitle_offset_hint">1000ms</string>
     <string name="subtitle_offset_title">Alt yazı gecikmesi</string>
-    <string name="subtitle_offset_extra_hint_later_format">Altyazılar %dms erken gözüküyorsa bunu kullanın</string>
-    <string name="subtitle_offset_extra_hint_before_format">Altyazılar %dms geç gözüküyorsa bunu kullanın</string>
+    <string name="subtitle_offset_extra_hint_later_format">Alt yazılar %dms erken gözüküyorsa bunu kullanın</string>
+    <string name="subtitle_offset_extra_hint_before_format">Alt yazılar %dms geç gözüküyorsa bunu kullanın</string>
     <string name="subtitle_offset_extra_hint_none_format">Alt yazı gecikmesi yok</string>
 
     <!--
