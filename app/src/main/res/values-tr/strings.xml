@@ -150,7 +150,7 @@
     <string name="normal_no_plot">Konu bulunamadı</string>
     <string name="torrent_no_plot">Açıklama bulunamadı</string>
 
-    <string name="show_log_cat">Logcat'i göster 🐈</string>
+    <string name="show_log_cat">Logcat\'i göster 🐈</string>
 
     <string name="picture_in_picture">Resim-içinde-resim</string>
     <string name="picture_in_picture_des">Diğer uygulamaların üzerinde minyatür bir oynatıcıda oynatmaya devam eder</string>
@@ -202,7 +202,7 @@
     <string name="bug_report_settings_on">Hiç veri göndermez</string>
     <string name="show_fillers_settings">Anime için filler bölümleri gösterir</string>
     <string name="show_trailers_settings">Fragmanları göster</string>
-    <string name="kitsu_settings">Kitsu'dan posterleri göster</string>
+    <string name="kitsu_settings">Kitsu\'dan posterleri göster</string>
 
     <string name="updates_settings">Uygulama güncellemelerini göster</string>
     <string name="updates_settings_des">Başlangıçta yeni güncellemeleri otomatik olarak ara</string>
@@ -288,7 +288,7 @@
     <string name="episode_action_chromecast_episode">Bölümü Chromecast ile yayınla</string>
     <string name="episode_action_chromecast_mirror">Bağlantıyı Chromecast ile yayınla</string>
     <string name="episode_action_play_in_app">Uygulamada oynat</string>
-    <string name="episode_action_play_in_vlc">VLC'de oynat</string>
+    <string name="episode_action_play_in_vlc">VLC\'de oynat</string>
     <string name="episode_action_play_in_browser">Tarayıcıda oynat</string>
     <string name="episode_action_copy_link">Linki kopyala</string>
     <string name="episode_action_auto_download">Otomatik indir</string>
@@ -312,7 +312,7 @@
     <string name="video_lock">Kilitle</string>
     <string name="video_aspect_ratio_resize">Yeniden boyutlandır</string>
     <string name="video_source">Kaynak</string>
-    <string name="video_skip_op">OP'yi geç</string>
+    <string name="video_skip_op">OP\'yi geç</string>
 
     <string name="dont_show_again">Bir daha gösterme</string>
     <string name="skip_update">Bu güncellemeyi atla</string>
