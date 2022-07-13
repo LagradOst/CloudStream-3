@@ -156,57 +156,48 @@ class PhimmoichillProvider : MainAPI() {
             }
         }.first()
 
-        app.get("https://so-trym.topphimmoi.org/hlspm/$key", referer = "$mainUrl/")
-            .parsedSafe<ResponseM3u>()?.main.let {
-            val playList = it?.segments?.map { segment ->
-                val duration = (segment.du.toFloat() * 1_000_000).toLong()
-                PlayListItem(
-                    segment.link,
-                    duration
-                )
+        listOf(
+            Pair("https://so-trym.topphimmoi.org/hlspm/$key", "PMFAST"),
+            Pair("https://dash.megacdn.xyz/hlspm/$key", "PMHLS"),
+            Pair("https://dash.megacdn.xyz/dast/$key/index.m3u8", "PMBK")
+        ).apmap { (link, source) ->
+            safeApiCall {
+                if (source == "PMBK") {
+                    callback.invoke(
+                        ExtractorLink(
+                            source,
+                            source,
+                            link,
+                            referer = "$mainUrl/",
+                            quality = Qualities.P1080.value,
+                            isM3u8 = true
+                        )
+                    )
+                } else {
+                    val playList = app.get(link, referer = "$mainUrl/")
+                        .parsedSafe<ResponseM3u>()?.main?.segments?.map { segment ->
+                        PlayListItem(
+                            segment.link,
+                            (segment.du.toFloat() * 1_000_000).toLong()
+                        )
+                    }
+
+                    callback.invoke(
+                        ExtractorLinkPlayList(
+                            source,
+                            source,
+                            playList ?: return@safeApiCall,
+                            referer = "$mainUrl/",
+                            quality = Qualities.P1080.value,
+                            headers = mapOf(
+//                                "If-None-Match" to "*",
+                                "Origin" to mainUrl,
+                            )
+                        )
+                    )
+                }
             }
-
-            callback.invoke(
-                ExtractorLinkPlayList(
-                    "PMFAST",
-                    "PMFAST",
-                    playList ?: return@let,
-                    referer = "$mainUrl/",
-                    quality = Qualities.Unknown.value,
-                    isM3u8 = true
-                )
-            )
-
         }
-
-//        listOf(
-//            Pair("https://so-trym.topphimmoi.org/hlspm/$key", "PMFAST"),
-//            Pair("https://dash.megacdn.xyz/hlspm/$key", "PMHLS"),
-//            Pair("https://dash.megacdn.xyz/dast/$key/index.m3u8", "PMBK")
-//        ).apmap { (link, source) ->
-//            safeApiCall {
-//                val content = app.get(link, referer = "$mainUrl/").parsedSafe<ResponseM3u>()
-//                val playList = content?.main?.segments?.map { segment ->
-//                    PlayListItem(
-//                        segment.link,
-//                        (segment.du.toFloat() * 1_000_000).toLong()
-//                    )
-//                }
-//
-//                callback.invoke(
-//                    ExtractorLinkPlayList(
-//                        source,
-//                        source,
-//                        playList ?: return@safeApiCall,
-//                        referer = "$mainUrl/",
-//                        quality = Qualities.Unknown.value,
-//                        isM3u8 = true
-//                    )
-//                )
-//            }
-//        }
-
-
         return true
     }
 

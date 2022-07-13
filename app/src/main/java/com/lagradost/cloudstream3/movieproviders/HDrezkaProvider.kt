@@ -218,11 +218,11 @@ class HDrezkaProvider : MainAPI() {
         var trashString = data.replace("#h", "").split("//_//").joinToString("")
 
         trashSet.forEach {
-            val temp = String(Base64.getEncoder().encode(it.toByteArray()))
+            val temp = base64Encode(it.toByteArray())
             trashString = trashString.replace(temp, "")
         }
 
-        return String(Base64.getDecoder().decode(trashString))
+        return base64Decode(trashString)
 
     }
 
@@ -238,9 +238,12 @@ class HDrezkaProvider : MainAPI() {
                 source,
                 source,
                 url,
-                referer = "$mainUrl/",
-                quality = getQuality(quality),
-                isM3u8 = isM3u8,
+                "$mainUrl/",
+                getQuality(quality),
+                isM3u8,
+                headers = mapOf(
+                    "Origin" to mainUrl
+                )
             )
         )
     }
@@ -320,7 +323,7 @@ class HDrezkaProvider : MainAPI() {
                             val language =
                                 Regex("\\[(.*)]").find(sub)?.groupValues?.getOrNull(1)
                                     .toString()
-                            val link = sub.replace(Regex("\\[.*]"), "").trim()
+                            val link = sub.replace("[$language]", "").trim()
                             subtitleCallback.invoke(
                                 SubtitleFile(
                                     getLanguage(language),
