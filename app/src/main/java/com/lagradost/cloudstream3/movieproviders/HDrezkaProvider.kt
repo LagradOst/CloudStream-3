@@ -1,5 +1,6 @@
 package com.lagradost.cloudstream3.movieproviders
 
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.lagradost.cloudstream3.*
@@ -181,7 +182,7 @@ class HDrezkaProvider : MainAPI() {
 
             data["server"] = server
             data["action"] = "get_movie"
-
+            Log.i(this.name, Gson().toJson(data).toString())
             newMovieLoadResponse(title, url, TvType.Movie, Gson().toJson(data).toString()) {
                 this.posterUrl = poster
                 this.year = year
@@ -267,6 +268,54 @@ class HDrezkaProvider : MainAPI() {
         }
     }
 
+    private fun invokeSources(
+        source: String,
+        url: String,
+        subtitle: String,
+        subCallback: (SubtitleFile) -> Unit,
+        sourceCallback: (ExtractorLink) -> Unit
+    ) {
+        decryptStreamUrl(url).split(",").map { links ->
+            val quality =
+                Regex("\\[([0-9]*p.*?)]").find(links)?.groupValues?.getOrNull(1)
+                    .toString().trim()
+            links.replace("[$quality]", "").split("or").map { it.trim() }
+                .map { link ->
+
+                    if (link.endsWith(".m3u8")) {
+                        cleanCallback(
+                            "$source (Main)",
+                            link,
+                            quality,
+                            true,
+                            sourceCallback,
+                        )
+                    } else {
+                        cleanCallback(
+                            "$source (Backup)",
+                            link,
+                            quality,
+                            false,
+                            sourceCallback,
+                        )
+                    }
+                }
+        }
+
+        subtitle.split(",").map { sub ->
+            val language =
+                Regex("\\[(.*)]").find(sub)?.groupValues?.getOrNull(1)
+                    .toString()
+            val link = sub.replace("[$language]", "").trim()
+            subCallback.invoke(
+                SubtitleFile(
+                    getLanguage(language),
+                    link
+                )
+            )
+        }
+    }
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -275,60 +324,47 @@ class HDrezkaProvider : MainAPI() {
     ): Boolean {
 
         tryParseJson<Data>(data)?.let { res ->
-            res.server?.apmap { server ->
-                suspendSafeApiCall {
-                    app.post(
-                        url = "$mainUrl/ajax/get_cdn_series/?t=${Date().time}",
-                        data = mapOf(
-                            "id" to res.id,
-                            "translator_id" to server.translator_id,
-                            "favs" to res.favs,
-                            "is_camrip" to server.camrip,
-                            "is_ads" to server.ads,
-                            "is_director" to server.director,
-                            "season" to res.season,
-                            "episode" to res.episode,
-                            "action" to res.action,
-                        ).filterValues { it != null }.mapValues { it.value as String },
-                        referer = res.ref
-                    ).parsedSafe<Sources>()?.let { source ->
-                        decryptStreamUrl(source.url).split(",").map { links ->
-                            val quality =
-                                Regex("\\[([0-9]*p.*?)]").find(links)?.groupValues?.getOrNull(1)
-                                    .toString().trim()
-                            links.replace("[$quality]", "").split("or").map { it.trim() }
-                                .map { link ->
-
-                                    if (link.endsWith(".m3u8")) {
-                                        cleanCallback(
-                                            "${server.translator_name.toString()} (Main)",
-                                            link,
-                                            quality,
-                                            true,
-                                            callback,
-                                        )
-                                    } else {
-                                        cleanCallback(
-                                            "${server.translator_name.toString()} (Backup)",
-                                            link,
-                                            quality,
-                                            false,
-                                            callback,
-                                        )
-                                    }
-                                }
+            if (res.server?.isEmpty() == true) {
+                val document = app.get(res.ref ?: return@let).document
+                document.select("script").map { script ->
+                    if (script.data().contains("sof.tv.initCDNMoviesEvents(")) {
+                        val dataJson =
+                            script.data().substringAfter("false, {").substringBefore("});")
+                        tryParseJson<LocalSources>("{$dataJson}")?.let { source ->
+                            invokeSources(
+                                this.name,
+                                source.streams,
+                                source.subtitle.toString(),
+                                subtitleCallback,
+                                callback
+                            )
                         }
-
-                        source.subtitle?.toString()?.split(",")?.map { sub ->
-                            val language =
-                                Regex("\\[(.*)]").find(sub)?.groupValues?.getOrNull(1)
-                                    .toString()
-                            val link = sub.replace("[$language]", "").trim()
-                            subtitleCallback.invoke(
-                                SubtitleFile(
-                                    getLanguage(language),
-                                    link
-                                )
+                    }
+                }
+            } else {
+                res.server?.apmap { server ->
+                    suspendSafeApiCall {
+                        app.post(
+                            url = "$mainUrl/ajax/get_cdn_series/?t=${Date().time}",
+                            data = mapOf(
+                                "id" to res.id,
+                                "translator_id" to server.translator_id,
+                                "favs" to res.favs,
+                                "is_camrip" to server.camrip,
+                                "is_ads" to server.ads,
+                                "is_director" to server.director,
+                                "season" to res.season,
+                                "episode" to res.episode,
+                                "action" to res.action,
+                            ).filterValues { it != null }.mapValues { it.value as String },
+                            referer = res.ref
+                        ).parsedSafe<Sources>()?.let { source ->
+                            invokeSources(
+                                server.translator_name.toString(),
+                                source.url,
+                                source.subtitle.toString(),
+                                subtitleCallback,
+                                callback
                             )
                         }
                     }
@@ -338,6 +374,11 @@ class HDrezkaProvider : MainAPI() {
 
         return true
     }
+
+    data class LocalSources(
+        @JsonProperty("streams") val streams: String,
+        @JsonProperty("subtitle") val subtitle: Any?,
+    )
 
     data class Sources(
         @JsonProperty("url") val url: String,
