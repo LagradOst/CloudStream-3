@@ -75,6 +75,8 @@ class NontonAnimeIDProvider : MainAPI() {
                 title.contains("kokurasetai-season-3") -> fixTitle.replace("season-3", "ultra-romantic")
                 title.contains("utawarerumono-season-3") -> fixTitle.replace("season-3", "futari-no-hakuoro")
                 title.contains("kingdom-season-4") -> fixTitle.replace("season-4", "4th-season")
+                title.contains("maou-sama-season-2") -> fixTitle.replace("season-2", "2")
+                title.contains("overlord-season-4") -> fixTitle.replace("season-4", "iv")
                 else -> fixTitle
             }
             "$mainUrl/anime/$title"

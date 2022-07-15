@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.gson.Gson
 import com.lagradost.cloudstream3.*
@@ -182,7 +181,7 @@ class HDrezkaProvider : MainAPI() {
 
             data["server"] = server
             data["action"] = "get_movie"
-            Log.i(this.name, Gson().toJson(data).toString())
+
             newMovieLoadResponse(title, url, TvType.Movie, Gson().toJson(data).toString()) {
                 this.posterUrl = poster
                 this.year = year
