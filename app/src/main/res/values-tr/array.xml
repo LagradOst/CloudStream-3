@@ -30,10 +30,10 @@
     </array>
 
     <array name="media_type_pref">
-        <item>Tất cả</item>
-        <item>Phim lẻ và Phim bộ</item>
+        <item>Hepsi</item>
+        <item>Film ve Dizi</item>
         <item>Anime</item>
-        <item>Phim tài liệu</item>
+        <item>Belgesel</item>
     </array>
     <array name="media_type_pref_values">
         <item>0</item>
@@ -58,11 +58,11 @@
 
     <array name="limit_title_pref_names">
         <item>@string/none</item>
-        <item>16 ký tự</item>
-        <item>32 ký tự</item>
-        <item>64 ký tự</item>
-        <item>128 ký tự</item>
-        <item>Ẩn Tiêu đề</item>
+        <item>16 karakter</item>
+        <item>32 karakter</item>
+        <item>64 karakter</item>
+        <item>128 karakter</item>
+        <item>Başlığı gizle</item>
     </array>
     <array name="limit_title_pref_values">
         <item>0</item>
@@ -84,22 +84,22 @@
 
     <array name="video_buffer_length_names">
         <item>@string/automatic</item>
-        <item>1 phút</item>
-        <item>1 phút 30 giây</item>
-        <item>2 phút</item>
-        <item>2 phút 30 giây</item>
-        <item>3 phút</item>
-        <item>3 phút 30 giây</item>
-        <item>4 phút</item>
-        <item>5 phút</item>
-        <item>6 phút</item>
-        <item>7 phút</item>
-        <item>8 phút</item>
-        <item>9 phút</item>
-        <item>10 phút</item>
-        <item>15 phút</item>
-        <item>20 phút</item>
-        <item>30 phút</item>
+        <item>1dk</item>
+        <item>1dk 30sn</item>
+        <item>2dk</item>
+        <item>2dk 30sn</item>
+        <item>3dk</item>
+        <item>3dk 30sn</item>
+        <item>4dk</item>
+        <item>5dk</item>
+        <item>6dk</item>
+        <item>7dk</item>
+        <item>8dk</item>
+        <item>9dk</item>
+        <item>10dk</item>
+        <item>15dk</item>
+        <item>20dk</item>
+        <item>30dk</item>
     </array>
 
     <array name="video_buffer_length_values">
@@ -221,22 +221,22 @@
     </array>
 
     <string-array name="themes_overlay_names">
-        <item>Mặc định</item>
-        <item>Hồng nhạt</item>
-        <item>Xanh lam đậm</item>
-        <item>Nâu sẫm</item>
-        <item>Xanh lục</item>
-        <item>Xám</item>
-        <item>Trắng</item>
-        <item>Nâu</item>
-        <item>Xanh lục nhạt</item>
-        <item>Đỏ</item>
-        <item>Tím</item>
-        <item>Xanh lam</item>
-        <item>Xanh lam nhạt</item>
-        <item>Vàng</item>
-        <item>Hồng</item>
-        <item>Hồng đậm</item>
+        <item>Normal</item>
+        <item>Karanfil Pembesi</item>
+        <item>Koyu Yeşil</item>
+        <item>Kestane</item>
+        <item>Lacivert</item>
+        <item>Gri</item>
+        <item>Beyaz</item>
+        <item>Kahverengi</item>
+        <item>Soğuk</item>
+        <item>Ateş</item>
+        <item>Mor</item>
+        <item>Yeşil</item>
+        <item>Elma</item>
+        <item>Muz</item>
+        <item>Parti</item>
+        <item>Pembe</item>
     </string-array>
     <string-array name="themes_overlay_names_values">
         <item>Normal</item>
@@ -258,10 +258,10 @@
     </string-array>
 
     <string-array name="themes_names">
-        <item>Tối</item>
-        <item>Xám</item>
+        <item>Koyu</item>
+        <item>Gri</item>
         <item>Amoled</item>
-        <item>Sáng</item>
+        <item>Flaş Bombası</item>
     </string-array>
     <string-array name="themes_names_values">
         <item>AmoledLight</item>
