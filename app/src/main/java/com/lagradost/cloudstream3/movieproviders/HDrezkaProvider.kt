@@ -1,12 +1,12 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.google.gson.Gson
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
@@ -149,7 +149,7 @@ class HDrezkaProvider : MainAPI() {
                 data["action"] = "get_stream"
 
                 Episode(
-                    Gson().toJson(data).toString(),
+                    data.toJson(),
                     name,
                     season,
                     episode,
@@ -182,7 +182,7 @@ class HDrezkaProvider : MainAPI() {
             data["server"] = server
             data["action"] = "get_movie"
 
-            newMovieLoadResponse(title, url, TvType.Movie, Gson().toJson(data).toString()) {
+            newMovieLoadResponse(title, url, TvType.Movie, data.toJson()) {
                 this.posterUrl = poster
                 this.year = year
                 this.plot = description
