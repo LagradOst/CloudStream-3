@@ -109,7 +109,6 @@ object APIHolder {
             // Metadata providers
             //TmdbProvider(),
             CrossTmdbProvider(),
-            ApiMDBProvider(),// This should be removed in favor of openvids.io, redirect.
 
             // Anime providers
             WatchCartoonOnlineProvider(),
