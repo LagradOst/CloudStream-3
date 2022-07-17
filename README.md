@@ -25,26 +25,26 @@ https://github.com/LagradOst/CloudStream-3/releases
 <img src="./.github/player.jpg" height="200"/>
 
 ***The list of supported languages:***
-* 🇱🇧 Arabic
-* 🇳🇱 Dutch
-* 🇬🇧 English
+* ᴀʀ Arabic
+* ɴʟ Dutch
+* ᴇɴ English
 * 🇫🇷 French
 * 🇩🇪 German
-* 🇬🇷 Greek
-* 🇮🇳 Hindi
+* ᴇʟ Greek
+* ʜɪ Hindi
 * 🇮🇩 Indonesian
 * 🇮🇹 Italian
 * 🇲🇰 Macedonian
-* 🇮🇳 Malayalam
-* 🇳🇴 Norsk
+* ᴍʟ Malayalam
+* 🇳🇴 Norwegian
 * 🇵🇱 Polish
 * 🇧🇷 Portuguese (Brazil)
 * 🇷🇴 Romanian
 * 🇪🇸 Spanish
-* 🇸🇪 Swedish
-* 🇵🇭 Tagalog
+* sᴠ Swedish
+* ᴛʟ Tagalog
 * 🇹🇷 Turkish
-* 🇻🇳 Vietnamese
+* ᴠɪ Vietnamese
 
 ***Disclaimer:***
 
