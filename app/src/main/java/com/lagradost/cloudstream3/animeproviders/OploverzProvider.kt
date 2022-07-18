@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -90,12 +89,10 @@ class OploverzProvider : MainAPI() {
 
     private fun Element.toSearchResult(): AnimeSearchResponse {
         val href = getProperAnimeLink(this.selectFirst("a.tip")!!.attr("href"))
-        val title = this.selectFirst("h2[itemprop=headline]")!!.text().trim()
-        val posterUrl = fixUrl(this.selectFirst("img")!!.attr("src"))
-        val type = getType(this.selectFirst(".eggtype, .typez")!!.text().trim())
-        val epNum =
-            this.selectFirst(".eggepisode, span.epx")!!.text().replace(Regex("[^0-9]"), "").trim()
-                .toIntOrNull()
+        val title = this.selectFirst("h2[itemprop=headline]")?.text()?.trim() ?: ""
+        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
+        val type = getType(this.selectFirst(".eggtype, .typez")?.text()?.trim().toString())
+        val epNum = this.selectFirst(".eggepisode, span.epx")?.text()?.replace(Regex("[^0-9]"), "")?.trim()?.toIntOrNull()
 
         return newAnimeSearchResponse(title, href, type) {
             this.posterUrl = posterUrl
