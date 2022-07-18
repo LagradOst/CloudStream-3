@@ -105,8 +105,8 @@ class OploverzProvider : MainAPI() {
         val document = app.get(link).document
 
         return document.select("article[itemscope=itemscope]").map {
-            val title = it.selectFirst(".tt")!!.ownText().trim()
-            val poster = it.selectFirst("img")!!.attr("src")
+            val title = it.selectFirst(".tt")?.ownText()?.trim().toString()
+            val poster = fixUrlNull(it.selectFirst("img")?.attr("src"))
             val tvType = getType(it.selectFirst(".typez")?.text().toString())
             val href = fixUrl(it.selectFirst("a.tip")!!.attr("href"))
 
