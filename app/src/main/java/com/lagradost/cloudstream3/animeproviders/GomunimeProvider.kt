@@ -2,19 +2,21 @@ package com.lagradost.cloudstream3.animeproviders
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import org.jsoup.Jsoup
-import java.util.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.safeApiCall
-import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.loadExtractor
+import org.jsoup.Jsoup
 
 class GomunimeProvider : MainAPI() {
     override var mainUrl = "https://185.231.223.76"
     override var name = "Gomunime"
-    override val hasQuickSearch = false
     override val hasMainPage = true
-    override val lang = "id"
+    override var lang = "id"
     override val hasDownloadSupport = true
 
     override val supportedTypes = setOf(
@@ -73,7 +75,7 @@ class GomunimeProvider : MainAPI() {
                         .toIntOrNull()
                     newAnimeSearchResponse(title, href, type) {
                         this.posterUrl = posterUrl
-                        addDubStatus(dubExist = false, subExist = true, subEpisodes = epNum)
+                        addSub(epNum)
                     }
                 }
                 items.add(HomePageList(name, home))
@@ -137,7 +139,7 @@ class GomunimeProvider : MainAPI() {
         )?.groupValues?.get(1)?.toIntOrNull()
         val status = getStatus(document.selectFirst(".spe > span")!!.ownText())
         val description = document.select("div[itemprop = description] > p").text()
-
+        val trailer = document.selectFirst("div.embed-responsive noscript iframe")?.attr("src")
         val episodes = parseJson<List<EpisodeElement>>(
             Regex("var episodelist = (\\[.*])").find(
                 document.select(".bixbox.bxcl.epcheck > script").toString().trim()
@@ -156,6 +158,7 @@ class GomunimeProvider : MainAPI() {
             showStatus = status
             plot = description
             this.tags = tags
+            addTrailer(trailer)
         }
     }
 

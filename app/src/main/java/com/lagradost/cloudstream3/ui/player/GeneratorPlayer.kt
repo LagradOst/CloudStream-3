@@ -13,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
@@ -142,6 +143,7 @@ class GeneratorPlayer : FullScreenPlayer() {
         currentSelectedLink = link
         currentMeta = viewModel.getMeta()
         nextMeta = viewModel.getNextMeta()
+        setEpisodes(viewModel.getAllMeta() ?: emptyList())
         isActive = true
         setPlayerDimen(null)
         setTitle()
@@ -216,25 +218,82 @@ class GeneratorPlayer : FullScreenPlayer() {
         dismissCallback: (() -> Unit)
     ) {
         val providers = subsProviders
+        val isSingleProvider = subsProviders.size == 1
 
         val dialog = Dialog(context, R.style.AlertDialogCustomBlack)
         dialog.setContentView(R.layout.dialog_online_subtitles)
 
+        var currentSubtitles: List<AbstractSubtitleEntities.SubtitleEntity> = emptyList()
+        var currentSubtitle: AbstractSubtitleEntities.SubtitleEntity? = null
+
+        fun getName(entry: AbstractSubtitleEntities.SubtitleEntity, withLanguage: Boolean): String {
+            if (entry.lang.isBlank() || !withLanguage) {
+                return entry.name
+            }
+            val language = fromTwoLettersToLanguage(entry.lang.trim()) ?: entry.lang
+            return "$language ${entry.name}"
+        }
+
+        val layout = R.layout.sort_bottom_single_choice_double_text
         val arrayAdapter =
-            ArrayAdapter<String>(dialog.context, R.layout.sort_bottom_single_choice)
+            object : ArrayAdapter<AbstractSubtitleEntities.SubtitleEntity>(dialog.context, layout) {
+                fun setHearingImpairedIcon(
+                    imageViewEnd: ImageView?,
+                    position: Int
+                ) {
+                    if (imageViewEnd == null) return
+                    val isHearingImpaired =
+                        currentSubtitles.getOrNull(position)?.isHearingImpaired ?: false
+
+                    val drawableEnd = if (isHearingImpaired) {
+                        ContextCompat.getDrawable(
+                            context,
+                            R.drawable.ic_baseline_hearing_24
+                        )?.apply {
+                            setTint(
+                                ContextCompat.getColor(
+                                    context,
+                                    R.color.textColor
+                                )
+                            )
+                        }
+                    } else null
+
+                    imageViewEnd.setImageDrawable(drawableEnd)
+                }
+
+                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                    val view = convertView ?: LayoutInflater.from(context)
+                        .inflate(layout, null)
+
+                    val item = getItem(position)
+
+                    val mainTextView = view.findViewById<TextView>(R.id.main_text)
+                    val secondaryTextView = view.findViewById<TextView>(R.id.secondary_text)
+                    val drawableEnd = view.findViewById<ImageView>(R.id.drawable_end)
+
+                    mainTextView?.text = item?.let { getName(it, false) }
+
+                    val language =
+                        item?.let { fromTwoLettersToLanguage(it.lang.trim()) ?: it.lang } ?: ""
+                    val providerSuffix =
+                        if (isSingleProvider || item == null) "" else " · ${item.source}"
+                    secondaryTextView?.text = language + providerSuffix
+
+                    setHearingImpairedIcon(drawableEnd, position)
+                    return view
+                }
+            }
 
         dialog.show()
-
         dialog.cancel_btt.setOnClickListener {
             dialog.dismissSafe()
         }
 
         dialog.subtitle_adapter.choiceMode = AbsListView.CHOICE_MODE_SINGLE
         dialog.subtitle_adapter.adapter = arrayAdapter
-        val adapter = dialog.subtitle_adapter.adapter as? ArrayAdapter<String>
-
-        var currentSubtitles: List<AbstractSubtitleEntities.SubtitleEntity> = emptyList()
-        var currentSubtitle: AbstractSubtitleEntities.SubtitleEntity? = null
+        val adapter =
+            dialog.subtitle_adapter.adapter as? ArrayAdapter<AbstractSubtitleEntities.SubtitleEntity>
 
         dialog.subtitle_adapter.setOnItemClickListener { _, _, position, _ ->
             currentSubtitle = currentSubtitles.getOrNull(position) ?: return@setOnItemClickListener
@@ -242,19 +301,11 @@ class GeneratorPlayer : FullScreenPlayer() {
 
         var currentLanguageTwoLetters: String = getAutoSelectLanguageISO639_1()
 
-        fun getName(entry: AbstractSubtitleEntities.SubtitleEntity): String {
-            return if (entry.lang.isBlank()) {
-                entry.name
-            } else {
-                val language = fromTwoLettersToLanguage(entry.lang.trim()) ?: entry.lang
-                return "$language ${entry.name}"
-            }
-        }
 
         fun setSubtitlesList(list: List<AbstractSubtitleEntities.SubtitleEntity>) {
             currentSubtitles = list
             adapter?.clear()
-            adapter?.addAll(currentSubtitles.map { getName(it) })
+            adapter?.addAll(currentSubtitles)
         }
 
         val currentTempMeta = getMetaData()
@@ -308,12 +359,12 @@ class GeneratorPlayer : FullScreenPlayer() {
             }
         })
 
-        dialog.search_filter.setOnClickListener {
+        dialog.search_filter.setOnClickListener { view ->
             val lang639_1 = languages.map { it.ISO_639_1 }
             activity?.showDialog(
                 languages.map { it.languageName },
                 lang639_1.indexOf(currentLanguageTwoLetters),
-                context.getString(R.string.subs_subtitle_languages),
+                view?.context?.getString(R.string.subs_subtitle_languages) ?: return@setOnClickListener,
                 true,
                 { }
             ) { index ->
@@ -328,7 +379,7 @@ class GeneratorPlayer : FullScreenPlayer() {
                     ioSafe {
                         val url = api.load(currentSubtitle) ?: return@ioSafe
                         val subtitle = SubtitleData(
-                            name = getName(currentSubtitle),
+                            name = getName(currentSubtitle, true),
                             url = url,
                             origin = SubtitleOrigin.URL,
                             mimeType = url.toSubtitleMimeType()
@@ -375,8 +426,10 @@ class GeneratorPlayer : FullScreenPlayer() {
         setSubtitles(subtitleData)
 
         // this is used instead of observe, because observe is too slow
-        val subs = currentSubs.toMutableSet()
-        subs.add(subtitleData)
+        val subs = currentSubs + subtitleData
+
+        // Save current time as to not reset player to 00:00
+        player.saveData()
         player.setActiveSubtitles(subs)
         player.reloadPlayer(ctx)
 
@@ -516,7 +569,7 @@ class GeneratorPlayer : FullScreenPlayer() {
 
                 val subsArrayAdapter =
                     ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
-                subsArrayAdapter.add(getString(R.string.no_subtitles))
+                subsArrayAdapter.add(ctx.getString(R.string.no_subtitles))
                 subsArrayAdapter.addAll(currentSubtitles.map { it.name })
 
                 subtitleList.adapter = subsArrayAdapter
@@ -556,7 +609,7 @@ class GeneratorPlayer : FullScreenPlayer() {
 
                     val currentPrefMedia =
                         settingsManager.getString(
-                            getString(R.string.subtitles_encoding_key),
+                            ctx.getString(R.string.subtitles_encoding_key),
                             null
                         )
 
@@ -636,6 +689,11 @@ class GeneratorPlayer : FullScreenPlayer() {
         isNextEpisode = true
         player.release()
         viewModel.loadLinksPrev()
+    }
+
+    override fun hasNextMirror(): Boolean {
+        val links = sortLinks()
+        return links.isNotEmpty() && links.indexOf(currentSelectedLink) + 1 < links.size
     }
 
     override fun nextMirror() {
@@ -774,11 +832,11 @@ class GeneratorPlayer : FullScreenPlayer() {
     private fun autoSelectFromSettings(): Boolean {
         // auto select subtitle based of settings
         val langCode = preferredAutoSelectSubtitles
-
         if (!langCode.isNullOrEmpty() && player.getCurrentPreferredSubtitle() == null) {
             getAutoSelectSubtitle(currentSubs, settings = true, downloads = false)?.let { sub ->
                 context?.let { ctx ->
                     if (setSubtitles(sub)) {
+                        player.saveData()
                         player.reloadPlayer(ctx)
                         player.handleEvent(CSPlayerEvent.Play)
                         return true
@@ -794,6 +852,7 @@ class GeneratorPlayer : FullScreenPlayer() {
             getAutoSelectSubtitle(currentSubs, settings = false, downloads = true)?.let { sub ->
                 context?.let { ctx ->
                     if (setSubtitles(sub)) {
+                        player.saveData()
                         player.reloadPlayer(ctx)
                         player.handleEvent(CSPlayerEvent.Play)
                         return true
@@ -835,20 +894,26 @@ class GeneratorPlayer : FullScreenPlayer() {
                 tvType = meta.tvType
             }
         }
-
-        //Generate video title
-        val playerVideoTitle = if (headerName != null) {
-            (headerName +
-                    if (tvType.isEpisodeBased() && episode != null)
-                        if (season == null)
-                            " - ${getString(R.string.episode)} $episode"
-                        else
-                            " \"${getString(R.string.season_short)}${season}:${getString(R.string.episode_short)}${episode}\""
-                    else "") + if (subName.isNullOrBlank() || subName == headerName) "" else " - $subName"
-        } else {
-            ""
+        context?.let { ctx ->
+            //Generate video title
+            val playerVideoTitle = if (headerName != null) {
+                (headerName +
+                        if (tvType.isEpisodeBased() && episode != null)
+                            if (season == null)
+                                " - ${ctx.getString(R.string.episode)} $episode"
+                            else
+                                " \"${ctx.getString(R.string.season_short)}${season}:${
+                                    ctx.getString(
+                                        R.string.episode_short
+                                    )
+                                }${episode}\""
+                        else "") + if (subName.isNullOrBlank() || subName == headerName) "" else " - $subName"
+            } else {
+                ""
+            }
+            return playerVideoTitle
         }
-        return playerVideoTitle
+        return ""
     }
 
 
@@ -911,8 +976,9 @@ class GeneratorPlayer : FullScreenPlayer() {
         savedInstanceState: Bundle?
     ): View? {
         // this is used instead of layout-television to follow the settings and some TV devices are not classified as TV for some reason
+        isTv = context?.isTvSettings() == true
         layout =
-            if (context?.isTvSettings() == true) R.layout.fragment_player_tv else R.layout.fragment_player
+            if (isTv) R.layout.fragment_player_tv else R.layout.fragment_player
 
         viewModel = ViewModelProvider(this)[PlayerGeneratorViewModel::class.java]
         sync = ViewModelProvider(this)[SyncViewModel::class.java]
@@ -929,8 +995,8 @@ class GeneratorPlayer : FullScreenPlayer() {
 
         context?.let { ctx ->
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
-            titleRez = settingsManager.getInt(getString(R.string.prefer_limit_title_rez_key), 3)
-            limitTitle = settingsManager.getInt(getString(R.string.prefer_limit_title_key), 0)
+            titleRez = settingsManager.getInt(ctx.getString(R.string.prefer_limit_title_rez_key), 3)
+            limitTitle = settingsManager.getInt(ctx.getString(R.string.prefer_limit_title_key), 0)
             updateForcedEncoding(ctx)
         }
 

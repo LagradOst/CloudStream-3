@@ -7,7 +7,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.nodes.Element
 
 class EgyBestProvider : MainAPI() {
-    override val lang = "ar"
+    override var lang = "ar"
     override var mainUrl = "https://www.egy.best"
     override var name = "EgyBest"
     override val usesWebView = false
@@ -209,6 +209,8 @@ class EgyBestProvider : MainAPI() {
         return true*/
 
         val requestJSON = app.get("https://api.zr5.repl.co/egybest?url=$data").text
+        // To solve this you need to send a verify request which is pretty hidden, see
+        // https://vear.egybest.deals/tvc.php?verify=.......
         val jsonArray = parseJson<List<Sources>>(requestJSON)
         for (i in jsonArray) {
             val quality = i.quality

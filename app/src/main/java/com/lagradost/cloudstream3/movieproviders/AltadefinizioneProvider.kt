@@ -5,10 +5,12 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+
 
 class AltadefinizioneProvider : MainAPI() {
-    override val lang = "it"
-    override var mainUrl = "https://altadefinizione.limo"
+    override var lang = "it"
+    override var mainUrl = "https://altadefinizione.hair"
     override var name = "Altadefinizione"
     override val hasMainPage = true
     override val hasChromecastSupport = true
@@ -53,9 +55,11 @@ class AltadefinizioneProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val doc = app.post("$mainUrl/index.php?do=search", data = mapOf(
+        val doc = app.post("$mainUrl/index.php", data = mapOf(
+            "do" to "search",
             "subaction" to "search",
-            "story" to query
+            "story" to query,
+            "sortby" to "news_read"
         )).document
         return doc.select("div.box").map {
             val title = it.selectFirst("img")!!.attr("alt")
@@ -79,7 +83,7 @@ class AltadefinizioneProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val page = app.get(url)
         val document = page.document
-        val title = document.selectFirst(" h1 > a")!!.text()
+        val title = document.selectFirst(" h1 > a")!!.text().replace("streaming","")
         val description = document.select("#sfull").toString().substringAfter("altadefinizione").substringBeforeLast("fonte trama").parseAsHtml().toString()
         val rating = null
 
@@ -102,7 +106,17 @@ class AltadefinizioneProvider : MainAPI() {
 
         }
 
-            return newMovieLoadResponse(
+
+        val actors: List<ActorData> =
+            document.select("#staring > a").map {
+                ActorData(actor = Actor(it.text()))
+        }
+
+        val tags: List<String> = document.select("#details > li:nth-child(1) > a").map { it.text() }
+
+        val trailerurl = document.selectFirst("#showtrailer > div > div > iframe")?.attr("src")
+
+        return newMovieLoadResponse(
                 title,
                 url,
                 TvType.Movie,
@@ -114,7 +128,9 @@ class AltadefinizioneProvider : MainAPI() {
                 this.rating = rating
                 this.recommendations = recomm
                 this.duration = null
-
+                this.actors = actors
+                this.tags = tags
+                addTrailer(trailerurl)
             }
         }
 

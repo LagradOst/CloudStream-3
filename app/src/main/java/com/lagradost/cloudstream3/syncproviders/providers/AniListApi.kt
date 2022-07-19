@@ -29,7 +29,7 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
     override val idPrefix = "anilist"
     override var mainUrl = "https://anilist.co"
     override val icon = R.drawable.ic_anilist_icon
-    override val requiresLogin = true
+    override val requiresLogin = false
     override val createAccountUrl = "$mainUrl/signup"
 
     override fun loginInfo(): AuthAPI.LoginInfo? {
@@ -90,15 +90,15 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         }
     }
 
-    override suspend fun getResult(id: String): SyncAPI.SyncResult? {
+    override suspend fun getResult(id: String): SyncAPI.SyncResult {
         val internalId = (Regex("anilist\\.co/anime/(\\d*)").find(id)?.groupValues?.getOrNull(1)
-            ?: id).toIntOrNull() ?: return null
+            ?: id).toIntOrNull() ?: throw ErrorLoadingException("Invalid internalId")
         val season = getSeason(internalId).data.Media
 
         return SyncAPI.SyncResult(
             season.id.toString(),
             nextAiring = season.nextAiringEpisode?.let {
-                SyncAPI.SyncNextAiring(
+                NextAiring(
                     it.episode ?: return@let null,
                     (it.timeUntilAiring ?: return@let null) + unixTime
                 )
@@ -142,6 +142,10 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
                     getUrlFromId(recMedia.id),
                     recMedia.coverImage?.large ?: recMedia.coverImage?.medium
                 )
+            },
+            trailers = when (season.trailer?.site?.lowercase()?.trim()) {
+                "youtube" -> listOf("https://www.youtube.com/watch?v=${season.trailer.id}")
+                else -> null
             }
             //TODO REST
         )

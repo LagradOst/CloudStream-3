@@ -31,6 +31,8 @@
     <string name="swipe_vertical_enabled_key" translatable="false">swipe_vertical_enabled_key</string>
     <string name="display_sub_key" translatable="false">display_sub_key</string>
     <string name="show_fillers_key" translatable="false">show_fillers_key</string>
+    <string name="show_trailers_key" translatable="false">show_trailers_key</string>
+    <string name="show_kitsu_posters_key" translatable="false">show_kitsu_posters_key</string>
     <string name="random_button_key" translatable="false">random_button_key</string>
     <string name="provider_lang_key" translatable="false">provider_lang_key</string>
     <string name="dns_key" translatable="false">dns_key</string>
@@ -49,6 +51,7 @@
     <string name="bottom_title_key" translatable="false">bottom_title_key</string>
     <string name="poster_ui_key" translatable="false">poster_ui_key</string>
     <string name="subtitles_encoding_key" translatable="false">subtitles_encoding_key</string>
+    <string name="override_site_key" translatable="false">override_site_key</string>
 
     <!-- FORMAT MIGHT TRANSLATE, WILL CAUSE CRASH IF APPLIED WRONG -->
     <string name="extra_info_format" translatable="false" formatted="true">%d %s | %sMB</string>
@@ -64,6 +67,10 @@
     <string name="year_format" translatable="false" formatted="true">%d</string>
     <string name="app_dub_sub_episode_text_format" formatted="true">%s Ep %d</string>
     <string name="cast_format" formatted="true">Cast: %s</string>
+    <string name="next_episode_format" formatted="true">Episode %d will be released in</string>
+    <string name="next_episode_time_day_format" formatted="true">%dd %dh %dm</string>
+    <string name="next_episode_time_hour_format" formatted="true">%dh %dm</string>
+    <string name="next_episode_time_min_format" formatted="true">%dm</string>
 
     <!-- IS NOT NEEDED TO TRANSLATE AS THEY ARE ONLY USED FOR SCREEN READERS AND WONT SHOW UP TO NORMAL USERS -->
     <string name="result_poster_img_des">Poster</string>
@@ -129,6 +136,7 @@
     <string name="download_canceled">Download Canceled</string>
     <string name="download_done">Download Done</string>
     <string name="download_format" translatable="false">%s - %s</string>
+    <string name="stream">Stream</string>
 
     <string name="error_loading_links_toast">Error Loading Links</string>
     <string name="download_storage_text">Internal Storage</string>
@@ -249,6 +257,9 @@
     <string name="bug_report_settings_off">Only sends data on crashes</string>
     <string name="bug_report_settings_on">Sends no data</string>
     <string name="show_fillers_settings">Show filler episode for anime</string>
+    <string name="show_trailers_settings">Show trailers</string>
+    <string name="kitsu_settings">Show posters from kitsu</string>
+
     <string name="updates_settings">Show app updates</string>
     <string name="updates_settings_des">Automatically search for new updates on start</string>
     <string name="uprereleases_settings">Update to prereleases</string>
@@ -380,6 +391,10 @@
     <string name="dns_pref">DNS over HTTPS</string>
     <string name="dns_pref_summary">Useful for bypassing ISP blocks</string>
 
+    <string name="add_site_pref">Clone site</string>
+    <string name="remove_site_pref">Remove site</string>
+    <string name="add_site_summary">Add a clone of an existing site, with a different url</string>
+
     <string name="download_path_pref">Download path</string>
 
     <string name="nginx_url_pref">Nginx server url</string>
@@ -438,6 +453,9 @@
     <string name="example_username">MyCoolUsername</string>
     <string name="example_email">hello@world.com</string>
     <string name="example_ip">127.0.0.1</string>
+    <string name="example_site_name">MyCoolSite</string>
+    <string name="example_site_url">example.com</string>
+    <string name="example_lang_name">Language code (en)</string>
 
     <!--
     <string name="mal_account_settings" translatable="false">MAL</string>
@@ -527,7 +545,13 @@
     <string name="title">Title</string>
     <string name="resolution">Resolution</string>
     <string name="error_invalid_id">Invalid id</string>
+    <string name="error_invalid_data">Invalid data</string>
+    <string name="error_invalid_url">Invalid url</string>
+    <string name="error">Error</string>
     <string name="subtitles_remove_captions">Remove closed captions from subtitles</string>
     <string name="subtitles_remove_bloat">Remove bloat from subtitles</string>
     <string name="extras">Extras</string>
+    <string name="trailer">Trailer</string>
+    <string name="network_adress_example">Link to stream</string>
+    <string name="referer">Referer</string>
 </resources>

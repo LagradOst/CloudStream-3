@@ -4,10 +4,12 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+
 
 class TantifilmProvider : MainAPI() {
-    override val lang = "it"
-    override var mainUrl = "https://www.tantifilm.rodeo"
+    override var lang = "it"
+    override var mainUrl = "https://www.tantifilm.pics"
     override var name = "Tantifilm"
     override val hasMainPage = true
     override val hasChromecastSupport = true
@@ -56,7 +58,7 @@ class TantifilmProvider : MainAPI() {
         return doc.select("div.film.film-2").map {
             val href = it.selectFirst("a")!!.attr("href")
             val poster = it.selectFirst("img")!!.attr("src")
-            val name = it.selectFirst("a")!!.text().substringBefore("(")
+            val name = it.selectFirst("a > p")!!.text().substringBeforeLast("(")
             MovieSearchResponse(
                 name,
                 href,
@@ -68,7 +70,6 @@ class TantifilmProvider : MainAPI() {
 
         }
     }
-
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
@@ -95,7 +96,7 @@ class TantifilmProvider : MainAPI() {
         val recomm = document.select("div.mediaWrap.mediaWrapAlt.recomended_videos").map {
             val href = it.selectFirst("a")!!.attr("href")
             val poster = it.selectFirst("img")!!.attr("src")
-            val name = it.selectFirst("a")!!.attr("title").substringBeforeLast("(")
+            val name = it.selectFirst("a > p")!!.text().substringBeforeLast("(")
             MovieSearchResponse(
                 name,
                 href,
@@ -107,7 +108,7 @@ class TantifilmProvider : MainAPI() {
 
         }
 
-
+        val trailerurl = document.selectFirst("#trailer_mob > iframe")!!.attr("src")
 
         if (type == TvType.TvSeries) {
             val list = ArrayList<Pair<Int, String>>()
@@ -142,22 +143,18 @@ class TantifilmProvider : MainAPI() {
                     }
                 }
             }
-            return TvSeriesLoadResponse(
+            return newTvSeriesLoadResponse(
                 title,
                 url,
-                this.name,
                 type,
-                episodeList,
-                fixUrlNull(poster),
-                year.toIntOrNull(),
-                descipt[0],
-                null,
-                rating,
-                null,
-                null,
-                null,
-                recomm
-            )
+                episodeList) {
+                this.posterUrl= fixUrlNull(poster)
+                this.year = year.toIntOrNull()
+                this.plot= descipt[0]
+                this.rating= rating
+                this.recommendations = recomm
+                addTrailer(trailerurl)
+            }
         } else {
             val url2 = document.selectFirst("iframe")!!.attr("src")
             val actorpagelink =
@@ -217,6 +214,7 @@ class TantifilmProvider : MainAPI() {
                 this.tags = tags
                 this.duration = duratio
                 this.actors = actors
+                addTrailer(trailerurl)
 
             }
         }

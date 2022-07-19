@@ -5,8 +5,9 @@ import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 
+
 class CineblogProvider : MainAPI() {
-    override val lang = "it"
+    override var lang = "it"
     override var mainUrl = "https://cb01.rip"
     override var name = "CineBlog"
     override val hasMainPage = true
@@ -28,6 +29,7 @@ class CineblogProvider : MainAPI() {
                 val home = soup.select("article.item.movies").map {
                     val title = it.selectFirst("div.data > h3 > a")!!.text().substringBefore("(")
                     val link = it.selectFirst("div.poster > a")!!.attr("href")
+                    val quality = getQualityFromString(it.selectFirst("span.quality")?.text())
                     TvSeriesSearchResponse(
                         title,
                         link,
@@ -36,6 +38,7 @@ class CineblogProvider : MainAPI() {
                         it.selectFirst("img")!!.attr("src"),
                         null,
                         null,
+                        quality = quality
                     )
                 }
 
@@ -82,8 +85,7 @@ class CineblogProvider : MainAPI() {
                 href,
                 this.name,
                 TvType.Movie,
-                poster,
-                null
+                poster
             )
 
         }
@@ -96,7 +98,6 @@ class CineblogProvider : MainAPI() {
         val title = document.selectFirst("div.data > h1")!!.text().substringBefore("(")
         val description = document.select("#info > div.wp-content > p").html().toString()
         val rating = null
-
         var year = document.selectFirst(" div.data > div.extra > span.date")!!.text().substringAfter(",")
             .filter { it.isDigit() }
         if (year.length > 4) {
@@ -114,12 +115,10 @@ class CineblogProvider : MainAPI() {
                 href,
                 this.name,
                 TvType.Movie,
-                posterUrl,
-                null
+                posterUrl
             )
 
         }
-
 
 
         if (type == TvType.TvSeries) {
@@ -160,7 +159,13 @@ class CineblogProvider : MainAPI() {
                 recomm
             )
         } else {
-
+            val actors: List<ActorData> =
+                document.select("div.person").filter{it.selectFirst("div.img > a > img")?.attr("src")!!.contains("/no/cast.png").not()}.map { actordata ->
+                    val actorName = actordata.selectFirst("div.data > div.name > a")!!.text()
+                    val actorImage : String? = actordata.selectFirst("div.img > a > img")?.attr("src")
+                    val roleActor = actordata.selectFirst("div.data > div.caracter")!!.text()
+                    ActorData(actor = Actor(actorName, image = actorImage), roleString = roleActor )
+                }
             return newMovieLoadResponse(
                 title,
                 url,
@@ -173,7 +178,7 @@ class CineblogProvider : MainAPI() {
                 this.rating = rating
                 this.recommendations = recomm
                 this.duration = null
-
+                this.actors = actors
             }
         }
     }

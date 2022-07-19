@@ -40,6 +40,7 @@ import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.requestLocalAudioFocus
 import com.lagradost.cloudstream3.utils.UIHelper
 import com.lagradost.cloudstream3.utils.UIHelper.hideSystemUI
+import com.lagradost.cloudstream3.utils.UIHelper.popCurrentPage
 import kotlinx.android.synthetic.main.fragment_player.*
 import kotlinx.android.synthetic.main.player_custom_layout.*
 
@@ -68,6 +69,8 @@ abstract class AbstractPlayerFragment(
     var subStyle: SaveCaptionStyle? = null
     var subView: SubtitleView? = null
     var isBuffering = true
+    protected open var hasPipModeSupport = true
+
 
     @LayoutRes
     protected var layout: Int = R.layout.fragment_player
@@ -154,7 +157,7 @@ abstract class AbstractPlayerFragment(
             }
         }
 
-        canEnterPipMode = isPlayingRightNow
+        canEnterPipMode = isPlayingRightNow && hasPipModeSupport
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isInPIPMode) {
             activity?.let { act ->
                 PlayerPipHelper.updatePIPModeActions(act, isPlayingRightNow)
@@ -209,11 +212,38 @@ abstract class AbstractPlayerFragment(
         }
     }
 
+    open fun hasNextMirror(): Boolean {
+        throw NotImplementedError()
+    }
+
     open fun nextMirror() {
         throw NotImplementedError()
     }
 
-    private fun playerError(exception: Exception) {
+    private fun requestAudioFocus() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            activity?.requestLocalAudioFocus(AppUtils.getFocusRequest())
+        }
+    }
+
+    open fun playerError(exception: Exception) {
+        fun showToast(message: String, gotoNext: Boolean = false) {
+            if (!gotoNext || hasNextMirror()) {
+                showToast(
+                    activity,
+                    message,
+                    Toast.LENGTH_SHORT
+                )
+            } else {
+                showToast(
+                    activity,
+                    context?.getString(R.string.no_links_found_toast) + "\n" + message,
+                    Toast.LENGTH_LONG
+                )
+                activity?.popCurrentPage()
+            }
+        }
+
         val ctx = context ?: return
         when (exception) {
             is PlaybackException -> {
@@ -222,54 +252,44 @@ abstract class AbstractPlayerFragment(
                 when (val code = exception.errorCode) {
                     PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND, PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED, PlaybackException.ERROR_CODE_IO_NO_PERMISSION, PlaybackException.ERROR_CODE_IO_UNSPECIFIED -> {
                         showToast(
-                            activity,
                             "${ctx.getString(R.string.source_error)}\n$errorName ($code)\n$msg",
-                            Toast.LENGTH_SHORT
+                            gotoNext = true
                         )
-                        nextMirror()
                     }
                     PlaybackException.ERROR_CODE_REMOTE_ERROR, PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS, PlaybackException.ERROR_CODE_TIMEOUT, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED, PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE -> {
                         showToast(
-                            activity,
                             "${ctx.getString(R.string.remote_error)}\n$errorName ($code)\n$msg",
-                            Toast.LENGTH_SHORT
+                            gotoNext = true
                         )
-                        nextMirror()
                     }
                     PlaybackException.ERROR_CODE_DECODING_FAILED, PlaybackErrorEvent.ERROR_AUDIO_TRACK_INIT_FAILED, PlaybackErrorEvent.ERROR_AUDIO_TRACK_OTHER, PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED, PlaybackException.ERROR_CODE_DECODER_INIT_FAILED, PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED -> {
                         showToast(
-                            activity,
                             "${ctx.getString(R.string.render_error)}\n$errorName ($code)\n$msg",
-                            Toast.LENGTH_SHORT
+                            gotoNext = true
                         )
-                        nextMirror()
                     }
                     else -> {
                         showToast(
-                            activity,
                             "${ctx.getString(R.string.unexpected_error)}\n$errorName ($code)\n$msg",
-                            Toast.LENGTH_SHORT
+                            gotoNext = false
                         )
                     }
                 }
             }
             is InvalidFileException -> {
                 showToast(
-                    activity,
                     "${ctx.getString(R.string.source_error)}\n${exception.message}",
-                    Toast.LENGTH_SHORT
+                    gotoNext = true
                 )
-                nextMirror()
             }
             else -> {
-                showToast(activity, exception.message, Toast.LENGTH_SHORT)
+                exception.message?.let {
+                    showToast(
+                        it,
+                        gotoNext = false
+                    )
+                }
             }
-        }
-    }
-
-    private fun requestAudioFocus() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            activity?.requestLocalAudioFocus(AppUtils.getFocusRequest())
         }
     }
 
@@ -293,6 +313,8 @@ abstract class AbstractPlayerFragment(
                 }
             }
 
+            // Necessary for multiple combined videos
+            player_view?.setShowMultiWindowTimeBar(true)
             player_view?.player = player
             player_view?.performClick()
         }
@@ -328,6 +350,7 @@ abstract class AbstractPlayerFragment(
         resizeMode = getKey(RESIZE_MODE_KEY) ?: 0
         resize(resizeMode, false)
 
+        player.releaseCallbacks()
         player.initCallbacks(
             playerUpdated = ::playerUpdated,
             updateIsPlaying = ::updateIsPlaying,

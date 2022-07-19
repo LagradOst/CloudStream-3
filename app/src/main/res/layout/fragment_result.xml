@@ -117,38 +117,13 @@
                 android:textColor="?attr/textColor" />
     </LinearLayout>
 
-    <FrameLayout
+    <LinearLayout
             android:id="@+id/result_finish_loading"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone"
-            tools:visibility="visible">
-
-        <FrameLayout
-                android:id="@+id/result_poster_blur_holder"
-
-                android:layout_width="match_parent"
-                android:layout_height="230dp"
-                android:visibility="visible">
-
-            <ImageView
-                    android:id="@+id/result_poster_blur"
-
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:alpha="0"
-                    android:background="?attr/primaryGrayBackground"
-                    android:scaleType="centerCrop"
-                    tools:ignore="ContentDescription"
-                    tools:src="@drawable/example_poster" />
-
-            <ImageView
-                    android:layout_width="match_parent"
-                    android:layout_height="30dp"
-                    android:layout_gravity="bottom"
-                    android:src="@drawable/background_shadow"
-                    tools:ignore="ContentDescription" />
-        </FrameLayout>
+            tools:visibility="visible"
+            android:orientation="vertical">
 
         <androidx.core.widget.NestedScrollView
                 android:id="@+id/result_scroll"
@@ -162,6 +137,43 @@
                     android:layout_height="match_parent"
                     android:background="?attr/primaryBlackBackground"
                     android:orientation="vertical">
+
+                <com.facebook.shimmer.ShimmerFrameLayout
+                        tools:visibility="gone"
+                        android:visibility="gone"
+                        android:id="@+id/result_trailer_loading"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:orientation="vertical"
+                        app:shimmer_auto_start="true"
+                        app:shimmer_base_alpha="0.2"
+                        app:shimmer_duration="@integer/loading_time"
+                        app:shimmer_highlight_alpha="0.3">
+
+                    <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="@dimen/result_padding"
+                            android:orientation="vertical">
+
+                        <androidx.cardview.widget.CardView
+                                android:background="@color/grayShimmer"
+                                app:cardCornerRadius="@dimen/loading_radius"
+                                android:layout_width="match_parent"
+                                android:layout_height="150dp"
+                                android:foreground="@drawable/outline_drawable" />
+                    </LinearLayout>
+                </com.facebook.shimmer.ShimmerFrameLayout>
+
+                <FrameLayout
+                        android:descendantFocusability="blocksDescendants"
+                        android:id="@+id/result_smallscreen_holder"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content">
+
+                    <include layout="@layout/fragment_trailer" />
+                </FrameLayout>
 
                 <!--
                 <FrameLayout
@@ -296,10 +308,10 @@
                         <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
-                                android:layout_marginStart="10dp"
                                 android:orientation="vertical">
 
                             <TextView
+                                    android:layout_marginHorizontal="10dp"
                                     android:id="@+id/result_title"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -311,6 +323,7 @@
                                     tools:text="The Perfect Run The Perfect Run" />
 
                             <com.lagradost.cloudstream3.widget.FlowLayout
+                                    android:layout_marginHorizontal="10dp"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     app:itemSpacing="10dp">
@@ -347,20 +360,25 @@
                                         tools:text="121min" />
                             </com.lagradost.cloudstream3.widget.FlowLayout>
 
+                            <!--
+                            This has half margin and half padding to make TV focus on description look better.
+                            The focus outline now settles between the poster and text.
+                            -->
                             <FrameLayout
+                                    android:layout_marginHorizontal="5dp"
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent">
 
                                 <TextView
+                                        android:padding="5dp"
+                                        android:maxLength="1000"
+                                        android:ellipsize="end"
                                         android:id="@+id/result_description"
                                         android:layout_width="match_parent"
                                         android:layout_height="wrap_content"
                                         android:foreground="@drawable/outline_drawable"
                                         android:nextFocusUp="@id/result_back"
                                         android:nextFocusDown="@id/result_bookmark_button"
-
-                                        android:paddingTop="5dp"
-                                        android:paddingBottom="0dp"
                                         android:textColor="?attr/textColor"
                                         android:textSize="15sp"
                                         tools:text="Ryan Quicksave Romano is an eccentric adventurer with a strange power: he can create a save-point in time and redo his life whenever he dies. Arriving in New Rome, the glitzy capital of sin of a rebuilding Europe, he finds the city torn between mega-corporations, sponsored heroes, superpowered criminals, and true monsters. It's a time of chaos, where potions can grant the power to rule the world and dangers lurk everywhere. " />
@@ -399,6 +417,7 @@
                             tools:text="Bookmark"
                             tools:visibility="visible" />
 
+
                     <TextView
                             android:id="@+id/result_cast_text"
                             android:layout_width="wrap_content"
@@ -411,6 +430,7 @@
                             tools:text="Cast: Joe Ligma" />
 
                     <androidx.recyclerview.widget.RecyclerView
+                            tools:visibility="gone"
                             android:nextFocusUp="@id/result_bookmark_button"
                             android:nextFocusDown="@id/result_play_movie"
 
@@ -657,6 +677,7 @@
                                 android:visibility="gone"
                                 tools:visibility="visible">
 
+
                             <com.google.android.material.button.MaterialButton
                                     android:id="@+id/result_resume_series_button"
                                     style="@style/WhiteButton"
@@ -735,6 +756,7 @@
                                     tools:text="69m\nremaining" />
                         </LinearLayout>
 
+
                         <LinearLayout
                                 android:id="@+id/result_episodes_tab"
                                 android:layout_width="match_parent"
@@ -753,6 +775,7 @@
                                         style="@style/MultiSelectButton"
                                         android:layout_gravity="center_vertical"
                                         android:layout_marginStart="0dp"
+                                        android:layout_marginEnd="10dp"
                                         android:nextFocusLeft="@id/result_episode_select"
                                         android:nextFocusRight="@id/result_episode_select"
                                         android:nextFocusUp="@id/result_description"
@@ -767,6 +790,8 @@
 
                                         android:layout_gravity="center_vertical"
                                         android:layout_marginStart="0dp"
+                                        android:layout_marginEnd="10dp"
+
                                         android:nextFocusLeft="@id/result_season_button"
                                         android:nextFocusRight="@id/result_season_button"
 
@@ -782,6 +807,7 @@
 
                                         android:layout_gravity="center_vertical"
                                         android:layout_marginStart="0dp"
+                                        android:layout_marginEnd="10dp"
                                         android:nextFocusLeft="@id/result_season_button"
                                         android:nextFocusRight="@id/result_season_button"
 
@@ -802,6 +828,40 @@
                                         android:textSize="17sp"
                                         android:textStyle="normal"
                                         tools:text="8 Episodes" />
+                            </LinearLayout>
+
+
+                            <!--TODO add next airing-->
+                            <LinearLayout
+                                    android:id="@+id/result_next_airing_holder"
+                                    android:layout_gravity="start"
+                                    android:paddingBottom="15dp"
+                                    android:orientation="horizontal"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content">
+
+                                <TextView
+                                        android:gravity="center"
+
+                                        android:id="@+id/result_next_airing"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:textColor="?attr/grayTextColor"
+                                        android:textSize="17sp"
+                                        android:textStyle="normal"
+                                        tools:text="Episode 1022 will be released in" />
+
+                                <TextView
+                                        android:paddingEnd="5dp"
+                                        android:paddingStart="5dp"
+                                        android:gravity="center"
+                                        android:id="@+id/result_next_airing_time"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:textColor="?attr/textColor"
+                                        android:textSize="17sp"
+                                        android:textStyle="normal"
+                                        tools:text="5d 3h 30m" />
                             </LinearLayout>
 
                             <com.facebook.shimmer.ShimmerFrameLayout
@@ -845,6 +905,7 @@
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="0dp"
                                     android:clipToPadding="false"
+                                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                                     android:descendantFocusability="afterDescendants"
                                     android:paddingBottom="100dp"
                                     tools:listitem="@layout/result_episode" />
@@ -855,7 +916,7 @@
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
-    </FrameLayout>
+    </LinearLayout>
 
 
     <!--

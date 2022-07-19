@@ -5,7 +5,7 @@
 
         android:nextFocusLeft="@id/episode_poster"
         android:nextFocusRight="@id/result_episode_download"
-        android:id="@+id/episode_holder"
+        android:id="@+id/episode_holder_large"
 
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -130,12 +130,10 @@
                         android:id="@+id/result_episode_download"
 
                         android:visibility="visible"
-                        android:layout_marginEnd="10dp"
-                        android:layout_marginStart="10dp"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
-                        android:padding="2dp"
-                        android:layout_width="30dp"
+                        android:padding="10dp"
+                        android:layout_width="50dp"
                         android:background="?selectableItemBackgroundBorderless"
                         android:src="@drawable/ic_baseline_play_arrow_24"
                         android:contentDescription="@string/download"
@@ -144,11 +142,13 @@
         </LinearLayout>
 
         <TextView
+                android:maxLines="4"
+                android:ellipsize="end"
                 android:paddingTop="10dp"
                 android:paddingBottom="10dp"
                 android:id="@+id/episode_descript"
                 android:textColor="?attr/grayTextColor"
-                tools:text="Jon and Daenerys arrive in Winterfell and are met with skepticism. Sam learns about the fate of his family. Cersei gives Euron the reward he aims for. Theon follows his heart. "
+                tools:text="Jon and Daenerys arrive in Winterfell and are met with skepticism. Sam learns about the fate of his family. Cersei gives Euron the reward he aims for. Theon follows his heart. Jon and Daenerys arrive in Winterfell and are met with skepticism. Sam learns about the fate of his family. Cersei gives Euron the reward he aims for. Theon follows his heart."
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
     </LinearLayout>

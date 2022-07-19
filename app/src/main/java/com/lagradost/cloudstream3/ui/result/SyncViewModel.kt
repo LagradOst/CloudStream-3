@@ -7,12 +7,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.mvvm.Resource
+import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.SyncApis
 import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.aniListApi
 import com.lagradost.cloudstream3.syncproviders.AccountManager.Companion.malApi
 import com.lagradost.cloudstream3.syncproviders.SyncAPI
 import com.lagradost.cloudstream3.utils.SyncUtil
 import kotlinx.coroutines.launch
+import java.util.*
 
 
 data class CurrentSynced(
@@ -178,7 +180,12 @@ class SyncViewModel : ViewModel() {
     fun modifyMaxEpisode(episodeNum: Int) {
         Log.i(TAG, "modifyMaxEpisode = $episodeNum")
         modifyData { status ->
-            status.copy(watchedEpisodes = maxOf(episodeNum, status.watchedEpisodes ?: return@modifyData null))
+            status.copy(
+                watchedEpisodes = maxOf(
+                    episodeNum,
+                    status.watchedEpisodes ?: return@modifyData null
+                )
+            )
         }
     }
 
@@ -194,7 +201,7 @@ class SyncViewModel : ViewModel() {
                                 Log.i(TAG, "modifyData ${repo.name} => $newData")
                                 repo.score(id, newData)
                             }
-                        } else if (result is Resource.Failure){
+                        } else if (result is Resource.Failure) {
                             Log.e(TAG, "modifyData getStatus error ${result.errorString}")
                         }
                     }
@@ -228,15 +235,30 @@ class SyncViewModel : ViewModel() {
 
         _metaResponse.postValue(Resource.Loading())
         var lastError: Resource<SyncAPI.SyncResult> = Resource.Failure(false, null, null, "No data")
-        syncs.forEach { (prefix, id) ->
+        val current = ArrayList(syncs.toList())
+
+        // shitty way to sort anilist first, as it has trailers while mal does not
+        if (syncs.containsKey(aniListApi.idPrefix)) {
+            try { // swap can throw error
+                Collections.swap(current, current.indexOfFirst { it.first == aniListApi.idPrefix }, 0)
+            } catch (e : Exception) {
+                logError(e)
+            }
+        }
+
+        current.forEach { (prefix, id) ->
             repos.firstOrNull { it.idPrefix == prefix }?.let { repo ->
-                if (repo.hasAccount()) {
+                if (!repo.requiresLogin || repo.hasAccount()) {
+                    Log.i(TAG, "updateMetadata loading ${repo.idPrefix}")
                     val result = repo.getResult(id)
                     if (result is Resource.Success) {
                         _metaResponse.postValue(result)
                         return@launch
                     } else if (result is Resource.Failure) {
-                        Log.e(TAG, "updateMetadata error ${result.errorString}")
+                        Log.e(
+                            TAG,
+                            "updateMetadata error $id at ${repo.idPrefix} ${result.errorString}"
+                        )
                         lastError = result
                     }
                 }

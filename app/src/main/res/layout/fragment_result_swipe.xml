@@ -16,7 +16,7 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:layout_gravity="center_vertical"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content">
             <ImageView
                     android:nextFocusDown="@id/result_bookmark_button"
@@ -144,6 +144,15 @@
     </FrameLayout>
 
     <FrameLayout
+            android:visibility="gone"
+            android:id="@+id/result_fullscreen_holder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+    </FrameLayout>
+
+    <FrameLayout
+            android:id="@+id/result_main_holder"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 

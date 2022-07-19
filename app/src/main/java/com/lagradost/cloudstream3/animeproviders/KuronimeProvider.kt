@@ -3,17 +3,18 @@ package com.lagradost.cloudstream3.animeproviders
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.safeApiCall
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import java.util.ArrayList
 
 class KuronimeProvider : MainAPI() {
-    override var mainUrl = "https://185.231.223.254"
+    override var mainUrl = "https://45.12.2.2"
     override var name = "Kuronime"
     override val hasQuickSearch = false
     override val hasMainPage = true
-    override val lang = "id"
+    override var lang = "id"
     override val hasDownloadSupport = true
 
     override val supportedTypes = setOf(
@@ -45,7 +46,7 @@ class KuronimeProvider : MainAPI() {
 
         document.select(".bixbox").forEach { block ->
             val header = block.select(".releases > h3").text().trim()
-            val animes = block.select("article").mapNotNull {
+            val animes = block.select("article").map {
                 it.toSearchResult()
             }
             if (animes.isNotEmpty()) homePageList.add(HomePageList(header, animes))
@@ -73,15 +74,15 @@ class KuronimeProvider : MainAPI() {
         }
     }
 
-    private fun Element.toSearchResult(): SearchResponse {
-        val href = getProperAnimeLink(fixUrl(this.select("a").attr("href")))
+    private fun Element.toSearchResult(): AnimeSearchResponse {
+        val href = getProperAnimeLink(fixUrlNull(this.selectFirst("a")?.attr("href")).toString())
         val title = this.select(".bsuxtt, .tt > h4").text().trim()
-        val posterUrl = fixUrl(this.select("img").attr("src"))
+        val posterUrl = fixUrlNull(this.selectFirst("div.view,div.bt")?.nextElementSibling()?.select("img")?.attr("data-src"))
         val epNum = this.select(".ep").text().replace(Regex("[^0-9]"), "").trim().toIntOrNull()
-
-        return newAnimeSearchResponse(title, href, TvType.Anime) {
+        val tvType = getType(this.selectFirst(".bt > span")?.text().toString())
+        return newAnimeSearchResponse(title, href, tvType) {
             this.posterUrl = posterUrl
-            addDubStatus(dubExist = false, subExist = true, subEpisodes = epNum)
+            addSub(epNum)
         }
 
     }
@@ -90,16 +91,8 @@ class KuronimeProvider : MainAPI() {
         val link = "$mainUrl/?s=$query"
         val document = app.get(link).document
 
-        return document.select("article.bs").mapNotNull {
-            val title = it.selectFirst(".tt > h4")!!.text().trim()
-            val poster = it.select("img").attr("src")
-            val tvType = getType(it.selectFirst(".bt > span")?.text().toString())
-            val href = getProperAnimeLink(fixUrl(it.selectFirst("a")!!.attr("href")))
-
-            newAnimeSearchResponse(title, href, tvType) {
-                this.posterUrl = poster
-                addDubStatus(dubExist = false, subExist = true)
-            }
+        return document.select("article.bs").map {
+            it.toSearchResult()
         }
     }
 
@@ -107,14 +100,12 @@ class KuronimeProvider : MainAPI() {
         val document = app.get(url).document
 
         val title = document.selectFirst(".entry-title")?.text().toString().trim()
-        val poster = document.select("div[itemprop=image]").joinToString {
-            it.select("img").attr("src")
-        }
+        val poster = document.selectFirst("div.l[itemprop=image] > img")?.attr("data-src")
         val tags = document.select(".infodetail > ul > li:nth-child(2) > a").map { it.text() }
         val type = getType(
             document.selectFirst(".infodetail > ul > li:nth-child(7)")?.ownText()?.trim().toString()
         )
-        val trailer = document.select("iframe.entered.lazyloaded").attr("src")
+        val trailer = document.selectFirst("div.tply iframe")?.attr("data-lazy-src")
         val year = Regex("\\d, ([0-9]*)").find(
             document.select(".infodetail > ul > li:nth-child(5)").text()
         )?.groupValues?.get(1)?.toIntOrNull()
@@ -125,9 +116,10 @@ class KuronimeProvider : MainAPI() {
         val description = document.select("span.const > p").text()
 
         val episodes = document.select("div.bixbox.bxcl > ul > li").map {
-            val name = it.selectFirst("a")?.text()?.trim()?.replace("Episode", title)
+            val name = it.selectFirst("a")?.text()?.trim()
+            val episode = it.selectFirst("a")?.text()?.trim()?.replace("Episode", "")?.trim()?.toIntOrNull()
             val link = it.selectFirst("a")!!.attr("href")
-            Episode(link, name)
+            Episode(link, name = name, episode = episode)
         }.reversed()
 
         return newAnimeLoadResponse(title, url, type) {
@@ -139,7 +131,6 @@ class KuronimeProvider : MainAPI() {
             plot = description
             addTrailer(trailer)
             this.tags = tags
-            trailers = listOf(trailer)
         }
     }
 
@@ -147,7 +138,7 @@ class KuronimeProvider : MainAPI() {
         url: String,
         sourceCallback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url).document
+        val doc = app.get(url, referer = "${mainUrl}/").document
 
         doc.select("script").map { script ->
             if (script.data().contains("function jalankan_jwp() {")) {
@@ -182,7 +173,7 @@ class KuronimeProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data).document
         val sources = document.select(".mobius > .mirror > option").mapNotNull {
-            fixUrl(Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src"))
+            fixUrl(Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("data-src"))
         }
 
         sources.apmap {

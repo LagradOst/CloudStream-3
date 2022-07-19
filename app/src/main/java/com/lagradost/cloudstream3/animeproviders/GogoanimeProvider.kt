@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.mvvm.safeApiCall
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.net.URI
@@ -89,7 +92,9 @@ class GogoanimeProvider : MainAPI() {
             secretDecryptKey: String?,
             // This could be removed, but i prefer it verbose
             isUsingAdaptiveKeys: Boolean,
-            isUsingAdaptiveData: Boolean
+            isUsingAdaptiveData: Boolean,
+            // If you don't want to re-fetch the document
+            iframeDocument: Document? = null
         ) = safeApiCall {
             // https://github.com/saikou-app/saikou/blob/3e756bd8e876ad7a9318b17110526880525a5cd3/app/src/main/java/ani/saikou/anime/source/extractors/GogoCDN.kt
             // No Licence on the following code
@@ -101,9 +106,9 @@ class GogoanimeProvider : MainAPI() {
 
             val id = Regex("id=([^&]+)").find(iframeUrl)!!.value.removePrefix("id=")
 
-            var document: Document? = null
+            var document: Document? = iframeDocument
             val foundIv =
-                iv ?: app.get(iframeUrl).document.also { document = it }
+                iv ?: (document ?: app.get(iframeUrl).document.also { document = it })
                     .select("""div.wrapper[class*=container]""")
                     .attr("class").split("-").lastOrNull() ?: return@safeApiCall
             val foundKey = secretKey ?: getKey(base64Decode(id) + foundIv) ?: return@safeApiCall
@@ -138,40 +143,19 @@ class GogoanimeProvider : MainAPI() {
                 source: GogoSource,
                 sourceCallback: (ExtractorLink) -> Unit
             ) {
-                when {
-                    source.file.contains("m3u8") -> {
-                        M3u8Helper.generateM3u8(
-                            mainApiName,
-                            source.file,
-                            mainUrl,
-                            headers = mapOf("Referer" to "https://gogoplay4.com")
-                        ).forEach(sourceCallback)
-                    }
-                    source.file.contains("vidstreaming") -> {
-                        sourceCallback.invoke(
-                            ExtractorLink(
-                                mainApiName,
-                                mainApiName,
-                                source.file,
-                                mainUrl,
-                                getQualityFromName(source.label),
-                                isM3u8 = source.type == "hls"
-                            )
-                        )
-                    }
-                    else -> {
-                        sourceCallback.invoke(
-                            ExtractorLink(
-                                mainApiName,
-                                mainApiName,
-                                source.file,
-                                mainUrl,
-                                getQualityFromName(source.label),
-                                isM3u8 = source.type == "hls"
-                            )
-                        )
-                    }
-                }
+                sourceCallback.invoke(
+                    ExtractorLink(
+                        mainApiName,
+                        mainApiName,
+                        source.file,
+                        mainUrl,
+                        getQualityFromName(source.label),
+                        isM3u8 = source.type == "hls" || source.label?.contains(
+                            "auto",
+                            ignoreCase = true
+                        ) == true
+                    )
+                )
             }
 
             sources.source?.forEach {
@@ -183,7 +167,7 @@ class GogoanimeProvider : MainAPI() {
         }
     }
 
-    override var mainUrl = "https://gogoanime.film"
+    override var mainUrl = "https://gogoanime.sk"
     override var name = "GogoAnime"
     override val hasQuickSearch = false
     override val hasMainPage = true
@@ -279,8 +263,7 @@ class GogoanimeProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val link = getProperAnimeLink(url)
         val episodeloadApi = "https://ajax.gogo-load.com/ajax/load-list-episode"
-        val html = app.get(link).text
-        val doc = Jsoup.parse(html)
+        val doc = app.get(link).document
 
         val animeBody = doc.selectFirst(".anime_info_body_bg")
         val title = animeBody?.selectFirst("h1")!!.text()
@@ -391,7 +374,7 @@ class GogoanimeProvider : MainAPI() {
                 val streamingDocument = streamingResponse.document
                 argamap({
                     streamingDocument.select(".list-server-items > .linkserver")
-                        ?.forEach { element ->
+                        .forEach { element ->
                             val status = element.attr("data-status") ?: return@forEach
                             if (status != "1") return@forEach
                             val data = element.attr("data-video") ?: return@forEach

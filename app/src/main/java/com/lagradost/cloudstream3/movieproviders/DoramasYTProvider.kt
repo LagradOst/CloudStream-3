@@ -23,13 +23,12 @@ class DoramasYTProvider : MainAPI() {
 
     override var mainUrl = "https://doramasyt.com"
     override var name = "DoramasYT"
-    override val lang = "es"
+    override var lang = "es"
     override val hasMainPage = true
     override val hasChromecastSupport = true
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(
-        TvType.TvSeries,
-        TvType.Movie,
+        TvType.AsianDrama,
     )
 
     override suspend fun getMainPage(): HomePageResponse {

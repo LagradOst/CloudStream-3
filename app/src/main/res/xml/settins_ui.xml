@@ -30,6 +30,16 @@
             android:summary="@string/bottom_title_settings_des"
             android:title="@string/bottom_title_settings" />
     <SwitchPreference
+            android:key="@string/show_trailers_key"
+            android:icon="@drawable/baseline_theaters_24"
+            android:title="@string/show_trailers_settings"
+            android:defaultValue="true" />
+    <SwitchPreference
+            android:key="@string/show_kitsu_posters_key"
+            android:icon="@drawable/kitsu_icon"
+            android:title="@string/kitsu_settings"
+            android:defaultValue="true" />
+    <SwitchPreference
             android:key="@string/show_fillers_key"
             android:icon="@drawable/ic_baseline_skip_next_24"
             android:title="@string/show_fillers_settings"

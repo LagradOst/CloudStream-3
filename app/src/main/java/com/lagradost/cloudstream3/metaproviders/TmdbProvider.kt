@@ -4,10 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.uwetrottmann.tmdb2.Tmdb
 import com.uwetrottmann.tmdb2.entities.*
 import com.uwetrottmann.tmdb2.enumerations.AppendToResponseItem
+import com.uwetrottmann.tmdb2.enumerations.VideoType
 import retrofit2.awaitResponse
 import java.util.*
 
@@ -24,6 +26,8 @@ data class TmdbLink(
 )
 
 open class TmdbProvider : MainAPI() {
+    // This should always be false, but might as well make it easier for forks
+    open val includeAdult = false
 
     // Use the LoadResponse from the metadata provider
     open val useMetaLoadResponse = false
@@ -91,7 +95,7 @@ open class TmdbProvider : MainAPI() {
         }
     }
 
-    private fun TvShow.toLoadResponse(): TvSeriesLoadResponse {
+    private suspend fun TvShow.toLoadResponse(): TvSeriesLoadResponse {
         val episodes = this.seasons?.filter { !disableSeasonZero || (it.season_number ?: 0) != 0 }
             ?.mapNotNull { season ->
                 season.episodes?.map { episode ->
@@ -142,6 +146,7 @@ open class TmdbProvider : MainAPI() {
             tags = genres?.mapNotNull { it.name }
             duration = episode_run_time?.average()?.toInt()
             rating = this@toLoadResponse.rating
+            addTrailer(videos.toTrailers())
 
             recommendations = (this@toLoadResponse.recommendations
                 ?: this@toLoadResponse.similar)?.results?.map { it.toSearchResponse() }
@@ -149,7 +154,20 @@ open class TmdbProvider : MainAPI() {
         }
     }
 
-    private fun Movie.toLoadResponse(): MovieLoadResponse {
+    private fun Videos?.toTrailers(): List<String>? {
+        return this?.results?.filter { it.type != VideoType.OPENING_CREDITS && it.type != VideoType.FEATURETTE }
+            ?.sortedBy { it.type?.ordinal ?: 10000 }
+            ?.mapNotNull {
+                when (it.site?.trim()?.lowercase()) {
+                    "youtube" -> { // TODO FILL SITES
+                        "https://www.youtube.com/watch?v=${it.key}"
+                    }
+                    else -> null
+                }
+            }
+    }
+
+    private suspend fun Movie.toLoadResponse(): MovieLoadResponse {
         return newMovieLoadResponse(
             this.title ?: this.original_title, getUrl(id, false), TvType.Movie, TmdbLink(
                 this.imdb_id,
@@ -170,6 +188,7 @@ open class TmdbProvider : MainAPI() {
             tags = genres?.mapNotNull { it.name }
             duration = runtime
             rating = this@toLoadResponse.rating
+            addTrailer(videos.toTrailers())
 
             recommendations = (this@toLoadResponse.recommendations
                 ?: this@toLoadResponse.similar)?.results?.map { it.toSearchResponse() }
@@ -259,7 +278,16 @@ open class TmdbProvider : MainAPI() {
 
         return if (useMetaLoadResponse) {
             return if (isTvSeries) {
-                val body = tmdb.tvService().tv(id, "en-US", AppendToResponse(AppendToResponseItem.EXTERNAL_IDS)).awaitResponse().body()
+                val body = tmdb.tvService()
+                    .tv(
+                        id,
+                        "en-US",
+                        AppendToResponse(
+                            AppendToResponseItem.EXTERNAL_IDS,
+                            AppendToResponseItem.VIDEOS
+                        )
+                    )
+                    .awaitResponse().body()
                 val response = body?.toLoadResponse()
                 if (response != null) {
                     if (response.recommendations.isNullOrEmpty())
@@ -278,7 +306,16 @@ open class TmdbProvider : MainAPI() {
 
                 response
             } else {
-                val body = tmdb.moviesService().summary(id, "en-US", AppendToResponse(AppendToResponseItem.EXTERNAL_IDS)).awaitResponse().body()
+                val body = tmdb.moviesService()
+                    .summary(
+                        id,
+                        "en-US",
+                        AppendToResponse(
+                            AppendToResponseItem.EXTERNAL_IDS,
+                            AppendToResponseItem.VIDEOS
+                        )
+                    )
+                    .awaitResponse().body()
                 val response = body?.toLoadResponse()
                 if (response != null) {
                     if (response.recommendations.isNullOrEmpty())
@@ -319,7 +356,7 @@ open class TmdbProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse>? {
-        return tmdb.searchService().multi(query, 1, "en-Us", "US", true).awaitResponse()
+        return tmdb.searchService().multi(query, 1, "en-Us", "US", includeAdult).awaitResponse()
             .body()?.results?.mapNotNull {
                 it.movie?.toSearchResponse() ?: it.tvShow?.toSearchResponse()
             }
