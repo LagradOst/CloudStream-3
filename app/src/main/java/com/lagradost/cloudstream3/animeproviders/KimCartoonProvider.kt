@@ -1,9 +1,7 @@
 package com.lagradost.cloudstream3.animeproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.extractors.FEmbed
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 
@@ -16,8 +14,8 @@ class KimCartoonProvider : MainAPI() {
 
     override val supportedTypes = setOf(TvType.Cartoon)
 
-    private fun fixUrl(url:String):String{
-        return if(url.startsWith("/")) mainUrl+url else url
+    private fun fixUrl(url: String): String {
+        return if (url.startsWith("/")) mainUrl + url else url
     }
 
     override suspend fun getMainPage(): HomePageResponse {
@@ -67,8 +65,10 @@ class KimCartoonProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        return app.post("$mainUrl/Search/Cartoon", data = mapOf("keyword" to query))
-            .also { println("search : "+it.text) }.document
+        return app.post(
+            "$mainUrl/Search/Cartoon",
+            data = mapOf("keyword" to query)
+        ).document
             .select("#leftside > div.bigBarContainer div.list-cartoon > div.item > a")
             .map {
                 AnimeSearchResponse(
@@ -83,7 +83,10 @@ class KimCartoonProvider : MainAPI() {
 
     override suspend fun quickSearch(query: String): List<SearchResponse> {
         return Jsoup.parse(
-            app.post("$mainUrl/Ajax/SearchSuggest", data = mapOf("keyword" to query)).text.also { println("quick : $it") }
+            app.post(
+                "$mainUrl/Ajax/SearchSuggest",
+                data = mapOf("keyword" to query)
+            ).text
         ).select("a").map {
             AnimeSearchResponse(
                 it.text(),
@@ -95,9 +98,8 @@ class KimCartoonProvider : MainAPI() {
     }
 
 
-
     private fun getStatus(from: String?): ShowStatus? {
-        return when{
+        return when {
             from?.contains("Completed") == true -> ShowStatus.Completed
             from?.contains("Ongoing") == true -> ShowStatus.Ongoing
             else -> null
@@ -111,12 +113,12 @@ class KimCartoonProvider : MainAPI() {
         val eps = doc.select("table.listing > tbody > tr a").reversed().map {
             Episode(
                 fixUrl(it.attr("href")),
-                it.text().replace(name,"").trim()
+                it.text().replace(name, "").trim()
             )
         }
         val infoText = info.text()
-        fun getData(after:String,before:String):String?{
-            return if(infoText.contains(after))
+        fun getData(after: String, before: String): String? {
+            return if (infoText.contains(after))
                 infoText
                     .substringAfter("$after:")
                     .substringBefore(before)
@@ -124,11 +126,11 @@ class KimCartoonProvider : MainAPI() {
             else null
         }
 
-        return newTvSeriesLoadResponse(name, url, TvType.Cartoon,eps) {
+        return newTvSeriesLoadResponse(name, url, TvType.Cartoon, eps) {
             posterUrl = fixUrl(info.select("div > img").attr("src"))
-            showStatus = getStatus(getData("Status","Views"))
-            plot = getData("Summary","Tags:")
-            tags = getData("Genres","Date aired")?.split(",")
+            showStatus = getStatus(getData("Status", "Views"))
+            plot = getData("Summary", "Tags:")
+            tags = getData("Genres", "Date aired")?.split(",")
         }
     }
 
@@ -138,10 +140,11 @@ class KimCartoonProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val servers = app.get(data).document.select("#selectServer > option").map { fixUrl(it.attr("value")) }
+        val servers =
+            app.get(data).document.select("#selectServer > option").map { fixUrl(it.attr("value")) }
         servers.apmap {
             app.get(it).document.select("#my_video_1").attr("src").let { iframe ->
-                if(iframe.isNotEmpty()) {
+                if (iframe.isNotEmpty()) {
                     loadExtractor(iframe, "$mainUrl/", callback)
                 }
                 //There are other servers, but they require some work to do
