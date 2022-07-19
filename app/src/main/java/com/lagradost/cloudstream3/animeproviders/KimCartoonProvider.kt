@@ -82,12 +82,10 @@ class KimCartoonProvider : MainAPI() {
     }
 
     override suspend fun quickSearch(query: String): List<SearchResponse> {
-        return Jsoup.parse(
-            app.post(
+        return app.post(
                 "$mainUrl/Ajax/SearchSuggest",
                 data = mapOf("keyword" to query)
-            ).text
-        ).select("a").map {
+            ).document.select("a").map {
             AnimeSearchResponse(
                 it.text(),
                 it.attr("href"),
