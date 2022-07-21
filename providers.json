@@ -222,7 +222,7 @@
     "SoaptwoDayProvider": {
         "name": "Soap2Day",
         "url": "https://secretlink.xyz",
-        "status": 1
+        "status": 0
     },
     "TenshiProvider": {
         "name": "Tenshi.moe",
@@ -242,7 +242,7 @@
     "TwoEmbedProvider": {
         "name": "2Embed",
         "url": "https://2embed.org",
-        "status": 1
+        "status": 0
     },
     "VMoveeProvider": {
         "name": "VMovee",
