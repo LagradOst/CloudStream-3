@@ -79,7 +79,7 @@ class AdvancedWebView private constructor(
         fun executeJavaScript(code: String, cb: (AdvancedWebView) -> Unit = {  }) = apply {
             addAction(WebViewAction(WebViewActions.EXECUTE_JAVASCRIPT, code, cb))
         }
-        fun destroyWebView() = apply { addAction(WebViewAction(WebViewActions.RETURN, "")) }
+        fun close() = apply { addAction(WebViewAction(WebViewActions.RETURN, "")) }
 
         fun build(callback: (AdvancedWebView) -> Unit = { }) = AdvancedWebView(this.url, this.actions, this.referer, this.method, callback)
     }
