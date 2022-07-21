@@ -78,7 +78,8 @@ class EgyBestProvider : MainAPI() {
         val posterUrl = doc.select("div.movie_img a img")?.attr("src")
         val year = doc.select("div.movie_title h1 a")?.text()?.toIntOrNull()
         val title = doc.select("div.movie_title h1 span").text()
-
+        val youtubeTrailer = doc.select("div.play").attr("url")
+        
         val synopsis = doc.select("div.mbox").firstOrNull {
             it.text().contains("القصة")
         }?.text()?.replace("القصة ", "")
@@ -112,6 +113,7 @@ class EgyBestProvider : MainAPI() {
                 this.plot = synopsis
                 this.tags = tags
                 this.actors = actors
+                addTrailer(youtubeTrailer)
             }
         } else {
             val episodes = ArrayList<Episode>()
@@ -153,6 +155,7 @@ class EgyBestProvider : MainAPI() {
                 this.year = year
                 this.plot = synopsis
                 this.actors = actors
+                addTrailer(youtubeTrailer)
             }
         }
     }
