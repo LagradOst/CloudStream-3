@@ -73,6 +73,9 @@ class AdvancedWebView private constructor(
         fun waitForPageLoad(cb: (AdvancedWebView) -> Unit = {  }) = apply {
             addAction(WebViewAction(WebViewActions.WAIT_FOR_PAGE_LOAD, "", cb))
         }
+        fun waitForNetworkIdle(cb: (AdvancedWebView) -> Unit = {  }) = apply {
+            addAction(WebViewAction(WebViewActions.WAIT_FOR_NETWORK_IDLE, "", cb))
+        }
         fun executeJavaScript(code: String, cb: (AdvancedWebView) -> Unit = {  }) = apply {
             addAction(WebViewAction(WebViewActions.EXECUTE_JAVASCRIPT, code, cb))
         }
@@ -82,6 +85,8 @@ class AdvancedWebView private constructor(
     }
 
     private var actionExecutionsPaused = false
+    private var networkIdleTimestamp = -1;
+    private var pageHasLoaded = false;
 
     private suspend fun tryExecuteAction() {
         if (actionExecutionsPaused) return
@@ -109,6 +114,19 @@ class AdvancedWebView private constructor(
                             }
                             actionExecutionsPaused = false
                         }
+                    }
+
+                    WebViewActions.WAIT_FOR_NETWORK_IDLE -> {
+                        if (!pageHasLoaded || ((System.currentTimeMillis() / 1000L) - networkIdleTimestamp) < 10) return@main
+                        // we need at least 10 seconds of no network calls being done in order to be in an IDLE state
+                        actionExecutionsPaused = true
+
+                        println("WEB:: $networkIdleTimestamp, ${System.currentTimeMillis()/1000}")
+
+                        Instance.run(action.callback)
+                        remainingActions.remove(action)
+
+                        actionExecutionsPaused = false
                     }
 
                     WebViewActions.WAIT_FOR_X_SECONDS -> {
@@ -178,6 +196,8 @@ class AdvancedWebView private constructor(
                 webView?.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
+                        pageHasLoaded = true
+                        networkIdleTimestamp = (System.currentTimeMillis() / 1000).toInt();
 
                         if (remainingActions.size > 0 && remainingActions[0].actionType == WebViewActions.WAIT_FOR_PAGE_LOAD) {
                             println("PAGE FINISHED!")
@@ -191,6 +211,7 @@ class AdvancedWebView private constructor(
 
                     override fun onLoadResource(view: WebView?, url: String?) {
                         super.onLoadResource(view, url)
+                        networkIdleTimestamp = (System.currentTimeMillis() / 1000L).toInt();
                         if (remainingActions.size > 0 && remainingActions[0].actionType == WebViewActions.WAIT_FOR_NETWORK_CALL) {
                             if (URI(url) == URI(remainingActions[0].parameter as String)) {
                                 val action = remainingActions[0]
@@ -205,6 +226,7 @@ class AdvancedWebView private constructor(
                         view: WebView,
                         request: WebResourceRequest
                     ): WebResourceResponse? = runBlocking {
+                        networkIdleTimestamp = (System.currentTimeMillis() / 1000L).toInt();
                         tryExecuteAction()
 
                         val webViewUrl = request.url.toString()
@@ -260,7 +282,9 @@ class AdvancedWebView private constructor(
                 }
                 webView?.loadUrl(url, headers.toMap())
             } catch (e: Exception){
-
+                println("Failed to create a WebView client!")
+                destroyWebView()
+                return@main
             }
 
             fun setCurrentHTML() {
@@ -270,7 +294,7 @@ class AdvancedWebView private constructor(
                         .replace("\\\"", "\"")
                         .replace("\\n", "\n")
                         .replace("\\t", "\t")
-                    currentHTML = currentHTML.substring(1 until currentHTML.length-1)
+                        .trimStart('"').trimEnd('"')
                 }
             }
 
@@ -282,7 +306,9 @@ class AdvancedWebView private constructor(
             }
             try {
                 callback(this)
-            } catch (e: Exception) {}
+            } catch (e: Exception) {
+                println("Err: $e")
+            }
             destroyWebView()
         }
     }
