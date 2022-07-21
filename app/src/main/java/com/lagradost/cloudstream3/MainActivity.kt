@@ -52,6 +52,8 @@ import com.lagradost.cloudstream3.ui.settings.SettingsGeneral
 import com.lagradost.cloudstream3.utils.AppUtils.isCastApiAvailable
 import com.lagradost.cloudstream3.utils.AppUtils.loadCache
 import com.lagradost.cloudstream3.utils.AppUtils.loadResult
+import com.lagradost.cloudstream3.utils.AppUtils.parser
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.BackupUtils.setUpBackup
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
@@ -95,7 +97,7 @@ const val VLC_EXTRA_DURATION_OUT = "extra_duration"
 const val VLC_LAST_ID_KEY = "vlc_last_open_id"
 
 // Short name for requests client to make it nicer to use
-var app = Requests().apply {
+var app = Requests(responseParser = parser).apply {
     defaultHeaders = mapOf("user-agent" to USER_AGENT)
 }
 
@@ -368,6 +370,10 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
     }
 
     fun test() {
+        //val map = mapOf("hello" to "world")
+        //val a = map.toJson()
+        //println("RESULT======= [$a]")
+        //finish()
         /*thread {
             val youtubeLink = "https://www.youtube.com/watch?v=Zxem9rqJ5S0"
 

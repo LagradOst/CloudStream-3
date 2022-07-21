@@ -430,7 +430,7 @@
                             tools:text="Cast: Joe Ligma" />
 
                     <androidx.recyclerview.widget.RecyclerView
-                            tools:visibility="gone"
+                            tools:visibility="visible"
                             android:nextFocusUp="@id/result_bookmark_button"
                             android:nextFocusDown="@id/result_play_movie"
 

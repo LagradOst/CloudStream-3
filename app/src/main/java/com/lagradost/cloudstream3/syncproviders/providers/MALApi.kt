@@ -426,15 +426,14 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
         @SerialName("start_time") val start_time: String?
     )
 
-    private fun getMalAnimeListCached(): Array<Data>? {
-        return getKey(MAL_CACHED_LIST) as? Array<Data>
-    }
+    private fun getMalAnimeListCached(): Array<Data>? =
+        getKey<List<Data>>(MAL_CACHED_LIST)?.toTypedArray()
 
     suspend fun getMalAnimeListSmart(): Array<Data>? {
         if (getAuth() == null) return null
         return if (getKey(MAL_SHOULD_UPDATE_LIST, true) == true) {
             val list = getMalAnimeList()
-            setKey(MAL_CACHED_LIST, list)
+            setKey(MAL_CACHED_LIST, list.toList())
             setKey(MAL_SHOULD_UPDATE_LIST, false)
             list
         } else {

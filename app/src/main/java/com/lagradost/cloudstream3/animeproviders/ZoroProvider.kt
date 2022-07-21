@@ -56,17 +56,18 @@ class ZoroProvider : MainAPI() {
     private fun Element.toSearchResult(): SearchResponse? {
         val href = fixUrl(this.select("a").attr("href"))
         val title = this.select("h3.film-name").text()
-            val dubSub = this.select(".film-poster > .tick.ltr").text()
+        val dubSub = this.select(".film-poster > .tick.ltr").text()
         //val episodes = this.selectFirst(".film-poster > .tick-eps")?.text()?.toIntOrNull()
 
         val dubExist = dubSub.contains("dub", ignoreCase = true)
         val subExist = dubSub.contains("sub", ignoreCase = true)
-        val episodes = this.selectFirst(".film-poster > .tick.rtl > .tick-eps")?.text()?.let { eps ->
-            //println("REGEX:::: $eps")
-            // current episode / max episode
-            //Regex("Ep (\\d+)/(\\d+)")
-            epRegex.find(eps)?.groupValues?.get(1)?.toIntOrNull()
-        }
+        val episodes =
+            this.selectFirst(".film-poster > .tick.rtl > .tick-eps")?.text()?.let { eps ->
+                //println("REGEX:::: $eps")
+                // current episode / max episode
+                //Regex("Ep (\\d+)/(\\d+)")
+                epRegex.find(eps)?.groupValues?.get(1)?.toIntOrNull()
+            }
         if (href.contains("/news/") || title.trim().equals("News", ignoreCase = true)) return null
         val posterUrl = fixUrl(this.select("img").attr("data-src"))
         val type = getType(this.select("div.fd-infor > span.fdi-item").text())
@@ -102,7 +103,8 @@ class ZoroProvider : MainAPI() {
         return HomePageResponse(homePageList)
     }
 
-    @Serializable private data class Response(
+    @Serializable
+    private data class Response(
         @SerialName("status") val status: Boolean,
         @SerialName("html") val html: String
     )
@@ -171,7 +173,8 @@ class ZoroProvider : MainAPI() {
         return Actor(name = name, image = image)
     }
 
-    @Serializable data class ZoroSyncData(
+    @Serializable
+    data class ZoroSyncData(
         @SerialName("mal_id") val malId: String?,
         @SerialName("anilist_id") val aniListId: String?,
     )
@@ -209,11 +212,13 @@ class ZoroProvider : MainAPI() {
         val description = document.selectFirst(".film-description.m-hide > .text")?.text()
         val animeId = URI(url).path.split("-").last()
 
+        val txt = app.get(
+            "$mainUrl/ajax/v2/episode/list/$animeId"
+        ).text
+        println("RESPONSE;: $txt")
         val episodes = Jsoup.parse(
             parseJson<Response>(
-                app.get(
-                    "$mainUrl/ajax/v2/episode/list/$animeId"
-                ).text
+                txt
             ).html
         ).select(".ss-list > a[href].ssl-item.ep-item").map {
             newEpisode(it.attr("href")) {
@@ -277,7 +282,8 @@ class ZoroProvider : MainAPI() {
         }
     }
 
-    @Serializable private data class RapidCloudResponse(
+    @Serializable
+    private data class RapidCloudResponse(
         @SerialName("link") val link: String
     )
 

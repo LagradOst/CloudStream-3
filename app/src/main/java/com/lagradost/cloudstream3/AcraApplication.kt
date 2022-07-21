@@ -104,6 +104,7 @@ class AcraApplication : Application() {
         }
 
         inline fun <reified T : Any> setKey(folder: String, path: String, value: T?) {
+            return
             if (value == null) {
                 context?.removeKey(folder, path)
             } else {

@@ -35,8 +35,8 @@ import com.lagradost.cloudstream3.utils.VideoDownloadManager.getBasePath
 import kotlinx.android.synthetic.main.add_remove_sites.*
 import kotlinx.android.synthetic.main.add_site_input.*
 import kotlinx.serialization.SerialName
-import java.io.File
 import kotlinx.serialization.Serializable
+import java.io.File
 
 class SettingsGeneral : PreferenceFragmentCompat() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -90,7 +90,7 @@ class SettingsGeneral : PreferenceFragmentCompat() {
         val settingsManager = PreferenceManager.getDefaultSharedPreferences(requireContext())
 
         fun getCurrent(): MutableList<CustomSite> {
-            return getKey<Array<CustomSite>>(USER_PROVIDER_API)?.toMutableList()
+            return getKey<List<CustomSite>>(USER_PROVIDER_API)?.toMutableList()
                 ?: mutableListOf()
         }
 

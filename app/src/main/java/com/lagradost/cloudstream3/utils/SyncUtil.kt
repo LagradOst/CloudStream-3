@@ -4,7 +4,7 @@ import android.util.Log
 import com.lagradost.cloudstream3.animeproviders.AniflixProvider
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.concurrent.TimeUnit
@@ -62,7 +62,7 @@ object SyncUtil {
             val url =
                 "https://raw.githubusercontent.com/MALSync/MAL-Sync-Backup/master/data/pages/$site/$slug.json"
             val response = app.get(url, cacheTime = 1, cacheUnit = TimeUnit.DAYS).text
-            val mapped = parseJson<MalSyncPage?>(response)
+            val mapped = tryParseJson<MalSyncPage>(response)
 
             val overrideMal = mapped?.malId ?: mapped?.Mal?.id ?: mapped?.Anilist?.malId
             val overrideAnilist = mapped?.aniId ?: mapped?.Anilist?.id

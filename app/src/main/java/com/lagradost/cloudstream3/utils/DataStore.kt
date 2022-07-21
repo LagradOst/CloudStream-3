@@ -5,7 +5,6 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.preference.PreferenceManager
 import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 
 const val DOWNLOAD_HEADER_CACHE = "download_header_cache"
@@ -47,7 +46,10 @@ object DataStore {
             }
             editor.apply()
         } catch (e: Exception) {
-            Log.i(TAG, "path = $path\nvalue = $value\nisEditingAppSettings = $isEditingAppSettings")
+            Log.i(
+                TAG,
+                "setrawkey path = $path\nvalue = $value\nisEditingAppSettings = $isEditingAppSettings"
+            )
             logError(e)
         }
     }
@@ -82,7 +84,7 @@ object DataStore {
                 editor.apply()
             }
         } catch (e: Exception) {
-            Log.i(TAG, "path = $path\n")
+            Log.i(TAG, "removekey path = $path\n")
             logError(e)
         }
     }
@@ -102,8 +104,8 @@ object DataStore {
             editor.putString(path, value.toJson())
             editor.apply()
         } catch (e: Exception) {
+            Log.i(TAG, "setkey path = $path\nvalue = $value")
             logError(e)
-            Log.i(TAG, "path = $path\nvalue = $value")
         }
     }
 
@@ -114,11 +116,14 @@ object DataStore {
     // GET KEY GIVEN PATH AND DEFAULT VALUE, NULL IF ERROR
     inline fun <reified T : Any> Context.getKey(path: String, defVal: T?): T? {
         try {
-            val json: String = getSharedPrefs().getString(path, null) ?: return defVal
-            return parseJson<T>(json)
+            val json: String? = getSharedPrefs().getString(path, null)
+            if (json.isNullOrBlank()) {
+                return defVal
+            }
+            return AppUtils.parseJson(json)
         } catch (e: Exception) {
+            Log.i(TAG, "getkey path = $path\ndefVal = $defVal")
             logError(e)
-            Log.i(TAG, "path = $path\ndefVal = $defVal")
             return null
         }
     }

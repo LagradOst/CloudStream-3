@@ -83,13 +83,13 @@ abstract class AccountManager(private val defIndex: Int) : AuthAPI {
         removeKeys(accountId)
         val accounts = getAccounts()?.toMutableList() ?: mutableListOf()
         accounts.remove(accountIndex)
-        setKey(accountsKey, accounts.toIntArray())
+        setKey(accountsKey, accounts.toList())
 
         init()
     }
 
     fun getAccounts(): IntArray? {
-        return getKey(accountsKey, intArrayOf())
+        return getKey<List<Int>>(accountsKey, emptyList())?.toIntArray()
     }
 
     fun init() {
@@ -105,6 +105,7 @@ abstract class AccountManager(private val defIndex: Int) : AuthAPI {
         lastAccountIndex = accountIndex
         accountIndex = (accounts?.maxOrNull() ?: 0) + 1
     }
+
     protected fun switchToOldAccount() {
         accountIndex = lastAccountIndex
     }
@@ -116,7 +117,7 @@ abstract class AccountManager(private val defIndex: Int) : AuthAPI {
             accounts.add(accountIndex)
         }
 
-        setKey(accountsKey, accounts.toIntArray())
+        setKey(accountsKey, accounts.toList())
     }
 
     fun changeAccount(index: Int) {

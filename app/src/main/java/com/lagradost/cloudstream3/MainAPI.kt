@@ -25,8 +25,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.absoluteValue
 
-DONT COMPILE THIS, THIS IS AN UNSTABLE BUILD AND SERIALIZATION DOES NOT WORK ON PRIMATIVE TYPES YET!
-
 const val USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 

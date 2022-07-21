@@ -354,7 +354,7 @@ class HomeFragment : Fragment() {
     private fun reloadStored() {
         homeViewModel.loadResumeWatching()
         val list = EnumSet.noneOf(WatchType::class.java)
-        getKey<IntArray>(HOME_BOOKMARK_VALUE_LIST)?.map { WatchType.fromInternalId(it) }?.let {
+        getKey<List<Int>>(HOME_BOOKMARK_VALUE_LIST)?.map { WatchType.fromInternalId(it) }?.let {
             list.addAll(it)
         }
         homeViewModel.loadStoredData(list)
@@ -583,7 +583,7 @@ class HomeFragment : Fragment() {
 
             item.first?.setOnLongClickListener { itemView ->
                 val list = EnumSet.noneOf(WatchType::class.java)
-                itemView.context.getKey<IntArray>(HOME_BOOKMARK_VALUE_LIST)
+                itemView.context.getKey<List<Int>>(HOME_BOOKMARK_VALUE_LIST)
                     ?.map { WatchType.fromInternalId(it) }?.let {
                         list.addAll(it)
                     }
@@ -601,7 +601,7 @@ class HomeFragment : Fragment() {
         observe(homeViewModel.availableWatchStatusTypes) { availableWatchStatusTypes ->
             context?.setKey(
                 HOME_BOOKMARK_VALUE_LIST,
-                availableWatchStatusTypes.first.map { it.internalId }.toIntArray()
+                availableWatchStatusTypes.first.map { it.internalId }.toList()
             )
 
             for (item in toggleList) {

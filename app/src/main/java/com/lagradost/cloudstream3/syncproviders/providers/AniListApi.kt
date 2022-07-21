@@ -15,9 +15,9 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.net.URL
 import java.util.*
-import kotlinx.serialization.Serializable
 
 class AniListApi(index: Int) : AccountManager(index), SyncAPI {
     override var name = "AniList"
@@ -618,21 +618,21 @@ class AniListApi(index: Int) : AccountManager(index), SyncAPI {
         @SerialName("MediaListCollection") val MediaListCollection: MediaListCollection
     )
 
-    fun getAnilistListCached(): Array<Lists>? {
-        return getKey(ANILIST_CACHED_LIST) as? Array<Lists>
-    }
+    fun getAnilistListCached(): Array<Lists>? =
+        getKey<List<Lists>>(ANILIST_CACHED_LIST)?.toTypedArray()
+
 
     suspend fun getAnilistAnimeListSmart(): Array<Lists>? {
         if (getAuth() == null) return null
 
         if (checkToken()) return null
         return if (getKey(ANILIST_SHOULD_UPDATE_LIST, true) == true) {
-            val list = getFullAnilistList()?.data?.MediaListCollection?.lists?.toTypedArray()
+            val list = getFullAnilistList()?.data?.MediaListCollection?.lists
             if (list != null) {
                 setKey(ANILIST_CACHED_LIST, list)
                 setKey(ANILIST_SHOULD_UPDATE_LIST, false)
             }
-            list
+            list?.toTypedArray()
         } else {
             getAnilistListCached()
         }

@@ -44,22 +44,89 @@ import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.FillerEpisodeCheck.toClassDir
 import com.lagradost.cloudstream3.utils.JsUnpacker.Companion.load
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
-import kotlinx.serialization.decodeFromString
+import com.lagradost.nicehttp.ResponseParser
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
+import kotlinx.serialization.serializer
 import okhttp3.Cache
 import java.io.*
 import java.net.URL
 import java.net.URLDecoder
-
+import kotlin.reflect.KClass
 
 object AppUtils {
+    @OptIn(ExperimentalSerializationApi::class)
+    fun Any?.toJsonElement(): JsonElement = when (this) {
+        null -> JsonNull
+        is JsonElement -> this
+        is Number -> JsonPrimitive(this)
+        is Boolean -> JsonPrimitive(this)
+        is String -> JsonPrimitive(this)
+        is Array<*> -> JsonArray(map { it.toJsonElement() })
+        is List<*> -> JsonArray(map { it.toJsonElement() })
+        is ArrayList<*> -> JsonArray(map { it.toJsonElement() })
+        is IntArray -> JsonArray(map { it.toJsonElement() })
+        is Map<*, *> -> JsonObject(map { it.key.toString() to it.value.toJsonElement() }.toMap())
+        is HashMap<*, *> -> JsonObject(map { it.key.toString() to it.value.toJsonElement() }.toMap())
+        else -> Json.encodeToJsonElement(serializer(this::class.javaObjectType), this)
+    }
+
+    @OptIn(InternalSerializationApi::class)
+    val parser = object : ResponseParser {
+        override fun <T : Any> parse(text: String, kClass: KClass<T>): T {
+            return jsonParser.decodeFromString(kClass.serializer(), text)
+        }
+
+        override fun <T : Any> parseSafe(text: String, kClass: KClass<T>): T? {
+            if (text.isBlank()) return null
+
+           val a = parse(text,JsonArray::class)
+            return when (kClass) {
+                String::class -> return text as? T?
+
+                HashMap::class -> return parse(text,JsonObject::class).let { obj ->
+                    mapOf(obj.entries.map { it.key to it.value })
+                }
+                else -> {
+                    try {
+                        parse(text, kClass)
+                    } catch (e: Exception) {
+                        logError(e)
+                        null
+                    }
+                }
+            }
+        }
+
+        override fun writeValueAsString(obj: Any): String {
+            return try {
+                jsonParser.encodeToString(obj.toJsonElement())
+            } catch (e: Exception) {
+                logError(e)
+                ""
+            }
+
+            // println("ANY CLASS: ${obj::class.simpleName}")
+            //return when (obj) {
+            //    //is Boolean -> if(obj) "true" else "false"
+            //    //is String -> obj
+            //    //is IntArray -> writeValueAsString(obj.toList())
+            //    //is Int -> obj.toString()
+            //    else -> {
+            //
+            //    }
+            //}
+
+        }
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
     val jsonParser = Json {
         isLenient = true
-        encodeDefaults = true
         ignoreUnknownKeys = true
-        allowStructuredMapKeys = true
-        coerceInputValues = true
+        explicitNulls = false
     }
 
     //fun Context.deleteFavorite(data: SearchResponse) {
@@ -250,21 +317,16 @@ object AppUtils {
     }
 
     /** Any object as json string */
-    fun Any.toJson(): String {
-        if (this is String) return this
-        return jsonParser.encodeToString(this)
+    fun <T : Any> T.toJson(): String {
+        return parser.writeValueAsString(this)
     }
 
-    inline fun <reified T> parseJson(value: String): T {
-        return jsonParser.decodeFromString(value)
+    inline fun <reified T : Any> parseJson(value: String): T {
+        return parser.parse(value, T::class)
     }
 
-    inline fun <reified T> tryParseJson(value: String?): T? {
-        return try {
-            parseJson(value ?: return null)
-        } catch (_: Exception) {
-            null
-        }
+    inline fun <reified T : Any> tryParseJson(value: String?): T? {
+        return parser.parseSafe(value ?: return null, T::class)
     }
 
     /**| S1:E2 Hello World
