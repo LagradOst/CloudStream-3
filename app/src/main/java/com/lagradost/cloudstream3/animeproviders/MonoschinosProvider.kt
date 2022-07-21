@@ -7,6 +7,8 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import java.util.*
 
 
+import kotlinx.serialization.Serializable
+
 class MonoschinosProvider : MainAPI() {
     companion object {
         fun getType(t: String): TvType {
@@ -50,12 +52,15 @@ class MonoschinosProvider : MainAPI() {
             HomePageList(
                 "Capítulos actualizados",
                 app.get(mainUrl, timeout = 120).document.select(".col-6").map {
-                    val title = it.selectFirst("p.animetitles")?.text() ?: it.selectFirst(".animetitles")?.text() ?: ""
+                    val title =
+                        it.selectFirst("p.animetitles")?.text() ?: it.selectFirst(".animetitles")
+                            ?.text() ?: ""
                     val poster = it.selectFirst(".animeimghv")!!.attr("data-src")
                     val epRegex = Regex("episodio-(\\d+)")
                     val url = it.selectFirst("a")?.attr("href")!!.replace("ver/", "anime/")
                         .replace(epRegex, "sub-espanol")
-                    val epNum = (it.selectFirst(".positioning h5")?.text() ?: it.selectFirst("div.positioning p")?.text())?.toIntOrNull()
+                    val epNum = (it.selectFirst(".positioning h5")?.text()
+                        ?: it.selectFirst("div.positioning p")?.text())?.toIntOrNull()
                     newAnimeSearchResponse(title, url) {
                         this.posterUrl = fixUrl(poster)
                         addDubStatus(getDubStatus(title), epNum)

@@ -1,15 +1,14 @@
 package com.lagradost.cloudstream3.extractors
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.helper.WcoHelper.Companion.getNewWcoKey
-import com.lagradost.cloudstream3.extractors.helper.WcoHelper.Companion.getWcoKey
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
 
 class Vidstreamz : WcoStream() {
     override var mainUrl = "https://vidstreamz.online"
@@ -123,20 +122,20 @@ open class WcoStream : ExtractorApi() {
         val referrer = "$baseUrl/e/$Id?domain=wcostream.cc"
 
         data class SourcesWco (
-            @JsonProperty("file" ) val file : String
+            @SerialName("file" ) val file : String
         )
 
         data class MediaWco (
-            @JsonProperty("sources" ) val sources : ArrayList<SourcesWco> = arrayListOf()
+            @SerialName("sources" ) val sources : ArrayList<SourcesWco> = arrayListOf()
         )
 
         data class DataWco (
-            @JsonProperty("media" ) val media : MediaWco? = MediaWco()
+            @SerialName("media" ) val media : MediaWco? = MediaWco()
         )
 
         data class WcoResponse (
-            @JsonProperty("status" ) val status : Int?  = null,
-            @JsonProperty("data"   ) val data   : DataWco? = DataWco()
+            @SerialName("status" ) val status : Int?  = null,
+            @SerialName("data"   ) val data   : DataWco? = DataWco()
         )
 
         val mapped = app.get(apiLink, headers = mapOf("Referer" to referrer)).parsed<WcoResponse>()

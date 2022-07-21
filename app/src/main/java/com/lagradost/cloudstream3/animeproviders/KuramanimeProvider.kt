@@ -8,6 +8,8 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.*
 
+import kotlinx.serialization.Serializable
+
 class KuramanimeProvider : MainAPI() {
     override var mainUrl = "https://kuramanime.com"
     override var name = "Kuramanime"

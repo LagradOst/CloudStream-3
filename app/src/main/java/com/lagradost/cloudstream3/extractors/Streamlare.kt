@@ -1,11 +1,11 @@
 package com.lagradost.cloudstream3.extractors
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.nicehttp.RequestBodyTypes
+import kotlinx.serialization.Serializable
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 
@@ -22,19 +22,20 @@ open class Slmaxed : ExtractorApi() {
     // https://slmaxed.com/e/oLvgezw3LjPzbp8E -> oLvgezw3LjPzbp8E
     val embedRegex = Regex("""/e/([^/]*)""")
 
-
+    @Serializable
     data class JsonResponse(
-        @JsonProperty val status: String? = null,
-        @JsonProperty val message: String? = null,
-        @JsonProperty val type: String? = null,
-        @JsonProperty val token: String? = null,
-        @JsonProperty val result: Map<String, Result>? = null
+        val status: String? = null,
+        val message: String? = null,
+        val type: String? = null,
+        val token: String? = null,
+        val result: Map<String, Result>? = null
     )
 
+    @Serializable
     data class Result(
-        @JsonProperty val label: String? = null,
-        @JsonProperty val file: String? = null,
-        @JsonProperty val type: String? = null
+        val label: String? = null,
+        val file: String? = null,
+        val type: String? = null
     )
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {

@@ -1,11 +1,12 @@
 package com.lagradost.cloudstream3.extractors
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 class SBfull : StreamSB() {
     override var mainUrl = "https://sbfull.com"
@@ -71,39 +72,45 @@ open class StreamSB : ExtractorApi() {
         return String(hexChars)
     }
 
-    data class Subs (
-        @JsonProperty("file") val file: String,
-        @JsonProperty("label") val label: String,
+    @Serializable
+    data class Subs(
+        @SerialName("file") val file: String,
+        @SerialName("label") val label: String,
     )
 
-    data class StreamData (
-        @JsonProperty("file") val file: String,
-        @JsonProperty("cdn_img") val cdnImg: String,
-        @JsonProperty("hash") val hash: String,
-        @JsonProperty("subs") val subs: List<Subs>?,
-        @JsonProperty("length") val length: String,
-        @JsonProperty("id") val id: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("backup") val backup: String,
+    @Serializable
+    data class StreamData(
+        @SerialName("file") val file: String,
+        @SerialName("cdn_img") val cdnImg: String,
+        @SerialName("hash") val hash: String,
+        @SerialName("subs") val subs: List<Subs>?,
+        @SerialName("length") val length: String,
+        @SerialName("id") val id: String,
+        @SerialName("title") val title: String,
+        @SerialName("backup") val backup: String,
     )
 
-    data class Main (
-        @JsonProperty("stream_data") val streamData: StreamData,
-        @JsonProperty("status_code") val statusCode: Int,
+    @Serializable
+    data class Main(
+        @SerialName("stream_data") val streamData: StreamData,
+        @SerialName("status_code") val statusCode: Int,
     )
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val regexID = Regex("(embed-[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+|\\/e\\/[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
+        val regexID =
+            Regex("(embed-[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+|\\/e\\/[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
         val id = regexID.findAll(url).map {
-            it.value.replace(Regex("(embed-|\\/e\\/)"),"")
+            it.value.replace(Regex("(embed-|\\/e\\/)"), "")
         }.first()
         val bytes = id.toByteArray()
         val bytesToHex = bytesToHex(bytes)
-        val master = "$mainUrl/sources43/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
+        val master =
+            "$mainUrl/sources43/6d6144797752744a454267617c7c${bytesToHex.lowercase()}7c7c4e61755a56456f34385243727c7c73747265616d7362/6b4a33767968506e4e71374f7c7c343837323439333133333462353935333633373836643638376337633462333634663539343137373761333635313533333835333763376333393636363133393635366136323733343435323332376137633763373337343732363536313664373336327c7c504d754478413835306633797c7c73747265616d7362"
         val headers = mapOf(
             "watchsb" to "streamsb",
-            )
-        val urltext = app.get(master,
+        )
+        val urltext = app.get(
+            master,
             headers = headers,
             allowRedirects = false
         ).text

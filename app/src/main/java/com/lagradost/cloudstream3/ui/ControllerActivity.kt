@@ -6,9 +6,6 @@ import android.view.Menu
 import android.view.View.*
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.google.android.gms.cast.MediaQueueItem
 import com.google.android.gms.cast.MediaSeekOptions
 import com.google.android.gms.cast.MediaStatus.REPEAT_MODE_REPEAT_OFF
@@ -30,10 +27,10 @@ import com.lagradost.cloudstream3.ui.player.SubtitleData
 import com.lagradost.cloudstream3.ui.result.ResultEpisode
 import com.lagradost.cloudstream3.ui.subtitles.ChromecastSubtitlesFragment
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.CastHelper.awaitLinks
 import com.lagradost.cloudstream3.utils.CastHelper.getMediaInfo
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
-import com.lagradost.cloudstream3.utils.DataStore.toKotlinObject
 import com.lagradost.cloudstream3.utils.DataStoreHelper
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
@@ -97,9 +94,6 @@ data class MetadataHolder(
 
 class SelectSourceController(val view: ImageView, val activity: ControllerActivity) :
     UIController() {
-    private val mapper: JsonMapper = JsonMapper.builder().addModule(KotlinModule())
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).build()
-
     init {
         view.setImageResource(R.drawable.ic_baseline_playlist_play_24)
         view.setOnClickListener {
@@ -183,7 +177,9 @@ class SelectSourceController(val view: ImageView, val activity: ControllerActivi
                     val contentUrl = (remoteMediaClient?.currentItem?.media?.contentUrl
                         ?: remoteMediaClient?.currentItem?.media?.contentId)
 
-                    val sortingMethods = items.map { "${it.name} ${Qualities.getStringByInt(it.quality)}" }.toTypedArray()
+                    val sortingMethods =
+                        items.map { "${it.name} ${Qualities.getStringByInt(it.quality)}" }
+                            .toTypedArray()
                     val sotringIndex = items.indexOfFirst { it.url == contentUrl }
 
                     val arrayAdapter =
@@ -252,7 +248,7 @@ class SelectSourceController(val view: ImageView, val activity: ControllerActivi
     private fun getCurrentMetaData(): MetadataHolder? {
         return try {
             val data = remoteMediaClient?.mediaInfo?.customData?.toString()
-            data?.toKotlinObject()
+            tryParseJson(data)
         } catch (e: Exception) {
             null
         }
@@ -279,7 +275,7 @@ class SelectSourceController(val view: ImageView, val activity: ControllerActivi
                     val currentPosition = remoteMediaClient?.approximateStreamPosition
                     if (currentDuration != null && currentPosition != null)
                         DataStoreHelper.setViewPos(epData.id, currentPosition, currentDuration)
-                } catch (e : Exception) {
+                } catch (e: Exception) {
                     logError(e)
                 }
 
@@ -358,10 +354,9 @@ class SelectSourceController(val view: ImageView, val activity: ControllerActivi
         }
     }
 
-    override fun onSessionConnected(castSession: CastSession?) {
-        castSession?.let {
-            super.onSessionConnected(it)
-        }
+    override fun onSessionConnected(castSession: CastSession) {
+        super.onSessionConnected(castSession)
+
         remoteMediaClient?.queueSetRepeatMode(REPEAT_MODE_REPEAT_OFF, JSONObject())
     }
 }

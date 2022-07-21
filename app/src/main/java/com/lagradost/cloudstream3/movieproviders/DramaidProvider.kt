@@ -1,14 +1,14 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import java.util.ArrayList
 
 class DramaidProvider : MainAPI() {
     override var mainUrl = "https://185.224.83.103"
@@ -138,18 +138,20 @@ class DramaidProvider : MainAPI() {
 
     }
 
+    @Serializable
     private data class Sources(
-        @JsonProperty("file") val file: String,
-        @JsonProperty("label") val label: String,
-        @JsonProperty("type") val type: String,
-        @JsonProperty("default") val default: Boolean?
+        @SerialName("file") val file: String,
+        @SerialName("label") val label: String,
+        @SerialName("type") val type: String,
+        @SerialName("default") val default: Boolean?
     )
 
+    @Serializable
     private data class Tracks(
-        @JsonProperty("file") val file: String,
-        @JsonProperty("label") val label: String,
-        @JsonProperty("kind") val type: String,
-        @JsonProperty("default") val default: Boolean?
+        @SerialName("file") val file: String,
+        @SerialName("label") val label: String,
+        @SerialName("kind") val type: String,
+        @SerialName("default") val default: Boolean?
     )
 
     private suspend fun invokeDriveSource(
@@ -205,7 +207,12 @@ class DramaidProvider : MainAPI() {
             it.replace("https://ndrama.xyz", "https://www.fembed.com")
         }.apmap {
             when {
-                it.contains("motonews.club") -> invokeDriveSource(it, this.name, subtitleCallback, callback)
+                it.contains("motonews.club") -> invokeDriveSource(
+                    it,
+                    this.name,
+                    subtitleCallback,
+                    callback
+                )
                 else -> loadExtractor(it, data, callback)
             }
         }

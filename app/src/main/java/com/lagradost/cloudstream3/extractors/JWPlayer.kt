@@ -1,12 +1,12 @@
 package com.lagradost.cloudstream3.extractors
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 class Meownime : JWPlayer() {
     override val name = "Meownime"
@@ -72,10 +72,10 @@ open class JWPlayer : ExtractorApi() {
         return sources
     }
 
+    @Serializable
     private data class ResponseSource(
-        @JsonProperty("file") val file: String,
-        @JsonProperty("type") val type: String?,
-        @JsonProperty("label") val label: String?
+        @SerialName("file") val file: String,
+        @SerialName("type") val type: String?,
+        @SerialName("label") val label: String?
     )
-
 }

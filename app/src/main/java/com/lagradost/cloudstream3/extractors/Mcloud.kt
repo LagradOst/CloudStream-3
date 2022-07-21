@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3.extractors
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.apmap
 import com.lagradost.cloudstream3.app
@@ -8,11 +7,13 @@ import com.lagradost.cloudstream3.extractors.WcoStream.Companion.cipher
 import com.lagradost.cloudstream3.extractors.WcoStream.Companion.encrypt
 import com.lagradost.cloudstream3.extractors.WcoStream.Companion.keytwo
 import com.lagradost.cloudstream3.extractors.helper.WcoHelper.Companion.getNewWcoKey
-import com.lagradost.cloudstream3.extractors.helper.WcoHelper.Companion.getWcoKey
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper.Companion.generateM3u8
+import kotlinx.serialization.SerialName
+
+import kotlinx.serialization.Serializable
 
 open class Mcloud : ExtractorApi() {
     override var name = "Mcloud"
@@ -45,20 +46,20 @@ open class Mcloud : ExtractorApi() {
             return emptyList()
         }
         data class SourcesMcloud (
-            @JsonProperty("file" ) val file : String
+            @SerialName("file" ) val file : String
         )
 
         data class MediaMcloud (
-            @JsonProperty("sources" ) val sources : ArrayList<SourcesMcloud> = arrayListOf()
+            @SerialName("sources" ) val sources : ArrayList<SourcesMcloud> = arrayListOf()
         )
 
         data class DataMcloud (
-            @JsonProperty("media" ) val media : MediaMcloud? = MediaMcloud()
+            @SerialName("media" ) val media : MediaMcloud? = MediaMcloud()
         )
 
         data class JsonMcloud (
-            @JsonProperty("status" ) val status : Int?  = null,
-            @JsonProperty("data"   ) val data   : DataMcloud = DataMcloud()
+            @SerialName("status" ) val status : Int?  = null,
+            @SerialName("data"   ) val data   : DataMcloud = DataMcloud()
         )
 
         val mapped = parseJson<JsonMcloud>(response)

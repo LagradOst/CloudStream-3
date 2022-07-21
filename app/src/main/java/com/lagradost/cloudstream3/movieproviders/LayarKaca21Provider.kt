@@ -9,6 +9,8 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.*
 
+import kotlinx.serialization.Serializable
+
 class LayarKacaProvider : MainAPI() {
     override var mainUrl = "https://149.56.24.226"
     override var name = "LayarKaca"

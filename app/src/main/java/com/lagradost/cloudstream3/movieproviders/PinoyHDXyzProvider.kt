@@ -1,10 +1,12 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+
+import kotlinx.serialization.Serializable
 
 class PinoyHDXyzProvider : MainAPI() {
     override var name = "Pinoy-HD"
@@ -27,7 +29,9 @@ class PinoyHDXyzProvider : MainAPI() {
                 val innerBody = it?.selectFirst("a") ?: return@mapNotNull null
                 // Fetch details
                 val name = it.text()?.trim()
-                if (name.isNullOrBlank()) { return@mapNotNull null }
+                if (name.isNullOrBlank()) {
+                    return@mapNotNull null
+                }
 
                 val link = innerBody.attr("href") ?: return@mapNotNull null
                 val image = fixUrlNull(innerBody.select("img")?.attr("src"))
@@ -106,13 +110,16 @@ class PinoyHDXyzProvider : MainAPI() {
                     var yearRes = td[1].toString()
                     year = if (yearRes.isNotBlank()) {
                         if (yearRes.contains("var year =")) {
-                            yearRes = yearRes.substring(yearRes.indexOf("var year =") + "var year =".length)
+                            yearRes =
+                                yearRes.substring(yearRes.indexOf("var year =") + "var year =".length)
                             //Log.i(this.name, "Result => (yearRes) $yearRes")
                             yearRes = yearRes.substring(0, yearRes.indexOf(';'))
                                 .trim().removeSurrounding("'")
                         }
                         yearRes.toIntOrNull()
-                    } else { null }
+                    } else {
+                        null
+                    }
                 }
                 "genre" -> {
                     tags = td[1].select("a")?.mapNotNull { tag ->
@@ -128,7 +135,8 @@ class PinoyHDXyzProvider : MainAPI() {
                 descript = "(undefined_x_Polus+[.\\d+])".toRegex().replace(descript, "")
                 descript = "(_x_Polus+[.\\d+])".toRegex().replace(descript, "")
                 descript = descript.trim().removeSuffix("undefined").trim()
-            } catch (e: java.lang.Exception) {  }
+            } catch (e: java.lang.Exception) {
+            }
         }
         // Add links hidden in description
         listOfLinks.addAll(fetchUrls(descript))
@@ -218,7 +226,7 @@ class PinoyHDXyzProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         var count = 0
-        mapper.readValue<List<String>>(data).forEach { item ->
+        parseJson<List<String>>(data).forEach { item ->
             val url = item.trim()
             if (url.isNotBlank()) {
                 if (loadExtractor(url, mainUrl, callback)) {

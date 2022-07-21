@@ -1,11 +1,13 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 
+
+import kotlinx.serialization.Serializable
 
 class TantifilmProvider : MainAPI() {
     override var lang = "it"
@@ -125,7 +127,7 @@ class TantifilmProvider : MainAPI() {
 
             val episodeList = ArrayList<Episode>()
 
-            for ((season,seasonurl) in list) {
+            for ((season, seasonurl) in list) {
                 val seasonDocument = app.get(seasonurl).document
                 val episodes = seasonDocument.select("nav.second_nav > select > option")
                 if (episodes.isNotEmpty()) {
@@ -147,11 +149,12 @@ class TantifilmProvider : MainAPI() {
                 title,
                 url,
                 type,
-                episodeList) {
-                this.posterUrl= fixUrlNull(poster)
+                episodeList
+            ) {
+                this.posterUrl = fixUrlNull(poster)
                 this.year = year.toIntOrNull()
-                this.plot= descipt[0]
-                this.rating= rating
+                this.plot = descipt[0]
+                this.rating = rating
                 this.recommendations = recomm
                 addTrailer(trailerurl)
             }
@@ -166,7 +169,7 @@ class TantifilmProvider : MainAPI() {
 
             val actors: List<ActorData>? = if (Linkactor.isNotEmpty()) {
                 val actorpage = app.get(Linkactor + "cast/").document
-                actorpage.select("article.membro-cast").filter {
+                actorpage.select("article.membro-cast").filter { it ->
                     it.selectFirst("img")
                         ?.attr("src") != "https://www.filmtv.it/imgbank/DUMMY/no_portrait.jpg"
                 }.mapNotNull {

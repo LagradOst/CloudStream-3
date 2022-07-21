@@ -3,10 +3,10 @@ package com.lagradost.cloudstream3.animeproviders
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
-import org.jsoup.Jsoup
+
+import kotlinx.serialization.Serializable
 
 class KimCartoonProvider : MainAPI() {
-
     override var mainUrl = "https://kimcartoon.li"
     override var name = "Kim Cartoon"
     override val hasQuickSearch = true
@@ -83,9 +83,9 @@ class KimCartoonProvider : MainAPI() {
 
     override suspend fun quickSearch(query: String): List<SearchResponse> {
         return app.post(
-                "$mainUrl/Ajax/SearchSuggest",
-                data = mapOf("keyword" to query)
-            ).document.select("a").map {
+            "$mainUrl/Ajax/SearchSuggest",
+            data = mapOf("keyword" to query)
+        ).document.select("a").map {
             AnimeSearchResponse(
                 it.text(),
                 it.attr("href"),

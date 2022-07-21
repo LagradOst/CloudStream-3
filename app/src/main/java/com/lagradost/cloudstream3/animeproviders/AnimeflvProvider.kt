@@ -1,11 +1,12 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
 import java.util.*
+import kotlinx.serialization.Serializable
 
 class AnimeflvnetProvider : MainAPI() {
     companion object {
@@ -82,12 +83,13 @@ class AnimeflvnetProvider : MainAPI() {
         return HomePageResponse(items)
     }
 
+    @Serializable
     data class SearchObject(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("type") val type: String,
-        @JsonProperty("last_id") val lastId: String,
-        @JsonProperty("slug") val slug: String
+        @SerialName("id") val id: String,
+        @SerialName("title") val title: String,
+        @SerialName("type") val type: String,
+        @SerialName("last_id") val lastId: String,
+        @SerialName("slug") val slug: String
     )
 
     override suspend fun search(query: String): List<SearchResponse> {

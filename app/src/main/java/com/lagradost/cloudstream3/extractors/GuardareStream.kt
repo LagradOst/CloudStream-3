@@ -1,8 +1,11 @@
 package com.lagradost.cloudstream3.extractors
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import kotlinx.serialization.SerialName
+
+import kotlinx.serialization.Serializable
 
 open class GuardareStream : ExtractorApi() {
     override var name = "Guardare"
@@ -10,13 +13,13 @@ open class GuardareStream : ExtractorApi() {
     override val requiresReferer = false
 
     data class GuardareJsonData (
-        @JsonProperty("data") val data : List<GuardareData>,
+        @SerialName("data") val data : List<GuardareData>,
     )
 
     data class GuardareData (
-        @JsonProperty("file") val file : String,
-        @JsonProperty("label") val label : String,
-        @JsonProperty("type") val type : String
+        @SerialName("file") val file : String,
+        @SerialName("label") val label : String,
+        @SerialName("type") val type : String
     )
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {

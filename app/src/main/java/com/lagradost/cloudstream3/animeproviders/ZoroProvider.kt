@@ -1,18 +1,19 @@
 package com.lagradost.cloudstream3.animeproviders
 
 import android.util.Log
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.extractRabbitStream
 import com.lagradost.cloudstream3.movieproviders.SflixProvider.Companion.runSflixExtractorVerifierJob
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.nicehttp.Requests.Companion.await
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import okhttp3.Interceptor
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -101,14 +102,14 @@ class ZoroProvider : MainAPI() {
         return HomePageResponse(homePageList)
     }
 
-    private data class Response(
-        @JsonProperty("status") val status: Boolean,
-        @JsonProperty("html") val html: String
+    @Serializable private data class Response(
+        @SerialName("status") val status: Boolean,
+        @SerialName("html") val html: String
     )
 
 //    override suspend fun quickSearch(query: String): List<SearchResponse> {
 //        val url = "$mainUrl/ajax/search/suggest?keyword=${query}"
-//        val html = mapper.readValue<Response>(khttp.get(url).text).html
+//        val html = parseJson<Response>(khttp.get(url).text).html
 //        val document = Jsoup.parse(html)
 //
 //        return document.select("a.nav-item").map {
@@ -170,9 +171,9 @@ class ZoroProvider : MainAPI() {
         return Actor(name = name, image = image)
     }
 
-    data class ZoroSyncData(
-        @JsonProperty("mal_id") val malId: String?,
-        @JsonProperty("anilist_id") val aniListId: String?,
+    @Serializable data class ZoroSyncData(
+        @SerialName("mal_id") val malId: String?,
+        @SerialName("anilist_id") val aniListId: String?,
     )
 
     override suspend fun load(url: String): LoadResponse {
@@ -209,7 +210,7 @@ class ZoroProvider : MainAPI() {
         val animeId = URI(url).path.split("-").last()
 
         val episodes = Jsoup.parse(
-            mapper.readValue<Response>(
+            parseJson<Response>(
                 app.get(
                     "$mainUrl/ajax/v2/episode/list/$animeId"
                 ).text
@@ -222,7 +223,7 @@ class ZoroProvider : MainAPI() {
         }
 
         val actors = document.select("div.block-actors-content > div.bac-list-wrap > div.bac-item")
-            ?.mapNotNull { head ->
+            .mapNotNull { head ->
                 val subItems = head.select(".per-info") ?: return@mapNotNull null
                 if (subItems.isEmpty()) return@mapNotNull null
                 var role: ActorRole? = null
@@ -276,8 +277,8 @@ class ZoroProvider : MainAPI() {
         }
     }
 
-    private data class RapidCloudResponse(
-        @JsonProperty("link") val link: String
+    @Serializable private data class RapidCloudResponse(
+        @SerialName("link") val link: String
     )
 
     override suspend fun extractorVerifierJob(extractorData: String?) {
