@@ -6,6 +6,8 @@ import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 
+import kotlinx.serialization.Serializable
+
 class SeriesflixProvider : MainAPI() {
     override var mainUrl = "https://seriesflix.video"
     override var name = "Seriesflix"

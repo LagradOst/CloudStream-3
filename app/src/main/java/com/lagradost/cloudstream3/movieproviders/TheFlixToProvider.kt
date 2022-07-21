@@ -1,13 +1,14 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
-import com.lagradost.cloudstream3.network.cookies
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
 
+
+import kotlinx.serialization.Serializable
 
 class TheFlixToProvider : MainAPI() {
     companion object {
@@ -23,79 +24,85 @@ class TheFlixToProvider : MainAPI() {
         TvType.TvSeries,
     )
 
-
-
+    @Serializable
     data class HomeJson(
-        @JsonProperty("props") val props: HomeProps = HomeProps(),
+        @SerialName("props") val props: HomeProps = HomeProps(),
     )
 
+    @Serializable
     data class HomeProps(
-        @JsonProperty("pageProps") val pageProps: PageProps = PageProps(),
+        @SerialName("pageProps") val pageProps: PageProps = PageProps(),
     )
 
+    @Serializable
     data class PageProps(
-        @JsonProperty("moviesListTrending") val moviesListTrending: MoviesListTrending = MoviesListTrending(),
-        @JsonProperty("moviesListNewArrivals") val moviesListNewArrivals: MoviesListNewArrivals = MoviesListNewArrivals(),
-        @JsonProperty("tvsListTrending") val tvsListTrending: TvsListTrending = TvsListTrending(),
-        @JsonProperty("tvsListNewEpisodes") val tvsListNewEpisodes: TvsListNewEpisodes = TvsListNewEpisodes(),
+        @SerialName("moviesListTrending") val moviesListTrending: MoviesListTrending = MoviesListTrending(),
+        @SerialName("moviesListNewArrivals") val moviesListNewArrivals: MoviesListNewArrivals = MoviesListNewArrivals(),
+        @SerialName("tvsListTrending") val tvsListTrending: TvsListTrending = TvsListTrending(),
+        @SerialName("tvsListNewEpisodes") val tvsListNewEpisodes: TvsListNewEpisodes = TvsListNewEpisodes(),
     )
 
 
+    @Serializable
     data class MoviesListTrending(
-        @JsonProperty("docs") val docs: ArrayList<Docs> = arrayListOf(),
-        @JsonProperty("total") val total: Int? = null,
-        @JsonProperty("page") val page: Int? = null,
-        @JsonProperty("limit") val limit: Int? = null,
-        @JsonProperty("pages") val pages: Int? = null,
-        @JsonProperty("type") val type: String? = null,
+        @SerialName("docs") val docs: ArrayList<Docs> = arrayListOf(),
+        @SerialName("total") val total: Int? = null,
+        @SerialName("page") val page: Int? = null,
+        @SerialName("limit") val limit: Int? = null,
+        @SerialName("pages") val pages: Int? = null,
+        @SerialName("type") val type: String? = null,
     )
 
+    @Serializable
     data class MoviesListNewArrivals(
-        @JsonProperty("docs") val docs: ArrayList<Docs> = arrayListOf(),
-        @JsonProperty("total") val total: Int? = null,
-        @JsonProperty("page") val page: Int? = null,
-        @JsonProperty("limit") val limit: Int? = null,
-        @JsonProperty("pages") val pages: Int? = null,
-        @JsonProperty("type") val type: String? = null,
+        @SerialName("docs") val docs: ArrayList<Docs> = arrayListOf(),
+        @SerialName("total") val total: Int? = null,
+        @SerialName("page") val page: Int? = null,
+        @SerialName("limit") val limit: Int? = null,
+        @SerialName("pages") val pages: Int? = null,
+        @SerialName("type") val type: String? = null,
     )
 
+    @Serializable
     data class TvsListTrending(
-        @JsonProperty("docs") val docs: ArrayList<Docs> = arrayListOf(),
-        @JsonProperty("total") val total: Int? = null,
-        @JsonProperty("page") val page: Int? = null,
-        @JsonProperty("limit") val limit: Int? = null,
-        @JsonProperty("pages") val pages: Int? = null,
-        @JsonProperty("type") val type: String? = null,
+        @SerialName("docs") val docs: ArrayList<Docs> = arrayListOf(),
+        @SerialName("total") val total: Int? = null,
+        @SerialName("page") val page: Int? = null,
+        @SerialName("limit") val limit: Int? = null,
+        @SerialName("pages") val pages: Int? = null,
+        @SerialName("type") val type: String? = null,
     )
 
+    @Serializable
     data class TvsListNewEpisodes(
-        @JsonProperty("docs") val docs: ArrayList<Docs> = arrayListOf(),
-        @JsonProperty("total") val total: Int? = null,
-        @JsonProperty("page") val page: Int? = null,
-        @JsonProperty("limit") val limit: Int? = null,
-        @JsonProperty("pages") val pages: Int? = null,
-        @JsonProperty("type") val type: String? = null,
+        @SerialName("docs") val docs: ArrayList<Docs> = arrayListOf(),
+        @SerialName("total") val total: Int? = null,
+        @SerialName("page") val page: Int? = null,
+        @SerialName("limit") val limit: Int? = null,
+        @SerialName("pages") val pages: Int? = null,
+        @SerialName("type") val type: String? = null,
     )
 
+    @Serializable
     data class Docs(
-        @JsonProperty("name") val name: String = String(),
-        @JsonProperty("originalLanguage") val originalLanguage: String? = null,
-        @JsonProperty("popularity") val popularity: Double? = null,
-        @JsonProperty("runtime") val runtime: Int? = null,
-        @JsonProperty("status") val status: String? = null,
-        @JsonProperty("voteAverage") val voteAverage: Double? = null,
-        @JsonProperty("voteCount") val voteCount: Int? = null,
-        @JsonProperty("cast") val cast: String? = null,
-        @JsonProperty("director") val director: String? = null,
-        @JsonProperty("overview") val overview: String? = null,
-        @JsonProperty("posterUrl") val posterUrl: String? = null,
-        @JsonProperty("releaseDate") val releaseDate: String? = null,
-        @JsonProperty("createdAt") val createdAt: String? = null,
-        @JsonProperty("updatedAt") val updatedAt: String? = null,
-        @JsonProperty("conversionDate") val conversionDate: String? = null,
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("available") val available: Boolean? = null,
-        @JsonProperty("videos"           ) val videos           : ArrayList<String>? = arrayListOf(),
+        @SerialName("name") val name: String = String(),
+        @SerialName("originalLanguage") val originalLanguage: String? = null,
+        @SerialName("popularity") val popularity: Double? = null,
+        @SerialName("runtime") val runtime: Int? = null,
+        @SerialName("status") val status: String? = null,
+        @SerialName("voteAverage") val voteAverage: Double? = null,
+        @SerialName("voteCount") val voteCount: Int? = null,
+        @SerialName("cast") val cast: String? = null,
+        @SerialName("director") val director: String? = null,
+        @SerialName("overview") val overview: String? = null,
+        @SerialName("posterUrl") val posterUrl: String? = null,
+        @SerialName("releaseDate") val releaseDate: String? = null,
+        @SerialName("createdAt") val createdAt: String? = null,
+        @SerialName("updatedAt") val updatedAt: String? = null,
+        @SerialName("conversionDate") val conversionDate: String? = null,
+        @SerialName("id") val id: Int? = null,
+        @SerialName("available") val available: Boolean? = null,
+        @SerialName("videos") val videos: ArrayList<String>? = arrayListOf(),
     )
 
 
@@ -132,7 +139,8 @@ class TheFlixToProvider : MainAPI() {
                 "Referer" to mainUrl,
                 "Sec-Fetch-Dest" to "empty",
                 "Sec-Fetch-Mode" to "cors",
-                "Sec-Fetch-Site" to "same-site",)
+                "Sec-Fetch-Site" to "same-site",
+            )
         ).cookies
         /* val cookieRegex = Regex("(theflix\\..*?id\\=[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
        val findcookie = cookieRegex.findAll(cookieResponse.toString()).map { it.value }.toList()
@@ -179,7 +187,12 @@ class TheFlixToProvider : MainAPI() {
                         if (type?.contains("TV") == true) TvType.TvSeries else TvType.Movie
                     val link =
                         if (typeinfo == TvType.Movie) "$mainUrl/movie/${info.id}-${cleanTitle(title)}"
-                        else "$mainUrl/tv-show/${info.id}-${cleanTitle(title).replace("?","")}/season-1/episode-1"
+                        else "$mainUrl/tv-show/${info.id}-${
+                            cleanTitle(title).replace(
+                                "?",
+                                ""
+                            )
+                        }/season-1/episode-1"
                     TvSeriesSearchResponse(
                         title,
                         link,
@@ -199,25 +212,29 @@ class TheFlixToProvider : MainAPI() {
         return HomePageResponse(items)
     }
 
+    @Serializable
     data class SearchJson(
-        @JsonProperty("props") val props: SearchProps = SearchProps(),
+        @SerialName("props") val props: SearchProps = SearchProps(),
     )
 
+    @Serializable
     data class SearchProps(
-        @JsonProperty("pageProps") val pageProps: SearchPageProps = SearchPageProps(),
+        @SerialName("pageProps") val pageProps: SearchPageProps = SearchPageProps(),
     )
 
+    @Serializable
     data class SearchPageProps(
-        @JsonProperty("mainList") val mainList: SearchMainList = SearchMainList(),
+        @SerialName("mainList") val mainList: SearchMainList = SearchMainList(),
     )
 
+    @Serializable
     data class SearchMainList(
-        @JsonProperty("docs") val docs: ArrayList<Docs> = arrayListOf(),
-        @JsonProperty("total") val total: Int? = null,
-        @JsonProperty("page") val page: Int? = null,
-        @JsonProperty("limit") val limit: Int? = null,
-        @JsonProperty("pages") val pages: Int? = null,
-        @JsonProperty("type") val type: String? = null,
+        @SerialName("docs") val docs: ArrayList<Docs> = arrayListOf(),
+        @SerialName("total") val total: Int? = null,
+        @SerialName("page") val page: Int? = null,
+        @SerialName("limit") val limit: Int? = null,
+        @SerialName("pages") val pages: Int? = null,
+        @SerialName("type") val type: String? = null,
     )
 
 
@@ -274,126 +291,140 @@ class TheFlixToProvider : MainAPI() {
         }
         return search
     }
-    data class LoadMain (
-        @JsonProperty("props"         ) val props         : LoadProps?         = LoadProps(),
-        @JsonProperty("page"          ) val page          : String?        = null,
-        @JsonProperty("buildId"       ) val buildId       : String?        = null,
-        @JsonProperty("runtimeConfig" ) val runtimeConfig : RuntimeConfig? = RuntimeConfig(),
-        @JsonProperty("isFallback"    ) val isFallback    : Boolean?       = null,
-        @JsonProperty("gssp"          ) val gssp          : Boolean?       = null,
-        @JsonProperty("customServer"  ) val customServer  : Boolean?       = null,
-        @JsonProperty("appGip"        ) val appGip        : Boolean?       = null
+
+    @Serializable
+    data class LoadMain(
+        @SerialName("props") val props: LoadProps? = LoadProps(),
+        @SerialName("page") val page: String? = null,
+        @SerialName("buildId") val buildId: String? = null,
+        @SerialName("runtimeConfig") val runtimeConfig: RuntimeConfig? = RuntimeConfig(),
+        @SerialName("isFallback") val isFallback: Boolean? = null,
+        @SerialName("gssp") val gssp: Boolean? = null,
+        @SerialName("customServer") val customServer: Boolean? = null,
+        @SerialName("appGip") val appGip: Boolean? = null
     )
 
-    data class LoadProps (
-        @JsonProperty("pageProps" ) val pageProps : LoadPageProps? = LoadPageProps(),
-        @JsonProperty("__N_SSP"   ) val _NSSP     : Boolean?   = null
+    @Serializable
+    data class LoadProps(
+        @SerialName("pageProps") val pageProps: LoadPageProps? = LoadPageProps(),
+        @SerialName("__N_SSP") val _NSSP: Boolean? = null
     )
 
-    data class LoadPageProps (
-        @JsonProperty("selectedTv"          ) val selectedTv          : TheFlixMetadata?          = TheFlixMetadata(),
-        @JsonProperty("movie") val movie: TheFlixMetadata? = TheFlixMetadata(),
-        @JsonProperty("recommendationsList" ) val recommendationsList : RecommendationsList? = RecommendationsList(),
-        @JsonProperty("basePageSegments"    ) val basePageSegments    : ArrayList<String>?    = arrayListOf()
+    @Serializable
+    data class LoadPageProps(
+        @SerialName("selectedTv") val selectedTv: TheFlixMetadata? = TheFlixMetadata(),
+        @SerialName("movie") val movie: TheFlixMetadata? = TheFlixMetadata(),
+        @SerialName("recommendationsList") val recommendationsList: RecommendationsList? = RecommendationsList(),
+        @SerialName("basePageSegments") val basePageSegments: ArrayList<String>? = arrayListOf()
     )
 
-    data class TheFlixMetadata (
-        @JsonProperty("episodeRuntime"   ) val episodeRuntime   : Int?               = null,
-        @JsonProperty("name"             ) val name             : String?            = null,
-        @JsonProperty("numberOfSeasons"  ) val numberOfSeasons  : Int?               = null,
-        @JsonProperty("numberOfEpisodes" ) val numberOfEpisodes : Int?               = null,
-        @JsonProperty("originalLanguage" ) val originalLanguage : String?            = null,
-        @JsonProperty("popularity"       ) val popularity       : Double?            = null,
-        @JsonProperty("status"           ) val status           : String?            = null,
-        @JsonProperty("voteAverage"      ) val voteAverage      : Double?            = null,
-        @JsonProperty("voteCount"        ) val voteCount        : Int?               = null,
-        @JsonProperty("cast"             ) val cast             : String?            = null,
-        @JsonProperty("director"         ) val director         : String?            = null,
-        @JsonProperty("overview"         ) val overview         : String?            = null,
-        @JsonProperty("posterUrl"        ) val posterUrl        : String?            = null,
-        @JsonProperty("releaseDate"      ) val releaseDate      : String?            = null,
-        @JsonProperty("createdAt"        ) val createdAt        : String?            = null,
-        @JsonProperty("updatedAt"        ) val updatedAt        : String?            = null,
-        @JsonProperty("id"               ) val id               : Int?               = null,
-        @JsonProperty("available"        ) val available        : Boolean?           = null,
-        @JsonProperty("genres"           ) val genres           : ArrayList<Genres>?  = arrayListOf(),
-        @JsonProperty("seasons"          ) val seasons          : ArrayList<Seasons>? = arrayListOf(),
-        @JsonProperty("videos"           ) val videos           : ArrayList<String>? = arrayListOf(),
-        @JsonProperty("runtime"          ) val runtime          : Int?              = null,
+    @Serializable
+    data class TheFlixMetadata(
+        @SerialName("episodeRuntime") val episodeRuntime: Int? = null,
+        @SerialName("name") val name: String? = null,
+        @SerialName("numberOfSeasons") val numberOfSeasons: Int? = null,
+        @SerialName("numberOfEpisodes") val numberOfEpisodes: Int? = null,
+        @SerialName("originalLanguage") val originalLanguage: String? = null,
+        @SerialName("popularity") val popularity: Double? = null,
+        @SerialName("status") val status: String? = null,
+        @SerialName("voteAverage") val voteAverage: Double? = null,
+        @SerialName("voteCount") val voteCount: Int? = null,
+        @SerialName("cast") val cast: String? = null,
+        @SerialName("director") val director: String? = null,
+        @SerialName("overview") val overview: String? = null,
+        @SerialName("posterUrl") val posterUrl: String? = null,
+        @SerialName("releaseDate") val releaseDate: String? = null,
+        @SerialName("createdAt") val createdAt: String? = null,
+        @SerialName("updatedAt") val updatedAt: String? = null,
+        @SerialName("id") val id: Int? = null,
+        @SerialName("available") val available: Boolean? = null,
+        @SerialName("genres") val genres: ArrayList<Genres>? = arrayListOf(),
+        @SerialName("seasons") val seasons: ArrayList<Seasons>? = arrayListOf(),
+        @SerialName("videos") val videos: ArrayList<String>? = arrayListOf(),
+        @SerialName("runtime") val runtime: Int? = null,
     )
+
+    @Serializable
     data class Seasons(
-        @JsonProperty("name") val name: String? = null,
-        @JsonProperty("numberOfEpisodes") val numberOfEpisodes: Int? = null,
-        @JsonProperty("seasonNumber") val seasonNumber: Int? = null,
-        @JsonProperty("overview") val overview: String? = null,
-        @JsonProperty("posterUrl") val posterUrl: String? = null,
-        @JsonProperty("releaseDate") val releaseDate: String? = null,
-        @JsonProperty("createdAt") val createdAt: String? = null,
-        @JsonProperty("updatedAt") val updatedAt: String? = null,
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("episodes") val episodes: ArrayList<Episodes>? = arrayListOf()
+        @SerialName("name") val name: String? = null,
+        @SerialName("numberOfEpisodes") val numberOfEpisodes: Int? = null,
+        @SerialName("seasonNumber") val seasonNumber: Int? = null,
+        @SerialName("overview") val overview: String? = null,
+        @SerialName("posterUrl") val posterUrl: String? = null,
+        @SerialName("releaseDate") val releaseDate: String? = null,
+        @SerialName("createdAt") val createdAt: String? = null,
+        @SerialName("updatedAt") val updatedAt: String? = null,
+        @SerialName("id") val id: Int? = null,
+        @SerialName("episodes") val episodes: ArrayList<Episodes>? = arrayListOf()
     )
 
+    @Serializable
     data class Episodes(
-        @JsonProperty("episodeNumber") val episodeNumber: Int? = null,
-        @JsonProperty("name") val name: String? = null,
-        @JsonProperty("seasonNumber") val seasonNumber: Int? = null,
-        @JsonProperty("voteAverage") val voteAverage: Double? = null,
-        @JsonProperty("voteCount") val voteCount: Int? = null,
-        @JsonProperty("overview") val overview: String? = null,
-        @JsonProperty("releaseDate") val releaseDate: String? = null,
-        @JsonProperty("createdAt") val createdAt: String? = null,
-        @JsonProperty("updatedAt") val updatedAt: String? = null,
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("videos") val videos: ArrayList<String>? = arrayListOf()
+        @SerialName("episodeNumber") val episodeNumber: Int? = null,
+        @SerialName("name") val name: String? = null,
+        @SerialName("seasonNumber") val seasonNumber: Int? = null,
+        @SerialName("voteAverage") val voteAverage: Double? = null,
+        @SerialName("voteCount") val voteCount: Int? = null,
+        @SerialName("overview") val overview: String? = null,
+        @SerialName("releaseDate") val releaseDate: String? = null,
+        @SerialName("createdAt") val createdAt: String? = null,
+        @SerialName("updatedAt") val updatedAt: String? = null,
+        @SerialName("id") val id: Int? = null,
+        @SerialName("videos") val videos: ArrayList<String>? = arrayListOf()
     )
 
 
-    data class Genres (
-        @JsonProperty("name" ) val name : String? = null,
-        @JsonProperty("id"   ) val id   : Int?    = null
+    @Serializable
+    data class Genres(
+        @SerialName("name") val name: String? = null,
+        @SerialName("id") val id: Int? = null
     )
 
-    data class RuntimeConfig (
-        @JsonProperty("AddThisService" ) val AddThisService : RuntimeConfigData? = RuntimeConfigData(),
-        @JsonProperty("Application"    ) val Application    : RuntimeConfigData?    = RuntimeConfigData(),
-        @JsonProperty("GtmService"     ) val GtmService     : RuntimeConfigData?     = RuntimeConfigData(),
-        @JsonProperty("Services"       ) val Services       : RuntimeConfigData?       = RuntimeConfigData(),
+    @Serializable
+    data class RuntimeConfig(
+        @SerialName("AddThisService") val AddThisService: RuntimeConfigData? = RuntimeConfigData(),
+        @SerialName("Application") val Application: RuntimeConfigData? = RuntimeConfigData(),
+        @SerialName("GtmService") val GtmService: RuntimeConfigData? = RuntimeConfigData(),
+        @SerialName("Services") val Services: RuntimeConfigData? = RuntimeConfigData(),
     )
 
+    @Serializable
     data class RuntimeConfigData(
-        @JsonProperty("PublicId" ) val PublicId : String? = null,
-        @JsonProperty("ContentUsageType"              ) val ContentUsageType              : String?  = null,
-        @JsonProperty("IsDevelopmentMode"             ) val IsDevelopmentMode             : Boolean? = null,
-        @JsonProperty("IsDevelopmentOrProductionMode" ) val IsDevelopmentOrProductionMode : Boolean? = null,
-        @JsonProperty("IsProductionMode"              ) val IsProductionMode              : Boolean? = null,
-        @JsonProperty("IsStagingMode"                 ) val IsStagingMode                 : Boolean? = null,
-        @JsonProperty("IsTestMode"                    ) val IsTestMode                    : Boolean? = null,
-        @JsonProperty("Mode"                          ) val Mode                          : String?  = null,
-        @JsonProperty("Name"                          ) val Name                          : String?  = null,
-        @JsonProperty("Url"                           ) val Url                           : String?  = null,
-        @JsonProperty("UseFilterInfoInUrl"            ) val UseFilterInfoInUrl            : Boolean? = null,
-        @JsonProperty("TrackingId" ) val TrackingId : String? = null,
-        @JsonProperty("Server"     ) val Server     : Server?     = Server(),
-        @JsonProperty("TmdbServer" ) val TmdbServer : TmdbServer? = TmdbServer(),
+        @SerialName("PublicId") val PublicId: String? = null,
+        @SerialName("ContentUsageType") val ContentUsageType: String? = null,
+        @SerialName("IsDevelopmentMode") val IsDevelopmentMode: Boolean? = null,
+        @SerialName("IsDevelopmentOrProductionMode") val IsDevelopmentOrProductionMode: Boolean? = null,
+        @SerialName("IsProductionMode") val IsProductionMode: Boolean? = null,
+        @SerialName("IsStagingMode") val IsStagingMode: Boolean? = null,
+        @SerialName("IsTestMode") val IsTestMode: Boolean? = null,
+        @SerialName("Mode") val Mode: String? = null,
+        @SerialName("Name") val Name: String? = null,
+        @SerialName("Url") val Url: String? = null,
+        @SerialName("UseFilterInfoInUrl") val UseFilterInfoInUrl: Boolean? = null,
+        @SerialName("TrackingId") val TrackingId: String? = null,
+        @SerialName("Server") val Server: Server? = Server(),
+        @SerialName("TmdbServer") val TmdbServer: TmdbServer? = TmdbServer(),
     )
 
-    data class TmdbServer (
-        @JsonProperty("Url" ) val Url : String? = null
+    @Serializable
+    data class TmdbServer(
+        @SerialName("Url") val Url: String? = null
     )
 
 
-    data class Server (
-        @JsonProperty("Url" ) val Url : String? = null
+    @Serializable
+    data class Server(
+        @SerialName("Url") val Url: String? = null
     )
 
-    data class RecommendationsList (
-        @JsonProperty("docs"  ) val docs  : ArrayList<Docs> = arrayListOf(),
-        @JsonProperty("total" ) val total : Int?            = null,
-        @JsonProperty("page"  ) val page  : Int?            = null,
-        @JsonProperty("limit" ) val limit : Int?            = null,
-        @JsonProperty("pages" ) val pages : Int?            = null,
-        @JsonProperty("type"  ) val type  : String?         = null,
+    @Serializable
+    data class RecommendationsList(
+        @SerialName("docs") val docs: ArrayList<Docs> = arrayListOf(),
+        @SerialName("total") val total: Int? = null,
+        @SerialName("page") val page: Int? = null,
+        @SerialName("limit") val limit: Int? = null,
+        @SerialName("pages") val pages: Int? = null,
+        @SerialName("type") val type: String? = null,
     )
 
     private fun cleanTitle(title: String): String {
@@ -528,10 +559,11 @@ class TheFlixToProvider : MainAPI() {
     }
 
 
-    data class VideoData (
-        @JsonProperty("url"           ) val url           : String?        = null,
-        @JsonProperty("id"            ) val id            : String?        = null,
-        @JsonProperty("type"          ) val type          : String?        = null,
+    @Serializable
+    data class VideoData(
+        @SerialName("url") val url: String? = null,
+        @SerialName("id") val id: String? = null,
+        @SerialName("type") val type: String? = null,
     )
 
 
@@ -545,10 +577,12 @@ class TheFlixToProvider : MainAPI() {
         val authhost = json.runtimeConfig?.Services?.Server?.Url
         val isMovie = data.contains("/movie/")
         val qualityReg = Regex("(\\d+p)")
-        if (isMovie){
+        if (isMovie) {
             json.props?.pageProps?.movie?.videos?.apmap { id ->
-                val jsonmovie = app.get("$authhost/movies/videos/$id/request-access?contentUsageType=Viewing",
-                    headers = latestCookies).parsedSafe<VideoData>() ?: return@apmap false
+                val jsonmovie = app.get(
+                    "$authhost/movies/videos/$id/request-access?contentUsageType=Viewing",
+                    headers = latestCookies
+                ).parsedSafe<VideoData>() ?: return@apmap false
                 val extractedlink = jsonmovie.url
                 if (!extractedlink.isNullOrEmpty()) {
                     val quality = qualityReg.find(extractedlink)?.value ?: ""
@@ -564,11 +598,11 @@ class TheFlixToProvider : MainAPI() {
                     )
                 } else null
             }
-        }
-        else
-        {
+        } else {
             val dataRegex = Regex("(season-(\\d+)\\/episode-(\\d+))")
-            val cleandatainfo = dataRegex.find(data)?.value?.replace(Regex("(season-|episode-)"),"")?.replace("/","x")
+            val cleandatainfo =
+                dataRegex.find(data)?.value?.replace(Regex("(season-|episode-)"), "")
+                    ?.replace("/", "x")
             val tesatt = cleandatainfo.let { str ->
                 str?.split("x")?.mapNotNull { subStr -> subStr.toIntOrNull() }
             }
@@ -579,7 +613,10 @@ class TheFlixToProvider : MainAPI() {
                     val epsInfo = Triple(it.seasonNumber, it.episodeNumber, it.videos)
                     if (epsInfo.first == seasonid && epsInfo.second == epID) {
                         epsInfo.third?.apmap { id ->
-                            val jsonserie = app.get("$authhost/tv/videos/$id/request-access?contentUsageType=Viewing", headers = latestCookies).parsedSafe<VideoData>() ?: return@apmap false
+                            val jsonserie = app.get(
+                                "$authhost/tv/videos/$id/request-access?contentUsageType=Viewing",
+                                headers = latestCookies
+                            ).parsedSafe<VideoData>() ?: return@apmap false
                             val extractedlink = jsonserie.url
                             if (!extractedlink.isNullOrEmpty()) {
                                 val quality = qualityReg.find(extractedlink)?.value ?: ""

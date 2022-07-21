@@ -5,6 +5,8 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 
+import kotlinx.serialization.Serializable
+
 class NginxProvider : MainAPI() {
     override var name = "Nginx"
     override val hasQuickSearch = false

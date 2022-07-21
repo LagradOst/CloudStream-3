@@ -7,6 +7,8 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
+import kotlinx.serialization.Serializable
+
 class MyCimaProvider : MainAPI() {
     override var lang = "ar"
     override var mainUrl = "https://mycima.tv"
@@ -37,7 +39,7 @@ class MyCimaProvider : MainAPI() {
             title,
             url.attr("href"),
             this@MyCimaProvider.name,
-            if(url.attr("title").contains("فيلم")) TvType.Movie else TvType.TvSeries,
+            if (url.attr("title").contains("فيلم")) TvType.Movie else TvType.TvSeries,
             posterUrl,
             year?.getIntFromText(),
             null,
@@ -153,7 +155,8 @@ class MyCimaProvider : MainAPI() {
             if (moreButton.isNotEmpty()) {
                 val n = doc.select("div.Seasons--Episodes div.Episodes--Seasons--Episodes a").size
                 val totals =
-                    doc.select("div.Episodes--Seasons--Episodes a").first()!!.text().getIntFromText()
+                    doc.select("div.Episodes--Seasons--Episodes a").first()!!.text()
+                        .getIntFromText()
                 val mEPS = arrayListOf(
                     n,
                     n + 40,

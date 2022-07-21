@@ -9,6 +9,8 @@ import org.mozilla.javascript.Scriptable
 import java.util.*
 
 
+import kotlinx.serialization.Serializable
+
 open class Userload : ExtractorApi() {
     override var name = "Userload"
     override var mainUrl = "https://userload.co"

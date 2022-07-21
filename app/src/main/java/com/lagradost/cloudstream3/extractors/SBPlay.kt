@@ -17,6 +17,8 @@ import org.jsoup.Jsoup
 //    override var mainUrl = "https://sbplay2.com"
 //}
 
+import kotlinx.serialization.Serializable
+
 open class SBPlay : ExtractorApi() {
     override var mainUrl = "https://sbplay.one"
     override var name = "SBPlay"

@@ -1,11 +1,12 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 import java.util.*
 
@@ -196,8 +197,9 @@ class NineAnimeProvider : MainAPI() {
         }
     }
 
+    @Serializable
     data class Response(
-        @JsonProperty("html") val html: String
+        @SerialName("html") val html: String
     )
 
     override suspend fun load(url: String): LoadResponse? {
@@ -249,16 +251,18 @@ class NineAnimeProvider : MainAPI() {
         }
     }
 
+    @Serializable
     data class Links(
-        @JsonProperty("url") val url: String
+        @SerialName("url") val url: String
     )
 
+    @Serializable
     data class Servers(
-        @JsonProperty("28") val mcloud: String?,
-        @JsonProperty("35") val mp4upload: String?,
-        @JsonProperty("40") val streamtape: String?,
-        @JsonProperty("41") val vidstream: String?,
-        @JsonProperty("43") val videovard: String?
+        @SerialName("28") val mcloud: String?,
+        @SerialName("35") val mp4upload: String?,
+        @SerialName("40") val streamtape: String?,
+        @SerialName("41") val vidstream: String?,
+        @SerialName("43") val videovard: String?
     )
 
     override suspend fun loadLinks(

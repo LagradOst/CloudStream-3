@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
@@ -11,6 +10,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.*
@@ -374,37 +375,41 @@ class HDrezkaProvider : MainAPI() {
         return true
     }
 
+    @Serializable
     data class LocalSources(
-        @JsonProperty("streams") val streams: String,
-        @JsonProperty("subtitle") val subtitle: Any?,
+        @SerialName("streams") val streams: String,
+        @SerialName("subtitle") val subtitle: String?,
     )
 
+    @Serializable
     data class Sources(
-        @JsonProperty("url") val url: String,
-        @JsonProperty("subtitle") val subtitle: Any?,
+        @SerialName("url") val url: String,
+        @SerialName("subtitle") val subtitle: String?,
     )
 
+    @Serializable
     data class Server(
-        @JsonProperty("translator_name") val translator_name: String?,
-        @JsonProperty("translator_id") val translator_id: String?,
-        @JsonProperty("camrip") val camrip: String?,
-        @JsonProperty("ads") val ads: String?,
-        @JsonProperty("director") val director: String?,
+        @SerialName("translator_name") val translator_name: String?,
+        @SerialName("translator_id") val translator_id: String?,
+        @SerialName("camrip") val camrip: String?,
+        @SerialName("ads") val ads: String?,
+        @SerialName("director") val director: String?,
     )
 
+    @Serializable
     data class Data(
-        @JsonProperty("id") val id: String?,
-        @JsonProperty("favs") val favs: String?,
-        @JsonProperty("server") val server: List<Server>?,
-        @JsonProperty("season") val season: String?,
-        @JsonProperty("episode") val episode: String?,
-        @JsonProperty("action") val action: String?,
-        @JsonProperty("ref") val ref: String?,
+        @SerialName("id") val id: String?,
+        @SerialName("favs") val favs: String?,
+        @SerialName("server") val server: List<Server>?,
+        @SerialName("season") val season: String?,
+        @SerialName("episode") val episode: String?,
+        @SerialName("action") val action: String?,
+        @SerialName("ref") val ref: String?,
     )
 
+    @Serializable
     data class Trailer(
-        @JsonProperty("success") val success: Boolean?,
-        @JsonProperty("code") val code: String?,
+        @SerialName("success") val success: Boolean?,
+        @SerialName("code") val code: String?,
     )
-
 }

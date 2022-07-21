@@ -1,13 +1,17 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.argamap
 import com.lagradost.cloudstream3.metaproviders.TmdbLink
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.SubtitleHelper
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 class TrailersTwoProvider : TmdbProvider() {
     val user = "cloudstream"
@@ -17,32 +21,34 @@ class TrailersTwoProvider : TmdbProvider() {
     override val useMetaLoadResponse = true
     override val instantLinkLoading = true
 
+    @Serializable
     data class TrailersEpisode(
         // val tvShowItemID: Long?,
         //val tvShow: String,
         //val tvShowIMDB: String?,
         //val tvShowTMDB: Long?,
-        @JsonProperty("ItemID")
+        @SerialName("ItemID")
         val itemID: Int,
         //val title: String,
-        //@JsonProperty("IMDb")
-        @JsonProperty("IMDb")
+        //@SerialName("IMDb")
+        @SerialName("IMDb")
         val imdb: String?,
-        //@JsonProperty("TMDb")
-        @JsonProperty("TMDb")
+        //@SerialName("TMDb")
+        @SerialName("TMDb")
         val tmdb: Int?,
         //val releaseDate: String,
         //val entryDate: String
     )
 
+    @Serializable
     data class TrailersMovie(
-        @JsonProperty("ItemID")
+        @SerialName("ItemID")
         val itemID: Int,
-        @JsonProperty("IMDb")
+        @SerialName("IMDb")
         val imdb: String?,
-        @JsonProperty("TMDb")
+        @SerialName("TMDb")
         val tmdb: Int?,
-        //@JsonProperty("Title")
+        //@SerialName("Title")
         //val title: String?,
     )
 
@@ -228,92 +234,96 @@ class TrailersTwoProvider : TmdbProvider() {
 }
 
 // Auto generated
+@Serializable
 data class TrailersSubtitleFile(
-    @JsonProperty("SubtitleID") val SubtitleID: Int?,
-    @JsonProperty("ItemID") val ItemID: Int?,
-    @JsonProperty("ContentText") val ContentText: String?,
-    @JsonProperty("ContentHash") val ContentHash: String?,
-    @JsonProperty("LanguageCode") val LanguageCode: String?,
-    @JsonProperty("MetaInfo") val MetaInfo: MetaInfo?,
-    @JsonProperty("EntryDate") val EntryDate: String?,
-    @JsonProperty("ItemSubtitleAdaptations") val ItemSubtitleAdaptations: List<ItemSubtitleAdaptations>?,
-    @JsonProperty("ReleaseNames") val ReleaseNames: List<String>?,
-    @JsonProperty("SubFileNames") val SubFileNames: List<String>?,
-    @JsonProperty("Framerates") val Framerates: List<Int>?,
-    @JsonProperty("IsRelevant") val IsRelevant: Boolean?
+    @SerialName("SubtitleID") val SubtitleID: Int?,
+    @SerialName("ItemID") val ItemID: Int?,
+    @SerialName("ContentText") val ContentText: String?,
+    @SerialName("ContentHash") val ContentHash: String?,
+    @SerialName("LanguageCode") val LanguageCode: String?,
+    @SerialName("MetaInfo") val MetaInfo: MetaInfo?,
+    @SerialName("EntryDate") val EntryDate: String?,
+    @SerialName("ItemSubtitleAdaptations") val ItemSubtitleAdaptations: List<ItemSubtitleAdaptations>?,
+    @SerialName("ReleaseNames") val ReleaseNames: List<String>?,
+    @SerialName("SubFileNames") val SubFileNames: List<String>?,
+    @SerialName("Framerates") val Framerates: List<Int>?,
+    @SerialName("IsRelevant") val IsRelevant: Boolean?
 )
 
+@Serializable
 data class QueryParameters(
-    @JsonProperty("imdbid") val imdbid: String?
+    @SerialName("imdbid") val imdbid: String?
 )
 
+@Serializable
 data class MetaInfo(
-    @JsonProperty("MatchedBy") val MatchedBy: String?,
-    @JsonProperty("IDSubMovieFile") val IDSubMovieFile: String?,
-    @JsonProperty("MovieHash") val MovieHash: String?,
-    @JsonProperty("MovieByteSize") val MovieByteSize: String?,
-    @JsonProperty("MovieTimeMS") val MovieTimeMS: String?,
-    @JsonProperty("IDSubtitleFile") val IDSubtitleFile: String?,
-    @JsonProperty("SubFileName") val SubFileName: String?,
-    @JsonProperty("SubActualCD") val SubActualCD: String?,
-    @JsonProperty("SubSize") val SubSize: String?,
-    @JsonProperty("SubHash") val SubHash: String?,
-    @JsonProperty("SubLastTS") val SubLastTS: String?,
-    @JsonProperty("SubTSGroup") val SubTSGroup: String?,
-    @JsonProperty("InfoReleaseGroup") val InfoReleaseGroup: String?,
-    @JsonProperty("InfoFormat") val InfoFormat: String?,
-    @JsonProperty("InfoOther") val InfoOther: String?,
-    @JsonProperty("IDSubtitle") val IDSubtitle: String?,
-    @JsonProperty("UserID") val UserID: String?,
-    @JsonProperty("SubLanguageID") val SubLanguageID: String?,
-    @JsonProperty("SubFormat") val SubFormat: String?,
-    @JsonProperty("SubSumCD") val SubSumCD: String?,
-    @JsonProperty("SubAuthorComment") val SubAuthorComment: String?,
-    @JsonProperty("SubAddDate") val SubAddDate: String?,
-    @JsonProperty("SubBad") val SubBad: String?,
-    @JsonProperty("SubRating") val SubRating: String?,
-    @JsonProperty("SubSumVotes") val SubSumVotes: String?,
-    @JsonProperty("SubDownloadsCnt") val SubDownloadsCnt: String?,
-    @JsonProperty("MovieReleaseName") val MovieReleaseName: String?,
-    @JsonProperty("MovieFPS") val MovieFPS: String?,
-    @JsonProperty("IDMovie") val IDMovie: String?,
-    @JsonProperty("IDMovieImdb") val IDMovieImdb: String?,
-    @JsonProperty("MovieName") val MovieName: String?,
-    @JsonProperty("MovieNameEng") val MovieNameEng: String?,
-    @JsonProperty("MovieYear") val MovieYear: String?,
-    @JsonProperty("MovieImdbRating") val MovieImdbRating: String?,
-    @JsonProperty("SubFeatured") val SubFeatured: String?,
-    @JsonProperty("UserNickName") val UserNickName: String?,
-    @JsonProperty("SubTranslator") val SubTranslator: String?,
-    @JsonProperty("ISO639") val ISO639: String?,
-    @JsonProperty("LanguageName") val LanguageName: String?,
-    @JsonProperty("SubComments") val SubComments: String?,
-    @JsonProperty("SubHearingImpaired") val SubHearingImpaired: String?,
-    @JsonProperty("UserRank") val UserRank: String?,
-    @JsonProperty("SeriesSeason") val SeriesSeason: String?,
-    @JsonProperty("SeriesEpisode") val SeriesEpisode: String?,
-    @JsonProperty("MovieKind") val MovieKind: String?,
-    @JsonProperty("SubHD") val SubHD: String?,
-    @JsonProperty("SeriesIMDBParent") val SeriesIMDBParent: String?,
-    @JsonProperty("SubEncoding") val SubEncoding: String?,
-    @JsonProperty("SubAutoTranslation") val SubAutoTranslation: String?,
-    @JsonProperty("SubForeignPartsOnly") val SubForeignPartsOnly: String?,
-    @JsonProperty("SubFromTrusted") val SubFromTrusted: String?,
-    @JsonProperty("QueryCached") val QueryCached: Int?,
-    @JsonProperty("SubTSGroupHash") val SubTSGroupHash: String?,
-    @JsonProperty("SubDownloadLink") val SubDownloadLink: String?,
-    @JsonProperty("ZipDownloadLink") val ZipDownloadLink: String?,
-    @JsonProperty("SubtitlesLink") val SubtitlesLink: String?,
-    @JsonProperty("QueryNumber") val QueryNumber: String?,
-    @JsonProperty("QueryParameters") val QueryParameters: QueryParameters?,
-    @JsonProperty("Score") val Score: Double?
+    @SerialName("MatchedBy") val MatchedBy: String?,
+    @SerialName("IDSubMovieFile") val IDSubMovieFile: String?,
+    @SerialName("MovieHash") val MovieHash: String?,
+    @SerialName("MovieByteSize") val MovieByteSize: String?,
+    @SerialName("MovieTimeMS") val MovieTimeMS: String?,
+    @SerialName("IDSubtitleFile") val IDSubtitleFile: String?,
+    @SerialName("SubFileName") val SubFileName: String?,
+    @SerialName("SubActualCD") val SubActualCD: String?,
+    @SerialName("SubSize") val SubSize: String?,
+    @SerialName("SubHash") val SubHash: String?,
+    @SerialName("SubLastTS") val SubLastTS: String?,
+    @SerialName("SubTSGroup") val SubTSGroup: String?,
+    @SerialName("InfoReleaseGroup") val InfoReleaseGroup: String?,
+    @SerialName("InfoFormat") val InfoFormat: String?,
+    @SerialName("InfoOther") val InfoOther: String?,
+    @SerialName("IDSubtitle") val IDSubtitle: String?,
+    @SerialName("UserID") val UserID: String?,
+    @SerialName("SubLanguageID") val SubLanguageID: String?,
+    @SerialName("SubFormat") val SubFormat: String?,
+    @SerialName("SubSumCD") val SubSumCD: String?,
+    @SerialName("SubAuthorComment") val SubAuthorComment: String?,
+    @SerialName("SubAddDate") val SubAddDate: String?,
+    @SerialName("SubBad") val SubBad: String?,
+    @SerialName("SubRating") val SubRating: String?,
+    @SerialName("SubSumVotes") val SubSumVotes: String?,
+    @SerialName("SubDownloadsCnt") val SubDownloadsCnt: String?,
+    @SerialName("MovieReleaseName") val MovieReleaseName: String?,
+    @SerialName("MovieFPS") val MovieFPS: String?,
+    @SerialName("IDMovie") val IDMovie: String?,
+    @SerialName("IDMovieImdb") val IDMovieImdb: String?,
+    @SerialName("MovieName") val MovieName: String?,
+    @SerialName("MovieNameEng") val MovieNameEng: String?,
+    @SerialName("MovieYear") val MovieYear: String?,
+    @SerialName("MovieImdbRating") val MovieImdbRating: String?,
+    @SerialName("SubFeatured") val SubFeatured: String?,
+    @SerialName("UserNickName") val UserNickName: String?,
+    @SerialName("SubTranslator") val SubTranslator: String?,
+    @SerialName("ISO639") val ISO639: String?,
+    @SerialName("LanguageName") val LanguageName: String?,
+    @SerialName("SubComments") val SubComments: String?,
+    @SerialName("SubHearingImpaired") val SubHearingImpaired: String?,
+    @SerialName("UserRank") val UserRank: String?,
+    @SerialName("SeriesSeason") val SeriesSeason: String?,
+    @SerialName("SeriesEpisode") val SeriesEpisode: String?,
+    @SerialName("MovieKind") val MovieKind: String?,
+    @SerialName("SubHD") val SubHD: String?,
+    @SerialName("SeriesIMDBParent") val SeriesIMDBParent: String?,
+    @SerialName("SubEncoding") val SubEncoding: String?,
+    @SerialName("SubAutoTranslation") val SubAutoTranslation: String?,
+    @SerialName("SubForeignPartsOnly") val SubForeignPartsOnly: String?,
+    @SerialName("SubFromTrusted") val SubFromTrusted: String?,
+    @SerialName("QueryCached") val QueryCached: Int?,
+    @SerialName("SubTSGroupHash") val SubTSGroupHash: String?,
+    @SerialName("SubDownloadLink") val SubDownloadLink: String?,
+    @SerialName("ZipDownloadLink") val ZipDownloadLink: String?,
+    @SerialName("SubtitlesLink") val SubtitlesLink: String?,
+    @SerialName("QueryNumber") val QueryNumber: String?,
+    @SerialName("QueryParameters") val QueryParameters: QueryParameters?,
+    @SerialName("Score") val Score: Double?
 )
 
+@Serializable
 data class ItemSubtitleAdaptations(
-    @JsonProperty("ContentHash") val ContentHash: String?,
-    @JsonProperty("OffsetMs") val OffsetMs: Int?,
-    @JsonProperty("Framerate") val Framerate: Int?,
-    @JsonProperty("Views") val Views: Int?,
-    @JsonProperty("EntryDate") val EntryDate: String?,
-    @JsonProperty("Subtitle") val Subtitle: String?
+    @SerialName("ContentHash") val ContentHash: String?,
+    @SerialName("OffsetMs") val OffsetMs: Int?,
+    @SerialName("Framerate") val Framerate: Int?,
+    @SerialName("Views") val Views: Int?,
+    @SerialName("EntryDate") val EntryDate: String?,
+    @SerialName("Subtitle") val Subtitle: String?
 )

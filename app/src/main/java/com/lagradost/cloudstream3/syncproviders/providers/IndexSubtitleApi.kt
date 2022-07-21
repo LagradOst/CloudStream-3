@@ -260,5 +260,4 @@ class IndexSubtitleApi : AbstractSubApi {
         return null
 
     }
-
 }

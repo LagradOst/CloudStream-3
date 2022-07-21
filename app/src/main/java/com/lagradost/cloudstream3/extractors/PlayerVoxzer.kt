@@ -6,6 +6,8 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 
 
+import kotlinx.serialization.Serializable
+
 open class PlayerVoxzer : ExtractorApi() {
     override var name = "Voxzer"
     override var mainUrl = "https://player.voxzer.org"

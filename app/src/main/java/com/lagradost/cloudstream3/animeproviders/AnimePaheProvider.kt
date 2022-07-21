@@ -1,18 +1,20 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.nicehttp.NiceResponse
+import kotlinx.serialization.SerialName
 import org.jsoup.Jsoup
 import kotlin.math.pow
+import kotlinx.serialization.*
+import kotlinx.serialization.Serializable
 
 class AnimePaheProvider : MainAPI() {
     // credit to https://github.com/justfoolingaround/animdl/tree/master/animdl/core/codebase/providers/animepahe
@@ -58,20 +60,22 @@ class AnimePaheProvider : MainAPI() {
     )
 
     override suspend fun getMainPage(): HomePageResponse {
+        @Serializable
         data class Data(
-            @JsonProperty("id") val id: Int,
-            @JsonProperty("anime_id") val animeId: Int,
-            @JsonProperty("anime_title") val animeTitle: String,
-            @JsonProperty("anime_slug") val animeSlug: String,
-            @JsonProperty("episode") val episode: Int,
-            @JsonProperty("snapshot") val snapshot: String,
-            @JsonProperty("created_at") val createdAt: String,
-            @JsonProperty("anime_session") val animeSession: String,
+            @SerialName("id") val id: Int,
+            @SerialName("anime_id") val animeId: Int,
+            @SerialName("anime_title") val animeTitle: String,
+            @SerialName("anime_slug") val animeSlug: String,
+            @SerialName("episode") val episode: Int,
+            @SerialName("snapshot") val snapshot: String,
+            @SerialName("created_at") val createdAt: String,
+            @SerialName("anime_session") val animeSession: String,
         )
 
+        @Serializable
         data class AnimePaheLatestReleases(
-            @JsonProperty("total") val total: Int,
-            @JsonProperty("data") val data: List<Data>
+            @SerialName("total") val total: Int,
+            @SerialName("data") val data: List<Data>
         )
 
         val urls = listOf(
@@ -82,7 +86,7 @@ class AnimePaheProvider : MainAPI() {
         for (i in urls) {
             try {
                 val response = app.get(i.first).text
-                val episodes = mapper.readValue<AnimePaheLatestReleases>(response).data.map {
+                val episodes = parseJson<AnimePaheLatestReleases>(response).data.map {
                     newAnimeSearchResponse(
                         it.animeTitle,
                         "https://pahe.win/a/${it.animeId}?slug=${it.animeTitle}",
@@ -102,24 +106,26 @@ class AnimePaheProvider : MainAPI() {
         return HomePageResponse(items)
     }
 
+    @Serializable
     data class AnimePaheSearchData(
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("slug") val slug: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("type") val type: String,
-        @JsonProperty("episodes") val episodes: Int,
-        @JsonProperty("status") val status: String,
-        @JsonProperty("season") val season: String,
-        @JsonProperty("year") val year: Int,
-        @JsonProperty("score") val score: Double,
-        @JsonProperty("poster") val poster: String,
-        @JsonProperty("session") val session: String,
-        @JsonProperty("relevance") val relevance: String
+        @SerialName("id") val id: Int,
+        @SerialName("slug") val slug: String,
+        @SerialName("title") val title: String,
+        @SerialName("type") val type: String,
+        @SerialName("episodes") val episodes: Int,
+        @SerialName("status") val status: String,
+        @SerialName("season") val season: String,
+        @SerialName("year") val year: Int,
+        @SerialName("score") val score: Double,
+        @SerialName("poster") val poster: String,
+        @SerialName("session") val session: String,
+        @SerialName("relevance") val relevance: String
     )
 
+    @Serializable
     data class AnimePaheSearch(
-        @JsonProperty("total") val total: Int,
-        @JsonProperty("data") val data: List<AnimePaheSearchData>
+        @SerialName("total") val total: Int,
+        @SerialName("data") val data: List<AnimePaheSearchData>
     )
 
     private suspend fun getAnimeByIdAndTitle(title: String, animeId: Int): String? {
@@ -127,7 +133,7 @@ class AnimePaheProvider : MainAPI() {
         val headers = mapOf("referer" to "$mainUrl/")
 
         val req = app.get(url, headers = headers).text
-        val data = req.let { mapper.readValue<AnimePaheSearch>(it) }
+        val data = req.let { parseJson<AnimePaheSearch>(it) }
         for (anime in data.data) {
             if (anime.id == animeId) {
                 return "https://animepahe.com/anime/${anime.session}"
@@ -142,7 +148,7 @@ class AnimePaheProvider : MainAPI() {
         val headers = mapOf("referer" to "$mainUrl/")
 
         val req = app.get(url, headers = headers).text
-        val data = req.let { mapper.readValue<AnimePaheSearch>(it) }
+        val data = req.let { parseJson<AnimePaheSearch>(it) }
 
         return data.data.map {
             newAnimeSearchResponse(
@@ -156,27 +162,29 @@ class AnimePaheProvider : MainAPI() {
         }
     }
 
+    @Serializable
     private data class AnimeData(
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("anime_id") val animeId: Int,
-        @JsonProperty("episode") val episode: Int,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("snapshot") val snapshot: String,
-        @JsonProperty("session") val session: String,
-        @JsonProperty("filler") val filler: Int,
-        @JsonProperty("created_at") val createdAt: String
+        @SerialName("id") val id: Int,
+        @SerialName("anime_id") val animeId: Int,
+        @SerialName("episode") val episode: Int,
+        @SerialName("title") val title: String,
+        @SerialName("snapshot") val snapshot: String,
+        @SerialName("session") val session: String,
+        @SerialName("filler") val filler: Int,
+        @SerialName("created_at") val createdAt: String
     )
 
+    @Serializable
     private data class AnimePaheAnimeData(
-        @JsonProperty("total") val total: Int,
-        @JsonProperty("per_page") val perPage: Int,
-        @JsonProperty("current_page") val currentPage: Int,
-        @JsonProperty("last_page") val lastPage: Int,
-        @JsonProperty("next_page_url") val nextPageUrl: String?,
-        @JsonProperty("prev_page_url") val prevPageUrl: String?,
-        @JsonProperty("from") val from: Int,
-        @JsonProperty("to") val to: Int,
-        @JsonProperty("data") val data: List<AnimeData>
+        @SerialName("total") val total: Int,
+        @SerialName("per_page") val perPage: Int,
+        @SerialName("current_page") val currentPage: Int,
+        @SerialName("last_page") val lastPage: Int,
+        @SerialName("next_page_url") val nextPageUrl: String?,
+        @SerialName("prev_page_url") val prevPageUrl: String?,
+        @SerialName("from") val from: Int,
+        @SerialName("to") val to: Int,
+        @SerialName("data") val data: List<AnimeData>
     )
 
     private suspend fun generateListOfEpisodes(link: String): ArrayList<Episode> {
@@ -188,7 +196,7 @@ class AnimePaheProvider : MainAPI() {
             val headers = mapOf("referer" to "$mainUrl/")
 
             val req = app.get(uri, headers = headers).text
-            val data = req.let { mapper.readValue<AnimePaheAnimeData>(it) }
+            val data = req.let { parseJson<AnimePaheAnimeData>(it) }
 
             val lastPage = data.lastPage
             val perPage = data.perPage
@@ -414,15 +422,17 @@ class AnimePaheProvider : MainAPI() {
         return returnValue.slice(16..returnValue.length - 17)
     }
 
+    @Serializable
     private data class VideoQuality(
-        @JsonProperty("id") val id: Int?,
-        @JsonProperty("audio") val audio: String?,
-        @JsonProperty("kwik") val kwik: String?,
-        @JsonProperty("kwik_pahewin") val kwikPahewin: String
+        @SerialName("id") val id: Int?,
+        @SerialName("audio") val audio: String?,
+        @SerialName("kwik") val kwik: String?,
+        @SerialName("kwik_pahewin") val kwikPahewin: String
     )
 
+    @Serializable
     private data class AnimePaheEpisodeLoadLinks(
-        @JsonProperty("data") val data: List<Map<String, VideoQuality>>
+        @SerialName("data") val data: List<Map<String, VideoQuality>>
     )
 
     private suspend fun bypassAdfly(adflyUri: String): String {
@@ -518,7 +528,7 @@ class AnimePaheProvider : MainAPI() {
             link = link.replace(regex, "")
 
             val req = app.get(link, headers = headers).text
-            val jsonResponse = req.let { mapper.readValue<AnimePaheAnimeData>(it) }
+            val jsonResponse = req.let { parseJson<AnimePaheAnimeData>(it) }
             val ep = ((jsonResponse.data.map {
                 if (it.episode == episodeNum) {
                     it
@@ -529,7 +539,7 @@ class AnimePaheProvider : MainAPI() {
             link = "$mainUrl/api?m=links&id=${ep.animeId}&session=${ep.session}&p=kwik"
         }
         val req = app.get(link, headers = headers).text
-        val data = mapper.readValue<AnimePaheEpisodeLoadLinks>(req)
+        val data = parseJson<AnimePaheEpisodeLoadLinks>(req)
 
         data.data.forEach {
             it.entries.toList().apmap { quality ->

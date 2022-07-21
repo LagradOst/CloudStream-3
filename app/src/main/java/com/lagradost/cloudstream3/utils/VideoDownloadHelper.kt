@@ -1,38 +1,42 @@
 package com.lagradost.cloudstream3.utils
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.TvType
 import com.lagradost.cloudstream3.ui.download.EasyDownloadButton
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 object VideoDownloadHelper {
+    @Serializable
     data class DownloadEpisodeCached(
-        @JsonProperty("name") val name: String?,
-        @JsonProperty("poster") val poster: String?,
-        @JsonProperty("episode") val episode: Int,
-        @JsonProperty("season") val season: Int?,
-        @JsonProperty("id") override val id: Int,
-        @JsonProperty("parentId") val parentId: Int,
-        @JsonProperty("rating") val rating: Int?,
-        @JsonProperty("description") val description: String?,
-        @JsonProperty("cacheTime") val cacheTime: Long,
+        @SerialName("name") val name: String?,
+        @SerialName("poster") val poster: String?,
+        @SerialName("episode") val episode: Int,
+        @SerialName("season") val season: Int?,
+        @SerialName("id") override val id: Int,
+        @SerialName("parentId") val parentId: Int,
+        @SerialName("rating") val rating: Int?,
+        @SerialName("description") val description: String?,
+        @SerialName("cacheTime") val cacheTime: Long,
     ) : EasyDownloadButton.IMinimumData
 
+    @Serializable
     data class DownloadHeaderCached(
-        @JsonProperty("apiName") val apiName: String,
-        @JsonProperty("url") val url: String,
-        @JsonProperty("type") val type: TvType,
-        @JsonProperty("name") val name: String,
-        @JsonProperty("poster") val poster: String?,
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("cacheTime") val cacheTime: Long,
+        @SerialName("apiName") val apiName: String,
+        @SerialName("url") val url: String,
+        @SerialName("type") val type: TvType,
+        @SerialName("name") val name: String,
+        @SerialName("poster") val poster: String?,
+        @SerialName("id") val id: Int,
+        @SerialName("cacheTime") val cacheTime: Long,
     )
 
+    @Serializable
     data class ResumeWatching(
-        @JsonProperty("parentId") val parentId: Int,
-        @JsonProperty("episodeId") val episodeId: Int?,
-        @JsonProperty("episode") val episode: Int?,
-        @JsonProperty("season") val season: Int?,
-        @JsonProperty("updateTime") val updateTime: Long,
-        @JsonProperty("isFromDownload") val isFromDownload: Boolean,
+        @SerialName("parentId") val parentId: Int,
+        @SerialName("episodeId") val episodeId: Int?,
+        @SerialName("episode") val episode: Int?,
+        @SerialName("season") val season: Int?,
+        @SerialName("updateTime") val updateTime: Long,
+        @SerialName("isFromDownload") val isFromDownload: Boolean,
     )
 }

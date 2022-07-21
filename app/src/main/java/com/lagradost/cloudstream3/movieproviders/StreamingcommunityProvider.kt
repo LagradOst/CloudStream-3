@@ -1,130 +1,132 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import android.text.Html
-import com.fasterxml.jackson.annotation.*
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.M3u8Helper
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.json.JSONObject
 import java.net.URI
 import java.security.MessageDigest
 
+@Serializable
 data class Moviedata(
-    @JsonProperty("id") val id: Long,
-    @JsonProperty("name") val name: String,
-    @JsonProperty("type") val type: String,
-    @JsonProperty("release_date") val releaseDate: String,
-    @JsonProperty("seasons_count") val seasonsCount: Long? = null,
-    @JsonProperty("genres") val genres: List<Genre>,
-    @JsonProperty("votes") val votes: List<Vote>,
-    @JsonProperty("runtime") val runtime: Long? = null
+    @SerialName("id") val id: Long,
+    @SerialName("name") val name: String,
+    @SerialName("type") val type: String,
+    @SerialName("release_date") val releaseDate: String,
+    @SerialName("seasons_count") val seasonsCount: Long? = null,
+    @SerialName("genres") val genres: List<Genre>,
+    @SerialName("votes") val votes: List<Vote>,
+    @SerialName("runtime") val runtime: Long? = null
 )
-
+@Serializable
 data class Genre(
-    @JsonProperty("name") val name: String,
-    @JsonProperty("pivot") val pivot: Pivot,
+    @SerialName("name") val name: String,
+    @SerialName("pivot") val pivot: Pivot,
 )
-
+@Serializable
 data class Pivot(
-    @JsonProperty("titleID") val titleID: Long,
-    @JsonProperty("genreID") val genreID: Long,
+    @SerialName("titleID") val titleID: Long,
+    @SerialName("genreID") val genreID: Long,
 )
-
+@Serializable
 data class Vote(
-    @JsonProperty("title_id") val title_id: Long,
-    @JsonProperty("average") val average: String,
-    @JsonProperty("count") val count: Long,
-    @JsonProperty("type") val type: String,
+    @SerialName("title_id") val title_id: Long,
+    @SerialName("average") val average: String,
+    @SerialName("count") val count: Long,
+    @SerialName("type") val type: String,
 )
-
+@Serializable
 data class VideoElement(
-    @JsonProperty("id") val id: Long,
-    @JsonProperty("slug") val slug: String,
-    @JsonProperty("images") val images: List<Image>,
+    @SerialName("id") val id: Long,
+    @SerialName("slug") val slug: String,
+    @SerialName("images") val images: List<Image>,
 )
-
+@Serializable
 data class Image(
-    @JsonProperty("imageable_id") val imageableID: Long,
-    @JsonProperty("imageable_type") val imageableType: String,
-    @JsonProperty("server_id") val serverID: Long,
-    @JsonProperty("proxy_id") val proxyID: Long,
-    @JsonProperty("url") val url: String,
-    @JsonProperty("type") val type: String,
-    @JsonProperty("sc_url") val scURL: String,
-//    @JsonProperty("proxy") val proxy: Proxy,
-//    @JsonProperty("server") val server: Proxy
+    @SerialName("imageable_id") val imageableID: Long,
+    @SerialName("imageable_type") val imageableType: String,
+    @SerialName("server_id") val serverID: Long,
+    @SerialName("proxy_id") val proxyID: Long,
+    @SerialName("url") val url: String,
+    @SerialName("type") val type: String,
+    @SerialName("sc_url") val scURL: String,
+//    @SerialName("proxy") val proxy: Proxy,
+//    @SerialName("server") val server: Proxy
 )
 
 // Proxy is not used and crashes otherwise
 
 //data class Proxy(
-//    @JsonProperty("id") val id: Long,
-//    @JsonProperty("type") val type: String,
-//    @JsonProperty("ip") val ip: String,
-//    @JsonProperty("number") val number: Long,
-//    @JsonProperty("storage") val storage: Long,
-//    @JsonProperty("max_storage") val maxStorage: Long,
-//    @JsonProperty("max_conversions") val maxConversions: Any? = null,
-//    @JsonProperty("max_publications") val maxPublications: Any? = null,
-//    @JsonProperty("created_at") val createdAt: String,
-//    @JsonProperty("updated_at") val updatedAt: String,
-//    @JsonProperty("upload_bandwidth") val uploadBandwidth: Any? = null,
-//    @JsonProperty("upload_bandwidth_limit") val uploadBandwidthLimit: Any? = null
+//    @SerialName("id") val id: Long,
+//    @SerialName("type") val type: String,
+//    @SerialName("ip") val ip: String,
+//    @SerialName("number") val number: Long,
+//    @SerialName("storage") val storage: Long,
+//    @SerialName("max_storage") val maxStorage: Long,
+//    @SerialName("max_conversions") val maxConversions: Any? = null,
+//    @SerialName("max_publications") val maxPublications: Any? = null,
+//    @SerialName("created_at") val createdAt: String,
+//    @SerialName("updated_at") val updatedAt: String,
+//    @SerialName("upload_bandwidth") val uploadBandwidth: Any? = null,
+//    @SerialName("upload_bandwidth_limit") val uploadBandwidthLimit: Any? = null
 //)
-
+@Serializable
 data class Season(
-    @JsonProperty("id") val id: Long,
-    @JsonProperty("name") val name: String? = "",
-    @JsonProperty("plot") val plot: String? = "",
-    @JsonProperty("date") val date: String? = "",
-    @JsonProperty("number") val number: Long,
-    @JsonProperty("title_id") val title_id: Long,
-    @JsonProperty("createdAt") val createdAt: String? = "",
-    @JsonProperty("updated_at") val updatedAt: String? = "",
-    @JsonProperty("episodes") val episodes: List<Episodejson>
+    @SerialName("id") val id: Long,
+    @SerialName("name") val name: String? = "",
+    @SerialName("plot") val plot: String? = "",
+    @SerialName("date") val date: String? = "",
+    @SerialName("number") val number: Long,
+    @SerialName("title_id") val title_id: Long,
+    @SerialName("createdAt") val createdAt: String? = "",
+    @SerialName("updated_at") val updatedAt: String? = "",
+    @SerialName("episodes") val episodes: List<Episodejson>
 )
-
+@Serializable
 data class Episodejson(
-    @JsonProperty("id") val id: Long,
-    @JsonProperty("number") val number: Long,
-    @JsonProperty("name") val name: String? = "",
-    @JsonProperty("plot") val plot: String? = "",
-    @JsonProperty("season_id") val seasonID: Long,
-    @JsonProperty("images") val images: List<ImageSeason>
+    @SerialName("id") val id: Long,
+    @SerialName("number") val number: Long,
+    @SerialName("name") val name: String? = "",
+    @SerialName("plot") val plot: String? = "",
+    @SerialName("season_id") val seasonID: Long,
+    @SerialName("images") val images: List<ImageSeason>
 )
-
+@Serializable
 data class ImageSeason(
-    @JsonProperty("imageable_id") val imageableID: Long,
-    @JsonProperty("imageable_type") val imageableType: String,
-    @JsonProperty("server_id") val serverID: Long,
-    @JsonProperty("proxy_id") val proxyID: Long,
-    @JsonProperty("url") val url: String,
-    @JsonProperty("type") val type: String,
-    @JsonProperty("original_url") val originalURL: String
+    @SerialName("imageable_id") val imageableID: Long,
+    @SerialName("imageable_type") val imageableType: String,
+    @SerialName("server_id") val serverID: Long,
+    @SerialName("proxy_id") val proxyID: Long,
+    @SerialName("url") val url: String,
+    @SerialName("type") val type: String,
+    @SerialName("original_url") val originalURL: String
 )
-
+@Serializable
 data class TrailerElement(
-    @JsonProperty("id") val id: Long? = null,
-    @JsonProperty("url") val url: String? = null,
-    @JsonProperty("host") val host: String? = null,
-    @JsonProperty("videoable_id") val videoableID: Long? = null,
-    @JsonProperty("videoable_type") val videoableType: String? = null,
-    @JsonProperty("created_at") val createdAt: String? = null,
-    @JsonProperty("updated_at") val updatedAt: String? = null,
-    @JsonProperty("size") val size: String? = null,
-    @JsonProperty("created_by") val createdBy: String? = null,
-    @JsonProperty("server_id") val serverID: Long? = null,
-    @JsonProperty("name") val name: String? = null,
-    @JsonProperty("quality") val quality: String? = null,
-    @JsonProperty("original_name") val originalName: Any? = null,
-    @JsonProperty("views") val views: Long? = null,
-    @JsonProperty("public") val public: Long? = null,
-    @JsonProperty("proxy_id") val proxyID: Any? = null,
-    @JsonProperty("proxy_default_id") val proxyDefaultID: Any? = null,
-    @JsonProperty("scws_id") val scwsID: Any? = null
+    @SerialName("id") val id: Long? = null,
+    @SerialName("url") val url: String? = null,
+    @SerialName("host") val host: String? = null,
+    @SerialName("videoable_id") val videoableID: Long? = null,
+    @SerialName("videoable_type") val videoableType: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("size") val size: String? = null,
+    @SerialName("created_by") val createdBy: String? = null,
+    @SerialName("server_id") val serverID: Long? = null,
+    @SerialName("name") val name: String? = null,
+    @SerialName("quality") val quality: String? = null,
+    //@SerialName("original_name") val originalName: Any? = null,
+    @SerialName("views") val views: Long? = null,
+    @SerialName("public") val public: Long? = null,
+    //@SerialName("proxy_id") val proxyID: Any? = null,
+   // @SerialName("proxy_default_id") val proxyDefaultID: Any? = null,
+    //@SerialName("scws_id") val scwsID: Any? = null
 )
-
 
 class StreamingcommunityProvider : MainAPI() {
     override var lang = "it"
@@ -226,7 +228,8 @@ class StreamingcommunityProvider : MainAPI() {
         val document = app.get(url).document
 
         val films =
-            document.selectFirst("the-search-page")!!.attr("records-json").replace("&quot;", """"""")
+            document.selectFirst("the-search-page")!!.attr("records-json")
+                .replace("&quot;", """"""")
 
         val searchresults = parseJson<List<VideoElement>>(films)
         return searchresults.map { result ->
@@ -294,7 +297,9 @@ class StreamingcommunityProvider : MainAPI() {
         val correlatijs = document.selectFirst("slider-title")!!.attr("titles-json")
         val listacorr = mutableListOf<MovieSearchResponse>()
         val correlatidata = parseJson<List<VideoElement>>(correlatijs)
-        val number : Int = if (correlatidata.size<=15) {correlatidata.size} else correlatidata.size-15
+        val number: Int = if (correlatidata.size <= 15) {
+            correlatidata.size
+        } else correlatidata.size - 15
 
         correlatidata.take(number).map { searchr ->
             val idcorr = searchr.id

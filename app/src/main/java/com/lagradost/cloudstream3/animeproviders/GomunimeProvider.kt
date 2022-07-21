@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.logError
@@ -10,7 +9,10 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
 import org.jsoup.Jsoup
+
+import kotlinx.serialization.Serializable
 
 class GomunimeProvider : MainAPI() {
     override var mainUrl = "https://185.231.223.76"
@@ -41,9 +43,10 @@ class GomunimeProvider : MainAPI() {
         }
     }
 
+    @Serializable
     private data class Response(
-        @JsonProperty("status") val status: Boolean,
-        @JsonProperty("html") val html: String
+        @SerialName("status") val status: Boolean,
+        @SerialName("html") val html: String
     )
 
     override suspend fun getMainPage(): HomePageResponse {
@@ -119,12 +122,13 @@ class GomunimeProvider : MainAPI() {
         }
     }
 
+    @Serializable
     private data class EpisodeElement(
-        @JsonProperty("data-index") val dataIndex: Long?,
-        @JsonProperty("ep-num") val epNum: String?,
-        @JsonProperty("ep-title") val epTitle: String?,
-        @JsonProperty("ep-link") val epLink: String,
-        @JsonProperty("ep-date") val epDate: String?
+        @SerialName("data-index") val dataIndex: Long?,
+        @SerialName("ep-num") val epNum: String?,
+        @SerialName("ep-title") val epTitle: String?,
+        @SerialName("ep-link") val epLink: String,
+        @SerialName("ep-date") val epDate: String?
     )
 
     override suspend fun load(url: String): LoadResponse {
@@ -162,10 +166,11 @@ class GomunimeProvider : MainAPI() {
         }
     }
 
+    @Serializable
     data class MobiSource(
-        @JsonProperty("file") val file: String,
-        @JsonProperty("label") val label: String,
-        @JsonProperty("type") val type: String
+        @SerialName("file") val file: String,
+        @SerialName("label") val label: String,
+        @SerialName("type") val type: String
     )
 
     override suspend fun loadLinks(

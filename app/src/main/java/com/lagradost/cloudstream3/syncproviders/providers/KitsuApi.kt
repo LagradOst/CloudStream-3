@@ -1,8 +1,9 @@
 package com.lagradost.cloudstream3.syncproviders.providers
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 // modified code from from https://github.com/saikou-app/saikou/blob/main/app/src/main/java/ani/saikou/others/Kitsu.kt
 // GNU General Public License v3.0 https://github.com/saikou-app/saikou/blob/main/LICENSE.md
@@ -105,39 +106,47 @@ query {
     data class KitsuResponse(
         val data: Data? = null
     ) {
+        @Serializable
         data class Data(
             val lookupMapping: LookupMapping? = null
         )
 
+        @Serializable
         data class LookupMapping(
             val id: String? = null,
             val episodes: Episodes? = null
         )
 
+        @Serializable
         data class Episodes(
             val nodes: List<Node?>? = null
         )
 
+        @Serializable
         data class Node(
-            @JsonProperty("number")
+            @SerialName("number")
             val num: Int? = null,
             val titles: Titles? = null,
             val description: Description? = null,
             val thumbnail: Thumbnail? = null
         )
 
+        @Serializable
         data class Description(
             val en: String? = null
         )
 
+        @Serializable
         data class Thumbnail(
             val original: Original? = null
         )
 
+        @Serializable
         data class Original(
             val url: String? = null
         )
 
+        @Serializable
         data class Titles(
             val canonical: String? = null
         )

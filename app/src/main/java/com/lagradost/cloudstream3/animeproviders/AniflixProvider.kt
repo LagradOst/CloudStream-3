@@ -1,12 +1,13 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
 import java.net.URLDecoder
+
+import kotlinx.serialization.Serializable
 
 class AniflixProvider : MainAPI() {
     override var mainUrl = "https://aniflix.pro"
@@ -58,8 +59,9 @@ class AniflixProvider : MainAPI() {
             val home = soup.select(element).map {
                 val href = it.attr("href")
                 val title = it.selectFirst("p.mt-2")!!.text()
-                val image = it.selectFirst("img.rounded-md[sizes]")!!.attr("src").replace("/_next/image?url=","")
-                    .replace(Regex("\\&.*\$"),"")
+                val image = it.selectFirst("img.rounded-md[sizes]")!!.attr("src")
+                    .replace("/_next/image?url=", "")
+                    .replace(Regex("\\&.*\$"), "")
                 val realposter = URLDecoder.decode(image, "UTF-8")
                 newAnimeSearchResponse(title, fixUrl(href)) {
                     this.posterUrl = realposter
@@ -117,15 +119,17 @@ class AniflixProvider : MainAPI() {
                     listOf(newEpisode("$mainUrl/api/anime/?id=$id&episode=1"))
                 )
             else
-                addEpisodes(DubStatus.Subbed, res.episodes.episodes?.nodes?.mapIndexed { index, node ->
-                    val episodeIndex = node?.number ?: (index + 1)
-                    //"$mainUrl/_next/data/$token/watch/$id.json?episode=${node.number ?: return@mapNotNull null}&id=$id"
-                    newEpisode("$mainUrl/api/anime?id=$id&episode=${episodeIndex}") {
-                        episode = episodeIndex
-                        posterUrl = node?.thumbnail?.original?.url
-                        name = node?.titles?.canonical
-                    }
-                })
+                addEpisodes(
+                    DubStatus.Subbed,
+                    res.episodes.episodes?.nodes?.mapIndexed { index, node ->
+                        val episodeIndex = node?.number ?: (index + 1)
+                        //"$mainUrl/_next/data/$token/watch/$id.json?episode=${node.number ?: return@mapNotNull null}&id=$id"
+                        newEpisode("$mainUrl/api/anime?id=$id&episode=${episodeIndex}") {
+                            episode = episodeIndex
+                            posterUrl = node?.thumbnail?.original?.url
+                            name = node?.titles?.canonical
+                        }
+                    })
         }
     }
 
@@ -169,108 +173,108 @@ class AniflixProvider : MainAPI() {
         }
     }
 
-    data class AniLoadResponse(
-        @JsonProperty("sub") val sub: DubSubSource?,
-        @JsonProperty("dub") val dub: DubSubSource?,
-        @JsonProperty("episodes") val episodes: Int?
+    @Serializable data class AniLoadResponse(
+        @SerialName("sub") val sub: DubSubSource?,
+        @SerialName("dub") val dub: DubSubSource?,
+        @SerialName("episodes") val episodes: Int?
     )
 
-    data class Sources(
-        @JsonProperty("file") val file: String?,
-        @JsonProperty("label") val label: String?,
-        @JsonProperty("type") val type: String?
+    @Serializable data class Sources(
+        @SerialName("file") val file: String?,
+        @SerialName("label") val label: String?,
+        @SerialName("type") val type: String?
     )
 
-    data class DubSubSource(
-        @JsonProperty("Referer") var Referer: String?,
-        @JsonProperty("sources") var sources: ArrayList<Sources> = arrayListOf()
+    @Serializable data class DubSubSource(
+        @SerialName("Referer") var Referer: String?,
+        @SerialName("sources") var sources: ArrayList<Sources> = arrayListOf()
     )
 
-    data class PageProps(
-        @JsonProperty("searchResults") val searchResults: SearchResults?
+    @Serializable data class PageProps(
+        @SerialName("searchResults") val searchResults: SearchResults?
     )
 
-    data class SearchResults(
-        @JsonProperty("Page") val Page: Page?
+    @Serializable data class SearchResults(
+        @SerialName("Page") val Page: Page?
     )
 
-    data class Page(
-        @JsonProperty("media") val media: ArrayList<Anime> = arrayListOf()
+    @Serializable data class Page(
+        @SerialName("media") val media: ArrayList<Anime> = arrayListOf()
     )
 
-    data class CoverImage(
-        @JsonProperty("color") val color: String?,
-        @JsonProperty("medium") val medium: String?,
-        @JsonProperty("large") val large: String?,
+    @Serializable data class CoverImage(
+        @SerialName("color") val color: String?,
+        @SerialName("medium") val medium: String?,
+        @SerialName("large") val large: String?,
     )
 
-    data class Title(
-        @JsonProperty("english") val english: String?,
-        @JsonProperty("romaji") val romaji: String?,
+    @Serializable data class Title(
+        @SerialName("english") val english: String?,
+        @SerialName("romaji") val romaji: String?,
     )
 
-    data class Search(
-        @JsonProperty("pageProps") val pageProps: PageProps?,
-        @JsonProperty("__N_SSP") val _NSSP: Boolean?
+    @Serializable data class Search(
+        @SerialName("pageProps") val pageProps: PageProps?,
+        @SerialName("__N_SSP") val _NSSP: Boolean?
     )
 
-    data class Anime(
-        @JsonProperty("status") val status: String?,
-        @JsonProperty("id") val id: Int?,
-        @JsonProperty("title") val title: Title?,
-        @JsonProperty("coverImage") val coverImage: CoverImage?,
-        @JsonProperty("format") val format: String?,
-        @JsonProperty("duration") val duration: Int?,
-        @JsonProperty("meanScore") val meanScore: Int?,
-        @JsonProperty("nextAiringEpisode") val nextAiringEpisode: String?,
-        @JsonProperty("bannerImage") val bannerImage: String?,
-        @JsonProperty("description") val description: String?,
-        @JsonProperty("genres") val genres: ArrayList<String>? = null,
-        @JsonProperty("season") val season: String?,
-        @JsonProperty("startDate") val startDate: StartDate?,
+    @Serializable data class Anime(
+        @SerialName("status") val status: String?,
+        @SerialName("id") val id: Int?,
+        @SerialName("title") val title: Title?,
+        @SerialName("coverImage") val coverImage: CoverImage?,
+        @SerialName("format") val format: String?,
+        @SerialName("duration") val duration: Int?,
+        @SerialName("meanScore") val meanScore: Int?,
+        @SerialName("nextAiringEpisode") val nextAiringEpisode: String?,
+        @SerialName("bannerImage") val bannerImage: String?,
+        @SerialName("description") val description: String?,
+        @SerialName("genres") val genres: ArrayList<String>? = null,
+        @SerialName("season") val season: String?,
+        @SerialName("startDate") val startDate: StartDate?,
     )
 
-    data class StartDate(
-        @JsonProperty("year") val year: Int?
+    @Serializable data class StartDate(
+        @SerialName("year") val year: Int?
     )
 
-    data class AnimeResponsePage(
-        @JsonProperty("pageProps") val pageProps: AnimeResponse?,
+    @Serializable data class AnimeResponsePage(
+        @SerialName("pageProps") val pageProps: AnimeResponse?,
     )
 
-    data class AnimeResponse(
-        @JsonProperty("anime") val anime: Anime,
-        @JsonProperty("recommended") val recommended: ArrayList<Anime>,
-        @JsonProperty("episodes") val episodes: EpisodesParent,
+    @Serializable data class AnimeResponse(
+        @SerialName("anime") val anime: Anime,
+        @SerialName("recommended") val recommended: ArrayList<Anime>,
+        @SerialName("episodes") val episodes: EpisodesParent,
     )
 
-    data class EpisodesParent(
-        @JsonProperty("id") val id: String?,
-        @JsonProperty("season") val season: String?,
-        @JsonProperty("startDate") val startDate: String?,
-        @JsonProperty("episodeCount") val episodeCount: Int?,
-        @JsonProperty("episodes") val episodes: Episodes?,
+    @Serializable data class EpisodesParent(
+        @SerialName("id") val id: String?,
+        @SerialName("season") val season: String?,
+        @SerialName("startDate") val startDate: String?,
+        @SerialName("episodeCount") val episodeCount: Int?,
+        @SerialName("episodes") val episodes: Episodes?,
     )
 
-    data class Episodes(
-        @JsonProperty("nodes") val nodes: ArrayList<Nodes?> = arrayListOf()
+    @Serializable data class Episodes(
+        @SerialName("nodes") val nodes: ArrayList<Nodes?> = arrayListOf()
     )
 
-    data class Nodes(
-        @JsonProperty("number") val number: Int? = null,
-        @JsonProperty("titles") val titles: Titles?,
-        @JsonProperty("thumbnail") val thumbnail: Thumbnail?,
+    @Serializable data class Nodes(
+        @SerialName("number") val number: Int? = null,
+        @SerialName("titles") val titles: Titles?,
+        @SerialName("thumbnail") val thumbnail: Thumbnail?,
     )
 
-    data class Titles(
-        @JsonProperty("canonical") val canonical: String?,
+    @Serializable data class Titles(
+        @SerialName("canonical") val canonical: String?,
     )
 
-    data class Original(
-        @JsonProperty("url") val url: String?,
+    @Serializable data class Original(
+        @SerialName("url") val url: String?,
     )
 
-    data class Thumbnail(
-        @JsonProperty("original") val original: Original?,
+    @Serializable data class Thumbnail(
+        @SerialName("original") val original: Original?,
     )
 }

@@ -1,27 +1,29 @@
 package com.lagradost.cloudstream3.extractors
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
 
 data class DataOptionsJson (
-    @JsonProperty("flashvars") var flashvars : Flashvars? = Flashvars(),
+    @SerialName("flashvars") var flashvars : Flashvars? = Flashvars(),
 )
 data class Flashvars (
-    @JsonProperty("metadata") var metadata : String? = null,
-    @JsonProperty("hlsManifestUrl") var hlsManifestUrl : String? = null, //m3u8
+    @SerialName("metadata") var metadata : String? = null,
+    @SerialName("hlsManifestUrl") var hlsManifestUrl : String? = null, //m3u8
 )
 
 data class MetadataOkru (
-    @JsonProperty("videos") var videos: ArrayList<Videos> = arrayListOf(),
+    @SerialName("videos") var videos: ArrayList<Videos> = arrayListOf(),
 )
 
 data class Videos (
-    @JsonProperty("name") var name : String,
-    @JsonProperty("url") var url : String,
-    @JsonProperty("seekSchema") var seekSchema : Int? = null,
-    @JsonProperty("disallowed") var disallowed : Boolean? = null
+    @SerialName("name") var name : String,
+    @SerialName("url") var url : String,
+    @SerialName("seekSchema") var seekSchema : Int? = null,
+    @SerialName("disallowed") var disallowed : Boolean? = null
 )
 
 class OkRuHttps: OkRu(){

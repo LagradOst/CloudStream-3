@@ -1,10 +1,12 @@
 package com.lagradost.cloudstream3.extractors
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
+
+import kotlinx.serialization.Serializable
 
 class Linkbox : ExtractorApi() {
     override val name = "Linkbox"
@@ -15,7 +17,8 @@ class Linkbox : ExtractorApi() {
         val id = url.substringAfter("id=")
         val sources = mutableListOf<ExtractorLink>()
 
-        app.get("$mainUrl/api/open/get_url?itemId=$id", referer=url).parsedSafe<Responses>()?.data?.rList?.map { link ->
+        app.get("$mainUrl/api/open/get_url?itemId=$id", referer = url)
+            .parsedSafe<Responses>()?.data?.rList?.map { link ->
             sources.add(
                 ExtractorLink(
                     name,
@@ -30,17 +33,20 @@ class Linkbox : ExtractorApi() {
         return sources
     }
 
+    @Serializable
     data class RList(
-        @JsonProperty("url") val url: String,
-        @JsonProperty("resolution") val resolution: String?,
+        @SerialName("url") val url: String,
+        @SerialName("resolution") val resolution: String?,
     )
 
+    @Serializable
     data class Data(
-        @JsonProperty("rList") val rList: List<RList>?,
+        @SerialName("rList") val rList: List<RList>?,
     )
 
+    @Serializable
     data class Responses(
-        @JsonProperty("data") val data: Data?,
+        @SerialName("data") val data: Data?,
     )
 
 }

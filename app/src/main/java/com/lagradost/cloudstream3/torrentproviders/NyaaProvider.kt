@@ -5,6 +5,8 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import org.jsoup.Jsoup
 
+import kotlinx.serialization.Serializable
+
 class NyaaProvider : MainAPI() {
     override var name = "Nyaa"
     override val hasChromecastSupport = false

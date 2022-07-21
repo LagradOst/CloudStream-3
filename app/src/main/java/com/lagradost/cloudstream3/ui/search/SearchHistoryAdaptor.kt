@@ -7,16 +7,18 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.TvType
 import kotlinx.android.synthetic.main.search_history_item.view.*
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class SearchHistoryItem(
-    @JsonProperty("searchedAt") val searchedAt: Long,
-    @JsonProperty("searchText") val searchText: String,
-    @JsonProperty("type") val type: List<TvType>,
-    @JsonProperty("key") val key: String,
+    @SerialName("searchedAt") val searchedAt: Long,
+    @SerialName("searchText") val searchText: String,
+    @SerialName("type") val type: List<TvType>,
+    @SerialName("key") val key: String,
 )
 
 data class SearchHistoryCallback(

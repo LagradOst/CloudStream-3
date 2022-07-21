@@ -1,11 +1,12 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 
 class SoaptwoDayProvider : MainAPI() {
@@ -154,32 +155,34 @@ class SoaptwoDayProvider : MainAPI() {
         }
     }
 
+    @Serializable
     data class ServerJson(
-        @JsonProperty("0") val zero: String?,
-        @JsonProperty("key") val key: Boolean?,
-        @JsonProperty("val") val stream: String?,
-        @JsonProperty("val_bak") val streambackup: String?,
-        @JsonProperty("pos") val pos: Int?,
-        @JsonProperty("type") val type: String?,
-        @JsonProperty("subs") val subs: List<Subs>?,
-        @JsonProperty("prev_epi_title") val prevEpiTitle: String?,
-        @JsonProperty("prev_epi_url") val prevEpiUrl: String?,
-        @JsonProperty("next_epi_title") val nextEpiTitle: String?,
-        @JsonProperty("next_epi_url") val nextEpiUrl: String?
+        @SerialName("0") val zero: String?,
+        @SerialName("key") val key: Boolean?,
+        @SerialName("val") val stream: String?,
+        @SerialName("val_bak") val streambackup: String?,
+        @SerialName("pos") val pos: Int?,
+        @SerialName("type") val type: String?,
+        @SerialName("subs") val subs: List<Subs>?,
+        @SerialName("prev_epi_title") val prevEpiTitle: String?,
+        @SerialName("prev_epi_url") val prevEpiUrl: String?,
+        @SerialName("next_epi_title") val nextEpiTitle: String?,
+        @SerialName("next_epi_url") val nextEpiUrl: String?
     )
 
+    @Serializable
     data class Subs(
-        @JsonProperty("id") val id: Int?,
-        @JsonProperty("movieId") val movieId: Int?,
-        @JsonProperty("tvId") val tvId: Int?,
-        @JsonProperty("episodeId") val episodeId: Int?,
-        @JsonProperty("default") val default: Int?,
-        @JsonProperty("IsShow") val IsShow: Int?,
-        @JsonProperty("name") val name: String,
-        @JsonProperty("path") val path: String?,
-        @JsonProperty("downlink") val downlink: String?,
-        @JsonProperty("source_file_name") val sourceFileName: String?,
-        @JsonProperty("createtime") val createtime: Int?
+        @SerialName("id") val id: Int?,
+        @SerialName("movieId") val movieId: Int?,
+        @SerialName("tvId") val tvId: Int?,
+        @SerialName("episodeId") val episodeId: Int?,
+        @SerialName("default") val default: Int?,
+        @SerialName("IsShow") val IsShow: Int?,
+        @SerialName("name") val name: String,
+        @SerialName("path") val path: String?,
+        @SerialName("downlink") val downlink: String?,
+        @SerialName("source_file_name") val sourceFileName: String?,
+        @SerialName("createtime") val createtime: Int?
     )
 
     override suspend fun loadLinks(
