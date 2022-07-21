@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3.metaproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.apis
 import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
@@ -8,6 +7,8 @@ import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 class CrossTmdbProvider : TmdbProvider() {
     override var name = "MultiMovie"
@@ -23,12 +24,13 @@ class CrossTmdbProvider : TmdbProvider() {
 
     private val validApis by lazy {
         apis.filter { it.lang == this.lang && it::class.java != this::class.java }
-            //.distinctBy { it.uniqueId }
+        //.distinctBy { it.uniqueId }
     }
 
+    @Serializable
     data class CrossMetaData(
-        @JsonProperty("isSuccess") val isSuccess: Boolean,
-        @JsonProperty("movies") val movies: List<Pair<String, String>>? = null,
+        @SerialName("isSuccess") val isSuccess: Boolean,
+        @SerialName("movies") val movies: List<Pair<String, String>>? = null,
     )
 
     override suspend fun loadLinks(
@@ -60,7 +62,8 @@ class CrossTmdbProvider : TmdbProvider() {
 
     override suspend fun load(url: String): LoadResponse? {
         val base = super.load(url)?.apply {
-            this.recommendations = this.recommendations?.filterIsInstance<MovieSearchResponse>() // TODO REMOVE
+            this.recommendations =
+                this.recommendations?.filterIsInstance<MovieSearchResponse>() // TODO REMOVE
             val matchName = filterName(this.name)
             when (this) {
                 is MovieLoadResponse -> {

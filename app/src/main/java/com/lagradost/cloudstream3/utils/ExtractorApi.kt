@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.extractors.*
 import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
 import kotlinx.coroutines.delay
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 
 /**
@@ -52,7 +53,7 @@ data class ExtractorLinkPlayList(
     extractorData
 )
 
-
+@Serializable
 open class ExtractorLink(
     open val source: String,
     open val name: String,

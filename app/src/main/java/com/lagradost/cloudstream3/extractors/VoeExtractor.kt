@@ -1,20 +1,23 @@
 package com.lagradost.cloudstream3.extractors
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
+
+import kotlinx.serialization.Serializable
 
 open class VoeExtractor : ExtractorApi() {
     override val name: String = "Voe"
     override val mainUrl: String = "https://voe.sx"
     override val requiresReferer = false
 
+    @Serializable
     private data class ResponseLinks(
-        @JsonProperty("hls") val url: String?,
-        @JsonProperty("video_height") val label: Int?
+        @SerialName("hls") val url: String?,
+        @SerialName("video_height") val label: Int?
         //val type: String // Mp4
     )
 

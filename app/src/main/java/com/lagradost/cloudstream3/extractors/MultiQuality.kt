@@ -7,6 +7,8 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import java.net.URI
 
+import kotlinx.serialization.Serializable
+
 class MultiQuality : ExtractorApi() {
     override var name = "MultiQuality"
     override var mainUrl = "https://gogo-play.net"

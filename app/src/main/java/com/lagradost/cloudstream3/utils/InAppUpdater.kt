@@ -13,60 +13,60 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
 import androidx.core.content.getSystemService
 import androidx.preference.PreferenceManager
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.CommonActivity.showToast
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.SerialName
 import java.io.File
 import kotlin.concurrent.thread
+import kotlinx.serialization.Serializable
 
 class InAppUpdater {
     companion object {
         // === IN APP UPDATER ===
+        @Serializable
         data class GithubAsset(
-            @JsonProperty("name") val name: String,
-            @JsonProperty("size") val size: Int, // Size bytes
-            @JsonProperty("browser_download_url") val browser_download_url: String, // download link
-            @JsonProperty("content_type") val content_type: String, // application/vnd.android.package-archive
+            @SerialName("name") val name: String,
+            @SerialName("size") val size: Int, // Size bytes
+            @SerialName("browser_download_url") val browser_download_url: String, // download link
+            @SerialName("content_type") val content_type: String, // application/vnd.android.package-archive
         )
 
+        @Serializable
         data class GithubRelease(
-            @JsonProperty("tag_name") val tag_name: String, // Version code
-            @JsonProperty("body") val body: String, // Desc
-            @JsonProperty("assets") val assets: List<GithubAsset>,
-            @JsonProperty("target_commitish") val target_commitish: String, // branch
-            @JsonProperty("prerelease") val prerelease: Boolean,
-            @JsonProperty("node_id") val node_id: String //Node Id
+            @SerialName("tag_name") val tag_name: String, // Version code
+            @SerialName("body") val body: String, // Desc
+            @SerialName("assets") val assets: List<GithubAsset>,
+            @SerialName("target_commitish") val target_commitish: String, // branch
+            @SerialName("prerelease") val prerelease: Boolean,
+            @SerialName("node_id") val node_id: String //Node Id
         )
 
+        @Serializable
         data class GithubObject(
-            @JsonProperty("sha") val sha: String, // sha 256 hash
-            @JsonProperty("type") val type: String, // object type
-            @JsonProperty("url") val url: String,
+            @SerialName("sha") val sha: String, // sha 256 hash
+            @SerialName("type") val type: String, // object type
+            @SerialName("url") val url: String,
         )
 
+        @Serializable
         data class GithubTag(
-            @JsonProperty("object") val github_object: GithubObject,
+            @SerialName("object") val github_object: GithubObject,
         )
 
+        @Serializable
         data class Update(
-            @JsonProperty("shouldUpdate") val shouldUpdate: Boolean,
-            @JsonProperty("updateURL") val updateURL: String?,
-            @JsonProperty("updateVersion") val updateVersion: String?,
-            @JsonProperty("changelog") val changelog: String?,
-            @JsonProperty("updateNodeId") val updateNodeId: String?
+            @SerialName("shouldUpdate") val shouldUpdate: Boolean,
+            @SerialName("updateURL") val updateURL: String?,
+            @SerialName("updateVersion") val updateVersion: String?,
+            @SerialName("changelog") val changelog: String?,
+            @SerialName("updateNodeId") val updateNodeId: String?
         )
-
-        private val mapper = JsonMapper.builder().addModule(KotlinModule())
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).build()
 
         private fun Activity.getAppUpdate(): Update {
             return try {
@@ -86,7 +86,7 @@ class InAppUpdater {
             val url = "https://api.github.com/repos/LagradOst/CloudStream-3/releases"
             val headers = mapOf("Accept" to "application/vnd.github.v3+json")
             val response =
-                mapper.readValue<List<GithubRelease>>(runBlocking {
+                parseJson<List<GithubRelease>>(runBlocking {
                     app.get(
                         url,
                         headers = headers
@@ -154,7 +154,7 @@ class InAppUpdater {
             val releaseUrl = "https://api.github.com/repos/LagradOst/CloudStream-3/releases"
             val headers = mapOf("Accept" to "application/vnd.github.v3+json")
             val response =
-                mapper.readValue<List<GithubRelease>>(app.get(releaseUrl, headers = headers).text)
+                parseJson<List<GithubRelease>>(app.get(releaseUrl, headers = headers).text)
 
             val found =
                 response.lastOrNull { rel ->
@@ -163,7 +163,7 @@ class InAppUpdater {
             val foundAsset = found?.assets?.getOrNull(0)
 
             val tagResponse =
-                mapper.readValue<GithubTag>(app.get(tagUrl, headers = headers).text)
+                parseJson<GithubTag>(app.get(tagUrl, headers = headers).text)
 
             val shouldUpdate =
                 (getString(R.string.prerelease_commit_hash) != tagResponse.github_object.sha)
@@ -270,7 +270,8 @@ class InAppUpdater {
                 val update = getAppUpdate()
                 if (update.shouldUpdate && update.updateURL != null) {
                     //Check if update should be skipped
-                    val updateNodeId = settingsManager.getString(getString(R.string.skip_update_key), "")
+                    val updateNodeId =
+                        settingsManager.getString(getString(R.string.skip_update_key), "")
                     if (update.updateNodeId.equals(updateNodeId)) {
                         return false
                     }
@@ -316,7 +317,10 @@ class InAppUpdater {
 
                                 if (checkAutoUpdate) {
                                     setNeutralButton(R.string.skip_update) { _, _ ->
-                                        settingsManager.edit().putString(getString(R.string.skip_update_key), update.updateNodeId ?: "")
+                                        settingsManager.edit().putString(
+                                            getString(R.string.skip_update_key),
+                                            update.updateNodeId ?: ""
+                                        )
                                             .apply()
                                     }
                                 }

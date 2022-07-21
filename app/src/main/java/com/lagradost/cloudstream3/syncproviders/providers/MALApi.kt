@@ -1,11 +1,6 @@
 package com.lagradost.cloudstream3.syncproviders.providers
 
 import android.util.Base64
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.openBrowser
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
@@ -16,8 +11,11 @@ import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.syncproviders.AccountManager
 import com.lagradost.cloudstream3.syncproviders.AuthAPI
 import com.lagradost.cloudstream3.syncproviders.SyncAPI
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.splitQuery
-import com.lagradost.cloudstream3.utils.DataStore.toKotlinObject
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.net.URL
 import java.security.SecureRandom
 import java.text.ParseException
@@ -70,7 +68,7 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
                 "Authorization" to "Bearer $auth",
             ), cacheTime = 0
         ).text
-        return mapper.readValue<MalSearch>(res).data.map {
+        return parseJson<MalSearch>(res).data.map {
             val node = it.node
             SyncAPI.SyncSearchResult(
                 node.title,
@@ -95,76 +93,83 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
         )
     }
 
+    @Serializable
     data class MalAnime(
-        @JsonProperty("id") val id: Int?,
-        @JsonProperty("title") val title: String?,
-        @JsonProperty("main_picture") val mainPicture: MainPicture?,
-        @JsonProperty("alternative_titles") val alternativeTitles: AlternativeTitles?,
-        @JsonProperty("start_date") val startDate: String?,
-        @JsonProperty("end_date") val endDate: String?,
-        @JsonProperty("synopsis") val synopsis: String?,
-        @JsonProperty("mean") val mean: Double?,
-        @JsonProperty("rank") val rank: Int?,
-        @JsonProperty("popularity") val popularity: Int?,
-        @JsonProperty("num_list_users") val numListUsers: Int?,
-        @JsonProperty("num_scoring_users") val numScoringUsers: Int?,
-        @JsonProperty("nsfw") val nsfw: String?,
-        @JsonProperty("created_at") val createdAt: String?,
-        @JsonProperty("updated_at") val updatedAt: String?,
-        @JsonProperty("media_type") val mediaType: String?,
-        @JsonProperty("status") val status: String?,
-        @JsonProperty("genres") val genres: ArrayList<Genres>?,
-        @JsonProperty("my_list_status") val myListStatus: MyListStatus?,
-        @JsonProperty("num_episodes") val numEpisodes: Int?,
-        @JsonProperty("start_season") val startSeason: StartSeason?,
-        @JsonProperty("broadcast") val broadcast: Broadcast?,
-        @JsonProperty("source") val source: String?,
-        @JsonProperty("average_episode_duration") val averageEpisodeDuration: Int?,
-        @JsonProperty("rating") val rating: String?,
-        @JsonProperty("pictures") val pictures: ArrayList<MainPicture>?,
-        @JsonProperty("background") val background: String?,
-        @JsonProperty("related_anime") val relatedAnime: ArrayList<RelatedAnime>?,
-        @JsonProperty("related_manga") val relatedManga: ArrayList<String>?,
-        @JsonProperty("recommendations") val recommendations: ArrayList<Recommendations>?,
-        @JsonProperty("studios") val studios: ArrayList<Studios>?,
-        @JsonProperty("statistics") val statistics: Statistics?,
+        @SerialName("id") val id: Int?,
+        @SerialName("title") val title: String?,
+        @SerialName("main_picture") val mainPicture: MainPicture?,
+        @SerialName("alternative_titles") val alternativeTitles: AlternativeTitles?,
+        @SerialName("start_date") val startDate: String?,
+        @SerialName("end_date") val endDate: String?,
+        @SerialName("synopsis") val synopsis: String?,
+        @SerialName("mean") val mean: Double?,
+        @SerialName("rank") val rank: Int?,
+        @SerialName("popularity") val popularity: Int?,
+        @SerialName("num_list_users") val numListUsers: Int?,
+        @SerialName("num_scoring_users") val numScoringUsers: Int?,
+        @SerialName("nsfw") val nsfw: String?,
+        @SerialName("created_at") val createdAt: String?,
+        @SerialName("updated_at") val updatedAt: String?,
+        @SerialName("media_type") val mediaType: String?,
+        @SerialName("status") val status: String?,
+        @SerialName("genres") val genres: ArrayList<Genres>?,
+        @SerialName("my_list_status") val myListStatus: MyListStatus?,
+        @SerialName("num_episodes") val numEpisodes: Int?,
+        @SerialName("start_season") val startSeason: StartSeason?,
+        @SerialName("broadcast") val broadcast: Broadcast?,
+        @SerialName("source") val source: String?,
+        @SerialName("average_episode_duration") val averageEpisodeDuration: Int?,
+        @SerialName("rating") val rating: String?,
+        @SerialName("pictures") val pictures: ArrayList<MainPicture>?,
+        @SerialName("background") val background: String?,
+        @SerialName("related_anime") val relatedAnime: ArrayList<RelatedAnime>?,
+        @SerialName("related_manga") val relatedManga: ArrayList<String>?,
+        @SerialName("recommendations") val recommendations: ArrayList<Recommendations>?,
+        @SerialName("studios") val studios: ArrayList<Studios>?,
+        @SerialName("statistics") val statistics: Statistics?,
     )
 
+    @Serializable
     data class Recommendations(
-        @JsonProperty("node") val node: Node? = null,
-        @JsonProperty("num_recommendations") val numRecommendations: Int? = null
+        @SerialName("node") val node: Node? = null,
+        @SerialName("num_recommendations") val numRecommendations: Int? = null
     )
 
+    @Serializable
     data class Studios(
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("name") val name: String? = null
+        @SerialName("id") val id: Int? = null,
+        @SerialName("name") val name: String? = null
     )
 
+    @Serializable
     data class MyListStatus(
-        @JsonProperty("status") val status: String? = null,
-        @JsonProperty("score") val score: Int? = null,
-        @JsonProperty("num_episodes_watched") val numEpisodesWatched: Int? = null,
-        @JsonProperty("is_rewatching") val isRewatching: Boolean? = null,
-        @JsonProperty("updated_at") val updatedAt: String? = null
+        @SerialName("status") val status: String? = null,
+        @SerialName("score") val score: Int? = null,
+        @SerialName("num_episodes_watched") val numEpisodesWatched: Int? = null,
+        @SerialName("is_rewatching") val isRewatching: Boolean? = null,
+        @SerialName("updated_at") val updatedAt: String? = null
     )
 
+    @Serializable
     data class RelatedAnime(
-        @JsonProperty("node") val node: Node? = null,
-        @JsonProperty("relation_type") val relationType: String? = null,
-        @JsonProperty("relation_type_formatted") val relationTypeFormatted: String? = null
+        @SerialName("node") val node: Node? = null,
+        @SerialName("relation_type") val relationType: String? = null,
+        @SerialName("relation_type_formatted") val relationTypeFormatted: String? = null
     )
 
+    @Serializable
     data class Status(
-        @JsonProperty("watching") val watching: String? = null,
-        @JsonProperty("completed") val completed: String? = null,
-        @JsonProperty("on_hold") val onHold: String? = null,
-        @JsonProperty("dropped") val dropped: String? = null,
-        @JsonProperty("plan_to_watch") val planToWatch: String? = null
+        @SerialName("watching") val watching: String? = null,
+        @SerialName("completed") val completed: String? = null,
+        @SerialName("on_hold") val onHold: String? = null,
+        @SerialName("dropped") val dropped: String? = null,
+        @SerialName("plan_to_watch") val planToWatch: String? = null
     )
 
+    @Serializable
     data class Statistics(
-        @JsonProperty("status") val status: Status? = null,
-        @JsonProperty("num_list_users") val numListUsers: Int? = null
+        @SerialName("status") val status: Status? = null,
+        @SerialName("num_list_users") val numListUsers: Int? = null
     )
 
     private fun parseDate(string: String?): Long? {
@@ -196,7 +201,7 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
                 "Authorization" to "Bearer $auth"
             )
         ).text
-        return mapper.readValue<MalAnime>(res).let { malAnime ->
+        return parseJson<MalAnime>(res).let { malAnime ->
             SyncAPI.SyncResult(
                 id = internalId.toString(),
                 totalEpisodes = malAnime.numEpisodes,
@@ -300,16 +305,13 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
         openBrowser(request)
     }
 
-    private val mapper = JsonMapper.builder().addModule(KotlinModule())
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).build()!!
-
     private var requestId = 0
     private var codeVerifier = ""
 
     private fun storeToken(response: String) {
         try {
             if (response != "") {
-                val token = mapper.readValue<ResponseToken>(response)
+                val token = parseJson<ResponseToken>(response)
                 setKey(accountId, MAL_UNIXTIME_KEY, (token.expires_in + unixTime))
                 setKey(accountId, MAL_REFRESH_TOKEN_KEY, token.refresh_token)
                 setKey(accountId, MAL_TOKEN_KEY, token.access_token)
@@ -340,78 +342,88 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
 
     private val allTitles = hashMapOf<Int, MalTitleHolder>()
 
+    @Serializable
     data class MalList(
-        @JsonProperty("data") val data: List<Data>,
-        @JsonProperty("paging") val paging: Paging
+        @SerialName("data") val data: List<Data>,
+        @SerialName("paging") val paging: Paging
     )
 
+    @Serializable
     data class MainPicture(
-        @JsonProperty("medium") val medium: String,
-        @JsonProperty("large") val large: String
+        @SerialName("medium") val medium: String,
+        @SerialName("large") val large: String
     )
 
+    @Serializable
     data class Node(
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("main_picture") val main_picture: MainPicture?,
-        @JsonProperty("alternative_titles") val alternative_titles: AlternativeTitles?,
-        @JsonProperty("media_type") val media_type: String?,
-        @JsonProperty("num_episodes") val num_episodes: Int?,
-        @JsonProperty("status") val status: String?,
-        @JsonProperty("start_date") val start_date: String?,
-        @JsonProperty("end_date") val end_date: String?,
-        @JsonProperty("average_episode_duration") val average_episode_duration: Int?,
-        @JsonProperty("synopsis") val synopsis: String?,
-        @JsonProperty("mean") val mean: Double?,
-        @JsonProperty("genres") val genres: List<Genres>?,
-        @JsonProperty("rank") val rank: Int?,
-        @JsonProperty("popularity") val popularity: Int?,
-        @JsonProperty("num_list_users") val num_list_users: Int?,
-        @JsonProperty("num_favorites") val num_favorites: Int?,
-        @JsonProperty("num_scoring_users") val num_scoring_users: Int?,
-        @JsonProperty("start_season") val start_season: StartSeason?,
-        @JsonProperty("broadcast") val broadcast: Broadcast?,
-        @JsonProperty("nsfw") val nsfw: String?,
-        @JsonProperty("created_at") val created_at: String?,
-        @JsonProperty("updated_at") val updated_at: String?
+        @SerialName("id") val id: Int,
+        @SerialName("title") val title: String,
+        @SerialName("main_picture") val main_picture: MainPicture?,
+        @SerialName("alternative_titles") val alternative_titles: AlternativeTitles?,
+        @SerialName("media_type") val media_type: String?,
+        @SerialName("num_episodes") val num_episodes: Int?,
+        @SerialName("status") val status: String?,
+        @SerialName("start_date") val start_date: String?,
+        @SerialName("end_date") val end_date: String?,
+        @SerialName("average_episode_duration") val average_episode_duration: Int?,
+        @SerialName("synopsis") val synopsis: String?,
+        @SerialName("mean") val mean: Double?,
+        @SerialName("genres") val genres: List<Genres>?,
+        @SerialName("rank") val rank: Int?,
+        @SerialName("popularity") val popularity: Int?,
+        @SerialName("num_list_users") val num_list_users: Int?,
+        @SerialName("num_favorites") val num_favorites: Int?,
+        @SerialName("num_scoring_users") val num_scoring_users: Int?,
+        @SerialName("start_season") val start_season: StartSeason?,
+        @SerialName("broadcast") val broadcast: Broadcast?,
+        @SerialName("nsfw") val nsfw: String?,
+        @SerialName("created_at") val created_at: String?,
+        @SerialName("updated_at") val updated_at: String?
     )
 
+    @Serializable
     data class ListStatus(
-        @JsonProperty("status") val status: String?,
-        @JsonProperty("score") val score: Int,
-        @JsonProperty("num_episodes_watched") val num_episodes_watched: Int,
-        @JsonProperty("is_rewatching") val is_rewatching: Boolean,
-        @JsonProperty("updated_at") val updated_at: String,
+        @SerialName("status") val status: String?,
+        @SerialName("score") val score: Int,
+        @SerialName("num_episodes_watched") val num_episodes_watched: Int,
+        @SerialName("is_rewatching") val is_rewatching: Boolean,
+        @SerialName("updated_at") val updated_at: String,
     )
 
+    @Serializable
     data class Data(
-        @JsonProperty("node") val node: Node,
-        @JsonProperty("list_status") val list_status: ListStatus?,
+        @SerialName("node") val node: Node,
+        @SerialName("list_status") val list_status: ListStatus?,
     )
 
+    @Serializable
     data class Paging(
-        @JsonProperty("next") val next: String?
+        @SerialName("next") val next: String?
     )
 
+    @Serializable
     data class AlternativeTitles(
-        @JsonProperty("synonyms") val synonyms: List<String>,
-        @JsonProperty("en") val en: String,
-        @JsonProperty("ja") val ja: String
+        @SerialName("synonyms") val synonyms: List<String>,
+        @SerialName("en") val en: String,
+        @SerialName("ja") val ja: String
     )
 
+    @Serializable
     data class Genres(
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("name") val name: String
+        @SerialName("id") val id: Int,
+        @SerialName("name") val name: String
     )
 
+    @Serializable
     data class StartSeason(
-        @JsonProperty("year") val year: Int,
-        @JsonProperty("season") val season: String
+        @SerialName("year") val year: Int,
+        @SerialName("season") val season: String
     )
 
+    @Serializable
     data class Broadcast(
-        @JsonProperty("day_of_the_week") val day_of_the_week: String?,
-        @JsonProperty("start_time") val start_time: String?
+        @SerialName("day_of_the_week") val day_of_the_week: String?,
+        @SerialName("start_time") val start_time: String?
     )
 
     private fun getMalAnimeListCached(): Array<Data>? {
@@ -461,7 +473,7 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
                 "Authorization" to "Bearer $auth",
             ), cacheTime = 0
         ).text
-        return res.toKotlinObject()
+        return tryParseJson(res)
     }
 
     private suspend fun getDataAboutMalId(id: Int): SmallMalAnime? {
@@ -474,7 +486,7 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
             ), cacheTime = 0
         ).text
 
-        return mapper.readValue<SmallMalAnime>(res)
+        return parseJson<SmallMalAnime>(res)
     }
 
     suspend fun setAllMalData() {
@@ -490,7 +502,7 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
                     "Authorization" to "Bearer " + (getAuth() ?: return)
                 ), cacheTime = 0
             ).text
-            val values = mapper.readValue<MalRoot>(res)
+            val values = parseJson<MalRoot>(res)
             val titles =
                 values.data.map { MalTitleHolder(it.list_status, it.node.id, it.node.title) }
             for (t in titles) {
@@ -554,7 +566,7 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
             ), cacheTime = 0
         ).text
 
-        val user = mapper.readValue<MalUser>(res)
+        val user = parseJson<MalUser>(res)
         if (setSettings) {
             setKey(accountId, MAL_USER_KEY, user)
             registerAccount()
@@ -600,7 +612,7 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
         return if (res.isNullOrBlank()) {
             false
         } else {
-            val malStatus = mapper.readValue<MalStatus>(res)
+            val malStatus = parseJson<MalStatus>(res)
             if (allTitles.containsKey(id)) {
                 val currentTitle = allTitles[id]!!
                 allTitles[id] = MalTitleHolder(malStatus, id, currentTitle.name)
@@ -633,25 +645,29 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
     }
 
 
+    @Serializable
     data class ResponseToken(
-        @JsonProperty("token_type") val token_type: String,
-        @JsonProperty("expires_in") val expires_in: Int,
-        @JsonProperty("access_token") val access_token: String,
-        @JsonProperty("refresh_token") val refresh_token: String,
+        @SerialName("token_type") val token_type: String,
+        @SerialName("expires_in") val expires_in: Int,
+        @SerialName("access_token") val access_token: String,
+        @SerialName("refresh_token") val refresh_token: String,
     )
 
+    @Serializable
     data class MalRoot(
-        @JsonProperty("data") val data: List<MalDatum>,
+        @SerialName("data") val data: List<MalDatum>,
     )
 
+    @Serializable
     data class MalDatum(
-        @JsonProperty("node") val node: MalNode,
-        @JsonProperty("list_status") val list_status: MalStatus,
+        @SerialName("node") val node: MalNode,
+        @SerialName("list_status") val list_status: MalStatus,
     )
 
+    @Serializable
     data class MalNode(
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("title") val title: String,
+        @SerialName("id") val id: Int,
+        @SerialName("title") val title: String,
         /*
         also, but not used
         main_picture ->
@@ -660,42 +676,48 @@ class MALApi(index: Int) : AccountManager(index), SyncAPI {
          */
     )
 
+    @Serializable
     data class MalStatus(
-        @JsonProperty("status") val status: String,
-        @JsonProperty("score") val score: Int,
-        @JsonProperty("num_episodes_watched") val num_episodes_watched: Int,
-        @JsonProperty("is_rewatching") val is_rewatching: Boolean,
-        @JsonProperty("updated_at") val updated_at: String,
+        @SerialName("status") val status: String,
+        @SerialName("score") val score: Int,
+        @SerialName("num_episodes_watched") val num_episodes_watched: Int,
+        @SerialName("is_rewatching") val is_rewatching: Boolean,
+        @SerialName("updated_at") val updated_at: String,
     )
 
+    @Serializable
     data class MalUser(
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("name") val name: String,
-        @JsonProperty("location") val location: String,
-        @JsonProperty("joined_at") val joined_at: String,
-        @JsonProperty("picture") val picture: String?,
+        @SerialName("id") val id: Int,
+        @SerialName("name") val name: String,
+        @SerialName("location") val location: String,
+        @SerialName("joined_at") val joined_at: String,
+        @SerialName("picture") val picture: String?,
     )
 
+    @Serializable
     data class MalMainPicture(
-        @JsonProperty("large") val large: String?,
-        @JsonProperty("medium") val medium: String?,
+        @SerialName("large") val large: String?,
+        @SerialName("medium") val medium: String?,
     )
 
     // Used for getDataAboutId()
+    @Serializable
     data class SmallMalAnime(
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("title") val title: String?,
-        @JsonProperty("num_episodes") val num_episodes: Int,
-        @JsonProperty("my_list_status") val my_list_status: MalStatus?,
-        @JsonProperty("main_picture") val main_picture: MalMainPicture?,
+        @SerialName("id") val id: Int,
+        @SerialName("title") val title: String?,
+        @SerialName("num_episodes") val num_episodes: Int,
+        @SerialName("my_list_status") val my_list_status: MalStatus?,
+        @SerialName("main_picture") val main_picture: MalMainPicture?,
     )
 
+    @Serializable
     data class MalSearchNode(
-        @JsonProperty("node") val node: Node,
+        @SerialName("node") val node: Node,
     )
 
+    @Serializable
     data class MalSearch(
-        @JsonProperty("data") val data: List<MalSearchNode>,
+        @SerialName("data") val data: List<MalSearchNode>,
         //paging
     )
 

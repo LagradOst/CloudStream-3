@@ -5,6 +5,8 @@ import com.lagradost.cloudstream3.animeproviders.GogoanimeProvider.Companion.ext
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 
+import kotlinx.serialization.Serializable
+
 class DramaSeeProvider : MainAPI() {
     override var mainUrl = "https://dramasee.net"
     override var name = "DramaSee"

@@ -20,7 +20,6 @@ import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.hippo.unifile.UniFile
 import com.lagradost.cloudstream3.APIHolder.getApiFromNameNull
 import com.lagradost.cloudstream3.AcraApplication.Companion.removeKey
@@ -39,6 +38,8 @@ import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import okhttp3.internal.closeQuietly
 import java.io.BufferedInputStream
 import java.io.File
@@ -110,46 +111,51 @@ object VideoDownloadManager {
         return url.hashCode()
     }
 
+    @Serializable
     data class DownloadEpisodeMetadata(
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("mainName") val mainName: String,
-        @JsonProperty("sourceApiName") val sourceApiName: String?,
-        @JsonProperty("poster") val poster: String?,
-        @JsonProperty("name") val name: String?,
-        @JsonProperty("season") val season: Int?,
-        @JsonProperty("episode") val episode: Int?,
-        @JsonProperty("type") val type: TvType?,
+        @SerialName("id") val id: Int,
+        @SerialName("mainName") val mainName: String,
+        @SerialName("sourceApiName") val sourceApiName: String?,
+        @SerialName("poster") val poster: String?,
+        @SerialName("name") val name: String?,
+        @SerialName("season") val season: Int?,
+        @SerialName("episode") val episode: Int?,
+        @SerialName("type") val type: TvType?,
     )
 
+    @Serializable
     data class DownloadItem(
-        @JsonProperty("source") val source: String?,
-        @JsonProperty("folder") val folder: String?,
-        @JsonProperty("ep") val ep: DownloadEpisodeMetadata,
-        @JsonProperty("links") val links: List<ExtractorLink>,
+        @SerialName("source") val source: String?,
+        @SerialName("folder") val folder: String?,
+        @SerialName("ep") val ep: DownloadEpisodeMetadata,
+        @SerialName("links") val links: List<ExtractorLink>,
     )
 
+    @Serializable
     data class DownloadResumePackage(
-        @JsonProperty("item") val item: DownloadItem,
-        @JsonProperty("linkIndex") val linkIndex: Int?,
+        @SerialName("item") val item: DownloadItem,
+        @SerialName("linkIndex") val linkIndex: Int?,
     )
 
+    @Serializable
     data class DownloadedFileInfo(
-        @JsonProperty("totalBytes") val totalBytes: Long,
-        @JsonProperty("relativePath") val relativePath: String,
-        @JsonProperty("displayName") val displayName: String,
-        @JsonProperty("extraInfo") val extraInfo: String? = null,
-        @JsonProperty("basePath") val basePath: String? = null // null is for legacy downloads. See getDefaultPath()
+        @SerialName("totalBytes") val totalBytes: Long,
+        @SerialName("relativePath") val relativePath: String,
+        @SerialName("displayName") val displayName: String,
+        @SerialName("extraInfo") val extraInfo: String? = null,
+        @SerialName("basePath") val basePath: String? = null // null is for legacy downloads. See getDefaultPath()
     )
 
     data class DownloadedFileInfoResult(
-        @JsonProperty("fileLength") val fileLength: Long,
-        @JsonProperty("totalBytes") val totalBytes: Long,
-        @JsonProperty("path") val path: Uri,
+        val fileLength: Long,
+        val totalBytes: Long,
+        val path: Uri,
     )
 
+    @Serializable
     data class DownloadQueueResumePackage(
-        @JsonProperty("index") val index: Int,
-        @JsonProperty("pkg") val pkg: DownloadResumePackage,
+        @SerialName("index") val index: Int,
+        @SerialName("pkg") val pkg: DownloadResumePackage,
     )
 
     private const val SUCCESS_DOWNLOAD_DONE = 1
@@ -1608,7 +1614,7 @@ object VideoDownloadManager {
                     .mapIndexed { index, any -> DownloadQueueResumePackage(index, any) }
                     .toTypedArray()
             setKey(KEY_RESUME_QUEUE_PACKAGES, dQueue)
-        } catch (e : Exception) {
+        } catch (e: Exception) {
             logError(e)
         }
     }
@@ -1692,10 +1698,11 @@ object VideoDownloadManager {
         startWork(context, key)
     }
 
+    @Serializable
     data class DownloadInfo(
-        @JsonProperty("source") val source: String?,
-        @JsonProperty("folder") val folder: String?,
-        @JsonProperty("ep") val ep: DownloadEpisodeMetadata,
-        @JsonProperty("links") val links: List<ExtractorLink>
+        @SerialName("source") val source: String?,
+        @SerialName("folder") val folder: String?,
+        @SerialName("ep") val ep: DownloadEpisodeMetadata,
+        @SerialName("links") val links: List<ExtractorLink>
     )
 }

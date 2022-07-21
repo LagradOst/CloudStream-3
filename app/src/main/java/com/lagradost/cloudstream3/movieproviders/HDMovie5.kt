@@ -1,10 +1,11 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.httpsify
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 
 class HDMovie5 : MainAPI() {
@@ -125,8 +126,9 @@ class HDMovie5 : MainAPI() {
         )
     }
 
+    @Serializable
     private data class PlayerAjaxResponse(
-        @JsonProperty("embed_url")
+        @SerialName("embed_url")
         val embedURL: String? = null
     )
 

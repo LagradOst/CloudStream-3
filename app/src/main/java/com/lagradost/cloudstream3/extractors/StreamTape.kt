@@ -5,6 +5,8 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 
+import kotlinx.serialization.Serializable
+
 class StreamTape : ExtractorApi() {
     override var name = "StreamTape"
     override var mainUrl = "https://streamtape.com"

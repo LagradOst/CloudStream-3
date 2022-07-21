@@ -6,10 +6,6 @@ import android.net.Uri
 import android.util.Base64.encodeToString
 import androidx.annotation.WorkerThread
 import androidx.preference.PreferenceManager
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.lagradost.cloudstream3.animeproviders.*
 import com.lagradost.cloudstream3.liveproviders.EjaTv
 import com.lagradost.cloudstream3.metaproviders.CrossTmdbProvider
@@ -22,18 +18,19 @@ import com.lagradost.cloudstream3.ui.settings.SettingsFragment.Companion.isTvSet
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import okhttp3.Interceptor
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.absoluteValue
 
+DONT COMPILE THIS, THIS IS AN UNSTABLE BUILD AND SERIALIZATION DOES NOT WORK ON PRIMATIVE TYPES YET!
+
 const val USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
 //val baseHeader = mapOf("User-Agent" to USER_AGENT)
-val mapper = JsonMapper.builder().addModule(KotlinModule())
-    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).build()!!
-
 object APIHolder {
     val unixTime: Long
         get() = System.currentTimeMillis() / 1000L
@@ -99,14 +96,14 @@ object APIHolder {
             RebahinProvider(),
             LayarKacaProvider(),
             HDTodayProvider(),
-            OpenVidsProvider(),       
+            OpenVidsProvider(),
             IdlixProvider(),
             MultiplexProvider(),
             VidSrcProvider(),
             UakinoProvider(),
             PhimmoichillProvider(),
             HDrezkaProvider(),
-  
+
 
             // Metadata providers
             //TmdbProvider(),
@@ -363,11 +360,12 @@ const val PROVIDER_STATUS_SLOW = 2
 const val PROVIDER_STATUS_OK = 1
 const val PROVIDER_STATUS_DOWN = 0
 
+@Serializable
 data class ProvidersInfoJson(
-    @JsonProperty("name") var name: String,
-    @JsonProperty("url") var url: String,
-    @JsonProperty("credentials") var credentials: String? = null,
-    @JsonProperty("status") var status: Int,
+    @SerialName("name") var name: String,
+    @SerialName("url") var url: String,
+    @SerialName("credentials") var credentials: String? = null,
+    @SerialName("status") var status: Int,
 )
 
 /**Every provider will **not** have try catch built in, so handle exceptions when calling these functions*/
@@ -555,8 +553,10 @@ fun capitalizeStringNullable(str: String?): String? {
 }
 
 fun fixTitle(str: String): String {
-    return str.split(" ").joinToString(" ") { it.lowercase()
-        .replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else it } }
+    return str.split(" ").joinToString(" ") {
+        it.lowercase()
+            .replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else it }
+    }
 }
 
 /** https://www.imdb.com/title/tt2861424/ -> tt2861424 */

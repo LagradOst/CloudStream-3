@@ -1,9 +1,11 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 import org.jsoup.select.Elements
 
@@ -144,6 +146,7 @@ class FilmanProvider : MainAPI() {
     }
 }
 
+@Serializable
 data class LinkElement(
-    @JsonProperty("src") val src: String
+    @SerialName("src") val src: String
 )

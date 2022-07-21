@@ -6,6 +6,8 @@ import com.lagradost.cloudstream3.utils.Qualities
 import org.jsoup.Jsoup
 
 // referer = https://vf-serie.org, USERAGENT ALSO REQUIRED
+import kotlinx.serialization.Serializable
+
 class VfSerieProvider : MainAPI() {
     override var mainUrl = "https://vf-serie.org"
     override var name = "vf-serie.org"

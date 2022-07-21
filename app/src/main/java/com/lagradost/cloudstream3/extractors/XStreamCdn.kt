@@ -1,39 +1,38 @@
 package com.lagradost.cloudstream3.extractors
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-class LayarKaca: XStreamCdn() {
+class LayarKaca : XStreamCdn() {
     override val name: String = "LayarKaca-xxi"
     override val mainUrl: String = "https://layarkacaxxi.icu"
 }
 
-class DBfilm: XStreamCdn() {
+class DBfilm : XStreamCdn() {
     override val name: String = "DBfilm"
     override val mainUrl: String = "https://dbfilm.bar"
 }
 
-class Luxubu : XStreamCdn(){
+class Luxubu : XStreamCdn() {
     override val name: String = "FE"
     override val mainUrl: String = "https://www.luxubu.review"
 }
 
-class FEmbed: XStreamCdn() {
+class FEmbed : XStreamCdn() {
     override val name: String = "FEmbed"
     override val mainUrl: String = "https://www.fembed.com"
 }
 
-class Fplayer: XStreamCdn() {
+class Fplayer : XStreamCdn() {
     override val name: String = "Fplayer"
     override val mainUrl: String = "https://fplayer.info"
 }
 
-class FeHD: XStreamCdn() {
+class FeHD : XStreamCdn() {
     override val name: String = "FeHD"
     override val mainUrl: String = "https://fembed-hd.com"
     override var domainUrl: String = "fembed-hd.com"
@@ -45,15 +44,17 @@ open class XStreamCdn : ExtractorApi() {
     override val requiresReferer = false
     open var domainUrl: String = "embedsito.com"
 
+    @Serializable
     private data class ResponseData(
-        @JsonProperty("file") val file: String,
-        @JsonProperty("label") val label: String,
+        @SerialName("file") val file: String,
+        @SerialName("label") val label: String,
         //val type: String // Mp4
     )
 
+    @Serializable
     private data class ResponseJson(
-        @JsonProperty("success") val success: Boolean,
-        @JsonProperty("data") val data: List<ResponseData>?
+        @SerialName("success") val success: Boolean,
+        @SerialName("data") val data: List<ResponseData>?
     )
 
     override fun getExtractorUrl(id: String): String {
@@ -73,7 +74,7 @@ open class XStreamCdn : ExtractorApi() {
             val text = this.text
             if (text.isEmpty()) return listOf()
             if (text == """{"success":false,"data":"Video not found or has been removed"}""") return listOf()
-            mapper.readValue<ResponseJson?>(text)?.let {
+            parsedSafe<ResponseJson>()?.let {
                 if (it.success && it.data != null) {
                     it.data.forEach { data ->
                         extractedLinksList.add(

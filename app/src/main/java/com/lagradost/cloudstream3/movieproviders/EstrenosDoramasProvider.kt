@@ -1,13 +1,14 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.network.WebViewResolver
-import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import java.util.*
-import kotlin.collections.ArrayList
 
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import java.util.*
 
 class EstrenosDoramasProvider : MainAPI() {
     companion object {
@@ -80,8 +81,7 @@ class EstrenosDoramasProvider : MainAPI() {
                     )
                 if (href.contains("capitulo")) {
                     //nothing
-                }
-                else {
+                } else {
                     searchob.add(lists)
                 }
             }
@@ -94,7 +94,7 @@ class EstrenosDoramasProvider : MainAPI() {
         val title = doc.selectFirst("h1.titulo")?.text()
         val description = try {
             doc.selectFirst("div.post div.highlight div.font")?.text()
-        } catch (e:Exception){
+        } catch (e: Exception) {
             null
         }
         val finaldesc = description?.substringAfter("Sinopsis")?.replace(": ", "")?.trim()
@@ -111,7 +111,7 @@ class EstrenosDoramasProvider : MainAPI() {
             TvType.AsianDrama -> {
                 return newAnimeLoadResponse(title!!, url, type) {
                     japName = null
-                    engName = title.replace(Regex("[Pp]elicula |[Pp]elicula"),"")
+                    engName = title.replace(Regex("[Pp]elicula |[Pp]elicula"), "")
                     posterUrl = poster
                     addEpisodes(DubStatus.Subbed, epi.reversed())
                     plot = finaldesc
@@ -136,14 +136,14 @@ class EstrenosDoramasProvider : MainAPI() {
 
     }
 
-
-
-    data class ReproDoramas (
-        @JsonProperty("link") val link: String,
-        @JsonProperty("time") val time: Int
+    @Serializable
+    data class ReproDoramas(
+        @SerialName("link") val link: String,
+        @SerialName("time") val time: Int
     )
 
-    private fun cleanTitle(title: String): String = title.replace(Regex("[Pp]elicula |[Pp]elicula"),"")
+    private fun cleanTitle(title: String): String =
+        title.replace(Regex("[Pp]elicula |[Pp]elicula"), "")
 
     private fun cleanExtractor(
         source: String,
@@ -172,7 +172,8 @@ class EstrenosDoramasProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val headers = mapOf("Host" to "repro3.estrenosdoramas.us",
+        val headers = mapOf(
+            "Host" to "repro3.estrenosdoramas.us",
             "User-Agent" to USER_AGENT,
             "Accept" to "*/*",
             "Accept-Language" to "en-US,en;q=0.5",
@@ -184,7 +185,8 @@ class EstrenosDoramasProvider : MainAPI() {
             "Sec-Fetch-Dest" to "empty",
             "Sec-Fetch-Mode" to "cors",
             "Sec-Fetch-Site" to "same-origin",
-            "Cache-Control" to "max-age=0",)
+            "Cache-Control" to "max-age=0",
+        )
 
         val document = app.get(data).document
         document.select("div.tab_container iframe").apmap { container ->
@@ -192,15 +194,20 @@ class EstrenosDoramasProvider : MainAPI() {
             loadExtractor(directlink, data, callback)
 
             if (directlink.contains("/repro/amz/")) {
-                val amzregex = Regex("https:\\/\\/repro3\\.estrenosdoramas\\.us\\/repro\\/amz\\/examples\\/.*\\.php\\?key=.*\$")
+                val amzregex =
+                    Regex("https:\\/\\/repro3\\.estrenosdoramas\\.us\\/repro\\/amz\\/examples\\/.*\\.php\\?key=.*\$")
                 amzregex.findAll(directlink).map {
-                    it.value.replace(Regex("https:\\/\\/repro3\\.estrenosdoramas\\.us\\/repro\\/amz\\/examples\\/.*\\.php\\?key="),"")
+                    it.value.replace(
+                        Regex("https:\\/\\/repro3\\.estrenosdoramas\\.us\\/repro\\/amz\\/examples\\/.*\\.php\\?key="),
+                        ""
+                    )
                 }.toList().apmap { key ->
-                    val response = app.post("https://repro3.estrenosdoramas.us/repro/amz/examples/player/api/indexDCA.php",
+                    val response = app.post(
+                        "https://repro3.estrenosdoramas.us/repro/amz/examples/player/api/indexDCA.php",
                         headers = headers,
                         data = mapOf(
-                            Pair("key",key),
-                            Pair("token","MDAwMDAwMDAwMA=="),
+                            Pair("key", key),
+                            Pair("token", "MDAwMDAwMDAwMA=="),
                         ),
                         allowRedirects = false
                     ).text
@@ -221,7 +228,8 @@ class EstrenosDoramasProvider : MainAPI() {
 
 
             if (directlink.contains("reproducir14")) {
-                val regex = Regex("(https:\\/\\/repro.\\.estrenosdoramas\\.us\\/repro\\/reproducir14\\.php\\?key=[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
+                val regex =
+                    Regex("(https:\\/\\/repro.\\.estrenosdoramas\\.us\\/repro\\/reproducir14\\.php\\?key=[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
                 regex.findAll(directlink).map {
                     it.value
                 }.toList().apmap {
@@ -229,22 +237,26 @@ class EstrenosDoramasProvider : MainAPI() {
                     val videoid = doc.substringAfter("vid=\"").substringBefore("\" n")
                     val token = doc.substringAfter("name=\"").substringBefore("\" s")
                     val acctkn = doc.substringAfter("{ acc: \"").substringBefore("\", id:")
-                    val link = app.post("https://repro3.estrenosdoramas.us/repro/proto4.php",
+                    val link = app.post(
+                        "https://repro3.estrenosdoramas.us/repro/proto4.php",
                         headers = headers,
                         data = mapOf(
-                            Pair("acc",acctkn),
-                            Pair("id",videoid),
-                            Pair("tk",token)),
+                            Pair("acc", acctkn),
+                            Pair("id", videoid),
+                            Pair("tk", token)
+                        ),
                         allowRedirects = false
                     ).text
-                    val extracteklink = link.substringAfter("\"urlremoto\":\"").substringBefore("\"}")
-                        .replace("\\/", "/").replace("//ok.ru/","http://ok.ru/")
+                    val extracteklink =
+                        link.substringAfter("\"urlremoto\":\"").substringBefore("\"}")
+                            .replace("\\/", "/").replace("//ok.ru/", "http://ok.ru/")
                     loadExtractor(extracteklink, data, callback)
                 }
             }
 
             if (directlink.contains("reproducir120")) {
-                val regex = Regex("(https:\\/\\/repro3.estrenosdoramas.us\\/repro\\/reproducir120\\.php\\?\\nkey=[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
+                val regex =
+                    Regex("(https:\\/\\/repro3.estrenosdoramas.us\\/repro\\/reproducir120\\.php\\?\\nkey=[a-zA-Z0-9]{0,8}[a-zA-Z0-9_-]+)")
                 regex.findAll(directlink).map {
                     it.value
                 }.toList().apmap {
@@ -252,12 +264,14 @@ class EstrenosDoramasProvider : MainAPI() {
                     val videoid = doc.substringAfter("var videoid = '").substringBefore("';")
                     val token = doc.substringAfter("var tokens = '").substringBefore("';")
                     val acctkn = doc.substringAfter("{ acc: \"").substringBefore("\", id:")
-                    val link = app.post("https://repro3.estrenosdoramas.us/repro/api3.php",
+                    val link = app.post(
+                        "https://repro3.estrenosdoramas.us/repro/api3.php",
                         headers = headers,
                         data = mapOf(
-                            Pair("acc",acctkn),
-                            Pair("id",videoid),
-                            Pair("tk",token)),
+                            Pair("acc", acctkn),
+                            Pair("id", videoid),
+                            Pair("tk", token)
+                        ),
                         allowRedirects = false
                     ).text
                     val extractedlink = link.substringAfter("\"{file:'").substringBefore("',label:")

@@ -7,6 +7,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 
+import kotlinx.serialization.Serializable
+
 class PinoyMoviePediaProvider : MainAPI() {
     override var name = "Pinoy Moviepedia"
     override var mainUrl = "https://pinoymoviepedia.ru"

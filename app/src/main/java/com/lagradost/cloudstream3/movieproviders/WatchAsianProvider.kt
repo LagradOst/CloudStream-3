@@ -1,13 +1,15 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.animeproviders.GogoanimeProvider.Companion.extractVidstream
 import com.lagradost.cloudstream3.extractors.XStreamCdn
 import com.lagradost.cloudstream3.extractors.helper.AsianEmbedHelper
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+
+import kotlinx.serialization.Serializable
 
 class WatchAsianProvider : MainAPI() {
     override var mainUrl = "https://watchasian.cx"
@@ -77,12 +79,12 @@ class WatchAsianProvider : MainAPI() {
         return document.mapNotNull {
             val innerA = it?.selectFirst("a") ?: return@mapNotNull null
             val link = fixUrlNull(innerA.attr("href")) ?: return@mapNotNull null
-            val title = it.select("h3.title")?.text() ?: return@mapNotNull null
+            val title = it.select("h3.title").text() ?: return@mapNotNull null
             if (title.isEmpty()) {
                 return@mapNotNull null
             }
             val year = null
-            val imgsrc = innerA.select("img")?.attr("data-original") ?: return@mapNotNull null
+            val imgsrc = innerA.select("img").attr("data-original") ?: return@mapNotNull null
             val image = fixUrlNull(imgsrc)
             //Log.i(this.name, "Result => (img movie) $title / $link")
             MovieSearchResponse(
@@ -147,7 +149,7 @@ class WatchAsianProvider : MainAPI() {
 
         // Episodes Links
         //Log.i(this.name, "Result => (all eps) ${body.select("ul.list-episode-item-2.all-episode > li")}")
-        val episodeList = body.select("ul.list-episode-item-2.all-episode > li")?.mapNotNull { ep ->
+        val episodeList = body.select("ul.list-episode-item-2.all-episode > li").mapNotNull { ep ->
             //Log.i(this.name, "Result => (epA) ${ep.select("a")}")
             val innerA = ep.select("a") ?: return@mapNotNull null
             //Log.i(this.name, "Result => (innerA) ${fixUrlNull(innerA.attr("href"))}")
@@ -164,7 +166,7 @@ class WatchAsianProvider : MainAPI() {
                 posterUrl = poster,
                 date = null
             )
-        } ?: listOf()
+        }
         //If there's only 1 episode, consider it a movie.
         if (episodeList.size == 1) {
             //Clean title
@@ -208,7 +210,7 @@ class WatchAsianProvider : MainAPI() {
             data
         }
         var count = 0
-        mapper.readValue<List<String>>(links).apmap { item ->
+        parseJson<List<String>>(links).apmap { item ->
             count++
             val url = fixUrl(item.trim())
             //Log.i(this.name, "Result => (url) $url")
@@ -216,7 +218,8 @@ class WatchAsianProvider : MainAPI() {
                 url.startsWith("https://asianembed.io") || url.startsWith("https://asianload.io") -> {
                     val iv = "9262859232435825"
                     val secretKey = "93422192433952489752342908585752"
-                    extractVidstream(url, this.name, callback, iv, secretKey, secretKey,
+                    extractVidstream(
+                        url, this.name, callback, iv, secretKey, secretKey,
                         isUsingAdaptiveKeys = false,
                         isUsingAdaptiveData = false
                     )

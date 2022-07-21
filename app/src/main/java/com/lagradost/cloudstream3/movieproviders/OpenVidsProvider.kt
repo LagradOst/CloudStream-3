@@ -1,18 +1,18 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.animeproviders.GogoanimeProvider
 import com.lagradost.cloudstream3.animeproviders.GogoanimeProvider.Companion.extractVidstream
 import com.lagradost.cloudstream3.metaproviders.TmdbLink
 import com.lagradost.cloudstream3.metaproviders.TmdbProvider
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import kotlinx.serialization.Serializable
 
-class OpenVidsProvider:TmdbProvider() {
+class OpenVidsProvider : TmdbProvider() {
     override val apiName = "OpenVids"
     override var name = "OpenVids"
     override var mainUrl = "https://openvids.io"
@@ -23,23 +23,27 @@ class OpenVidsProvider:TmdbProvider() {
         TvType.TvSeries,
     )
 
-    data class  OpenvidsMain(
-        @JsonProperty("ok"      ) val ok      : Boolean? = null,
-        @JsonProperty("servers" ) val servers : OpenvidServers? = OpenvidServers()
+    @Serializable
+    data class OpenvidsMain(
+        @SerialName("ok") val ok: Boolean? = null,
+        @SerialName("servers") val servers: OpenvidServers? = OpenvidServers()
     )
 
-    data class OpenvidServers (
-        @JsonProperty("streamsb" ) val streamsb : OpenvidServersData? = OpenvidServersData(),
-        @JsonProperty("voxzer"   ) val voxzer   : OpenvidServersData?   = OpenvidServersData(),
-        @JsonProperty("mixdrop"   ) val mixdrop   : OpenvidServersData?   = OpenvidServersData(),
-        @JsonProperty("doodstream"   ) val doodstream   : OpenvidServersData?   = OpenvidServersData(),
-        @JsonProperty("voe"   ) val voe   : OpenvidServersData?   = OpenvidServersData(),
-        @JsonProperty("vidcloud" ) val vidcloud : OpenvidServersData? = OpenvidServersData()
+    @Serializable
+    data class OpenvidServers(
+        @SerialName("streamsb") val streamsb: OpenvidServersData? = OpenvidServersData(),
+        @SerialName("voxzer") val voxzer: OpenvidServersData? = OpenvidServersData(),
+        @SerialName("mixdrop") val mixdrop: OpenvidServersData? = OpenvidServersData(),
+        @SerialName("doodstream") val doodstream: OpenvidServersData? = OpenvidServersData(),
+        @SerialName("voe") val voe: OpenvidServersData? = OpenvidServersData(),
+        @SerialName("vidcloud") val vidcloud: OpenvidServersData? = OpenvidServersData()
     )
-    data class OpenvidServersData (
-        @JsonProperty("code"      ) val code      : String?  = null,
-        @JsonProperty("updatedAt" ) val updatedAt : String?  = null,
-        @JsonProperty("encoded"   ) val encoded   : Boolean? = null
+
+    @Serializable
+    data class OpenvidServersData(
+        @SerialName("code") val code: String? = null,
+        @SerialName("updatedAt") val updatedAt: String? = null,
+        @SerialName("encoded") val encoded: Boolean? = null
     )
 
     override suspend fun loadLinks(
@@ -55,7 +59,7 @@ class OpenVidsProvider:TmdbProvider() {
         ) else listOf(mappedData.tmdbID.toString(), "tmdb")
         val isMovie = mappedData.episode == null && mappedData.season == null
         val embedUrl = if (isMovie) {
-            if(site == "imdb") "$mainUrl/movie/$id" else
+            if (site == "imdb") "$mainUrl/movie/$id" else
                 "$mainUrl/tmdb/movie/$id"
         } else {
             val suffix = "$id-${mappedData.season ?: 1}-${mappedData.episode ?: 1}"
@@ -101,7 +105,8 @@ class OpenVidsProvider:TmdbProvider() {
                 "Sec-Fetch-Site" to "same-origin",
             )
         }
-        val json = app.get("$mainUrl/api/servers.json?imdb=${mappedData.imdbID}", headers = headers).parsedSafe<OpenvidsMain>()
+        val json = app.get("$mainUrl/api/servers.json?imdb=${mappedData.imdbID}", headers = headers)
+            .parsedSafe<OpenvidsMain>()
 
         val listservers = listOf(
             "https://streamsb.net/e/" to json?.servers?.streamsb?.code,
@@ -110,7 +115,7 @@ class OpenVidsProvider:TmdbProvider() {
             "https://dood.pm/e/" to json?.servers?.doodstream?.code,
             "https://voe.sx/e/" to json?.servers?.voe?.code,
             "https://membed.net/streaming.php?id=" to json?.servers?.vidcloud?.code
-        ).mapNotNull { (url, id) -> if(id==null) return@mapNotNull null else "$url$id" }
+        ).mapNotNull { (url, id) -> if (id == null) return@mapNotNull null else "$url$id" }
 
         if (json?.ok != true) return false
         listservers.apmap { links ->
@@ -124,7 +129,8 @@ class OpenVidsProvider:TmdbProvider() {
                     membed.secretKey,
                     membed.secretDecryptKey,
                     membed.isUsingAdaptiveKeys,
-                    membed.isUsingAdaptiveData)
+                    membed.isUsingAdaptiveData
+                )
             } else
                 loadExtractor(links, data, callback)
         }

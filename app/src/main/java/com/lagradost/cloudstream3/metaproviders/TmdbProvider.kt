@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3.metaproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
@@ -10,6 +9,8 @@ import com.uwetrottmann.tmdb2.Tmdb
 import com.uwetrottmann.tmdb2.entities.*
 import com.uwetrottmann.tmdb2.enumerations.AppendToResponseItem
 import com.uwetrottmann.tmdb2.enumerations.VideoType
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import retrofit2.awaitResponse
 import java.util.*
 
@@ -17,12 +18,13 @@ import java.util.*
  * episode and season starting from 1
  * they are null if movie
  * */
+@Serializable
 data class TmdbLink(
-    @JsonProperty("imdbID") val imdbID: String?,
-    @JsonProperty("tmdbID") val tmdbID: Int?,
-    @JsonProperty("episode") val episode: Int?,
-    @JsonProperty("season") val season: Int?,
-    @JsonProperty("movieName") val movieName: String? = null,
+    @SerialName("imdbID") val imdbID: String?,
+    @SerialName("tmdbID") val tmdbID: Int?,
+    @SerialName("episode") val episode: Int?,
+    @SerialName("season") val season: Int?,
+    @SerialName("movieName") val movieName: String? = null,
 )
 
 open class TmdbProvider : MainAPI() {
