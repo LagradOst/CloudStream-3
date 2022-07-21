@@ -76,7 +76,7 @@ class CimaNowProvider : MainAPI() {
                         app.get("$mainUrl/page/$it/?s=$query\"").document.select("section article a").map { element ->
                             val postUrl = element.attr("href")
                             if(element.select("li[aria-label=\"episode\"]").isNotEmpty()) return@map
-                            if(postUrl.contains("$mainUrl/expired-download/") || postUrl.contains("$mainUrl/افلام-اون-لاين/")) return@map
+                            if(postUrl.contains("$mainUrl/expired-download/|$mainUrl/افلام-اون-لاين/".toRegex())) return@map
                             result.add(element.toSearchResponse()!!)
                         }
                     }
