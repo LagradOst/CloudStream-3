@@ -9,10 +9,8 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.*
 
-import kotlinx.serialization.Serializable
-
 class LayarKacaProvider : MainAPI() {
-    override var mainUrl = "https://149.56.24.226"
+    override var mainUrl = "https://lk21.xn--6frz82g"
     override var name = "LayarKaca"
     override val hasMainPage = true
     override var lang = "id"
@@ -216,7 +214,12 @@ class LayarKacaProvider : MainAPI() {
         }
 
         sources.apmap {
-            loadExtractor(it, data, callback)
+            val link = if(it.startsWith("https://layarkacaxxi.icu")) {
+                it.substringBeforeLast("/")
+            } else {
+                it
+            }
+            loadExtractor(link, data, callback)
         }
 
         return true
