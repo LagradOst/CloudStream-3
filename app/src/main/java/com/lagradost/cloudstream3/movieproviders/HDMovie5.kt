@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 
 class HDMovie5 : MainAPI() {
-    override var mainUrl = "https://Hdmovie2.biz"
+    override var mainUrl = "https://hdmovie2.art"
     override var name = "HDMovie"
     override var lang = "hi"
 
