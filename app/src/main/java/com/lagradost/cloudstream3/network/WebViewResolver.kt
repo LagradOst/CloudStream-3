@@ -2,6 +2,7 @@ package com.lagradost.cloudstream3.network
 
 import android.annotation.SuppressLint
 import android.net.http.SslError
+import android.util.Log
 import android.view.View
 import android.webkit.*
 import com.lagradost.cloudstream3.AcraApplication
@@ -16,6 +17,7 @@ import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 import java.net.URI
 import kotlin.collections.ArrayList
 
@@ -41,12 +43,19 @@ class AdvancedWebView private constructor(
     val method: String,
     val callback: (AdvancedWebView) -> Unit = {  }
 ) {
+    companion object {
+        const val TAG = "AdvancedWebViewTag"
+    }
     val headers = mapOf<String, String>()
     var webView: WebView? = null
     val remainingActions: ArrayList<WebViewAction> = actions
     var currentHTML: String = ""
-    val document by lazy { Jsoup.parse(currentHTML) }
-    val Instance = this
+
+    // Made this a getter, because `currentHTML` changes on the fly
+    val document: Document?
+        get() = try { Jsoup.parse(currentHTML) } catch (e: Exception) { null }
+
+    private val Instance = this
 
     data class Builder(
         var url: String = "",
@@ -58,8 +67,7 @@ class AdvancedWebView private constructor(
         fun setReferer(referer: String) = apply { this.referer = referer }
         fun setMethod(method: String) = apply { this.method = method }
 
-        fun addAction(action: WebViewAction) = apply { this.actions.add(action) }
-        fun addAllActions(actions: ArrayList<WebViewAction>) = apply { this.actions.addAll(actions) }
+        private fun addAction(action: WebViewAction) = apply { this.actions.add(action) }
 
         fun waitForElement(selector: String, cb: (AdvancedWebView) -> Unit = {  }) = apply {
             addAction(WebViewAction(WebViewActions.WAIT_FOR_ELEMENT, selector, cb))
@@ -95,13 +103,15 @@ class AdvancedWebView private constructor(
     private var pageHasLoaded = false;
 
     private suspend fun tryExecuteAction() {
-        if (actionExecutionsPaused) return
+        if (actionExecutionsPaused || remainingActions.size == 0) return
+        actionExecutionsPaused = true
+        setCurrentHTML()
+
         main {
             if (remainingActions.size > 0) {
                 val action = remainingActions[0]
                 when (action.actionType){
                     WebViewActions.WAIT_FOR_ELEMENT -> {
-                        actionExecutionsPaused = true
                         webView?.evaluateJavascript("document.querySelector(\"${action.parameter}\")") {
                             if (it == "{}") {
                                 Instance.run(action.callback)
@@ -112,19 +122,17 @@ class AdvancedWebView private constructor(
                     }
 
                     WebViewActions.WAIT_FOR_ELEMENT_TO_BE_CLICKABLE -> {
-                        actionExecutionsPaused = true
-
                         webView?.evaluateJavascript(
-                        """
-                            ((selector) => {
-                                const elem = document.querySelector(selector)
-                                if (elem == undefined) return
-                                const attribute = elem.getAttribute("disabled")
-                                if (attribute === "true" || attribute === '') return
-
-                                return "" + (!elem.disabled || true)
-                            })(`${action.parameter}`);
-                        """.trimIndent()) {
+                            """
+                                ((selector) => {
+                                    const elem = document.querySelector(selector)
+                                    if (elem == undefined) return
+                                    const attribute = elem.getAttribute("disabled")
+                                    if (attribute === "true" || attribute === '') return
+    
+                                    return "" + (!elem.disabled || true)
+                                })(`${action.parameter}`);
+                            """.trimIndent()) {
                             if (it == "\"true\""){
                                 Instance.run(action.callback)
                                 remainingActions.remove(action)
@@ -134,7 +142,6 @@ class AdvancedWebView private constructor(
                     }
 
                     WebViewActions.WAIT_FOR_ELEMENT_GONE -> {
-                        actionExecutionsPaused = true
                         webView?.evaluateJavascript("document.querySelector(\"${action.parameter}\") == undefined") {
                             if (it == "\"true\"") {
                                 Instance.run(action.callback)
@@ -147,7 +154,6 @@ class AdvancedWebView private constructor(
                     WebViewActions.WAIT_FOR_NETWORK_IDLE -> {
                         if (!pageHasLoaded || ((System.currentTimeMillis() / 1000L) - networkIdleTimestamp) < 10) return@main
                         // we need at least 10 seconds of no network calls being done in order to be in an "IDLE" state
-                        actionExecutionsPaused = true
 
                         Instance.run(action.callback)
                         remainingActions.remove(action)
@@ -156,11 +162,9 @@ class AdvancedWebView private constructor(
                     }
 
                     WebViewActions.WAIT_FOR_X_SECONDS -> {
-                        actionExecutionsPaused = true
-
-                        println("AdvancedWebView :: Waiting for ${remainingActions[0].parameter} seconds...")
+                        Log.i(TAG, "AdvancedWebView :: Waiting for ${remainingActions[0].parameter} seconds...")
                         delay(action.parameter as Long * 1000)
-                        println("AdvancedWebView :: Finished waiting!")
+                        Log.i(TAG, "AdvancedWebView :: Finished waiting!")
                         Instance.run(action.callback)
                         remainingActions.remove(action)
 
@@ -168,11 +172,9 @@ class AdvancedWebView private constructor(
                     }
 
                     WebViewActions.EXECUTE_JAVASCRIPT -> {
-                        actionExecutionsPaused = true
-
-                        println("AdvancedWebView :: Executing javascript from action...")
+                        Log.i(TAG, "AdvancedWebView :: Executing javascript from action...")
                         webView?.evaluateJavascript(action.parameter as String) {
-                            println("JavaScript Execution done! Result: <$it>")
+                            Log.i(TAG, "JavaScript Execution done! Result: <$it>")
                             Instance.run(action.callback)
                             remainingActions.remove(action)
 
@@ -181,13 +183,14 @@ class AdvancedWebView private constructor(
                     }
 
                     WebViewActions.RETURN -> {
-                        actionExecutionsPaused = true
-
                         destroyWebView()
                         remainingActions.clear()
                     }
 
-                    else -> return@main
+                    else -> {
+                        Log.e(TAG, "Action Type: <${action.actionType.name}> is not implemented!")
+                        actionExecutionsPaused = false
+                    }
                 }
             }
         }
@@ -198,7 +201,20 @@ class AdvancedWebView private constructor(
             webView?.stopLoading()
             webView?.destroy()
             webView = null
-            println("Destroyed the WebView!")
+            Log.i(TAG, "Destroyed the WebView!")
+        }
+    }
+
+    private fun setCurrentHTML() {
+        main {
+            webView?.evaluateJavascript("document.documentElement.outerHTML") {
+                currentHTML = it
+                    .replace("\\u003C", "<")
+                    .replace("\\\"", "\"")
+                    .replace("\\n", "\n")
+                    .replace("\\t", "\t")
+                    .trimStart('"').trimEnd('"')
+            }
         }
     }
 
@@ -217,8 +233,8 @@ class AdvancedWebView private constructor(
                 }
                 webView!!.visibility = View.VISIBLE
             } catch (e: Exception) {
-                println("Error: Failed to create an Advanced WebView, reason: <${e.message}>")
-                println(e.toString())
+                Log.i(TAG, "Error: Failed to create an Advanced WebView, reason: <${e.message}>")
+                Log.e(TAG, e.toString())
                 destroyWebView()
                 callback(this)
             }
@@ -231,7 +247,7 @@ class AdvancedWebView private constructor(
                         networkIdleTimestamp = (System.currentTimeMillis() / 1000).toInt();
 
                         if (remainingActions.size > 0 && remainingActions[0].actionType == WebViewActions.WAIT_FOR_PAGE_LOAD) {
-                            println("PAGE FINISHED!")
+                            Log.i(TAG, "PAGE FINISHED!")
                             val action = remainingActions[0]
                             Instance.run(action.callback)
                             remainingActions.remove(action)
@@ -304,32 +320,19 @@ class AdvancedWebView private constructor(
                 }
                 webView?.loadUrl(url, headers.toMap())
             } catch (e: Exception){
-                println("Failed to create a WebView client!")
+                Log.e(TAG, "Failed to create a WebView client!")
                 destroyWebView()
                 return@main
             }
 
-            fun setCurrentHTML() {
-                webView?.evaluateJavascript("document.documentElement.outerHTML") {
-                    currentHTML = it
-                        .replace("\\u003C", "<")
-                        .replace("\\\"", "\"")
-                        .replace("\\n", "\n")
-                        .replace("\\t", "\t")
-                        .trimStart('"').trimEnd('"')
-                }
-            }
-
             while (remainingActions.size > 0){
-                setCurrentHTML()
                 delay(300)
                 tryExecuteAction()
-                setCurrentHTML()
             }
             try {
                 callback(this)
             } catch (e: Exception) {
-                println("Err: $e")
+                Log.e(TAG, "Err: $e")
             }
             destroyWebView()
         }
