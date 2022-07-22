@@ -1,14 +1,14 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.nodes.Element
-import java.util.ArrayList
 
 class MultiplexProvider : MainAPI() {
     override var mainUrl = "https://146.19.24.137"
@@ -112,7 +112,8 @@ class MultiplexProvider : MainAPI() {
         val rating =
             document.selectFirst("div.gmr-meta-rating > span[itemprop=ratingValue]")?.text()
                 ?.toRatingInt()
-        val actors = document.select("div.gmr-moviedata").last()?.select("span[itemprop=actors]")?.map { it.select("a").text() }
+        val actors = document.select("div.gmr-moviedata").last()?.select("span[itemprop=actors]")
+            ?.map { it.select("a").text() }
 
         val recommendations = document.select("div.idmuvi-rp ul li").map {
             it.toBottomSearchResult()
@@ -154,10 +155,11 @@ class MultiplexProvider : MainAPI() {
         }
     }
 
+    @Serializable
     private data class ResponseSource(
-        @JsonProperty("file") val file: String,
-        @JsonProperty("type") val type: String?,
-        @JsonProperty("label") val label: String?
+        @SerialName("file") val file: String,
+        @SerialName("type") val type: String?,
+        @SerialName("label") val label: String?
     )
 
     override suspend fun loadLinks(

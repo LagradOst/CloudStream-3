@@ -1,10 +1,11 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 
 class VMoveeProvider : MainAPI() {
@@ -36,27 +37,38 @@ class VMoveeProvider : MainAPI() {
             // val rating = parseRating(meta.selectFirst("> span.rating").text().replace("IMDb ", ""))
             // val descript = details.selectFirst("> div.contenido").text()
             returnValue.add(
-                if (isTV) TvSeriesSearchResponse(title, href, this.name, TvType.TvSeries, poster, year, null)
+                if (isTV) TvSeriesSearchResponse(
+                    title,
+                    href,
+                    this.name,
+                    TvType.TvSeries,
+                    poster,
+                    year,
+                    null
+                )
                 else MovieSearchResponse(title, href, this.name, TvType.Movie, poster, year)
             )
         }
         return returnValue
     }
 
+    @Serializable
     data class LoadLinksAjax(
-        @JsonProperty("embed_url")
+        @SerialName("embed_url")
         val embedUrl: String,
     )
 
+    @Serializable
     data class ReeoovAPIData(
-        @JsonProperty("file")
+        @SerialName("file")
         val file: String,
-        @JsonProperty("label")
+        @SerialName("label")
         val label: String,
     )
 
+    @Serializable
     data class ReeoovAPI(
-        @JsonProperty("data")
+        @SerialName("data")
         val data: List<ReeoovAPIData>,
     )
 
@@ -72,10 +84,15 @@ class VMoveeProvider : MainAPI() {
             app.post(
                 url,
                 headers = mapOf("referer" to url),
-                data = mapOf("action" to "doo_player_ajax", "post" to data, "nume" to "2", "type" to "movie")
+                data = mapOf(
+                    "action" to "doo_player_ajax",
+                    "post" to data,
+                    "nume" to "2",
+                    "type" to "movie"
+                )
             ).text
 
-        val ajax = mapper.readValue<LoadLinksAjax>(post)
+        val ajax = parseJson<LoadLinksAjax>(post)
         var realUrl = ajax.embedUrl
         if (realUrl.startsWith("//")) {
             realUrl = "https:$realUrl"
@@ -90,7 +107,7 @@ class VMoveeProvider : MainAPI() {
                 headers = mapOf("Referer" to request.url),
                 data = mapOf("r" to "https://www.vmovee.watch/", "d" to "reeoov.tube")
             ).text
-            val apiData = mapper.readValue<ReeoovAPI>(apiResponse)
+            val apiData = parseJson<ReeoovAPI>(apiResponse)
             for (d in apiData.data) {
                 callback.invoke(
                     ExtractorLink(
@@ -120,6 +137,17 @@ class VMoveeProvider : MainAPI() {
         val descript = document.selectFirst("div#info > div")!!.text()
         val id = document.select("div.starstruck").attr("data-id")
 
-        return MovieLoadResponse(title, url, this.name, TvType.Movie, id, poster, null, descript, null, null)
+        return MovieLoadResponse(
+            title,
+            url,
+            this.name,
+            TvType.Movie,
+            id,
+            poster,
+            null,
+            descript,
+            null,
+            null
+        )
     }
 }

@@ -6,6 +6,8 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
 import java.net.URLEncoder
 
+import kotlinx.serialization.Serializable
+
 class IHaveNoTvProvider : MainAPI() {
     override var mainUrl = "https://ihavenotv.com"
     override var name = "I Have No TV"

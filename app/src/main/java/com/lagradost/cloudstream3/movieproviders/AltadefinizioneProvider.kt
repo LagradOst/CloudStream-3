@@ -1,12 +1,12 @@
 package com.lagradost.cloudstream3.movieproviders
 
+
 import androidx.core.text.parseAsHtml
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-
+import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 
 class AltadefinizioneProvider : MainAPI() {
     override var lang = "it"
@@ -143,7 +143,7 @@ class AltadefinizioneProvider : MainAPI() {
     ): Boolean {
         val doc = app.get(data).document
         if (doc.select("div.guardahd-player").isNullOrEmpty()){
-            val videoUrl = doc.select("input").filter { it.hasAttr("data-mirror") }.last().attr("value")
+            val videoUrl = doc.select("input").last { it.hasAttr("data-mirror") }.attr("value")
             loadExtractor(videoUrl, data, callback)
             doc.select("#mirrors > li > a").forEach {
                 loadExtractor(fixUrl(it.attr("data-target")), data, callback)
@@ -156,8 +156,6 @@ class AltadefinizioneProvider : MainAPI() {
                 loadExtractor(fixUrl(it.attr("data-link")), data, callback)
             }
         }
-
-
 
         return true
     }

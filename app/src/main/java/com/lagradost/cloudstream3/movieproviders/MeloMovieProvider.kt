@@ -1,12 +1,12 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbUrl
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
@@ -17,18 +17,20 @@ class MeloMovieProvider : MainAPI() {
     override val hasQuickSearch = true
     override val hasChromecastSupport = false // MKV FILES CANT BE PLAYED ON A CHROMECAST
 
+    @Serializable
     data class MeloMovieSearchResult(
-        @JsonProperty("id") val id: Int,
-        @JsonProperty("imdb_code") val imdbId: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("type") val type: Int, // 1 = MOVIE, 2 = TV-SERIES
-        @JsonProperty("year") val year: Int?, // 1 = MOVIE, 2 = TV-SERIES
+        @SerialName("id") val id: Int,
+        @SerialName("imdb_code") val imdbId: String,
+        @SerialName("title") val title: String,
+        @SerialName("type") val type: Int, // 1 = MOVIE, 2 = TV-SERIES
+        @SerialName("year") val year: Int?, // 1 = MOVIE, 2 = TV-SERIES
         //"mppa" for tags
     )
 
+    @Serializable
     data class MeloMovieLink(
-        @JsonProperty("name") val name: String,
-        @JsonProperty("link") val link: String
+        @SerialName("name") val name: String,
+        @SerialName("link") val link: String
     )
 
     override suspend fun quickSearch(query: String): List<SearchResponse> {
@@ -39,7 +41,7 @@ class MeloMovieProvider : MainAPI() {
         val url = "$mainUrl/movie/search/?name=$query"
         val returnValue: ArrayList<SearchResponse> = ArrayList()
         val response = app.get(url).text
-        val mapped = response.let { mapper.readValue<List<MeloMovieSearchResult>>(it) }
+        val mapped = response.let { parseJson<List<MeloMovieSearchResult>>(it) }
         if (mapped.isEmpty()) return returnValue
 
         for (i in mapped) {
@@ -92,7 +94,8 @@ class MeloMovieProvider : MainAPI() {
             try {
                 val tds = it.select("> td")
                 val name = tds[if (tds.size == 5) 1 else 0].text()
-                val url = fixUrl(tds.last()!!.selectFirst("> a")!!.attr("data-lnk").replace(" ", "%20"))
+                val url =
+                    fixUrl(tds.last()!!.selectFirst("> a")!!.attr("data-lnk").replace(" ", "%20"))
                 MeloMovieLink(name, url)
             } catch (e: Exception) {
                 MeloMovieLink("", "")

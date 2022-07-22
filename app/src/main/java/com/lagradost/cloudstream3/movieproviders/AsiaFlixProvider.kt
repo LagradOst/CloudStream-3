@@ -1,13 +1,12 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.animeproviders.GogoanimeProvider.Companion.getStatus
-import com.lagradost.cloudstream3.utils.DataStore.toKotlinObject
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.net.URI
 
 class AsiaFlixProvider : MainAPI() {
@@ -20,55 +19,58 @@ class AsiaFlixProvider : MainAPI() {
 
     private val apiUrl = "https://api.asiaflix.app/api/v2"
 
+    @Serializable
     data class DashBoardObject(
-        @JsonProperty("sectionName") val sectionName: String,
-        @JsonProperty("type") val type: String?,
-        @JsonProperty("data") val data: List<Data>?
+        @SerialName("sectionName") val sectionName: String,
+        @SerialName("type") val type: String?,
+        @SerialName("data") val data: List<Data>?
     )
 
+    @Serializable
     data class Episodes(
-        @JsonProperty("_id") val _id: String,
-        @JsonProperty("epUrl") val epUrl: String?,
-        @JsonProperty("number") val number: Int?,
-        @JsonProperty("type") val type: String?,
-        @JsonProperty("extracted") val extracted: String?,
-        @JsonProperty("videoUrl") val videoUrl: String?
+        @SerialName("_id") val _id: String,
+        @SerialName("epUrl") val epUrl: String?,
+        @SerialName("number") val number: Int?,
+        @SerialName("type") val type: String?,
+        @SerialName("extracted") val extracted: String?,
+        @SerialName("videoUrl") val videoUrl: String?
     )
 
 
+    @Serializable
     data class Data(
-        @JsonProperty("_id") val _id: String,
-        @JsonProperty("name") val name: String,
-        @JsonProperty("altNames") val altNames: String?,
-        @JsonProperty("image") val image: String?,
-        @JsonProperty("tvStatus") val tvStatus: String?,
-        @JsonProperty("genre") val genre: String?,
-        @JsonProperty("releaseYear") val releaseYear: Int?,
-        @JsonProperty("createdAt") val createdAt: Long?,
-        @JsonProperty("episodes") val episodes: List<Episodes>?,
-        @JsonProperty("views") val views: Int?
+        @SerialName("_id") val _id: String,
+        @SerialName("name") val name: String,
+        @SerialName("altNames") val altNames: String?,
+        @SerialName("image") val image: String?,
+        @SerialName("tvStatus") val tvStatus: String?,
+        @SerialName("genre") val genre: String?,
+        @SerialName("releaseYear") val releaseYear: Int?,
+        @SerialName("createdAt") val createdAt: Long?,
+        @SerialName("episodes") val episodes: List<Episodes>?,
+        @SerialName("views") val views: Int?
     )
 
-
+    @Serializable
     data class DramaPage(
-        @JsonProperty("_id") val _id: String,
-        @JsonProperty("name") val name: String,
-        @JsonProperty("altNames") val altNames: String?,
-        @JsonProperty("synopsis") val synopsis: String?,
-        @JsonProperty("image") val image: String?,
-        @JsonProperty("language") val language: String?,
-        @JsonProperty("dramaUrl") val dramaUrl: String?,
-        @JsonProperty("published") val published: Boolean?,
-        @JsonProperty("tvStatus") val tvStatus: String?,
-        @JsonProperty("firstAirDate") val firstAirDate: String?,
-        @JsonProperty("genre") val genre: String?,
-        @JsonProperty("releaseYear") val releaseYear: Int?,
-        @JsonProperty("createdAt") val createdAt: Long?,
-        @JsonProperty("modifiedAt") val modifiedAt: Long?,
-        @JsonProperty("episodes") val episodes: List<Episodes>,
-        @JsonProperty("__v") val __v: Int?,
-        @JsonProperty("cdnImage") val cdnImage: String?,
-        @JsonProperty("views") val views: Int?
+        @SerialName("_id") val _id: String,
+        @SerialName("name") val name: String,
+        @SerialName("altNames") val altNames: String?,
+        @SerialName("synopsis") val synopsis: String?,
+        @SerialName("image") val image: String?,
+        @SerialName("language") val language: String?,
+        @SerialName("dramaUrl") val dramaUrl: String?,
+        @SerialName("published") val published: Boolean?,
+        @SerialName("tvStatus") val tvStatus: String?,
+        @SerialName("firstAirDate") val firstAirDate: String?,
+        @SerialName("genre") val genre: String?,
+        @SerialName("releaseYear") val releaseYear: Int?,
+        @SerialName("createdAt") val createdAt: Long?,
+        @SerialName("modifiedAt") val modifiedAt: Long?,
+        @SerialName("episodes") val episodes: List<Episodes>,
+        @SerialName("__v") val __v: Int?,
+        @SerialName("cdnImage") val cdnImage: String?,
+        @SerialName("views") val views: Int?
     )
 
     private fun Data.toSearchResponse(): TvSeriesSearchResponse {
@@ -114,14 +116,12 @@ class AsiaFlixProvider : MainAPI() {
         val headers = mapOf("X-Requested-By" to "asiaflix-web")
         val response = app.get("$apiUrl/dashboard", headers = headers).text
 
-        val customMapper =
-            mapper.copy().configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true)
         // Hack, because it can either be object or a list
         val cleanedResponse = Regex(""""data":(\{.*?),\{"sectionName"""").replace(response) {
             """"data":null},{"sectionName""""
         }
 
-        val dashBoard = customMapper.readValue<List<DashBoardObject>?>(cleanedResponse)
+        val dashBoard = parseJson<List<DashBoardObject>?>(cleanedResponse)
 
         val listItems = dashBoard?.mapNotNull {
             it.data?.map { data ->
@@ -133,8 +133,9 @@ class AsiaFlixProvider : MainAPI() {
         return HomePageResponse(listItems ?: listOf())
     }
 
+    @Serializable
     data class Link(
-        @JsonProperty("url") val url: String?,
+        @SerialName("url") val url: String?,
     )
 
     override suspend fun loadLinks(
@@ -148,7 +149,7 @@ class AsiaFlixProvider : MainAPI() {
         app.get(
             "$apiUrl/utility/get-stream-links?url=$data",
             headers = headers
-        ).text.toKotlinObject<Link>().url?.let {
+        ).parsed<Link>().url?.let {
 //            val fixedUrl = "https://api.asiaflix.app/api/v2/utility/cors-proxy/playlist/${URLEncoder.encode(it, StandardCharsets.UTF_8.toString())}"
             callback.invoke(
                 ExtractorLink(
@@ -169,14 +170,13 @@ class AsiaFlixProvider : MainAPI() {
         val headers = mapOf("X-Requested-By" to "asiaflix-web")
         val url = "$apiUrl/drama/search?q=$query"
         val response = app.get(url, headers = headers).text
-        return mapper.readValue<List<Data>?>(response)?.map { it.toSearchResponse() }
+        return parseJson<List<Data>?>(response)?.map { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
         val headers = mapOf("X-Requested-By" to "asiaflix-web")
         val requestUrl = "$apiUrl/drama?id=${url.split("/").lastOrNull()}"
-        val response = app.get(requestUrl, headers = headers).text
-        val dramaPage = response.toKotlinObject<DramaPage>()
+        val dramaPage = app.get(requestUrl, headers = headers).parsed<DramaPage>()
         return dramaPage.toLoadResponse()
     }
 }

@@ -30,7 +30,6 @@ import androidx.tvprovider.media.tv.PreviewChannelHelper
 import androidx.tvprovider.media.tv.TvContractCompat
 import androidx.tvprovider.media.tv.WatchNextProgram
 import androidx.tvprovider.media.tv.WatchNextProgram.fromCursor
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastState
 import com.google.android.gms.common.ConnectionResult
@@ -39,19 +38,30 @@ import com.google.android.gms.common.wrappers.Wrappers
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.isMovieType
-import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.ui.result.ResultFragment
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import com.lagradost.cloudstream3.utils.FillerEpisodeCheck.toClassDir
 import com.lagradost.cloudstream3.utils.JsUnpacker.Companion.load
 import com.lagradost.cloudstream3.utils.UIHelper.navigate
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import okhttp3.Cache
 import java.io.*
 import java.net.URL
 import java.net.URLDecoder
 
+
 object AppUtils {
+    val jsonParser = Json {
+        isLenient = true
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+        allowStructuredMapKeys = true
+        coerceInputValues = true
+    }
+
     //fun Context.deleteFavorite(data: SearchResponse) {
     //    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
     //    normalSafeApiCall {
@@ -242,11 +252,11 @@ object AppUtils {
     /** Any object as json string */
     fun Any.toJson(): String {
         if (this is String) return this
-        return mapper.writeValueAsString(this)
+        return jsonParser.encodeToString(this)
     }
 
     inline fun <reified T> parseJson(value: String): T {
-        return mapper.readValue(value)
+        return jsonParser.decodeFromString(value)
     }
 
     inline fun <reified T> tryParseJson(value: String?): T? {

@@ -1,13 +1,13 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import java.util.ArrayList
 
 class OtakudesuProvider : MainAPI() {
     override var mainUrl = "https://otakudesu.watch"
@@ -132,14 +132,14 @@ class OtakudesuProvider : MainAPI() {
     }
 
 
-    data class ResponseSources(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("i") val i: String,
-        @JsonProperty("q") val q: String,
+    @Serializable data class ResponseSources(
+        @SerialName("id") val id: String,
+        @SerialName("i") val i: String,
+        @SerialName("q") val q: String,
     )
 
-    data class ResponseData(
-        @JsonProperty("data") val data: String
+    @Serializable data class ResponseData(
+        @SerialName("data") val data: String
     )
 
     override suspend fun loadLinks(
@@ -181,7 +181,10 @@ class OtakudesuProvider : MainAPI() {
             ).select("iframe").attr("src")
 
             if (sources.startsWith("https://desustream.me")) {
-                if (!sources.contains("/arcg/") && !sources.contains("/odchan/") && !sources.contains("/desudrive/")) {
+                if (!sources.contains("/arcg/") && !sources.contains("/odchan/") && !sources.contains(
+                        "/desudrive/"
+                    )
+                ) {
                     sources = app.get(sources).document.select("iframe").attr("src")
                 }
                 if (sources.startsWith("https://yourupload.com")) {

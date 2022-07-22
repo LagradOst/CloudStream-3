@@ -1,7 +1,6 @@
 package com.lagradost.cloudstream3.movieproviders
 
 import android.util.Log
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.getCaptchaToken
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
@@ -19,12 +18,13 @@ import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.nicehttp.NiceResponse
 import kotlinx.coroutines.delay
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.net.URI
 import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.system.measureTimeMillis
 
 open class SflixProvider : MainAPI() {
@@ -278,32 +278,36 @@ open class SflixProvider : MainAPI() {
         }
     }
 
+    @Serializable
     data class Tracks(
-        @JsonProperty("file") val file: String?,
-        @JsonProperty("label") val label: String?,
-        @JsonProperty("kind") val kind: String?
+        @SerialName("file") val file: String?,
+        @SerialName("label") val label: String?,
+        @SerialName("kind") val kind: String?
     )
 
+    @Serializable
     data class Sources(
-        @JsonProperty("file") val file: String?,
-        @JsonProperty("type") val type: String?,
-        @JsonProperty("label") val label: String?
+        @SerialName("file") val file: String?,
+        @SerialName("type") val type: String?,
+        @SerialName("label") val label: String?
     )
 
+    @Serializable
     data class SourceObject(
-        @JsonProperty("sources") val sources: List<Sources?>?,
-        @JsonProperty("sources_1") val sources1: List<Sources?>?,
-        @JsonProperty("sources_2") val sources2: List<Sources?>?,
-        @JsonProperty("sourcesBackup") val sourcesBackup: List<Sources?>?,
-        @JsonProperty("tracks") val tracks: List<Tracks?>?
+        @SerialName("sources") val sources: List<Sources?>?,
+        @SerialName("sources_1") val sources1: List<Sources?>?,
+        @SerialName("sources_2") val sources2: List<Sources?>?,
+        @SerialName("sourcesBackup") val sourcesBackup: List<Sources?>?,
+        @SerialName("tracks") val tracks: List<Tracks?>?
     )
 
+    @Serializable
     data class IframeJson(
-//        @JsonProperty("type") val type: String? = null,
-        @JsonProperty("link") val link: String? = null,
-//        @JsonProperty("sources") val sources: ArrayList<String> = arrayListOf(),
-//        @JsonProperty("tracks") val tracks: ArrayList<String> = arrayListOf(),
-//        @JsonProperty("title") val title: String? = null
+//        @SerialName("type") val type: String? = null,
+        @SerialName("link") val link: String? = null,
+//        @SerialName("sources") val sources: ArrayList<String> = arrayListOf(),
+//        @SerialName("tracks") val tracks: ArrayList<String> = arrayListOf(),
+//        @SerialName("title") val title: String? = null
     )
 
     override suspend fun loadLinks(
@@ -411,11 +415,12 @@ open class SflixProvider : MainAPI() {
     }
 
     companion object {
+        @Serializable
         data class PollingData(
-            @JsonProperty("sid") val sid: String? = null,
-            @JsonProperty("upgrades") val upgrades: ArrayList<String> = arrayListOf(),
-            @JsonProperty("pingInterval") val pingInterval: Int? = null,
-            @JsonProperty("pingTimeout") val pingTimeout: Int? = null
+            @SerialName("sid") val sid: String? = null,
+            @SerialName("upgrades") val upgrades: ArrayList<String> = arrayListOf(),
+            @SerialName("pingInterval") val pingInterval: Int? = null,
+            @SerialName("pingTimeout") val pingTimeout: Int? = null
         )
 
         /*

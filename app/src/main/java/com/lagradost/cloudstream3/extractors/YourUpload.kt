@@ -1,13 +1,14 @@
 package com.lagradost.cloudstream3.extractors
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-class YourUpload: ExtractorApi() {
+class YourUpload : ExtractorApi() {
     override val name = "Yourupload"
     override val mainUrl = "https://www.yourupload.com"
     override val requiresReferer = false
@@ -19,7 +20,8 @@ class YourUpload: ExtractorApi() {
             this.select("script").map { script ->
                 if (script.data().contains("var jwplayerOptions = {")) {
                     val data =
-                        script.data().substringAfter("var jwplayerOptions = {").substringBefore(",\n")
+                        script.data().substringAfter("var jwplayerOptions = {")
+                            .substringBefore(",\n")
                     val link = tryParseJson<ResponseSource>(
                         "{${
                             data.replace("file", "\"file\"").replace("'", "\"")
@@ -40,8 +42,7 @@ class YourUpload: ExtractorApi() {
         return sources
     }
 
-    private data class ResponseSource(
-        @JsonProperty("file") val file: String,
+    @Serializable private data class ResponseSource(
+        @SerialName("file") val file: String,
     )
-
 }

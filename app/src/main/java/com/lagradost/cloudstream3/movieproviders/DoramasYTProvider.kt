@@ -7,6 +7,8 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import java.util.*
 
 
+import kotlinx.serialization.Serializable
+
 class DoramasYTProvider : MainAPI() {
     companion object {
         fun getType(t: String): TvType {

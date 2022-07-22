@@ -1,16 +1,17 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
+
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 import java.util.*
-import kotlin.collections.ArrayList
 
-
-class AnimefenixProvider:MainAPI() {
-
+class AnimefenixProvider : MainAPI() {
     override var mainUrl = "https://animefenix.com"
     override var name = "Animefenix"
     override var lang = "es"
@@ -32,8 +33,8 @@ class AnimefenixProvider:MainAPI() {
     override suspend fun getMainPage(): HomePageResponse {
         val urls = listOf(
             Pair("$mainUrl/", "Animes"),
-            Pair("$mainUrl/animes?type[]=movie&order=default", "Peliculas", ),
-            Pair("$mainUrl/animes?type[]=ova&order=default", "OVA's", ),
+            Pair("$mainUrl/animes?type[]=movie&order=default", "Peliculas"),
+            Pair("$mainUrl/animes?type[]=ova&order=default", "OVA's"),
         )
 
         val items = ArrayList<HomePageList>()
@@ -45,9 +46,10 @@ class AnimefenixProvider:MainAPI() {
                     val title = it.selectFirst("div.overtitle")?.text()
                     val poster = it.selectFirst("a img")?.attr("src")
                     val epRegex = Regex("(-(\\d+)\$|-(\\d+)\\.(\\d+))")
-                    val url = it.selectFirst("a")?.attr("href")?.replace(epRegex,"")
-                        ?.replace("/ver/","/")
-                    val epNum = it.selectFirst(".is-size-7")?.text()?.replace("Episodio ","")?.toIntOrNull()
+                    val url = it.selectFirst("a")?.attr("href")?.replace(epRegex, "")
+                        ?.replace("/ver/", "/")
+                    val epNum = it.selectFirst(".is-size-7")?.text()?.replace("Episodio ", "")
+                        ?.toIntOrNull()
                     newAnimeSearchResponse(title!!, url!!) {
                         this.posterUrl = poster
                         addDubStatus(getDubStatus(title), epNum)
@@ -68,7 +70,9 @@ class AnimefenixProvider:MainAPI() {
                     TvType.Anime,
                     poster,
                     null,
-                    if (title.contains("Latino")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(DubStatus.Subbed),
+                    if (title.contains("Latino")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(
+                        DubStatus.Subbed
+                    ),
                 )
             }
 
@@ -92,7 +96,8 @@ class AnimefenixProvider:MainAPI() {
                 fixUrl(image ?: ""),
                 null,
                 if (title.contains("Latino") || title.contains("Castellano")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(
-                    DubStatus.Subbed),
+                    DubStatus.Subbed
+                ),
             )
         }
     }
@@ -127,12 +132,14 @@ class AnimefenixProvider:MainAPI() {
         }
     }
 
-    private fun cleanStreamID(input: String): String = input.replace(Regex("player=.*&amp;code=|&"),"")
+    private fun cleanStreamID(input: String): String =
+        input.replace(Regex("player=.*&amp;code=|&"), "")
 
-    data class Amazon (
-        @JsonProperty("file") var file  : String? = null,
-        @JsonProperty("type") var type  : String? = null,
-        @JsonProperty("label") var label : String? = null
+    @Serializable
+    data class Amazon(
+        @SerialName("file") var file: String? = null,
+        @SerialName("type") var type: String? = null,
+        @SerialName("label") var label: String? = null
     )
 
     private fun cleanExtractor(
@@ -168,14 +175,30 @@ class AnimefenixProvider:MainAPI() {
             test.apmap {
                 val codestream = it.value
                 val links = when {
-                    codestream.contains("player=2&amp") -> "https://embedsito.com/v/"+cleanStreamID(codestream)
-                    codestream.contains("player=3&amp") -> "https://www.mp4upload.com/embed-"+cleanStreamID(codestream)+".html"
-                    codestream.contains("player=6&amp") -> "https://www.yourupload.com/embed/"+cleanStreamID(codestream)
-                    codestream.contains("player=12&amp") -> "http://ok.ru/videoembed/"+cleanStreamID(codestream)
-                    codestream.contains("player=4&amp") -> "https://sendvid.com/"+cleanStreamID(codestream)
-                    codestream.contains("player=9&amp") -> "AmaNormal https://www.animefenix.com/stream/amz.php?v="+cleanStreamID(codestream)
-                    codestream.contains("player=11&amp") -> "AmazonES https://www.animefenix.com/stream/amz.php?v="+cleanStreamID(codestream)
-                    codestream.contains("player=22&amp") -> "Fireload https://www.animefenix.com/stream/fl.php?v="+cleanStreamID(codestream)
+                    codestream.contains("player=2&amp") -> "https://embedsito.com/v/" + cleanStreamID(
+                        codestream
+                    )
+                    codestream.contains("player=3&amp") -> "https://www.mp4upload.com/embed-" + cleanStreamID(
+                        codestream
+                    ) + ".html"
+                    codestream.contains("player=6&amp") -> "https://www.yourupload.com/embed/" + cleanStreamID(
+                        codestream
+                    )
+                    codestream.contains("player=12&amp") -> "http://ok.ru/videoembed/" + cleanStreamID(
+                        codestream
+                    )
+                    codestream.contains("player=4&amp") -> "https://sendvid.com/" + cleanStreamID(
+                        codestream
+                    )
+                    codestream.contains("player=9&amp") -> "AmaNormal https://www.animefenix.com/stream/amz.php?v=" + cleanStreamID(
+                        codestream
+                    )
+                    codestream.contains("player=11&amp") -> "AmazonES https://www.animefenix.com/stream/amz.php?v=" + cleanStreamID(
+                        codestream
+                    )
+                    codestream.contains("player=22&amp") -> "Fireload https://www.animefenix.com/stream/fl.php?v=" + cleanStreamID(
+                        codestream
+                    )
 
                     else -> ""
                 }
@@ -183,10 +206,12 @@ class AnimefenixProvider:MainAPI() {
 
                 argamap({
                     if (links.contains("AmaNormal")) {
-                        val doc = app.get(links.replace("AmaNormal ","")).document
+                        val doc = app.get(links.replace("AmaNormal ", "")).document
                         doc.select("script").map { script ->
                             if (script.data().contains("sources: [{\"file\"")) {
-                                val text = script.data().substringAfter("sources:").substringBefore("]").replace("[","")
+                                val text =
+                                    script.data().substringAfter("sources:").substringBefore("]")
+                                        .replace("[", "")
                                 val json = parseJson<Amazon>(text)
                                 if (json.file != null) {
                                     cleanExtractor(
@@ -205,7 +230,9 @@ class AnimefenixProvider:MainAPI() {
                         val doc = app.get("$amazonES&ext=es").document
                         doc.select("script").map { script ->
                             if (script.data().contains("sources: [{\"file\"")) {
-                                val text = script.data().substringAfter("sources:").substringBefore("]").replace("[","")
+                                val text =
+                                    script.data().substringAfter("sources:").substringBefore("]")
+                                        .replace("[", "")
                                 val json = parseJson<Amazon>(text)
                                 if (json.file != null) {
                                     cleanExtractor(
@@ -222,7 +249,9 @@ class AnimefenixProvider:MainAPI() {
                         val doc = app.get(links.replace("Fireload ", "")).document
                         doc.select("script").map { script ->
                             if (script.data().contains("sources: [{\"file\"")) {
-                                val text = script.data().substringAfter("sources:").substringBefore("]").replace("[","")
+                                val text =
+                                    script.data().substringAfter("sources:").substringBefore("]")
+                                        .replace("[", "")
                                 val json = parseJson<Amazon>(text)
                                 val testurl = if (json.file?.contains("fireload") == true) {
                                     app.get("https://${json.file}").text
@@ -233,7 +262,7 @@ class AnimefenixProvider:MainAPI() {
                                     cleanExtractor(
                                         "Fireload",
                                         "Fireload ${json.label}",
-                                        "https://"+json.file!!,
+                                        "https://" + json.file!!,
                                         callback
                                     )
                                 }

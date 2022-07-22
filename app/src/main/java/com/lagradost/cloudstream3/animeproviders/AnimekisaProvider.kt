@@ -1,16 +1,14 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
-import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 import java.util.*
-
 
 class AnimekisaProvider : MainAPI() {
     override var mainUrl = "https://animekisa.in"
@@ -24,8 +22,9 @@ class AnimekisaProvider : MainAPI() {
         TvType.Anime,
     )
 
+    @Serializable
     data class Response(
-        @JsonProperty("html") val html: String
+        @SerialName("html") val html: String
     )
 
     override suspend fun getMainPage(): HomePageResponse {
@@ -36,7 +35,7 @@ class AnimekisaProvider : MainAPI() {
             Pair("$mainUrl/ajax/list/views?type=month", "Trending by month"),
         )
 
-        val items = urls.mapNotNull  {
+        val items = urls.mapNotNull {
             suspendSafeApiCall {
                 val home = Jsoup.parse(
                     parseJson<Response>(
@@ -44,9 +43,9 @@ class AnimekisaProvider : MainAPI() {
                             it.first
                         ).text
                     ).html
-                ).select("div.flw-item").mapNotNull secondMap@ {
+                ).select("div.flw-item").mapNotNull secondMap@{
                     val title = it.selectFirst("h3.title a")?.text() ?: return@secondMap null
-                    val link = it.selectFirst("a")?.attr("href")  ?: return@secondMap null
+                    val link = it.selectFirst("a")?.attr("href") ?: return@secondMap null
                     val poster = it.selectFirst("img.lazyload")?.attr("data-src")
                     AnimeSearchResponse(
                         title,

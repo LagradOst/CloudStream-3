@@ -1,12 +1,13 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.unixTime
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 import java.util.*
 
@@ -21,37 +22,40 @@ class DubbedAnimeProvider : MainAPI() {
         TvType.Anime,
     )
 
+    @Serializable
     data class QueryEpisodeResultRoot(
-        @JsonProperty("result")
+        @SerialName("result")
         val result: QueryEpisodeResult,
     )
 
+    @Serializable
     data class QueryEpisodeResult(
-        @JsonProperty("anime") val anime: List<EpisodeInfo>,
-        @JsonProperty("error") val error: Boolean,
-        @JsonProperty("errorMSG") val errorMSG: String?,
+        @SerialName("anime") val anime: List<EpisodeInfo>,
+        @SerialName("error") val error: Boolean,
+        @SerialName("errorMSG") val errorMSG: String?,
     )
 
+    @Serializable
     data class EpisodeInfo(
-        @JsonProperty("serversHTML") val serversHTML: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("preview_img") val previewImg: String?,
-        @JsonProperty("wideImg") val wideImg: String?,
-        @JsonProperty("year") val year: String?,
-        @JsonProperty("desc") val desc: String?,
+        @SerialName("serversHTML") val serversHTML: String,
+        @SerialName("title") val title: String,
+        @SerialName("preview_img") val previewImg: String?,
+        @SerialName("wideImg") val wideImg: String?,
+        @SerialName("year") val year: String?,
+        @SerialName("desc") val desc: String?,
 
         /*
-        @JsonProperty("rowid") val rowid: String,
-        @JsonProperty("status") val status: String,
-        @JsonProperty("skips") val skips: String,
-        @JsonProperty("totalEp") val totalEp: Long,
-        @JsonProperty("ep") val ep: String,
-        @JsonProperty("NextEp") val nextEp: Long,
-        @JsonProperty("slug") val slug: String,
-        @JsonProperty("showid") val showid: String,
-        @JsonProperty("Epviews") val epviews: String,
-        @JsonProperty("TotalViews") val totalViews: String,
-        @JsonProperty("tags") val tags: String,*/
+        @SerialName("rowid") val rowid: String,
+        @SerialName("status") val status: String,
+        @SerialName("skips") val skips: String,
+        @SerialName("totalEp") val totalEp: Long,
+        @SerialName("ep") val ep: String,
+        @SerialName("NextEp") val nextEp: Long,
+        @SerialName("slug") val slug: String,
+        @SerialName("showid") val showid: String,
+        @SerialName("Epviews") val epviews: String,
+        @SerialName("TotalViews") val totalViews: String,
+        @SerialName("tags") val tags: String,*/
     )
 
     private suspend fun parseDocumentTrending(url: String): List<SearchResponse> {
@@ -117,7 +121,7 @@ class DubbedAnimeProvider : MainAPI() {
         val url =
             mainUrl + (if (isMovie) "/movies/jsonMovie" else "/xz/v3/jsonEpi") + ".php?slug=$slug&_=$unixTime"
         val response = app.get(url).text
-        val mapped = mapper.readValue<QueryEpisodeResultRoot>(response)
+        val mapped = parseJson<QueryEpisodeResultRoot>(response)
         return mapped.result.anime.first()
     }
 
@@ -168,7 +172,9 @@ class DubbedAnimeProvider : MainAPI() {
         return items.mapNotNull { i ->
             val innerDiv = i.selectFirst("> div.result")
             val href = fixUrl(i.attr("href"))
-            val img = fixUrl(innerDiv?.selectFirst("> div.imgkz > img")?.attr("src") ?: return@mapNotNull null)
+            val img = fixUrl(
+                innerDiv?.selectFirst("> div.imgkz > img")?.attr("src") ?: return@mapNotNull null
+            )
             val title = innerDiv.selectFirst("> div.titleresults")?.text() ?: return@mapNotNull null
 
             if (getIsMovie(href)) {

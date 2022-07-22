@@ -1,6 +1,5 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.extractors.XStreamCdn
 import com.lagradost.cloudstream3.extractors.helper.AsianEmbedHelper
@@ -10,6 +9,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 
 class KdramaHoodProvider : MainAPI() {
@@ -21,9 +22,10 @@ class KdramaHoodProvider : MainAPI() {
     override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.AsianDrama)
 
+    @Serializable
     private data class ResponseDatas(
-        @JsonProperty("label") val label: String,
-        @JsonProperty("file") val file: String
+        @SerialName("label") val label: String,
+        @SerialName("file") val file: String
     )
 
     override suspend fun getMainPage(): HomePageResponse {
@@ -48,7 +50,9 @@ class KdramaHoodProvider : MainAPI() {
                 val rex = Regex("\\((\\d+)")
                 //Log.i(this.name, "Result => (rex value) ${rex.find(yearText)?.value}")
                 rex.find(yearText)?.value?.toIntOrNull()
-            } catch (e: Exception) { null }
+            } catch (e: Exception) {
+                null
+            }
 
             MovieSearchResponse(
                 name = title,
@@ -67,7 +71,7 @@ class KdramaHoodProvider : MainAPI() {
         val url = "$mainUrl/?s=$query"
         val html = app.get(url).document
         val document = html.getElementsByTag("body")
-                .select("div.item_1.items > div.item") ?: return listOf()
+            .select("div.item_1.items > div.item") ?: return listOf()
 
         return document.mapNotNull {
             if (it == null) {
@@ -105,15 +109,21 @@ class KdramaHoodProvider : MainAPI() {
             val startLink = "https://kdramahood.com/drama-release-year/"
             var res: Int? = null
             info?.select("div.metadatac")?.forEach {
-                if (res != null) { return@forEach }
-                if (it == null) { return@forEach }
+                if (res != null) {
+                    return@forEach
+                }
+                if (it == null) {
+                    return@forEach
+                }
                 val yearLink = it.select("a").attr("href") ?: return@forEach
                 if (yearLink.startsWith(startLink)) {
                     res = yearLink.substring(startLink.length).replace("/", "").toIntOrNull()
                 }
             }
             res
-        } catch (e: Exception) { null }
+        } catch (e: Exception) {
+            null
+        }
 
         val recs = doc.select("div.sidebartv > div.tvitemrel").mapNotNull {
             val a = it?.select("a") ?: return@mapNotNull null
@@ -161,12 +171,15 @@ class KdramaHoodProvider : MainAPI() {
                 }
                 //Fetch default source and subtitles
                 epVidLinkEl.select("div.embed2")?.forEach { defsrc ->
-                    if (defsrc == null) { return@forEach }
+                    if (defsrc == null) {
+                        return@forEach
+                    }
                     val scriptstring = defsrc.toString()
                     if (scriptstring.contains("sources: [{")) {
-                        "(?<=playerInstance2.setup\\()([\\s\\S]*?)(?=\\);)".toRegex().find(scriptstring)?.value?.let { itemjs ->
-                            listOfLinks.add("$mainUrl$itemjs")
-                        }
+                        "(?<=playerInstance2.setup\\()([\\s\\S]*?)(?=\\);)".toRegex()
+                            .find(scriptstring)?.value?.let { itemjs ->
+                                listOfLinks.add("$mainUrl$itemjs")
+                            }
                     }
                 }
             }

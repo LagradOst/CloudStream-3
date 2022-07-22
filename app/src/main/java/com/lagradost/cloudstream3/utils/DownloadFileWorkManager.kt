@@ -25,7 +25,7 @@ class DownloadFileWorkManager(val context: Context, private val workerParams: Wo
     override suspend fun doWork(): Result {
         val key = workerParams.inputData.getString("key")
         try {
-            println("KEY $key")
+            //println("KEY $key")
             if (key == DOWNLOAD_CHECK) {
                 downloadCheck(applicationContext, ::handleNotification)?.let {
                     awaitDownload(it)
@@ -79,7 +79,7 @@ class DownloadFileWorkManager(val context: Context, private val workerParams: Wo
         }
         downloadStatusEvent += listener
         while (!isDone) {
-            println("AWAITING $id")
+            //println("AWAITING $id")
             delay(1000)
         }
         downloadStatusEvent -= listener

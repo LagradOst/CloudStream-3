@@ -6,6 +6,8 @@ import com.lagradost.cloudstream3.utils.getQualityFromName
 import org.jsoup.Jsoup
 import java.util.*
 
+import kotlinx.serialization.Serializable
+
 class KawaiifuProvider : MainAPI() {
     override var mainUrl = "https://kawaiifu.com"
     override var name = "Kawaiifu"
@@ -91,7 +93,7 @@ class KawaiifuProvider : MainAPI() {
         val title = soup.selectFirst(".title")!!.text()
         val tags = soup.select(".table a[href*=\"/tag/\"]").map { tag -> tag.text() }
         val description = soup.select(".sub-desc p")
-            .filter { it.select("strong").isEmpty() && it.select("iframe").isEmpty() }
+            .filter { it -> it.select("strong").isEmpty() && it.select("iframe").isEmpty() }
             .joinToString("\n") { it.text() }
         val year = url.split("/").filter { it.contains("-") }[0].split("-")[1].toIntOrNull()
 

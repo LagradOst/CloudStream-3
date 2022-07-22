@@ -6,6 +6,8 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 
 
+import kotlinx.serialization.Serializable
+
 open class Jawcloud : ExtractorApi() {
     override var name = "Jawcloud"
     override var mainUrl = "https://jawcloud.co"

@@ -4,6 +4,8 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
 
+import kotlinx.serialization.Serializable
+
 open class Maxstream : ExtractorApi() {
     override var name = "Maxstream"
     override var mainUrl = "https://maxstream.video/"

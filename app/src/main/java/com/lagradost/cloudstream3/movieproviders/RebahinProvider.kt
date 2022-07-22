@@ -1,17 +1,19 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.network.WebViewResolver
-import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.nodes.Element
 import java.net.URI
-import java.util.ArrayList
 
 class RebahinProvider : MainAPI() {
     override var mainUrl = "http://167.88.14.149"
@@ -285,39 +287,44 @@ class RebahinProvider : MainAPI() {
         return true
     }
 
+    @Serializable
     private data class ResponseLocal(
-        @JsonProperty("file") val file: String,
-        @JsonProperty("label") val label: String,
-        @JsonProperty("type") val type: String?
+        @SerialName("file") val file: String,
+        @SerialName("label") val label: String,
+        @SerialName("type") val type: String?
     )
 
+    @Serializable
     private data class Tracks(
-        @JsonProperty("file") val file: String,
-        @JsonProperty("label") val label: String?,
-        @JsonProperty("kind") val kind: String?
+        @SerialName("file") val file: String,
+        @SerialName("label") val label: String?,
+        @SerialName("kind") val kind: String?
     )
 
+    @Serializable
     private data class Captions(
-        @JsonProperty("id") val id: String,
-        @JsonProperty("hash") val hash: String,
-        @JsonProperty("language") val language: String,
+        @SerialName("id") val id: String,
+        @SerialName("hash") val hash: String,
+        @SerialName("language") val language: String,
     )
 
+    @Serializable
     private data class Data(
-        @JsonProperty("file") val file: String,
-        @JsonProperty("label") val label: String,
+        @SerialName("file") val file: String,
+        @SerialName("label") val label: String,
     )
 
+    @Serializable
     private data class Player(
-        @JsonProperty("poster_file") val poster_file: String,
+        @SerialName("poster_file") val poster_file: String,
     )
 
+    @Serializable
     private data class ResponseKotakAjair(
-        @JsonProperty("success") val success: Boolean,
-        @JsonProperty("player") val player: Player,
-        @JsonProperty("data") val data: List<Data>?,
-        @JsonProperty("captions") val captions: List<Captions>?
+        @SerialName("success") val success: Boolean,
+        @SerialName("player") val player: Player,
+        @SerialName("data") val data: List<Data>?,
+        @SerialName("captions") val captions: List<Captions>?
     )
-
 }
 

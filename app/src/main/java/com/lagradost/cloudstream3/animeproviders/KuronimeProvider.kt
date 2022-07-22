@@ -77,7 +77,10 @@ class KuronimeProvider : MainAPI() {
     private fun Element.toSearchResult(): AnimeSearchResponse {
         val href = getProperAnimeLink(fixUrlNull(this.selectFirst("a")?.attr("href")).toString())
         val title = this.select(".bsuxtt, .tt > h4").text().trim()
-        val posterUrl = fixUrlNull(this.selectFirst("div.view,div.bt")?.nextElementSibling()?.select("img")?.attr("data-src"))
+        val posterUrl = fixUrlNull(
+            this.selectFirst("div.view,div.bt")?.nextElementSibling()?.select("img")
+                ?.attr("data-src")
+        )
         val epNum = this.select(".ep").text().replace(Regex("[^0-9]"), "").trim().toIntOrNull()
         val tvType = getType(this.selectFirst(".bt > span")?.text().toString())
         return newAnimeSearchResponse(title, href, tvType) {
@@ -117,7 +120,8 @@ class KuronimeProvider : MainAPI() {
 
         val episodes = document.select("div.bixbox.bxcl > ul > li").map {
             val name = it.selectFirst("a")?.text()?.trim()
-            val episode = it.selectFirst("a")?.text()?.trim()?.replace("Episode", "")?.trim()?.toIntOrNull()
+            val episode =
+                it.selectFirst("a")?.text()?.trim()?.replace("Episode", "")?.trim()?.toIntOrNull()
             val link = it.selectFirst("a")!!.attr("href")
             Episode(link, name = name, episode = episode)
         }.reversed()

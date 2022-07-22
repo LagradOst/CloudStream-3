@@ -1,15 +1,15 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.M3u8Helper
-import com.lagradost.cloudstream3.utils.loadExtractor
-import org.jsoup.Jsoup
-
 
 /** Needs to inherit from MainAPI() to
  * make the app know what functions to call
  */
+
+ import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.loadExtractor
+import org.jsoup.Jsoup
 
 open class PelisplusProviderTemplate : MainAPI() {
     override var lang = "es"

@@ -1,9 +1,14 @@
 package com.lagradost.cloudstream3.extractors
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.getAndUnpack
+import kotlinx.serialization.SerialName
+
+import kotlinx.serialization.Serializable
 
 class Filesim : ExtractorApi() {
     override val name = "Filesim"
@@ -29,10 +34,10 @@ class Filesim : ExtractorApi() {
         return sources
     }
 
-    private data class ResponseSource(
-        @JsonProperty("file") val file: String,
-        @JsonProperty("type") val type: String?,
-        @JsonProperty("label") val label: String?
+    @Serializable private data class ResponseSource(
+        @SerialName("file") val file: String,
+        @SerialName("type") val type: String?,
+        @SerialName("label") val label: String?
     )
 
 }

@@ -1,13 +1,14 @@
 package com.lagradost.cloudstream3.animeproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
+
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import java.util.ArrayList
-
 
 class OploverzProvider : MainAPI() {
     override var mainUrl = "https://65.108.132.145"
@@ -68,7 +69,8 @@ class OploverzProvider : MainAPI() {
                 )?.groupValues?.get(1).toString()
                 (title.contains("-ova")) -> Regex("(.+)-ova").find(title)?.groupValues?.get(1)
                     .toString()
-                (title.contains("-movie")) -> Regex("(.+)-subtitle").find(title)?.groupValues?.get(1).toString()
+                (title.contains("-movie")) -> Regex("(.+)-subtitle").find(title)?.groupValues?.get(1)
+                    .toString()
                 else -> Regex("(.+)-subtitle").find(title)?.groupValues?.get(1).toString()
                     .replace(Regex("-\\d+"), "")
             }
@@ -92,7 +94,9 @@ class OploverzProvider : MainAPI() {
         val title = this.selectFirst("h2[itemprop=headline]")?.text()?.trim() ?: ""
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
         val type = getType(this.selectFirst(".eggtype, .typez")?.text()?.trim().toString())
-        val epNum = this.selectFirst(".eggepisode, span.epx")?.text()?.replace(Regex("[^0-9]"), "")?.trim()?.toIntOrNull()
+        val epNum =
+            this.selectFirst(".eggepisode, span.epx")?.text()?.replace(Regex("[^0-9]"), "")?.trim()
+                ?.toIntOrNull()
 
         return newAnimeSearchResponse(title, href, type) {
             this.posterUrl = posterUrl
@@ -175,9 +179,10 @@ class OploverzProvider : MainAPI() {
 
     }
 
+    @Serializable
     data class Source(
-        @JsonProperty("play_url") val play_url: String,
-        @JsonProperty("format_id") val format_id: Int
+        @SerialName("play_url") val play_url: String,
+        @SerialName("format_id") val format_id: Int
     )
 
     override suspend fun loadLinks(

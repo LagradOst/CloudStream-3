@@ -1,12 +1,12 @@
 package com.lagradost.cloudstream3.utils
 
 import android.util.Log
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.lagradost.cloudstream3.animeproviders.AniflixProvider
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.mapper
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.concurrent.TimeUnit
 
 object SyncUtil {
@@ -62,7 +62,7 @@ object SyncUtil {
             val url =
                 "https://raw.githubusercontent.com/MALSync/MAL-Sync-Backup/master/data/pages/$site/$slug.json"
             val response = app.get(url, cacheTime = 1, cacheUnit = TimeUnit.DAYS).text
-            val mapped = mapper.readValue<MalSyncPage?>(response)
+            val mapped = parseJson<MalSyncPage?>(response)
 
             val overrideMal = mapped?.malId ?: mapped?.Mal?.id ?: mapped?.Anilist?.malId
             val overrideAnilist = mapped?.aniId ?: mapped?.Anilist?.id
@@ -77,80 +77,88 @@ object SyncUtil {
         return null
     }
 
-    suspend fun getUrlsFromId(id: String, type: String = "anilist") : List<String> {
+    suspend fun getUrlsFromId(id: String, type: String = "anilist"): List<String> {
         val url =
             "https://raw.githubusercontent.com/MALSync/MAL-Sync-Backup/master/data/$type/anime/$id.json"
         val response = app.get(url, cacheTime = 1, cacheUnit = TimeUnit.DAYS).parsed<SyncPage>()
         val pages = response.pages ?: return emptyList()
-        val current = pages.gogoanime.values.union(pages.nineanime.values).union(pages.twistmoe.values).mapNotNull { it.url }.toMutableList()
-        if(type == "anilist") { // TODO MAKE BETTER
+        val current =
+            pages.gogoanime.values.union(pages.nineanime.values).union(pages.twistmoe.values)
+                .mapNotNull { it.url }.toMutableList()
+        if (type == "anilist") { // TODO MAKE BETTER
             current.add("${AniflixProvider().mainUrl}/anime/$id")
         }
         return current
     }
 
+    @Serializable
     data class SyncPage(
-        @JsonProperty("Pages") val pages: SyncPages?,
+        @SerialName("Pages") val pages: SyncPages?,
     )
 
+    @Serializable
     data class SyncPages(
-        @JsonProperty("9anime") val nineanime: Map<String, ProviderPage> = emptyMap(),
-        @JsonProperty("Gogoanime") val gogoanime: Map<String, ProviderPage> = emptyMap(),
-        @JsonProperty("Twistmoe") val twistmoe: Map<String, ProviderPage> = emptyMap(),
+        @SerialName("9anime") val nineanime: Map<String, ProviderPage> = emptyMap(),
+        @SerialName("Gogoanime") val gogoanime: Map<String, ProviderPage> = emptyMap(),
+        @SerialName("Twistmoe") val twistmoe: Map<String, ProviderPage> = emptyMap(),
     )
 
+    @Serializable
     data class ProviderPage(
-        @JsonProperty("url") val url: String?,
+        @SerialName("url") val url: String?,
     )
 
+    @Serializable
     data class MalSyncPage(
-        @JsonProperty("identifier") val identifier: String?,
-        @JsonProperty("type") val type: String?,
-        @JsonProperty("page") val page: String?,
-        @JsonProperty("title") val title: String?,
-        @JsonProperty("url") val url: String?,
-        @JsonProperty("image") val image: String?,
-        @JsonProperty("hentai") val hentai: Boolean?,
-        @JsonProperty("sticky") val sticky: Boolean?,
-        @JsonProperty("active") val active: Boolean?,
-        @JsonProperty("actor") val actor: String?,
-        @JsonProperty("malId") val malId: Int?,
-        @JsonProperty("aniId") val aniId: Int?,
-        @JsonProperty("createdAt") val createdAt: String?,
-        @JsonProperty("updatedAt") val updatedAt: String?,
-        @JsonProperty("deletedAt") val deletedAt: String?,
-        @JsonProperty("Mal") val Mal: Mal?,
-        @JsonProperty("Anilist") val Anilist: Anilist?,
-        @JsonProperty("malUrl") val malUrl: String?
+        @SerialName("identifier") val identifier: String?,
+        @SerialName("type") val type: String?,
+        @SerialName("page") val page: String?,
+        @SerialName("title") val title: String?,
+        @SerialName("url") val url: String?,
+        @SerialName("image") val image: String?,
+        @SerialName("hentai") val hentai: Boolean?,
+        @SerialName("sticky") val sticky: Boolean?,
+        @SerialName("active") val active: Boolean?,
+        @SerialName("actor") val actor: String?,
+        @SerialName("malId") val malId: Int?,
+        @SerialName("aniId") val aniId: Int?,
+        @SerialName("createdAt") val createdAt: String?,
+        @SerialName("updatedAt") val updatedAt: String?,
+        @SerialName("deletedAt") val deletedAt: String?,
+        @SerialName("Mal") val Mal: Mal?,
+        @SerialName("Anilist") val Anilist: Anilist?,
+        @SerialName("malUrl") val malUrl: String?
     )
 
+    @Serializable
     data class Anilist(
-//            @JsonProperty("altTitle") val altTitle: List<String>?,
-//            @JsonProperty("externalLinks") val externalLinks: List<String>?,
-        @JsonProperty("id") val id: Int?,
-        @JsonProperty("malId") val malId: Int?,
-        @JsonProperty("type") val type: String?,
-        @JsonProperty("title") val title: String?,
-        @JsonProperty("url") val url: String?,
-        @JsonProperty("image") val image: String?,
-        @JsonProperty("category") val category: String?,
-        @JsonProperty("hentai") val hentai: Boolean?,
-        @JsonProperty("createdAt") val createdAt: String?,
-        @JsonProperty("updatedAt") val updatedAt: String?,
-        @JsonProperty("deletedAt") val deletedAt: String?
+//            @SerialName("altTitle") val altTitle: List<String>?,
+//            @SerialName("externalLinks") val externalLinks: List<String>?,
+        @SerialName("id") val id: Int?,
+        @SerialName("malId") val malId: Int?,
+        @SerialName("type") val type: String?,
+        @SerialName("title") val title: String?,
+        @SerialName("url") val url: String?,
+        @SerialName("image") val image: String?,
+        @SerialName("category") val category: String?,
+        @SerialName("hentai") val hentai: Boolean?,
+        @SerialName("createdAt") val createdAt: String?,
+        @SerialName("updatedAt") val updatedAt: String?,
+        @SerialName("deletedAt") val deletedAt: String?
     )
 
+    @Serializable
     data class Mal(
-//            @JsonProperty("altTitle") val altTitle: List<String>?,
-        @JsonProperty("id") val id: Int?,
-        @JsonProperty("type") val type: String?,
-        @JsonProperty("title") val title: String?,
-        @JsonProperty("url") val url: String?,
-        @JsonProperty("image") val image: String?,
-        @JsonProperty("category") val category: String?,
-        @JsonProperty("hentai") val hentai: Boolean?,
-        @JsonProperty("createdAt") val createdAt: String?,
-        @JsonProperty("updatedAt") val updatedAt: String?,
-        @JsonProperty("deletedAt") val deletedAt: String?
+//            @SerialName("altTitle") val altTitle: List<String>?,
+        @SerialName("id") val id: Int?,
+        @SerialName("type") val type: String?,
+        @SerialName("title") val title: String?,
+        @SerialName("url") val url: String?,
+        @SerialName("image") val image: String?,
+        @SerialName("category") val category: String?,
+        @SerialName("hentai") val hentai: Boolean?,
+        @SerialName("createdAt") val createdAt: String?,
+        @SerialName("updatedAt") val updatedAt: String?,
+        @SerialName("deletedAt") val deletedAt: String?
     )
 }

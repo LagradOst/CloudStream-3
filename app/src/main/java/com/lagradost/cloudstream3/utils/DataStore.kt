@@ -2,11 +2,11 @@ package com.lagradost.cloudstream3.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.preference.PreferenceManager
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 
 const val DOWNLOAD_HEADER_CACHE = "download_header_cache"
 
@@ -19,8 +19,7 @@ const val USER_PROVIDER_API = "user_custom_sites"
 const val PREFERENCES_NAME = "rebuild_preference"
 
 object DataStore {
-    val mapper: JsonMapper = JsonMapper.builder().addModule(KotlinModule())
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).build()
+    const val TAG = "DATASTR"
 
     private fun getPreferences(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -48,6 +47,7 @@ object DataStore {
             }
             editor.apply()
         } catch (e: Exception) {
+            Log.i(TAG, "path = $path\nvalue = $value\nisEditingAppSettings = $isEditingAppSettings")
             logError(e)
         }
     }
@@ -82,6 +82,7 @@ object DataStore {
                 editor.apply()
             }
         } catch (e: Exception) {
+            Log.i(TAG, "path = $path\n")
             logError(e)
         }
     }
@@ -94,30 +95,30 @@ object DataStore {
         return keys.size
     }
 
-    fun <T> Context.setKey(path: String, value: T) {
+    inline fun <reified T : Any> Context.setKey(path: String, value: T) {
         try {
             val editor: SharedPreferences.Editor = getSharedPrefs().edit()
-            editor.putString(path, mapper.writeValueAsString(value))
+
+            editor.putString(path, value.toJson())
             editor.apply()
         } catch (e: Exception) {
             logError(e)
+            Log.i(TAG, "path = $path\nvalue = $value")
         }
     }
 
-    fun <T> Context.setKey(folder: String, path: String, value: T) {
+    inline fun <reified T : Any> Context.setKey(folder: String, path: String, value: T) {
         setKey(getFolderName(folder, path), value)
-    }
-
-    inline fun <reified T : Any> String.toKotlinObject(): T {
-        return mapper.readValue(this, T::class.java)
     }
 
     // GET KEY GIVEN PATH AND DEFAULT VALUE, NULL IF ERROR
     inline fun <reified T : Any> Context.getKey(path: String, defVal: T?): T? {
         try {
             val json: String = getSharedPrefs().getString(path, null) ?: return defVal
-            return json.toKotlinObject()
+            return parseJson<T>(json)
         } catch (e: Exception) {
+            logError(e)
+            Log.i(TAG, "path = $path\ndefVal = $defVal")
             return null
         }
     }

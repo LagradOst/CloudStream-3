@@ -4,6 +4,8 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 
+import kotlinx.serialization.Serializable
+
 class ElifilmsProvider : MainAPI() {
     override var mainUrl: String = "https://elifilms.net"
     override var name: String = "Elifilms"

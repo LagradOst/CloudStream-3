@@ -1,11 +1,13 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
+import kotlinx.serialization.SerialName
+
+import kotlinx.serialization.Serializable
 
 class CuevanaProvider : MainAPI() {
     override var mainUrl = "https://cuevana3.me"
@@ -186,8 +188,9 @@ class CuevanaProvider : MainAPI() {
         }
     }
 
+    @Serializable
     data class Femcuevana(
-        @JsonProperty("url") val url: String,
+        @SerialName("url") val url: String,
     )
 
     override suspend fun loadLinks(

@@ -1,12 +1,13 @@
 package com.lagradost.cloudstream3.movieproviders
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.*
@@ -70,7 +71,8 @@ class UakinoProvider : MainAPI() {
         val poster = fixUrl(document.selectFirst("div.film-poster img")?.attr("src").toString())
         val tags = document.select("div.film-info > div:nth-child(4) a").map { it.text() }
         val year = document.select("div.film-info > div:nth-child(2) a").text().toIntOrNull()
-        val tvType = if (url.contains(Regex("(/anime-series)|(/seriesss)|(/cartoonseries)"))) TvType.TvSeries else TvType.Movie
+        val tvType =
+            if (url.contains(Regex("(/anime-series)|(/seriesss)|(/cartoonseries)"))) TvType.TvSeries else TvType.Movie
         val description = document.selectFirst("div[itemprop=description]")?.text()?.trim()
         val trailer = document.selectFirst("iframe#pre")?.attr("data-src")
         val rating = document.selectFirst("div.film-info > div:nth-child(8) div.fi-desc")?.text()
@@ -83,21 +85,22 @@ class UakinoProvider : MainAPI() {
 
         return if (tvType == TvType.TvSeries) {
             val id = url.split("/").last().split("-").first()
-            val episodes = app.get("$mainUrl/engine/ajax/playlists.php?news_id=$id&xfield=playlist&time=${Date().time}")
-                .parsedSafe<Responses>()?.response.let {
-                    Jsoup.parse(it.toString()).select("ul > li").mapNotNull { eps ->
-                        val href = fixUrl(eps.attr("data-file"))
-                        val name = eps.text().trim()
-                        if (href.isNotEmpty()) {
-                            Episode(
-                                href,
-                                name,
-                            )
-                        } else {
-                            null
+            val episodes =
+                app.get("$mainUrl/engine/ajax/playlists.php?news_id=$id&xfield=playlist&time=${Date().time}")
+                    .parsedSafe<Responses>()?.response.let {
+                        Jsoup.parse(it.toString()).select("ul > li").mapNotNull { eps ->
+                            val href = fixUrl(eps.attr("data-file"))
+                            val name = eps.text().trim()
+                            if (href.isNotEmpty()) {
+                                Episode(
+                                    href,
+                                    name,
+                                )
+                            } else {
+                                null
+                            }
                         }
                     }
-                }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.year = year
@@ -167,9 +170,9 @@ class UakinoProvider : MainAPI() {
         return true
     }
 
+    @Serializable
     data class Responses(
-        @JsonProperty("success") val success: Boolean?,
-        @JsonProperty("response") val response: String,
+        @SerialName("success") val success: Boolean?,
+        @SerialName("response") val response: String,
     )
-
 }
