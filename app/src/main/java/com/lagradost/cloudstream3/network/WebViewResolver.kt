@@ -79,6 +79,9 @@ class AdvancedWebView private constructor(
         fun waitForNetworkIdle(cb: (AdvancedWebView) -> Unit = {  }) = apply {
             addAction(WebViewAction(WebViewActions.WAIT_FOR_NETWORK_IDLE, "", cb))
         }
+        fun waitForNetworkCall(targetResource: String, cb: (AdvancedWebView) -> Unit = {  }) = apply {
+            addAction(WebViewAction(WebViewActions.WAIT_FOR_NETWORK_CALL, targetResource, cb))
+        }
         fun executeJavaScript(code: String, cb: (AdvancedWebView) -> Unit = {  }) = apply {
             addAction(WebViewAction(WebViewActions.EXECUTE_JAVASCRIPT, code, cb))
         }
