@@ -96,15 +96,21 @@ class AdvancedWebView private constructor(
         fun close() = apply { addAction(WebViewAction(WebViewActions.RETURN, "")) }
 
         fun build(callback: (AdvancedWebView) -> Unit = { }) = AdvancedWebView(this.url, this.actions, this.referer, this.method, callback)
+        fun buildAndStart(callback: (AdvancedWebView) -> Unit = { }) = AdvancedWebView(this.url, this.actions, this.referer, this.method, callback).start()
     }
 
     private var actionExecutionsPaused = false
     private var networkIdleTimestamp = -1;
     private var pageHasLoaded = false;
+    private var isInSleep = false
+    private var actionStartTimestamp = -1;
+
+    var Error = "None"
 
     private suspend fun tryExecuteAction() {
         if (actionExecutionsPaused || remainingActions.size == 0) return
         actionExecutionsPaused = true
+        actionStartTimestamp = (System.currentTimeMillis() / 1000).toInt()
         setCurrentHTML()
 
         main {
@@ -118,6 +124,7 @@ class AdvancedWebView private constructor(
                                 remainingActions.remove(action)
                             }
                             actionExecutionsPaused = false
+                            actionStartTimestamp = -1
                         }
                     }
 
@@ -138,6 +145,7 @@ class AdvancedWebView private constructor(
                                 remainingActions.remove(action)
                             }
                             actionExecutionsPaused = false
+                            actionStartTimestamp = -1
                         }
                     }
 
@@ -148,6 +156,7 @@ class AdvancedWebView private constructor(
                                 remainingActions.remove(action)
                             }
                             actionExecutionsPaused = false
+                            actionStartTimestamp = -1
                         }
                     }
 
@@ -159,11 +168,14 @@ class AdvancedWebView private constructor(
                         remainingActions.remove(action)
 
                         actionExecutionsPaused = false
+                        actionStartTimestamp = -1
                     }
 
                     WebViewActions.WAIT_FOR_X_SECONDS -> {
                         Log.i(TAG, "AdvancedWebView :: Waiting for ${remainingActions[0].parameter} seconds...")
+                        isInSleep = true
                         delay(action.parameter as Long * 1000)
+                        isInSleep = false
                         Log.i(TAG, "AdvancedWebView :: Finished waiting!")
                         Instance.run(action.callback)
                         remainingActions.remove(action)
@@ -179,17 +191,20 @@ class AdvancedWebView private constructor(
                             remainingActions.remove(action)
 
                             actionExecutionsPaused = false
+                            actionStartTimestamp = -1
                         }
                     }
 
                     WebViewActions.RETURN -> {
                         destroyWebView()
                         remainingActions.clear()
+                        actionStartTimestamp = -1
                     }
 
                     else -> {
                         Log.e(TAG, "Action Type: <${action.actionType.name}> is not implemented!")
                         actionExecutionsPaused = false
+                        actionStartTimestamp = -1
                     }
                 }
             }
@@ -233,7 +248,7 @@ class AdvancedWebView private constructor(
                 }
                 webView!!.visibility = View.VISIBLE
             } catch (e: Exception) {
-                Log.i(TAG, "Error: Failed to create an Advanced WebView, reason: <${e.message}>")
+                Log.e(TAG, "Error: Failed to create an Advanced WebView, reason: <${e.message}>")
                 Log.e(TAG, e.toString())
                 destroyWebView()
                 callback(this)
@@ -252,8 +267,6 @@ class AdvancedWebView private constructor(
                             Instance.run(action.callback)
                             remainingActions.remove(action)
                         }
-
-                        runBlocking { tryExecuteAction() }
                     }
 
                     override fun onLoadResource(view: WebView?, url: String?) {
@@ -266,7 +279,6 @@ class AdvancedWebView private constructor(
                                 remainingActions.remove(action)
                             }
                         }
-                        runBlocking { tryExecuteAction() }
                     }
 
                     override fun shouldInterceptRequest(
@@ -274,8 +286,6 @@ class AdvancedWebView private constructor(
                         request: WebResourceRequest
                     ): WebResourceResponse? = runBlocking {
                         networkIdleTimestamp = (System.currentTimeMillis() / 1000L).toInt();
-                        tryExecuteAction()
-
                         val webViewUrl = request.url.toString()
 
                         val blacklistedFiles = listOf(
@@ -326,6 +336,12 @@ class AdvancedWebView private constructor(
             }
 
             while (remainingActions.size > 0){
+                if (!isInSleep && actionStartTimestamp != -1 && ((System.currentTimeMillis()/1000) - actionStartTimestamp > 20)) {
+                    Log.e(TAG, "AdvancedWebview:: Timeout, an action failed to end in under 20 seconds...")
+                    Error = "ActionTimeout"
+                    break
+                }
+
                 delay(300)
                 tryExecuteAction()
             }
