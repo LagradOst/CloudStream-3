@@ -52,6 +52,7 @@
     <string name="poster_ui_key" translatable="false">poster_ui_key</string>
     <string name="subtitles_encoding_key" translatable="false">subtitles_encoding_key</string>
     <string name="override_site_key" translatable="false">override_site_key</string>
+    <string name="pref_filter_search_quality_key" translatable="false">pref_filter_search_quality_key</string>
 
     <!-- FORMAT MIGHT TRANSLATE, WILL CAUSE CRASH IF APPLIED WRONG -->
     <string name="extra_info_format" translatable="false" formatted="true">%d %s | %sMB</string>
@@ -231,6 +232,7 @@
     <string name="use_system_brightness_settings_des">Use system brightness in the app player instead of a dark
         overlay
     </string>
+    <string name="pref_filter_search_quality">Hide selected video quality on Search results</string>
 
     <string name="episode_sync_settings">Update watch progress</string>
     <string name="episode_sync_settings_des">Automatically sync your current episode progress</string>

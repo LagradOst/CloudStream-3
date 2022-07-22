@@ -632,24 +632,24 @@ class HomePageList(
     var list: List<SearchResponse>
 )
 
-enum class SearchQuality {
+enum class SearchQuality(value: Int?) {
     //https://en.wikipedia.org/wiki/Pirated_movie_release_types
-    Cam,
-    CamRip,
-    HdCam,
-    Telesync, // TS
-    WorkPrint,
-    Telecine, // TC
-    HQ,
-    HD,
-    HDR, // high dynamic range
-    BlueRay,
-    DVD,
-    SD,
-    FourK,
-    UHD,
-    SDR, // standard dynamic range
-    WebRip
+    Cam(0),
+    CamRip(1),
+    HdCam(2),
+    Telesync(3), // TS
+    WorkPrint(4),
+    Telecine(5), // TC
+    HQ(6),
+    HD(7),
+    HDR(8), // high dynamic range
+    BlueRay(9),
+    DVD(10),
+    SD(11),
+    FourK(12),
+    UHD(13),
+    SDR(14), // standard dynamic range
+    WebRip(15)
 }
 
 /**Add anything to here if you find a site that uses some specific naming convention*/
