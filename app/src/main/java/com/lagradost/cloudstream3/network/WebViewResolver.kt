@@ -67,6 +67,9 @@ class AdvancedWebView private constructor(
         fun waitForElementGone(selector: String, cb: (AdvancedWebView) -> Unit = {  }) = apply {
             addAction(WebViewAction(WebViewActions.WAIT_FOR_ELEMENT, selector, cb))
         }
+        fun waitForElementToBeClickable(selector: String, cb: (AdvancedWebView) -> Unit = {  }) = apply {
+            addAction(WebViewAction(WebViewActions.WAIT_FOR_ELEMENT_TO_BE_CLICKABLE, selector, cb))
+        }
         fun waitForSeconds(seconds: Long, cb: (AdvancedWebView) -> Unit = {  }) = apply {
             addAction(WebViewAction(WebViewActions.WAIT_FOR_X_SECONDS, seconds, cb))
         }
@@ -105,10 +108,32 @@ class AdvancedWebView private constructor(
                         }
                     }
 
+                    WebViewActions.WAIT_FOR_ELEMENT_TO_BE_CLICKABLE -> {
+                        actionExecutionsPaused = true
+
+                        webView?.evaluateJavascript(
+                        """
+                            ((selector) => {
+                                const elem = document.querySelector(selector)
+                                if (elem == undefined) return
+                                const attribute = elem.getAttribute("disabled")
+                                if (attribute === "true" || attribute === '') return
+
+                                return "" + (!elem.disabled || true)
+                            })(`${action.parameter}`);
+                        """.trimIndent()) {
+                            if (it == "\"true\""){
+                                Instance.run(action.callback)
+                                remainingActions.remove(action)
+                            }
+                            actionExecutionsPaused = false
+                        }
+                    }
+
                     WebViewActions.WAIT_FOR_ELEMENT_GONE -> {
                         actionExecutionsPaused = true
                         webView?.evaluateJavascript("document.querySelector(\"${action.parameter}\") == undefined") {
-                            if (it == "true") {
+                            if (it == "\"true\"") {
                                 Instance.run(action.callback)
                                 remainingActions.remove(action)
                             }
@@ -118,10 +143,8 @@ class AdvancedWebView private constructor(
 
                     WebViewActions.WAIT_FOR_NETWORK_IDLE -> {
                         if (!pageHasLoaded || ((System.currentTimeMillis() / 1000L) - networkIdleTimestamp) < 10) return@main
-                        // we need at least 10 seconds of no network calls being done in order to be in an IDLE state
+                        // we need at least 10 seconds of no network calls being done in order to be in an "IDLE" state
                         actionExecutionsPaused = true
-
-                        println("WEB:: $networkIdleTimestamp, ${System.currentTimeMillis()/1000}")
 
                         Instance.run(action.callback)
                         remainingActions.remove(action)
@@ -131,27 +154,32 @@ class AdvancedWebView private constructor(
 
                     WebViewActions.WAIT_FOR_X_SECONDS -> {
                         actionExecutionsPaused = true
+
                         println("AdvancedWebView :: Waiting for ${remainingActions[0].parameter} seconds...")
                         delay(action.parameter as Long * 1000)
                         println("AdvancedWebView :: Finished waiting!")
                         Instance.run(action.callback)
                         remainingActions.remove(action)
+
                         actionExecutionsPaused = false
                     }
 
                     WebViewActions.EXECUTE_JAVASCRIPT -> {
                         actionExecutionsPaused = true
+
                         println("AdvancedWebView :: Executing javascript from action...")
                         webView?.evaluateJavascript(action.parameter as String) {
                             println("JavaScript Execution done! Result: <$it>")
                             Instance.run(action.callback)
                             remainingActions.remove(action)
+
                             actionExecutionsPaused = false
                         }
                     }
 
                     WebViewActions.RETURN -> {
                         actionExecutionsPaused = true
+
                         destroyWebView()
                         remainingActions.clear()
                     }
@@ -230,15 +258,6 @@ class AdvancedWebView private constructor(
                         tryExecuteAction()
 
                         val webViewUrl = request.url.toString()
-
-//                        if (interceptUrl.containsMatchIn(webViewUrl)) {
-//                            fixedRequest = request.toRequest().also {
-//                                if (requestCallBack(it)) destroyWebView()
-//                            }
-//                            println("Web-view request finished: $webViewUrl")
-//                            destroyWebView()
-//                            return@runBlocking null
-//                        }
 
                         val blacklistedFiles = listOf(
                             ".jpg", ".png", ".webp", ".mpg",
