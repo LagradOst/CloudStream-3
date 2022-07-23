@@ -34,7 +34,7 @@ enum class WebViewActions {
     RETURN
 }
 
-data class WebViewAction(val actionType: WebViewActions, val parameter: Any = "", val callback: (AdvancedWebView) -> Unit? = {  })
+data class WebViewAction(val actionType: WebViewActions, val parameter: Any = "", val callback: (AdvancedWebView) -> Unit = {  })
 
 class AdvancedWebView private constructor(
     val url: String,
@@ -105,13 +105,12 @@ class AdvancedWebView private constructor(
     private var isInSleep = false
     private var actionStartTimestamp = -1;
 
-    var Error = "None"
+    var Error = ""
 
     private suspend fun tryExecuteAction() {
         if (actionExecutionsPaused || remainingActions.size == 0) return
         actionExecutionsPaused = true
         actionStartTimestamp = (System.currentTimeMillis() / 1000).toInt()
-        setCurrentHTML()
 
         main {
             if (remainingActions.size > 0) {
@@ -120,7 +119,7 @@ class AdvancedWebView private constructor(
                     WebViewActions.WAIT_FOR_ELEMENT -> {
                         webView?.evaluateJavascript("document.querySelector(\"${action.parameter}\")") {
                             if (it == "{}") {
-                                Instance.run(action.callback)
+                                updateCurrentHtmlAndRun(action.callback)
                                 remainingActions.remove(action)
                             }
                             actionExecutionsPaused = false
@@ -141,7 +140,7 @@ class AdvancedWebView private constructor(
                                 })(`${action.parameter}`);
                             """.trimIndent()) {
                             if (it == "\"true\""){
-                                Instance.run(action.callback)
+                                updateCurrentHtmlAndRun(action.callback)
                                 remainingActions.remove(action)
                             }
                             actionExecutionsPaused = false
@@ -152,7 +151,7 @@ class AdvancedWebView private constructor(
                     WebViewActions.WAIT_FOR_ELEMENT_GONE -> {
                         webView?.evaluateJavascript("document.querySelector(\"${action.parameter}\") == undefined") {
                             if (it == "\"true\"") {
-                                Instance.run(action.callback)
+                                updateCurrentHtmlAndRun(action.callback)
                                 remainingActions.remove(action)
                             }
                             actionExecutionsPaused = false
@@ -164,7 +163,7 @@ class AdvancedWebView private constructor(
                         if (!pageHasLoaded || ((System.currentTimeMillis() / 1000L) - networkIdleTimestamp) < 10) return@main
                         // we need at least 10 seconds of no network calls being done in order to be in an "IDLE" state
 
-                        Instance.run(action.callback)
+                        updateCurrentHtmlAndRun(action.callback)
                         remainingActions.remove(action)
 
                         actionExecutionsPaused = false
@@ -177,7 +176,7 @@ class AdvancedWebView private constructor(
                         delay(action.parameter as Long * 1000)
                         isInSleep = false
                         Log.i(TAG, "AdvancedWebView :: Finished waiting!")
-                        Instance.run(action.callback)
+                        updateCurrentHtmlAndRun(action.callback)
                         remainingActions.remove(action)
 
                         actionExecutionsPaused = false
@@ -187,7 +186,7 @@ class AdvancedWebView private constructor(
                         Log.i(TAG, "AdvancedWebView :: Executing javascript from action...")
                         webView?.evaluateJavascript(action.parameter as String) {
                             Log.i(TAG, "JavaScript Execution done! Result: <$it>")
-                            Instance.run(action.callback)
+                            updateCurrentHtmlAndRun(action.callback)
                             remainingActions.remove(action)
 
                             actionExecutionsPaused = false
@@ -196,13 +195,13 @@ class AdvancedWebView private constructor(
                     }
 
                     WebViewActions.RETURN -> {
+                        updateCurrentHtmlAndRun() { /* Do nothing, we only want to update the html */ }
                         destroyWebView()
                         remainingActions.clear()
                         actionStartTimestamp = -1
                     }
 
                     else -> {
-                        Log.e(TAG, "Action Type: <${action.actionType.name}> is not implemented!")
                         actionExecutionsPaused = false
                         actionStartTimestamp = -1
                     }
@@ -220,7 +219,12 @@ class AdvancedWebView private constructor(
         }
     }
 
-    private fun setCurrentHTML() {
+    private fun updateCurrentHtmlAndRun(cb: (AdvancedWebView) -> Unit) {
+        if (webView == null) {
+            Instance.run(cb)
+            return
+        }
+
         main {
             webView?.evaluateJavascript("document.documentElement.outerHTML") {
                 currentHTML = it
@@ -229,6 +233,8 @@ class AdvancedWebView private constructor(
                     .replace("\\n", "\n")
                     .replace("\\t", "\t")
                     .trimStart('"').trimEnd('"')
+
+                Instance.run(cb)
             }
         }
     }
@@ -264,7 +270,7 @@ class AdvancedWebView private constructor(
                         if (remainingActions.size > 0 && remainingActions[0].actionType == WebViewActions.WAIT_FOR_PAGE_LOAD) {
                             Log.i(TAG, "PAGE FINISHED!")
                             val action = remainingActions[0]
-                            Instance.run(action.callback)
+                            updateCurrentHtmlAndRun(action.callback)
                             remainingActions.remove(action)
                         }
                     }
@@ -275,7 +281,7 @@ class AdvancedWebView private constructor(
                         if (remainingActions.size > 0 && remainingActions[0].actionType == WebViewActions.WAIT_FOR_NETWORK_CALL) {
                             if (URI(url) == URI(remainingActions[0].parameter as String)) {
                                 val action = remainingActions[0]
-                                Instance.run(action.callback)
+                                updateCurrentHtmlAndRun(action.callback)
                                 remainingActions.remove(action)
                             }
                         }
