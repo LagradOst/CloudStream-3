@@ -352,7 +352,7 @@ class AdvancedWebView private constructor(
                 tryExecuteAction()
             }
             try {
-                callback(this)
+                updateCurrentHtmlAndRun(callback)
             } catch (e: Exception) {
                 Log.e(TAG, "Err: $e")
             }
