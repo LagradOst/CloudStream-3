@@ -48,10 +48,9 @@ class CimaNowProvider : MainAPI() {
         val pages = arrayListOf<HomePageList>()
         doc.select("section").not("section:contains(أختر وجهتك المفضلة)").not("section:contains(تم اضافته حديثاً)").apmap {
             val name = it.select("span").html().replace("<em>.*| <i c.*".toRegex(), "")
-            val list = arrayListOf<SearchResponse>()
-            it.select("a").map {
-                if(it.attr("href").contains("$mainUrl/category/|$mainUrl/الاكثر-مشاهدة/".toRegex())) return@map
-                list.add(it.toSearchResponse()!!)
+            val list = it.select("a").mapNotNull {
+                if(it.attr("href").contains("$mainUrl/category/|$mainUrl/الاكثر-مشاهدة/".toRegex())) return@mapNotNull null
+                it.toSearchResponse()
             }
             pages.add(HomePageList(name, list))
         }
