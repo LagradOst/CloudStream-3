@@ -96,7 +96,7 @@ class AdvancedWebView private constructor(
         fun close() = apply { addAction(WebViewAction(WebViewActions.RETURN, "")) }
 
         fun build(callback: (AdvancedWebView) -> Unit = { }) = AdvancedWebView(this.url, this.actions, this.referer, this.method, callback)
-        fun buildAndStart(callback: (AdvancedWebView) -> Unit = { }) = AdvancedWebView(this.url, this.actions, this.referer, this.method, callback).start()
+        fun buildAndStart(callback: (AdvancedWebView) -> Unit = { }) = build(callback).start()
     }
 
     private var actionExecutionsPaused = false
@@ -104,6 +104,11 @@ class AdvancedWebView private constructor(
     private var pageHasLoaded = false;
     private var isInSleep = false
     private var actionStartTimestamp = -1;
+
+    private fun onActionEnded() {
+        actionExecutionsPaused = false
+        actionStartTimestamp = -1
+    }
 
     var Error = ""
 
@@ -122,8 +127,7 @@ class AdvancedWebView private constructor(
                                 updateCurrentHtmlAndRun(action.callback)
                                 remainingActions.remove(action)
                             }
-                            actionExecutionsPaused = false
-                            actionStartTimestamp = -1
+                            onActionEnded()
                         }
                     }
 
@@ -143,8 +147,7 @@ class AdvancedWebView private constructor(
                                 updateCurrentHtmlAndRun(action.callback)
                                 remainingActions.remove(action)
                             }
-                            actionExecutionsPaused = false
-                            actionStartTimestamp = -1
+                            onActionEnded()
                         }
                     }
 
@@ -154,8 +157,7 @@ class AdvancedWebView private constructor(
                                 updateCurrentHtmlAndRun(action.callback)
                                 remainingActions.remove(action)
                             }
-                            actionExecutionsPaused = false
-                            actionStartTimestamp = -1
+                            onActionEnded()
                         }
                     }
 
@@ -166,8 +168,7 @@ class AdvancedWebView private constructor(
                         updateCurrentHtmlAndRun(action.callback)
                         remainingActions.remove(action)
 
-                        actionExecutionsPaused = false
-                        actionStartTimestamp = -1
+                        onActionEnded()
                     }
 
                     WebViewActions.WAIT_FOR_X_SECONDS -> {
@@ -179,7 +180,7 @@ class AdvancedWebView private constructor(
                         updateCurrentHtmlAndRun(action.callback)
                         remainingActions.remove(action)
 
-                        actionExecutionsPaused = false
+                        onActionEnded()
                     }
 
                     WebViewActions.EXECUTE_JAVASCRIPT -> {
@@ -189,8 +190,7 @@ class AdvancedWebView private constructor(
                             updateCurrentHtmlAndRun(action.callback)
                             remainingActions.remove(action)
 
-                            actionExecutionsPaused = false
-                            actionStartTimestamp = -1
+                            onActionEnded()
                         }
                     }
 
@@ -202,8 +202,7 @@ class AdvancedWebView private constructor(
                     }
 
                     else -> {
-                        actionExecutionsPaused = false
-                        actionStartTimestamp = -1
+                        onActionEnded()
                     }
                 }
             }
@@ -254,7 +253,8 @@ class AdvancedWebView private constructor(
                 }
                 webView!!.visibility = View.VISIBLE
             } catch (e: Exception) {
-                Log.e(TAG, "Error: Failed to create an Advanced WebView, reason: <${e.message}>")
+                Error = "Error: Failed to create an Advanced WebView, reason: <${e.message}>"
+                Log.e(TAG, Error)
                 Log.e(TAG, e.toString())
                 destroyWebView()
                 callback(this)
@@ -336,8 +336,10 @@ class AdvancedWebView private constructor(
                 }
                 webView?.loadUrl(url, headers.toMap())
             } catch (e: Exception){
-                Log.e(TAG, "Failed to create a WebView client!")
+                Error = "Failed to create a WebView client!"
+                Log.e(TAG, Error)
                 destroyWebView()
+                Instance.run(callback)
                 return@main
             }
 
