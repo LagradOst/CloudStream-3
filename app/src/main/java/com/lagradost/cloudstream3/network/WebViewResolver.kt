@@ -149,7 +149,7 @@ class AdvancedWebView private constructor(
                     }
 
                     WebViewActions.WAIT_FOR_ELEMENT_GONE -> {
-                        webView?.evaluateJavascript("document.querySelector(\"${action.parameter}\") == undefined") {
+                        webView?.evaluateJavascript("\"\"+ (document.querySelector(\"${action.parameter}\") == undefined)") {
                             if (it == "\"true\"") {
                                 updateCurrentHtmlAndRun(action.callback)
                                 remainingActions.remove(action)
