@@ -341,7 +341,7 @@ class AdvancedWebView private constructor(
                 return@main
             }
 
-            while (remainingActions.size > 0){
+            while (remainingActions.size > 0 && webView != null) {
                 if (!isInSleep && actionStartTimestamp != -1 && ((System.currentTimeMillis()/1000) - actionStartTimestamp > 20)) {
                     Log.e(TAG, "AdvancedWebview:: Timeout, an action failed to end in under 20 seconds...")
                     Error = "ActionTimeout"
