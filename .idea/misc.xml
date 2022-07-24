@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/projects/CloudStream-3/app/src/main/res/layout/activity_main.xml" value="0.25729166666666664" />
+        <entry key="..\:/projects/CloudStream-3/app/src/main/res/layout/activity_main_tv.xml" value="0.25729166666666664" />
+        <entry key="..\:/projects/CloudStream-3/app/src/main/res/layout/player_custom_layout.xml" value="0.25729166666666664" />
+        <entry key="..\:/projects/CloudStream-3/app/src/main/res/layout/webviewlol.xml" value="0.25625" />
+      </map>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="11" project-jdk-type="JavaSDK" />
+</project>

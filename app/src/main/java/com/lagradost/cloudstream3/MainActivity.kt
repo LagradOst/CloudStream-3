@@ -102,6 +102,7 @@ var app = Requests().apply {
 class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
     companion object {
         const val TAG = "MAINACT"
+        var context : MainActivity? = null
     }
 
     override fun onColorSelected(dialogId: Int, color: Int) {
@@ -427,6 +428,7 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        context = this
         // init accounts
         for (api in accountManagers) {
             api.init()
