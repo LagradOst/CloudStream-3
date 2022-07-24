@@ -1,11 +1,9 @@
 package com.lagradost.cloudstream3.network
 
-import android.R
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.net.http.SslError
 import android.util.Log
-import android.view.KeyEvent
 import android.view.View
 import android.webkit.*
 import android.widget.RelativeLayout
@@ -333,7 +331,7 @@ class AdvancedWebView private constructor(
                     RelativeLayout.LayoutParams.MATCH_PARENT,
                     RelativeLayout.LayoutParams.MATCH_PARENT
                 )
-                dialog = Dialog(MainActivity.context!!, R.style.Theme_Black_NoTitleBar_Fullscreen)
+                dialog = Dialog(MainActivity.context!!, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
                 dialog!!.addContentView(webView as View, layout)
                 dialog!!.show()
             }

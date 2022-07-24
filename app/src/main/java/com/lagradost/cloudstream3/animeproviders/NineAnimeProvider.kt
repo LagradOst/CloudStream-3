@@ -187,7 +187,9 @@ class NineAnimeProvider : MainAPI() {
                     setTimeout(()=> { window.location.href = document.querySelector("#search > form a.more").href }, 3000)
                 })();
             """.trimIndent())
-            .waitForSeconds(4)
+            .waitForSeconds(2)
+            .waitForNetworkIdle()
+            .waitForSeconds(2)
             .waitForNetworkIdle()
             .close()
             .buildAndStart()
