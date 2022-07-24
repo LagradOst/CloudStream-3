@@ -1,13 +1,15 @@
 package com.lagradost.cloudstream3.network
 
+import android.R
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.net.http.SslError
 import android.util.Log
+import android.view.KeyEvent
 import android.view.View
 import android.webkit.*
-import com.lagradost.cloudstream3.AcraApplication
-import com.lagradost.cloudstream3.USER_AGENT
-import com.lagradost.cloudstream3.app
+import android.widget.RelativeLayout
+import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.logError
 import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.nicehttp.requestCreator
@@ -19,10 +21,10 @@ import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import java.net.URI
-import kotlin.collections.ArrayList
 
 
 enum class WebViewActions {
+    VISIT_ADDRESS,
     WAIT_FOR_PAGE_LOAD,
     WAIT_FOR_X_SECONDS,
     WAIT_FOR_NETWORK_CALL,
@@ -31,6 +33,8 @@ enum class WebViewActions {
     WAIT_FOR_ELEMENT_GONE,
     EXECUTE_JAVASCRIPT,
     WAIT_FOR_ELEMENT_TO_BE_CLICKABLE,
+    CAPTURE_REQUESTS_THAT_MATCH_REGEX,
+//    SEND_KEYS_TO_ELEMENT,
     RETURN
 }
 
@@ -41,7 +45,8 @@ class AdvancedWebView private constructor(
     val actions: ArrayList<WebViewAction>,
     val referer: String?,
     val method: String,
-    val callback: (AdvancedWebView) -> Unit = {  }
+    val callback: (AdvancedWebView) -> Unit = {  },
+    val debug: Boolean = false
 ) {
     companion object {
         const val TAG = "AdvancedWebViewTag"
@@ -62,8 +67,13 @@ class AdvancedWebView private constructor(
         var actions: ArrayList<WebViewAction> = arrayListOf(),
         var referer: String? = null,
         var method: String = "GET",
+        var debug: Boolean = false
     ) {
-        fun setUrl(url: String) = apply { this.url = url }
+        fun visitAddress(url: String, cb: (AdvancedWebView) -> Unit = {  }) = apply {
+            if (this.url != "") {
+                addAction(WebViewAction(WebViewActions.VISIT_ADDRESS, url, cb))
+            } else this.url = url
+        }
         fun setReferer(referer: String) = apply { this.referer = referer }
         fun setMethod(method: String) = apply { this.method = method }
 
@@ -93,20 +103,29 @@ class AdvancedWebView private constructor(
         fun executeJavaScript(code: String, cb: (AdvancedWebView) -> Unit = {  }) = apply {
             addAction(WebViewAction(WebViewActions.EXECUTE_JAVASCRIPT, code, cb))
         }
+        fun captureReqsThatMatchRegex(regex: Regex, cb: (AdvancedWebView) -> Unit = {  }) = apply {
+            addAction(WebViewAction(WebViewActions.CAPTURE_REQUESTS_THAT_MATCH_REGEX, regex, cb))
+        }
+//        fun sendKeysToElement(selector: String, text: String, delayInMsPerKeyPress: Long = 50, cb: (AdvancedWebView) -> Unit = {  }) = apply {
+//            addAction(WebViewAction(WebViewActions.SEND_KEYS_TO_ELEMENT, "$selector(__++`__||__`++__)$text(__++`__||__`++__)$delayInMsPerKeyPress", cb))
+//        }
+        fun debug() = apply { debug = true }
         fun close() = apply { addAction(WebViewAction(WebViewActions.RETURN, "")) }
 
-        fun build(callback: (AdvancedWebView) -> Unit = { }) = AdvancedWebView(this.url, this.actions, this.referer, this.method, callback)
-        fun buildAndStart(callback: (AdvancedWebView) -> Unit = { }) = build(callback).start()
+        fun build(callback: (AdvancedWebView) -> Unit = { }) = AdvancedWebView(this.url, this.actions, this.referer, this.method, callback, debug)
+        fun buildAndStart(callback: (AdvancedWebView) -> Unit = { }) = build(callback).apply { this.start() }
     }
 
     private var actionExecutionsPaused = false
     private var networkIdleTimestamp = -1;
     private var pageHasLoaded = false;
     private var isInSleep = false
+    private var isSendingKeys = false
     private var actionStartTimestamp = -1;
 
     private fun onActionEnded() {
         actionExecutionsPaused = false
+        isSendingKeys = false
         actionStartTimestamp = -1
     }
 
@@ -123,6 +142,7 @@ class AdvancedWebView private constructor(
                 when (action.actionType){
                     WebViewActions.WAIT_FOR_ELEMENT -> {
                         webView?.evaluateJavascript("document.querySelector(\"${action.parameter}\")") {
+                            Log.i(TAG, "WAIT_FOR_ELEMENT:: <$it>")
                             if (it == "{}") {
                                 updateCurrentHtmlAndRun(action.callback)
                                 remainingActions.remove(action)
@@ -130,6 +150,39 @@ class AdvancedWebView private constructor(
                             onActionEnded()
                         }
                     }
+
+                    WebViewActions.VISIT_ADDRESS -> {
+                        webView?.loadUrl(action.parameter as String)
+
+                        updateCurrentHtmlAndRun(action.callback)
+                        remainingActions.remove(action)
+                        onActionEnded()
+                    }
+
+//                    WebViewActions.SEND_KEYS_TO_ELEMENT -> {
+//                        isSendingKeys = true
+//                        val (element, characters, timing) = (action.parameter as String).split("(__++`__||__`++__)") // discriminator
+//                        val msPerKey: Long = timing.toLongOrNull() ?: return@main
+//
+//                        Log.i(TAG, "SEND_KEYS_TO_ELEMENT:: start")
+//                        webView?.evaluateJavascript("document.querySelector(`$element`)?.click()") {
+//                            main {
+//                                delay(300)
+//                                for (character in characters) {
+//                                    Log.i(TAG, "SEND_KEYS_TO_ELEMENT:: character :: $character")
+//
+//                                    webView?.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, character.code))
+//                                    delay(70)
+//                                    webView?.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, character.code))
+//                                    delay(msPerKey)
+//                                }
+//
+//                                updateCurrentHtmlAndRun(action.callback)
+//                                remainingActions.remove(action)
+//                                onActionEnded()
+//                            }
+//                        }
+//                    }
 
                     WebViewActions.WAIT_FOR_ELEMENT_TO_BE_CLICKABLE -> {
                         webView?.evaluateJavascript(
@@ -162,7 +215,7 @@ class AdvancedWebView private constructor(
                     }
 
                     WebViewActions.WAIT_FOR_NETWORK_IDLE -> {
-                        if (!pageHasLoaded || ((System.currentTimeMillis() / 1000L) - networkIdleTimestamp) < 10) return@main
+//                        if (!pageHasLoaded || ((System.currentTimeMillis() / 1000L) - networkIdleTimestamp) < 10) return@main
                         // we need at least 10 seconds of no network calls being done in order to be in an "IDLE" state
 
                         updateCurrentHtmlAndRun(action.callback)
@@ -238,6 +291,21 @@ class AdvancedWebView private constructor(
         }
     }
 
+    var initialized = false
+
+    suspend fun waitUntilDone() = apply {
+        while (!initialized) {
+            delay(100)
+        }
+        while (webView != null) {
+            delay(100)
+        }
+    }
+
+    val capturedRequests = arrayListOf<WebResourceResponse>()
+
+    private var dialog: Dialog? = null
+
     fun start() {
         main {
             try {
@@ -251,13 +319,23 @@ class AdvancedWebView private constructor(
                     settings.userAgentString = USER_AGENT
                     settings.blockNetworkImage = true
                 }
-                webView!!.visibility = View.VISIBLE
             } catch (e: Exception) {
                 Error = "Error: Failed to create an Advanced WebView, reason: <${e.message}>"
                 Log.e(TAG, Error)
                 Log.e(TAG, e.toString())
                 destroyWebView()
                 callback(this)
+            }
+
+            if (debug) {
+                webView!!.visibility = View.VISIBLE
+                val layout = RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.MATCH_PARENT,
+                    RelativeLayout.LayoutParams.MATCH_PARENT
+                )
+                dialog = Dialog(MainActivity.context!!, R.style.Theme_Black_NoTitleBar_Fullscreen)
+                dialog!!.addContentView(webView as View, layout)
+                dialog!!.show()
             }
 
             try {
@@ -278,11 +356,16 @@ class AdvancedWebView private constructor(
                     override fun onLoadResource(view: WebView?, url: String?) {
                         super.onLoadResource(view, url)
                         networkIdleTimestamp = (System.currentTimeMillis() / 1000L).toInt();
-                        if (remainingActions.size > 0 && remainingActions[0].actionType == WebViewActions.WAIT_FOR_NETWORK_CALL) {
-                            if (URI(url) == URI(remainingActions[0].parameter as String)) {
-                                val action = remainingActions[0]
-                                updateCurrentHtmlAndRun(action.callback)
-                                remainingActions.remove(action)
+                        if (remainingActions.size > 0) {
+                            val action = remainingActions[0]
+                            when (action.actionType) {
+                                WebViewActions.WAIT_FOR_NETWORK_CALL -> {
+                                    if (URI(url) == URI(action.parameter as String)) {
+                                        updateCurrentHtmlAndRun(action.callback)
+                                        remainingActions.remove(action)
+                                    }
+                                }
+                                else -> { /* nothing */ }
                             }
                         }
                     }
@@ -300,13 +383,13 @@ class AdvancedWebView private constructor(
                             ".mp3", ".gifv", ".flv", ".asf",
                             ".mov", ".mng", ".mkv", ".ogg",
                             ".avi", ".wav", ".woff2", ".woff",
-                            ".ttf", ".css", ".vtt", ".srt",
+                            ".ttf", ".vtt", ".srt",
                             ".ts", ".gif",
                             // Warning, this might fuck some future sites, but it's used to make Sflix work.
                             "wss://"
                         )
 
-                        return@runBlocking try {
+                        val response = try {
                             when {
                                 blacklistedFiles.any { URI(webViewUrl).path.contains(it) } || webViewUrl.endsWith(
                                     "/favicon.ico"
@@ -316,6 +399,16 @@ class AdvancedWebView private constructor(
                                     null
                                 )
 
+                                request.method == "GET" -> app.get(
+                                    webViewUrl,
+                                    headers = request.requestHeaders
+                                ).okhttpResponse.toWebResourceResponse()
+
+                                request.method == "POST" -> app.post(
+                                    webViewUrl,
+                                    headers = request.requestHeaders
+                                ).okhttpResponse.toWebResourceResponse()
+
                                 else -> return@runBlocking super.shouldInterceptRequest(
                                     view,
                                     request
@@ -324,6 +417,23 @@ class AdvancedWebView private constructor(
                         } catch (e: Exception) {
                             null
                         }
+
+                        if (remainingActions.size > 0){
+                            val action = remainingActions[0]
+
+                            when (action.actionType) {
+                                WebViewActions.CAPTURE_REQUESTS_THAT_MATCH_REGEX -> {
+                                    if ((action.parameter as Regex).containsMatchIn(webViewUrl)) {
+                                        if (response != null) capturedRequests.add(response)
+                                        updateCurrentHtmlAndRun(action.callback)
+                                        remainingActions.remove(action)
+                                    }
+                                }
+                                else -> { /* nothing */ }
+                            }
+                        }
+
+                        return@runBlocking response
                     }
 
                     override fun onReceivedSslError(
@@ -342,23 +452,38 @@ class AdvancedWebView private constructor(
                 Instance.run(callback)
                 return@main
             }
+            initialized = true
 
             while (remainingActions.size > 0 && webView != null) {
-                if (!isInSleep && actionStartTimestamp != -1 && ((System.currentTimeMillis()/1000) - actionStartTimestamp > 20)) {
+                if (!isInSleep && !isSendingKeys && actionStartTimestamp != -1 && ((System.currentTimeMillis()/1000) - actionStartTimestamp > 20)) {
                     Log.e(TAG, "AdvancedWebview:: Timeout, an action failed to end in under 20 seconds...")
                     Error = "ActionTimeout"
                     break
                 }
 
                 delay(300)
-                tryExecuteAction()
+                if (!actionExecutionsPaused) tryExecuteAction()
             }
             try {
                 updateCurrentHtmlAndRun(callback)
             } catch (e: Exception) {
                 Log.e(TAG, "Err: $e")
             }
+            if (debug) dialog!!.hide()
             destroyWebView()
+        }
+    }
+    fun Response.toWebResourceResponse(): WebResourceResponse {
+        val contentTypeValue = this.header("Content-Type")
+        // 1. contentType. 2. charset
+        val typeRegex = Regex("""(.*);(?:.*charset=(.*)(?:|;)|)""")
+        return if (contentTypeValue != null) {
+            val found = typeRegex.find(contentTypeValue)
+            val contentType = found?.groupValues?.getOrNull(1)?.ifBlank { null } ?: contentTypeValue
+            val charset = found?.groupValues?.getOrNull(2)?.ifBlank { null }
+            WebResourceResponse(contentType, charset, this.body?.byteStream())
+        } else {
+            WebResourceResponse("application/octet-stream", null, this.body?.byteStream())
         }
     }
 }

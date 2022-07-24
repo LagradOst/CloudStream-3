@@ -3,6 +3,7 @@ package com.lagradost.cloudstream3.animeproviders
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.network.AdvancedWebView
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -171,9 +172,30 @@ class NineAnimeProvider : MainAPI() {
     private fun decode(input: String): String? = java.net.URLDecoder.decode(input, "utf-8")
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/filter?sort=title%3Aasc&keyword=$query"
+        val webView = AdvancedWebView.Builder()
+            .visitAddress("$mainUrl/home", )
+            .waitForNetworkIdle()
+            .waitForElement("#search-toggler")
+            .executeJavaScript("document.querySelector(\"#search-toggler\").click()")
+            .waitForSeconds(1)
+            .executeJavaScript("""
+                (()=>{
+                    document.querySelector("#search-toggler")?.click()
+                    const elem = document.querySelector(`#search > form > input[name="keyword"][type="text"]`)
+                    elem.value = `$query`
+                    elem.dispatchEvent(new Event("input", { bubbles: true }));
+                    setTimeout(()=> { window.location.href = document.querySelector("#search > form a.more").href }, 3000)
+                })();
+            """.trimIndent())
+            .waitForSeconds(4)
+            .waitForNetworkIdle()
+            .close()
+            .buildAndStart()
+            .waitUntilDone()
 
-        return app.get(url).document.select("ul.anime-list li").mapNotNull {
+        val document = webView.document ?: return emptyList()
+
+        return document.select(".ani.items > .item").mapNotNull {
             val title = it.selectFirst("a.name")!!.text()
             val href =
                 fixUrlNull(it.selectFirst("a")!!.attr("href"))?.replace(
@@ -181,7 +203,7 @@ class NineAnimeProvider : MainAPI() {
                     ""
                 )
                     ?: return@mapNotNull null
-            val image = it.selectFirst("a.poster img")!!.attr("src")
+            val image = it.selectFirst("a img")!!.attr("src")
             AnimeSearchResponse(
                 title,
                 href,
